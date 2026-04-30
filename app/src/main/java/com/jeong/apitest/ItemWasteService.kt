@@ -7,14 +7,14 @@ import retrofit2.http.Query
 enum class SearchType { ITEM, SPOT, HOUSEHOLD_INFO }
 
 // 기후에너지환경부 API
-interface WasteService {
+interface ItemWasteService {
     @GET("getItem")
     suspend fun getItem(
         @Query("serviceKey") serviceKey: String,
         @Query("pageNo") pageNo: Int,
         @Query("numOfRows") numOfRows: Int,
         @Query("itemNm") itemNm: String
-    ): WasteResponse<ItemResponse>
+    ): ItemWasteResponse<ItemInfoResponse>
 
     @GET("getSpot")
     suspend fun getSpot(
@@ -25,11 +25,11 @@ interface WasteService {
         @Query("latitude") latitude: Double? = null,
         @Query("longitude") longitude: Double? = null,
         @Query("radius") radius: Int? = null
-    ): WasteResponse<SpotResponse>
+    ): ItemWasteResponse<ItemSpotResponse>
 }
 
 // 행정안전부 API
-interface HouseholdWasteService {
+interface ItemHouseholdWasteService {
     @GET("info")
     suspend fun getInfo(
         @Query("serviceKey") serviceKey: String,
@@ -42,29 +42,29 @@ interface HouseholdWasteService {
         @Query("cond[OPN_ATMY_GRP_CD::EQ]") administrativeCode: String? = null,
         @Query("cond[DAT_CRTR_YMD::GTE]") baseDateFrom: String? = null,
         @Query("cond[DAT_CRTR_YMD::LT]") baseDateUntil: String? = null
-    ): WasteResponse<HouseholdWasteInfo>
+    ): ItemWasteResponse<ItemHouseholdWasteInfo>
 }
 
 @Serializable
-data class WasteResponse<T>(
-    val response: ResponseData<T>
+data class ItemWasteResponse<T>(
+    val response: ItemResponseData<T>
 )
 
 @Serializable
-data class ResponseData<T>(
-    val header: Header,
-    val body: Body<T>
+data class ItemResponseData<T>(
+    val header: ItemHeader,
+    val body: ItemBody<T>
 )
 
 @Serializable
-data class Header(
+data class ItemHeader(
     val resultCode: String,
     val resultMsg: String
 )
 
 @Serializable
-data class Body<T>(
-    val items: Items<T>? = null,
+data class ItemBody<T>(
+    val items: ItemItems<T>? = null,
     val pageNo: Int,
     val numOfRows: Int,
     val totalCount: Int,
@@ -72,20 +72,20 @@ data class Body<T>(
 )
 
 @Serializable
-data class Items<T>(
+data class ItemItems<T>(
     val item: List<T> = emptyList()
 )
 
 // 모델 1: 품목 정보
 @Serializable
-data class ItemResponse(
+data class ItemInfoResponse(
     val itemNm: String,
     val dschgMthd: String
 )
 
 // 모델 2: 배출 장소
 @Serializable
-data class SpotResponse(
+data class ItemSpotResponse(
     val spotNm: String,
     val addrBase: String,
     val addrDtl: String
@@ -93,7 +93,7 @@ data class SpotResponse(
 
 // 모델 3: 생활쓰레기배출정보
 @Serializable
-data class HouseholdWasteInfo(
+data class ItemHouseholdWasteInfo(
     val CTPV_NM: String? = null,                  // 시도명
     val SGG_NM: String? = null,                   // 시군구명
     val MNG_ZONE_NM: String? = null,              // 관리구역명

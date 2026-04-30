@@ -1,8 +1,8 @@
 package com.jeong.apitest
 
-class WasteRepository(
-    private val wasteService: WasteService,
-    private val householdService: HouseholdWasteService
+class ItemWasteRepository(
+    private val wasteService: ItemWasteService,
+    private val householdService: ItemHouseholdWasteService
 ) {
     suspend fun getItem(pageNo: Int, rows: Int, itemNm: String) =
         wasteService.getItem(BuildConfig.API_KEY, pageNo, rows, itemNm)
@@ -26,7 +26,7 @@ class WasteRepository(
         administrativeCode: String? = null,
         baseDateFrom: String? = null,
         baseDateUntil: String? = null
-    ): WasteResponse<HouseholdWasteInfo> {
+    ): ItemWasteResponse<ItemHouseholdWasteInfo> {
         // Sejong special case handling
         val isSejong = sggNameQuery == "세종특별자치시" || sggNameQuery == "세종시" || sggNameQuery == "세종"
         val apiSgg = if (isSejong) "없음" else sggNameQuery
@@ -50,7 +50,7 @@ class WasteRepository(
             return response.copy(
                 response = response.response.copy(
                     body = response.response.body.copy(
-                        items = Items(transformedItems)
+                        items = ItemItems(transformedItems)
                     )
                 )
             )

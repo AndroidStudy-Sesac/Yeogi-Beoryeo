@@ -9,15 +9,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // Single Source of Truth: UI State Data Class
-data class WasteUiState(
+data class ItemWasteUiState(
     // UI Navigation & Display State
     val selectedTab: Int = 0,
     val showAdvancedSettings: Boolean = false,
 
     // Results
-    val itemsResult: List<ItemResponse> = emptyList(),
-    val spotsResult: List<SpotResponse> = emptyList(),
-    val householdResult: List<HouseholdWasteInfo> = emptyList(),
+    val itemsResult: List<ItemInfoResponse> = emptyList(),
+    val spotsResult: List<ItemSpotResponse> = emptyList(),
+    val householdResult: List<ItemHouseholdWasteInfo> = emptyList(),
 
     // Search Metadata
     val totalCount: Int = 0,
@@ -41,11 +41,11 @@ data class WasteUiState(
     val numOfRowsText: String = "20"
 )
 
-class WasteViewModel(private val repository: WasteRepository) : ViewModel() {
+class ItemWasteViewModel(private val repository: ItemWasteRepository) : ViewModel() {
 
     // UI State consolidated into a single StateFlow (SSOT)
-    private val _uiState = MutableStateFlow(WasteUiState())
-    val uiState: StateFlow<WasteUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ItemWasteUiState())
+    val uiState: StateFlow<ItemWasteUiState> = _uiState.asStateFlow()
 
     // Update functions for UDF (Unidirectional Data Flow)
     fun onTabSelected(index: Int) {

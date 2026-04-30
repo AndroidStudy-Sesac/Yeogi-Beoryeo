@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ApiTest">
         <activity
-            android:name=".MainActivity"
+            android:name=".ItemMainActivity"
             android:exported="true"
             android:theme="@style/Theme.ApiTest">
             <intent-filter>

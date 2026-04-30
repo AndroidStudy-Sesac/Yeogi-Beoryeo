@@ -35,7 +35,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
-class MainActivity : ComponentActivity() {
+class ItemMainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,23 +51,23 @@ class MainActivity : ComponentActivity() {
             .baseUrl("https://apis.data.go.kr/1482000/WasteRecyclingService/")
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
-        val wasteService = wasteRetrofit.create(WasteService::class.java)
+        val wasteService = wasteRetrofit.create(ItemWasteService::class.java)
 
         val householdRetrofit = Retrofit.Builder()
             .baseUrl("https://apis.data.go.kr/1741000/household_waste_info/")
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
-        val householdService = householdRetrofit.create(HouseholdWasteService::class.java)
+        val householdService = householdRetrofit.create(ItemHouseholdWasteService::class.java)
 
-        val repository = WasteRepository(wasteService, householdService)
+        val repository = ItemWasteRepository(wasteService, householdService)
 
         setContent {
             ApiTestTheme {
-                val viewModel: WasteViewModel = viewModel(
+                val viewModel: ItemWasteViewModel = viewModel(
                     factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            return WasteViewModel(repository) as T
+                            return ItemWasteViewModel(repository) as T
                         }
                     }
                 )
@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                 ) { innerPadding ->
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    WasteMainScreen(
+                    ItemWasteMainScreen(
                         uiState = uiState,
                         onTabSelected = viewModel::onTabSelected,
                         onItemQueryChange = viewModel::onItemQueryChange,
@@ -102,8 +102,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WasteMainScreen(
-    uiState: WasteUiState,
+fun ItemWasteMainScreen(
+    uiState: ItemWasteUiState,
     onTabSelected: (Int) -> Unit,
     onItemQueryChange: (String) -> Unit,
     onRegionQueryChange: (String) -> Unit,
@@ -164,7 +164,7 @@ fun WasteMainScreen(
 
 @Composable
 fun ItemSearchScreen(
-    uiState: WasteUiState,
+    uiState: ItemWasteUiState,
     onItemQueryChange: (String) -> Unit,
     onSearch: (SearchType) -> Unit,
     onLoadMore: () -> Unit
@@ -189,13 +189,13 @@ fun ItemSearchScreen(
             Text("분리배출 방법 찾기")
         }
 
-        ResultList(uiState, SearchType.ITEM, onLoadMore)
+        ItemResultList(uiState, SearchType.ITEM, onLoadMore)
     }
 }
 
 @Composable
 fun LocalInfoScreen(
-    uiState: WasteUiState,
+    uiState: ItemWasteUiState,
     onRegionQueryChange: (String) -> Unit,
     onLatitudeChange: (String) -> Unit,
     onLongitudeChange: (String) -> Unit,
@@ -369,12 +369,12 @@ fun LocalInfoScreen(
             }
         }
 
-        ResultList(uiState, uiState.lastSearchType, onLoadMore)
+        ItemResultList(uiState, uiState.lastSearchType, onLoadMore)
     }
 }
 
 @Composable
-fun ResultList(uiState: WasteUiState, currentType: SearchType?, onLoadMore: () -> Unit) {
+fun ItemResultList(uiState: ItemWasteUiState, currentType: SearchType?, onLoadMore: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.isLoading && uiState.currentPage == 1) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -510,7 +510,7 @@ fun ResultList(uiState: WasteUiState, currentType: SearchType?, onLoadMore: () -
 }
 
 @Composable
-fun ItemGuideCard(item: ItemResponse) {
+fun ItemGuideCard(item: ItemInfoResponse) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -554,7 +554,7 @@ fun ItemGuideCard(item: ItemResponse) {
 }
 
 @Composable
-fun SpotInfoCard(spot: SpotResponse) {
+fun SpotInfoCard(spot: ItemSpotResponse) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -585,7 +585,7 @@ fun SpotInfoCard(spot: SpotResponse) {
 }
 
 @Composable
-fun LocalScheduleCard(info: HouseholdWasteInfo, userQuery: String) {
+fun LocalScheduleCard(info: ItemHouseholdWasteInfo, userQuery: String) {
     val trimmed = userQuery.trim()
     val searchBase =
         if ((trimmed.endsWith("동") || trimmed.endsWith("읍") || trimmed.endsWith("면")) && trimmed.length > 1) {
