@@ -1,0 +1,677 @@
+[
+  {
+    "storeName": "LG베스트샵 강남본점",
+    "region": "서울시 강남구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 강동본점",
+    "region": "서울특별시 강동구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 강북본점",
+    "region": "서울 강북구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 강서본점",
+    "region": "서울특별시 강서구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 거여점",
+    "region": "서울특별시 송파구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 관악점",
+    "region": "서울 관악구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 광진본점",
+    "region": "서울특별시 광진구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 광진스타점",
+    "region": "서울특별시 광진구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 구로본점",
+    "region": "서울 구로구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 금천본점",
+    "region": "서울 금천구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 노원본점",
+    "region": "서울 노원구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 대치본점",
+    "region": "서울 강남구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 동교점",
+    "region": "서울 마포구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 마포점",
+    "region": "서울특별시 마포구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 목동점",
+    "region": "서울특별시 양천구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 문래점",
+    "region": "서울 영등포구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 미아사거리점",
+    "region": "서울 성북구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 반포점",
+    "region": "서울 서초구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 봉천점",
+    "region": "서울특별시 관악구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 불광본점",
+    "region": "서울특별시 은평구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 상계점",
+    "region": "서울 노원구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 상도점",
+    "region": "서울특별시 동작구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 서울양평점",
+    "region": "서울 영등포구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 서초본점",
+    "region": "서울특별시 서초구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 송파점",
+    "region": "서울특별시 송파구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 쌍문본점",
+    "region": "서울시 도봉구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 양천본점",
+    "region": "서울특별시 양천구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 역촌점",
+    "region": "서울특별시 은평구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 염리점",
+    "region": "서울 마포구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 용두점",
+    "region": "서울 동대문구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 은평점",
+    "region": "서울특별시 은평구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 이수역점",
+    "region": "서울시 동작구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LG베스트샵 중랑점",
+    "region": "서울특별시 중랑구",
+    "category": "LG베스트샵"
+  },
+  {
+    "storeName": "LH강남8단지",
+    "region": "서울특별시 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "LH삼성도시형생활주택",
+    "region": "서울특별시 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "가람아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "가양7단지 아파트",
+    "region": "서울특별시 강서구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "강남LH 1단지 이편한세상",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "강남자곡아이파크",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "개포더샵트리에",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "개포주공7단지아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "고덕그라시움아파트",
+    "region": "서울 강동구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "농인종합사회복지관",
+    "region": "서울특별시 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "대치SK VIEW 아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "도곡렉슬아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "독산역롯데캐슬아파트",
+    "region": "서울특별시 금천구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "등촌11단지아파트",
+    "region": "서울특별시 강서구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "등촌4단지아파트",
+    "region": "서울특별시 강서구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "등촌6단지아파트",
+    "region": "서울특별시 강서구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "등촌7단지아파트",
+    "region": "서울특별시 강서구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "등촌9단지아파트",
+    "region": "서울특별시 강서구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "디에이치자이개포",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "디에이치포레센트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "래미안개포루체하임",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "래미안목동아델리체아파트",
+    "region": "서울 양천구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "롯데하이마트 VIC마켓영등포점",
+    "region": "서울 영등포구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 가락점",
+    "region": "서울 송파구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 개봉점",
+    "region": "서울 구로구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 건대입구점",
+    "region": "서울 광진구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 공릉점",
+    "region": "서울 노원구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 구로점",
+    "region": "서울 구로구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 금천점",
+    "region": "서울 금천구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 김포공항롯데마트점",
+    "region": "서울 강서구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 대치점",
+    "region": "서울 강남구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 미아사거리점",
+    "region": "서울 강북구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 발산점",
+    "region": "서울 강서구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 봉천점",
+    "region": "서울 관악구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 사당점",
+    "region": "서울 동작구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 삼선교점",
+    "region": "서울 성북구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 상계점",
+    "region": "서울 노원구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 상도점",
+    "region": "서울 동작구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 상봉점",
+    "region": "서울 중랑구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 상일IC점",
+    "region": "서울 강동구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 서울역롯데마트점",
+    "region": "서울 중구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 석관점",
+    "region": "서울 성북구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 송파롯데마트점",
+    "region": "서울 송파구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 신길점",
+    "region": "서울 영등포구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 쌍문점",
+    "region": "서울 도봉구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 압구정점",
+    "region": "서울 강남구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 용두점",
+    "region": "서울 동대문구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 용산아이파크몰점",
+    "region": "서울 용산구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 월드타워점",
+    "region": "서울 송파구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 은평롯데몰점",
+    "region": "서울 은평구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 은평점",
+    "region": "서울 은평구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 잠실점",
+    "region": "서울 송파구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 장한평점",
+    "region": "서울 성동구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 중계롯데마트점",
+    "region": "서울 노원구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 창동점",
+    "region": "서울 도봉구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 천호역점",
+    "region": "서울 송파구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 청구점",
+    "region": "서울 중구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 청량리롯데마트점",
+    "region": "서울 동대문구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "롯데하이마트 화곡점",
+    "region": "서울 양천구",
+    "category": "롯데하이마트"
+  },
+  {
+    "storeName": "번동3단지 아파트",
+    "region": "서울특별시 강북구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "삼성스토어 강동",
+    "region": "서울특별시 강동구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 강서",
+    "region": "서울특별시 강서구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 개봉",
+    "region": "서울특별시 구로구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 관악봉천",
+    "region": "서울특별시 관악구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 광진",
+    "region": "서울특별시 광진구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 금천",
+    "region": "서울특별시 금천구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 노원",
+    "region": "서울특별시 노원구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 대치",
+    "region": "서울시 강남구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 도곡",
+    "region": "서울특별시 강남구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 도봉쌍문",
+    "region": "서울특별시 도봉구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 마곡",
+    "region": "서울시 강서구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 마포",
+    "region": "서울시 마포구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 문정",
+    "region": "서울시 송파구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 미아",
+    "region": "서울특별시 강북구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 방배",
+    "region": "서울특별시 서초구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 상도",
+    "region": "서울특별시 동작구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 서초",
+    "region": "서울특별시 서초구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 송파",
+    "region": "서울특별시 송파구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 수색",
+    "region": "서울특별시 은평구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 신림",
+    "region": "서울특별시 관악구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 신정",
+    "region": "서울특별시 양천구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 영등포",
+    "region": "서울특별시 영등포구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 왕십리",
+    "region": "서울특별시 성동구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 용산",
+    "region": "서울특별시 용산구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 은평불광",
+    "region": "서울특별시 은평구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 청담",
+    "region": "서울 강남구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "삼성스토어 홍대",
+    "region": "서울특별시 마포구",
+    "category": "삼성디지털프라자"
+  },
+  {
+    "storeName": "서울시청자미디어센터",
+    "region": "서울특별시 성북구",
+    "category": "지자체(구청, 행정복지센터 등)"
+  },
+  {
+    "storeName": "수서아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "수서한아름아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "신림1단지",
+    "region": "서울특별시 관악구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "아카데미스위트아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "역삼경남아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "역삼자이아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "염리종합사회복지관",
+    "region": "서울특별시 마포구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "영등포 문래롯데캐슬",
+    "region": "서울특별시 영등포구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "월계주공1단지",
+    "region": "서울특별시 노원구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "중계9단지",
+    "region": "서울특별시 노원구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "청담래미안로이뷰",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "청담린든그로브아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "청담자이아파트",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  },
+  {
+    "storeName": "타워팰리스G동",
+    "region": "서울 강남구",
+    "category": "공동주택(아파트 등)"
+  }
+]
