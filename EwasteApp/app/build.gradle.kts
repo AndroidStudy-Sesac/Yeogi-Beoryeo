@@ -23,6 +23,9 @@ android {
     val naverId = localProperties.getProperty("NAVER_CLIENT_ID")?.trim()
         ?: throw GradleException("local.properties에 NAVER_CLIENT_ID를 추가해야 합니다.")
 
+    val publicDataKey = localProperties.getProperty("PUBLIC_DATA_SERVICE_KEY")?.trim()
+        ?: throw GradleException("local.properties에 PUBLIC_DATA_SERVICE_KEY를 추가해야 합니다.")
+
     defaultConfig {
         applicationId = "com.team.yeogibeoryeo"
         minSdk = 26
@@ -34,6 +37,7 @@ android {
 
         manifestPlaceholders["NAVER_CLIENT_ID"] = naverId
         buildConfigField("String", "NAVER_CLIENT_ID", "\"$naverId\"")
+        buildConfigField("String", "PUBLIC_DATA_SERVICE_KEY", "\"$publicDataKey\"")
     }
 
     buildTypes {

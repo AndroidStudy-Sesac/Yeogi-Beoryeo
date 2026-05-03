@@ -20,17 +20,17 @@ import com.naver.maps.map.compose.rememberCameraPositionState
 fun EwasteMapScreen() {
     val context = LocalContext.current
 
-    val stores = remember {
+    val stores: List<EwasteStore> = remember {
         loadEwasteStores(context)
     }
 
-    val validStores = stores.filter {
-        it.latitude != null && it.longitude != null
+    val validStores = stores.filter { store ->
+        store.latitude != null && store.longitude != null
     }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition(
-            LatLng(37.5665, 126.9780), // 서울시청 근처
+            LatLng(37.5665, 126.9780),
             11.0
         )
     }
@@ -43,16 +43,18 @@ fun EwasteMapScreen() {
             cameraPositionState = cameraPositionState
         ) {
             validStores.forEach { store ->
-                Marker(
-                    state = MarkerState(
-                        position = LatLng(
-                            store.latitude!!,
-                            store.longitude!!
-                        )
-                    ),
-                    captionText = store.storeName,
-                    subCaptionText = store.category
-                )
+                val lat = store.latitude
+                val lng = store.longitude
+
+                if (lat != null && lng != null) {
+                    Marker(
+                        state = MarkerState(
+                            position = LatLng(lat, lng)
+                        ),
+                        captionText = store.storeName,
+                        subCaptionText = store.category
+                    )
+                }
             }
         }
 
