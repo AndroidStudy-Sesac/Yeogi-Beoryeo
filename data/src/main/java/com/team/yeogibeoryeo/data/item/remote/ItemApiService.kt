@@ -1,3 +1,15 @@
 package com.team.yeogibeoryeo.data.item.remote
 
-// /getItem API 자리
+import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideResponseDto
+import retrofit2.http.GET
+import retrofit2.http.Query
+
+interface ItemApiService {
+    @GET("getItem")
+    suspend fun getItem(
+        @Query(value = "serviceKey", encoded = true) serviceKey: String,
+        @Query("pageNo") pageNo: Int,
+        @Query("numOfRows") numOfRows: Int,
+        @Query("itemNm") itemNm: String,
+    ): ItemGuideResponseDto
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "name": "종량제봉투",
+    "category": "GENERAL",
+    "subCategory": null,
+    "method": "종량제봉투",
+    "tip": "일반쓰레기는 종량제봉투에 담아 배출합니다.",
+    "isRecyclable": false
+  },
+  {
+    "name": "이불",
+    "category": "LARGE_WASTE",
+    "subCategory": null,
+    "method": "대형폐기물",
+    "tip": "지자체 대형폐기물 신고 후 배출합니다. 얇은 이불은 종량제봉투에 담아 배출 가능한 경우도 있습니다.",
+    "isRecyclable": false
+  },
+  {
+    "name": "베개",
+    "category": "LARGE_WASTE",
+    "subCategory": null,
+    "method": "대형폐기물",
+    "tip": "지자체 대형폐기물 신고 후 배출합니다.",
+    "isRecyclable": false
+  },
+  {
+    "name": "우산",
+    "category": "LARGE_WASTE",
+    "subCategory": null,
+    "method": "대형폐기물",
+    "tip": "살대(금속)와 천을 분리해 각각 고철, 종량제봉투로 배출 가능한 지역도 있습니다.",
+    "isRecyclable": false
+  },
+  {
+    "name": "전지(AA·AAA)",
+    "category": "ELECTRONICS",
+    "subCategory": "BATTERY",
+    "method": "전용수거함",
+    "tip": "마트, 편의점, 주민센터 등에 설치된 건전지 전용수거함에 배출합니다.",
+    "isRecyclable": true
+  },
+  {
+    "name": "휴대폰",
+    "category": "ELECTRONICS",
+    "subCategory": "MOBILE_PHONE",
+    "method": "전용수거함",
+    "tip": "폐휴대폰 배출처 또는 중소형 폐가전 수거함에 배출합니다.",
+    "isRecyclable": true
+  }
+]
