@@ -3,16 +3,21 @@ package com.team.yeogibeoryeo.data.item.repository
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.mapper.toDomain
 import com.team.yeogibeoryeo.data.item.remote.datasource.ItemRemoteDataSource
+import com.team.yeogibeoryeo.data.common.di.PublicDataServiceKey
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalRecyclability
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
+import javax.inject.Inject
 
-class DisposalItemGuideRepositoryImpl(
+class DisposalItemGuideRepositoryImpl
+    @Inject
+    constructor(
     private val remoteDataSource: ItemRemoteDataSource,
     private val localDataSource: ItemCategoryLocalSource,
+    @param:PublicDataServiceKey
     private val serviceKey: String,
-) : DisposalItemGuideRepository {
+    ) : DisposalItemGuideRepository {
     override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> {
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) return emptyList()

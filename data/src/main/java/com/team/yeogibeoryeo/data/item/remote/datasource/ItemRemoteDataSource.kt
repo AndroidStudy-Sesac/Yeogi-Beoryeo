@@ -3,10 +3,13 @@ package com.team.yeogibeoryeo.data.item.remote.datasource
 import com.team.yeogibeoryeo.data.item.remote.ItemApiService
 import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideDto
 import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideResponseDto
+import javax.inject.Inject
 
-class ItemRemoteDataSource(
+class ItemRemoteDataSource
+    @Inject
+    constructor(
     private val itemApiService: ItemApiService,
-) {
+    ) {
     suspend fun searchItems(
         serviceKey: String,
         itemNm: String,

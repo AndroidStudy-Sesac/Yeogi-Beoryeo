@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.item.local
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -12,6 +13,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import javax.inject.Inject
 
 data class ItemGuideDetail(
     val steps: List<String>,
@@ -20,9 +22,12 @@ data class ItemGuideDetail(
     val relatedSpotTypes: List<RelatedSpotType>,
 )
 
-class ItemCategoryLocalDataSource(
+class ItemCategoryLocalDataSource
+    @Inject
+    constructor(
+    @param:ApplicationContext
     private val context: Context,
-) : ItemCategoryLocalSource {
+    ) : ItemCategoryLocalSource {
     private val json = Json { ignoreUnknownKeys = true }
 
     private fun readAsset(fileName: String): String =
