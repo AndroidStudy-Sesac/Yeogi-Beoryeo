@@ -11,9 +11,13 @@ interface CollectionSpotRepository {
         types: Set<CollectionSpotType> = emptySet()
     ): List<CollectionSpot>
 
-    suspend fun searchNearby(
+    suspend fun searchByLocation(
         coordinate: Coordinate,
         radiusMeter: Int,
         types: Set<CollectionSpotType> = emptySet()
     ): List<CollectionSpot>
+
+    suspend fun geocodeSpot(
+        spot: CollectionSpot
+    ): CollectionSpot
 }
