@@ -11,14 +11,19 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 object RegionalGuideMapper {
     fun mapToDomain(baseRegion: Region, dto: RegionalGuideItemDto): RegionalDisposalGuide {
         val accurateRegion = baseRegion.copy(
-            eupmyeondong = dto.dongName ?: baseRegion.eupmyeondong
+            eupmyeondong = dto.dongName?.trim() ?: baseRegion.eupmyeondong
         )
 
         return RegionalDisposalGuide(
             region = accurateRegion,
+            managementZoneName = dto.managementZoneName?.trim(),
+            targetRegionName = dto.dongName?.trim(),
+            disposalPlaceType = dto.disposalPlaceType?.trim(),
+            disposalPlaceDescription = dto.placeDescription?.trim(),
             schedules = RegionalWasteScheduleMapper.mapToSchedules(dto),
-            uncollectedDays = dto.uncollectedDay,
-            disposalPlaceType = dto.disposalPlaceType
+            uncollectedDays = RegionalWasteScheduleMapper.parseDays(dto.uncollectedDay),
+            departmentName = dto.departmentName?.trim(),
+            departmentPhoneNumber = dto.departmentPhoneNumber?.trim()
         )
     }
 }
