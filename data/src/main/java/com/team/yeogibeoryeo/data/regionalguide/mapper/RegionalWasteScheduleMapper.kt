@@ -8,57 +8,56 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
  * 공공데이터 API의 폐기물 종류별 필드(Prefix)를 분석하여 도메인 모델 스케줄 리스트로 변환하는 매퍼.
  */
 object RegionalWasteScheduleMapper {
+
     fun mapToSchedules(dto: RegionalGuideItemDto): List<RegionalWasteSchedule> {
-        val schedules = mutableListOf<RegionalWasteSchedule>()
+        return listOfNotNull(
+            createSchedule(RegionalWasteType.GENERAL, dto.generalDisposalDays, dto.generalStartTime, dto.generalEndTime, dto.generalMethod),
+            createSchedule(RegionalWasteType.FOOD, dto.foodDisposalDays, dto.foodStartTime, dto.foodEndTime, dto.foodMethod),
+            createSchedule(RegionalWasteType.RECYCLABLE, dto.recycleDisposalDays, dto.recycleStartTime, dto.recycleEndTime, dto.recycleMethod),
+            createSchedule(RegionalWasteType.LARGE_ITEM, dto.largeItemDisposalDays, dto.largeItemStartTime, dto.largeItemEndTime, dto.largeItemMethod)
+        )
+    }
 
-        if (!dto.generalDisposalDays.isNullOrBlank()) {
-            schedules.add(
-                RegionalWasteSchedule(
-                    wasteType = RegionalWasteType.GENERAL,
-                    disposalDays = dto.generalDisposalDays,
-                    disposalStartTime = dto.generalStartTime,
-                    disposalEndTime = dto.generalEndTime,
-                    disposalMethod = dto.generalMethod
-                )
-            )
-        }
+    private fun createSchedule(
+        type: RegionalWasteType,
+        days: String?,
+        start: String?,
+        end: String?,
+        method: String?
+    ): RegionalWasteSchedule? {
+        if (days.isNullOrBlank() && start.isNullOrBlank() &&
+            end.isNullOrBlank() && method.isNullOrBlank()) return null
 
-        if (!dto.foodDisposalDays.isNullOrBlank()) {
-            schedules.add(
-                RegionalWasteSchedule(
-                    wasteType = RegionalWasteType.FOOD,
-                    disposalDays = dto.foodDisposalDays,
-                    disposalStartTime = dto.foodStartTime,
-                    disposalEndTime = dto.foodEndTime,
-                    disposalMethod = dto.foodMethod
-                )
-            )
-        }
+        return RegionalWasteSchedule(
+            wasteType = type,
+            disposalDays = parseDays(days),
+            disposalStartTime = parseTime(start),
+            disposalEndTime = parseTime(end),
+            disposalMethod = parseMethod(method)
+        )
+    }
 
-        if (!dto.recycleDisposalDays.isNullOrBlank()) {
-            schedules.add(
-                RegionalWasteSchedule(
-                    wasteType = RegionalWasteType.RECYCLABLE,
-                    disposalDays = dto.recycleDisposalDays,
-                    disposalStartTime = dto.recycleStartTime,
-                    disposalEndTime = dto.recycleEndTime,
-                    disposalMethod = dto.recycleMethod
-                )
-            )
-        }
+    // [로직] 요일 텍스트 정제 (예: "월요일, 화요일" -> "월, 화")
+    internal fun parseDays(days: String?): String {
+        if (days.isNullOrBlank()) return "미지정"
+        return days.replace("요일", "")
+            .replace("+", ", ")
+            .split(Regex("[,/|]"))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .joinToString(", ")
+    }
 
-        if (!dto.largeItemDisposalDays.isNullOrBlank()) {
-            schedules.add(
-                RegionalWasteSchedule(
-                    wasteType = RegionalWasteType.LARGE_ITEM,
-                    disposalDays = dto.largeItemDisposalDays,
-                    disposalStartTime = dto.largeItemStartTime,
-                    disposalEndTime = dto.largeItemEndTime,
-                    disposalMethod = dto.largeItemMethod
-                )
-            )
-        }
+    // [로직] 시간 데이터 예외 처리
+    internal fun parseTime(time: String?): String? {
+        val trimmed = time?.trim()
+        return if (trimmed.isNullOrBlank() || trimmed == "00:00" || trimmed == "00:00:00") null else trimmed
+    }
 
-        return schedules
+    // [로직] 배출 방법 정제
+    internal fun parseMethod(method: String?): String {
+        if (method.isNullOrBlank()) return "지정된 배출 방법이 없습니다."
+        return method.replace(Regex("\\s+"), " ").trim()
     }
 }
