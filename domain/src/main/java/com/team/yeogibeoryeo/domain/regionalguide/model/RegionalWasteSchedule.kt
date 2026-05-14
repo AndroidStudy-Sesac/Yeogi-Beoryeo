@@ -8,13 +8,11 @@ package com.team.yeogibeoryeo.domain.regionalguide.model
  * @property disposalStartTime 배출 시작 시간
  * @property disposalEndTime 배출 종료 시간
  * @property disposalMethod 배출 방법
- * @property notice 추가 안내사항
  */
 data class RegionalWasteSchedule(
     val wasteType: RegionalWasteType,
-    val disposalDays: String,
+    val disposalDays: String? = null,
     val disposalStartTime: String? = null,
     val disposalEndTime: String? = null,
-    val disposalMethod: String? = null,
-    val notice: String? = null
+    val disposalMethod: String? = null
 )
