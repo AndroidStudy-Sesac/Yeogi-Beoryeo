@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build Android Project
@@ -28,7 +32,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-          cache: gradle
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -42,8 +45,5 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Run unit tests
-        run: ./gradlew :data:testDebugUnitTest :domain:test --no-daemon
-
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --no-daemon
+      - name: Run unit tests and build debug APK
+        run: ./gradlew :data:testDebugUnitTest :domain:test :app:assembleDebug --no-daemon
