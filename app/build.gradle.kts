@@ -40,8 +40,17 @@ android {
 
         manifestPlaceholders["NAVER_CLIENT_ID"] = naverClientId
 
-        buildConfigField("String", "NAVER_CLIENT_ID", "\"$naverClientId\"")
-        buildConfigField("String", "PUBLIC_DATA_SERVICE_KEY", "\"$publicDataServiceKey\"")
+        buildConfigField(
+            "String",
+            "NAVER_CLIENT_ID",
+            "\"$naverClientId\"",
+        )
+
+        buildConfigField(
+            "String",
+            "PUBLIC_DATA_SERVICE_KEY",
+            "\"$publicDataServiceKey\"",
+        )
     }
 
     buildTypes {
@@ -49,7 +58,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -83,7 +92,9 @@ dependencies {
     implementation(libs.bundles.coroutines)
     implementation(libs.bundles.naver.map)
 
+    // Hilt
     implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)

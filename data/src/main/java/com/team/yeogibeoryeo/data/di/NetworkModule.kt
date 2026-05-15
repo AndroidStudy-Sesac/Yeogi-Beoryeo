@@ -1,35 +1,62 @@
 package com.team.yeogibeoryeo.data.di
 
-import com.team.yeogibeoryeo.data.item.remote.ItemApiService
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val WASTE_RECYCLING_BASE_URL = "https://apis.data.go.kr/1482000/WasteRecyclingService/"
+
+    private const val BASE_URL = "https://apis.data.go.kr/B552584/RecyclingInfoService/"
 
     @Provides
     @Singleton
-    fun provideJson(): Json = Json { ignoreUnknownKeys = true }
+    fun provideJson(): Json {
+        return Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+        }
+    }
 
     @Provides
     @Singleton
-    fun provideWasteRecyclingRetrofit(json: Json): Retrofit =
-        Retrofit
-            .Builder()
-            .baseUrl(WASTE_RECYCLING_BASE_URL)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+    fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor {
+        return HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        httpLoggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(httpLoggingInterceptor)
             .build()
+    }
 
     @Provides
     @Singleton
-    fun provideItemApiService(retrofit: Retrofit): ItemApiService = retrofit.create(ItemApiService::class.java)
+    fun provideRetrofit(
+        json: Json,
+        okHttpClient: OkHttpClient,
+    ): Retrofit {
+        val contentType = "application/json".toMediaType()
+
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
 }
