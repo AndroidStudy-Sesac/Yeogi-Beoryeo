@@ -1,6 +1,6 @@
 package com.team.yeogibeoryeo.data.spot.repository
 
-import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
+import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.spot.geocoder.SpotGeocoder
 import com.team.yeogibeoryeo.data.spot.mapper.SpotMapper
 import com.team.yeogibeoryeo.data.spot.remote.datasource.SpotRemoteDataSource
@@ -14,7 +14,7 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     private val remoteDataSource: SpotRemoteDataSource,
     private val spotMapper: SpotMapper,
     private val spotGeocoder: SpotGeocoder,
-    private val publicDataKeyProvider: PublicDataKeyProvider,
+    private val publicDataKeyProvider: AppKeyProvider,
 ) : CollectionSpotRepository {
 
     override suspend fun searchByKeyword(
@@ -22,7 +22,7 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         types: Set<CollectionSpotType>,
     ): List<CollectionSpot> {
         val spots = remoteDataSource.searchByKeyword(
-            serviceKey = publicDataKeyProvider.serviceKey,
+            serviceKey = publicDataKeyProvider.publicDataServiceKey,
             keyword = keyword,
         ).let { dtoList ->
             spotMapper.mapToDomainList(dtoList)
@@ -39,7 +39,7 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         types: Set<CollectionSpotType>,
     ): List<CollectionSpot> {
         val spots = remoteDataSource.searchByLocation(
-            serviceKey = publicDataKeyProvider.serviceKey,
+            serviceKey = publicDataKeyProvider.publicDataServiceKey,
             latitude = coordinate.latitude,
             longitude = coordinate.longitude,
             radiusMeter = radiusMeter,
