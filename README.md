@@ -233,10 +233,10 @@ API 응답은 기본적으로 다음 두 필드를 사용합니다.
 API 키는 `local.properties`에 저장하고 `BuildConfig`를 통해 주입합니다.
 
 ```properties
-PUBLIC_DATA_SERVICE_KEY=공공데이터포털_인코딩된_서비스키
+PUBLIC_DATA_SERVICE_KEY=공공데이터포털_디코딩된_서비스키
 ```
 
-`ItemApiService`는 `serviceKey`를 `encoded = true`로 전달하므로, 현재 규칙은 공공데이터포털에서 제공하는 인코딩된 키를 저장하는 방식입니다.
+`ItemApiService`는 `serviceKey`를 일반 쿼리 파라미터로 전달하므로, 현재 규칙은 공공데이터포털에서 제공하는 디코딩된 키를 저장하고 Retrofit이 요청 시 필요한 인코딩을 처리하도록 맡기는 방식입니다.
 
 ## API 응답 코드 처리
 
