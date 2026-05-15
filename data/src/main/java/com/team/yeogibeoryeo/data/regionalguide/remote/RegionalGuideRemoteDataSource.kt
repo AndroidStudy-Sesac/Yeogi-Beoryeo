@@ -1,0 +1,39 @@
+package com.team.yeogibeoryeo.data.regionalguide.remote
+
+import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
+import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
+import javax.inject.Inject
+
+/**
+ * 데이터 소스를 추상화한 인터페이스.
+ */
+interface RegionalGuideDataSource {
+    suspend fun fetchRegionalGuides(sigunguName: String): Result<List<RegionalGuideItemDto>>
+}
+
+/**
+ * 행정안전부 지역별 배출 가이드 데이터 패치를 담당하는 원격 데이터 소스(Remote DataSource).
+ */
+class RegionalGuideRemoteDataSource @Inject constructor(
+    private val apiService: RegionalGuideApiService,
+    private val keyProvider: PublicDataKeyProvider
+) : RegionalGuideDataSource {
+
+    override suspend fun fetchRegionalGuides(sigunguName: String): Result<List<RegionalGuideItemDto>> {
+        return try {
+            val response = apiService.getRegionalGuides(
+                serviceKey = keyProvider.serviceKey,
+                sigunguName = sigunguName
+            )
+
+            if (response.isSuccessful) {
+                val items = response.body()?.response?.body?.items?.item ?: emptyList()
+                Result.success(items)
+            } else {
+                Result.failure(Exception("API 통신 실패 [HTTP ${response.code()}]: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
