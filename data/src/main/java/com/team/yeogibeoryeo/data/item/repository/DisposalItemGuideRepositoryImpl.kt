@@ -1,9 +1,9 @@
 package com.team.yeogibeoryeo.data.item.repository
 
+import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.mapper.toDomain
 import com.team.yeogibeoryeo.data.item.remote.datasource.ItemRemoteDataSource
-import com.team.yeogibeoryeo.data.common.di.PublicDataServiceKey
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalRecyclability
@@ -15,8 +15,7 @@ class DisposalItemGuideRepositoryImpl
     constructor(
     private val remoteDataSource: ItemRemoteDataSource,
     private val localDataSource: ItemCategoryLocalSource,
-    @param:PublicDataServiceKey
-    private val serviceKey: String,
+    private val publicDataKeyProvider: PublicDataKeyProvider,
     ) : DisposalItemGuideRepository {
     override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> {
         val normalizedQuery = query.trim()
@@ -33,7 +32,7 @@ class DisposalItemGuideRepositoryImpl
         val remoteItems =
             remoteDataSource
                 .searchItems(
-                    serviceKey = serviceKey,
+                    serviceKey = publicDataKeyProvider.serviceKey,
                     itemNm = resolvedQuery,
                 ).map { it.toDomain(categoryMap, relatedSpots, guideDetails, guideDetailAliases) }
                 .distinctBy { it.name }

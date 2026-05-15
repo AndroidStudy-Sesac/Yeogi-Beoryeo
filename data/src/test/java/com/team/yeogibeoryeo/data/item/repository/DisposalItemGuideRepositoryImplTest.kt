@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.item.repository
 
+import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.remote.ItemApiService
@@ -35,7 +36,7 @@ class DisposalItemGuideRepositoryImplTest {
                             synonyms = mapOf("캔" to "음료캔"),
                             categoryMap = mapOf("음료캔" to (DisposalCategory.METAL to DisposalSubCategory.ALUMINUM_CAN)),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("캔")
@@ -54,7 +55,7 @@ class DisposalItemGuideRepositoryImplTest {
                 DisposalItemGuideRepositoryImpl(
                     remoteDataSource = recordingRemote(capturedQueries, results = listOf("종이" to "재활용폐기물")),
                     localDataSource = FakeLocalSource(),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             repository.searchItemGuides("종이")
@@ -73,7 +74,7 @@ class DisposalItemGuideRepositoryImplTest {
                         FakeLocalSource(
                             synonyms = mapOf("휴대폰" to "핸드폰"),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             repository.searchItemGuides("  휴대폰  ")
@@ -89,7 +90,7 @@ class DisposalItemGuideRepositoryImplTest {
                 DisposalItemGuideRepositoryImpl(
                     remoteDataSource = recordingRemote(capturedQueries, results = listOf("종이" to "재활용폐기물")),
                     localDataSource = FakeLocalSource(),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("   ")
@@ -112,7 +113,7 @@ class DisposalItemGuideRepositoryImplTest {
                                 ),
                         ),
                     localDataSource = FakeLocalSource(),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("종이")
@@ -128,7 +129,7 @@ class DisposalItemGuideRepositoryImplTest {
                 DisposalItemGuideRepositoryImpl(
                     remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource = FakeLocalSource(localItems = listOf(localItem)),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("이불")
@@ -149,7 +150,7 @@ class DisposalItemGuideRepositoryImplTest {
                             synonyms = mapOf("캔" to "음료캔"),
                             localItems = listOf(localItem),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("캔")
@@ -166,7 +167,7 @@ class DisposalItemGuideRepositoryImplTest {
                 DisposalItemGuideRepositoryImpl(
                     remoteDataSource = fakeRemote(results = listOf("종이" to "재활용폐기물")),
                     localDataSource = FakeLocalSource(localItems = listOf(localItem)),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("종이")
@@ -190,7 +191,7 @@ class DisposalItemGuideRepositoryImplTest {
                                     "골판지" to (DisposalCategory.PAPER to DisposalSubCategory.CARDBOARD),
                                 ),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             repository.getCategoryGuides(DisposalCategory.PAPER)
@@ -212,7 +213,7 @@ class DisposalItemGuideRepositoryImplTest {
                                     "유리병" to (DisposalCategory.GLASS to DisposalSubCategory.GLASS_BOTTLE),
                                 ),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.PAPER)
@@ -232,7 +233,7 @@ class DisposalItemGuideRepositoryImplTest {
                         FakeLocalSource(
                             categoryMap = mapOf("신문지" to (DisposalCategory.PAPER to DisposalSubCategory.NEWSPAPER)),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.PAPER)
@@ -250,7 +251,7 @@ class DisposalItemGuideRepositoryImplTest {
                         FakeLocalSource(
                             categoryMap = mapOf("이불" to (DisposalCategory.LARGE_WASTE to null)),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.LARGE_WASTE)
@@ -279,7 +280,7 @@ class DisposalItemGuideRepositoryImplTest {
                                         ),
                                 ),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.PAPER)
@@ -302,7 +303,7 @@ class DisposalItemGuideRepositoryImplTest {
                             categoryMap = mapOf("이불" to (DisposalCategory.LARGE_WASTE to null)),
                             localItems = listOf(localItem),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.LARGE_WASTE)
@@ -321,7 +322,7 @@ class DisposalItemGuideRepositoryImplTest {
                             categoryMap = mapOf("냉장고" to (DisposalCategory.ELECTRONICS to DisposalSubCategory.LARGE_APPLIANCE)),
                             relatedSpots = mapOf("냉장고" to listOf(RelatedSpotType.FREE_PICKUP, RelatedSpotType.E_WASTE_BIN)),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.ELECTRONICS)
@@ -342,7 +343,7 @@ class DisposalItemGuideRepositoryImplTest {
                         FakeLocalSource(
                             categoryMap = mapOf("미상" to (DisposalCategory.OTHER to null)),
                         ),
-                    serviceKey = "key",
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.OTHER)
@@ -356,7 +357,7 @@ class DisposalItemGuideRepositoryImplTest {
             DisposalItemGuideRepositoryImpl(
                 remoteDataSource = fakeRemote(results = emptyList()),
                 localDataSource = FakeLocalSource(),
-                serviceKey = "key",
+                publicDataKeyProvider = fakePublicDataKeyProvider,
             )
 
         assertEquals(DisposalCategory.entries.toList(), repository.getCategories())
@@ -429,6 +430,11 @@ class DisposalItemGuideRepositoryImplTest {
             isRecyclable = false,
             relatedSpotTypes = null,
         )
+
+    private val fakePublicDataKeyProvider =
+        object : PublicDataKeyProvider {
+            override val serviceKey: String = "key"
+        }
 
     private class FakeLocalSource(
         private val categoryMap: Map<String, Pair<DisposalCategory, DisposalSubCategory?>> = emptyMap(),
