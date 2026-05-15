@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.data.di
+package com.team.yeogibeoryeo.data.item.di
 
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalDataSource
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class DataBindModule {
+abstract class ItemBindModule {
     @Binds
     @Singleton
     abstract fun bindItemCategoryLocalSource(
