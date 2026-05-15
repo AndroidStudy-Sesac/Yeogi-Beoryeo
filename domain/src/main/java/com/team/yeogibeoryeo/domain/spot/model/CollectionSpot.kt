@@ -1,3 +1,12 @@
 package com.team.yeogibeoryeo.domain.spot.model
 
-//수빈님 지도 장소 모델 자리
+data class CollectionSpot(
+    val id: String,
+    val name: String,
+    val type: CollectionSpotType,
+    val address: String,
+    val detailLocation: String?,
+    val coordinate: Coordinate?,
+    val distanceMeter: Int? = null,
+    val isBookmarked: Boolean = false
+)
