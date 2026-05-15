@@ -1,6 +1,6 @@
 package com.team.yeogibeoryeo.data.spot.di
 
-import com.team.yeogibeoryeo.data.item.di.WasteRecyclingRetrofit
+import com.team.yeogibeoryeo.data.network.di.WasteRecyclingRetrofit
 import com.team.yeogibeoryeo.data.spot.remote.SpotApiService
 import dagger.Module
 import dagger.Provides

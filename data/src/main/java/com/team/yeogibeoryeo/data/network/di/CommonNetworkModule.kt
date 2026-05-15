@@ -1,23 +1,17 @@
-package com.team.yeogibeoryeo.data.di
+package com.team.yeogibeoryeo.data.network.di
 
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
-
-    private const val HOUSEHOLD_WASTE_INFO_BASE_URL =
-        "https://apis.data.go.kr/1741000/household_waste_info/"
+object CommonNetworkModule {
 
     @Provides
     @Singleton
@@ -43,22 +37,6 @@ object NetworkModule {
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(httpLoggingInterceptor)
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    @HouseholdWasteInfoRetrofit
-    fun provideHouseholdWasteInfoRetrofit(
-        json: Json,
-        okHttpClient: OkHttpClient,
-    ): Retrofit {
-        val contentType = "application/json".toMediaType()
-
-        return Retrofit.Builder()
-            .baseUrl(HOUSEHOLD_WASTE_INFO_BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(json.asConverterFactory(contentType))
             .build()
     }
 }

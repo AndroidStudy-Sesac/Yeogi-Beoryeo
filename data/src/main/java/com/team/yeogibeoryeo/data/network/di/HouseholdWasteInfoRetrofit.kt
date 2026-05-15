@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.data.di
+package com.team.yeogibeoryeo.data.network.di
 
 import javax.inject.Qualifier
 

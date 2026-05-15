@@ -1,6 +1,6 @@
 package com.team.yeogibeoryeo.data.regionalguide.di
 
-import com.team.yeogibeoryeo.data.di.HouseholdWasteInfoRetrofit
+import com.team.yeogibeoryeo.data.network.di.HouseholdWasteInfoRetrofit
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideApiService
 import dagger.Module
 import dagger.Provides
