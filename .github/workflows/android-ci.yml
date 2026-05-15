@@ -5,11 +5,29 @@ on:
     branches:
       - develop
       - main
+    paths:
+      - '.github/workflows/android-ci.yml'
+      - 'app/**'
+      - 'data/**'
+      - 'domain/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
 
   push:
     branches:
       - develop
       - main
+    paths:
+      - '.github/workflows/android-ci.yml'
+      - 'app/**'
+      - 'data/**'
+      - 'domain/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
 
 permissions:
   contents: read
@@ -22,6 +40,7 @@ jobs:
   build:
     name: Build Android Project
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -46,4 +65,4 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run unit tests and build debug APK
-        run: ./gradlew :data:testDebugUnitTest :domain:test :app:assembleDebug --no-daemon
+        run: ./gradlew :data:testDebugUnitTest :domain:test :app:assembleDebug --no-daemon --stacktrace
