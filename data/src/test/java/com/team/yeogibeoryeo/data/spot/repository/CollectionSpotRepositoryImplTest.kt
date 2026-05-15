@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.spot.repository
 
+import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
 import com.team.yeogibeoryeo.data.spot.geocoder.SpotGeocoder
 import com.team.yeogibeoryeo.data.spot.mapper.SpotMapper
 import com.team.yeogibeoryeo.data.spot.remote.SpotApiService
@@ -30,6 +31,7 @@ class CollectionSpotRepositoryImplTest {
             keyword = "문래동",
         )
 
+        assertEquals(TEST_SERVICE_KEY, apiService.requestedServiceKey)
         assertEquals("문래동", apiService.requestedAddr)
         assertEquals(2, result.size)
 
@@ -56,6 +58,7 @@ class CollectionSpotRepositoryImplTest {
             types = setOf(CollectionSpotType.RECYCLING_CENTER),
         )
 
+        assertEquals(TEST_SERVICE_KEY, apiService.requestedServiceKey)
         assertEquals(1, result.size)
         assertEquals("재활용센터", result.first().name)
         assertEquals(CollectionSpotType.RECYCLING_CENTER, result.first().type)
@@ -76,6 +79,7 @@ class CollectionSpotRepositoryImplTest {
             radiusMeter = 500,
         )
 
+        assertEquals(TEST_SERVICE_KEY, apiService.requestedServiceKey)
         assertEquals(" ", apiService.requestedAddr)
         assertEquals(37.5182396969791, apiService.requestedLatitude)
         assertEquals(126.895880210522, apiService.requestedLongitude)
@@ -94,6 +98,7 @@ class CollectionSpotRepositoryImplTest {
             keyword = "약수동",
         )
 
+        assertEquals(TEST_SERVICE_KEY, apiService.requestedServiceKey)
         assertEquals(emptyList<Any>(), result)
     }
 
@@ -104,7 +109,12 @@ class CollectionSpotRepositoryImplTest {
             remoteDataSource = SpotRemoteDataSource(apiService),
             spotMapper = SpotMapper(),
             spotGeocoder = FakeSpotGeocoder(),
+            publicDataKeyProvider = FakePublicDataKeyProvider(),
         )
+    }
+
+    private class FakePublicDataKeyProvider : PublicDataKeyProvider {
+        override val serviceKey: String = TEST_SERVICE_KEY
     }
 
     private class FakeSpotGeocoder : SpotGeocoder {
@@ -153,6 +163,7 @@ class CollectionSpotRepositoryImplTest {
     }
 
     private companion object {
+        const val TEST_SERVICE_KEY = "test-service-key"
 
         fun createNormalResponse(): SpotResponseDto {
             return SpotResponseDto(
