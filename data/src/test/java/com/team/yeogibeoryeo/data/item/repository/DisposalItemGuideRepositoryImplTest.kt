@@ -1,6 +1,6 @@
 package com.team.yeogibeoryeo.data.item.repository
 
-import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
+import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.remote.ItemApiService
@@ -432,8 +432,9 @@ class DisposalItemGuideRepositoryImplTest {
         )
 
     private val fakePublicDataKeyProvider =
-        object : PublicDataKeyProvider {
-            override val serviceKey: String = "key"
+        object : AppKeyProvider {
+            override val publicDataServiceKey: String = "key"
+            override val naverClientId: String = "naver-client-id"
         }
 
     private class FakeLocalSource(

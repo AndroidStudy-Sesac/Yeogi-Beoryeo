@@ -1,7 +1,7 @@
 package com.team.yeogibeoryeo.core.di
 
-import com.team.yeogibeoryeo.core.key.BuildConfigPublicDataKeyProvider
-import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
+import com.team.yeogibeoryeo.core.key.BuildConfigAppKeyProvider
+import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -14,7 +14,7 @@ abstract class KeyProviderModule {
 
     @Binds
     @Singleton
-    abstract fun bindPublicDataKeyProvider(
-        buildConfigPublicDataKeyProvider: BuildConfigPublicDataKeyProvider,
-    ): PublicDataKeyProvider
+    abstract fun bindAppKeyProvider(
+        buildConfigAppKeyProvider: BuildConfigAppKeyProvider,
+    ): AppKeyProvider
 }

@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.regionalguide.di
 
+import com.team.yeogibeoryeo.data.network.di.HouseholdWasteInfoRetrofit
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideApiService
 import dagger.Module
 import dagger.Provides
@@ -14,7 +15,9 @@ object RegionalGuideNetworkModule {
 
     @Provides
     @Singleton
-    fun provideRegionalGuideApiService(retrofit: Retrofit): RegionalGuideApiService {
+    fun provideRegionalGuideApiService(
+        @HouseholdWasteInfoRetrofit retrofit: Retrofit,
+    ): RegionalGuideApiService {
         return retrofit.create(RegionalGuideApiService::class.java)
     }
 }
