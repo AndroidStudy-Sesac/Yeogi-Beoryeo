@@ -1,0 +1,95 @@
+{
+  "냉장고": [
+    "FREE_PICKUP",
+    "E_WASTE_BIN",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "세탁기": [
+    "FREE_PICKUP",
+    "E_WASTE_BIN"
+  ],
+  "에어컨": [
+    "FREE_PICKUP",
+    "E_WASTE_BIN"
+  ],
+  "텔레비전": [
+    "FREE_PICKUP",
+    "E_WASTE_BIN",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "TV": [
+    "FREE_PICKUP",
+    "E_WASTE_BIN",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "전자레인지": [
+    "FREE_PICKUP",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "청소기": [
+    "FREE_PICKUP",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "선풍기": [
+    "FREE_PICKUP",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "휴대폰": [
+    "FREE_PICKUP",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "스마트폰": [
+    "FREE_PICKUP",
+    "SMALL_E_WASTE_BIN"
+  ],
+  "건전지": [
+    "DEDICATED_BIN"
+  ],
+  "배터리": [
+    "DEDICATED_BIN"
+  ],
+  "형광등": [
+    "DEDICATED_BIN"
+  ],
+  "LED등": [
+    "DEDICATED_BIN"
+  ],
+  "투명페트병": [
+    "RECYCLING_BIN",
+    "DEDICATED_BIN"
+  ],
+  "무색페트병": [
+    "RECYCLING_BIN",
+    "DEDICATED_BIN"
+  ],
+  "유리병": [
+    "RECYCLING_BIN",
+    "DEPOSIT_REFUND"
+  ],
+  "소주병": [
+    "RECYCLING_BIN",
+    "DEPOSIT_REFUND"
+  ],
+  "맥주병": [
+    "RECYCLING_BIN",
+    "DEPOSIT_REFUND"
+  ],
+  "헌옷": [
+    "DEDICATED_BIN"
+  ],
+  "의류": [
+    "DEDICATED_BIN"
+  ],
+  "신발": [
+    "DEDICATED_BIN"
+  ],
+  "페인트": [
+    "CONTACT_REQUIRED"
+  ],
+  "농약": [
+    "CONTACT_REQUIRED"
+  ],
+  "폐유": [
+    "CONTACT_REQUIRED"
+  ]
+}
