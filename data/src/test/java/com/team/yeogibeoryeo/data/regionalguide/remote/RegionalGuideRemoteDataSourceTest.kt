@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.regionalguide.remote
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -8,6 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import retrofit2.Retrofit
 
@@ -22,14 +24,19 @@ import retrofit2.Retrofit
  * - 실제 네트워크 환경이 필요합니다.
  * - API Key 설정이 필요합니다.
  * - 외부 API 상태에 따라 테스트가 실패할 수 있습니다.
+ * - CI에서는 실행하지 않습니다.
  */
+@Ignore("실제 API Key와 네트워크 환경이 필요한 수동 Integration Test이므로 CI에서 제외합니다.")
 class RegionalGuideRemoteDataSourceTest {
 
     private lateinit var dataSource: RegionalGuideRemoteDataSource
 
     @Before
     fun setUp() {
-        val json = Json { ignoreUnknownKeys = true }
+        val json = Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+        }
 
         val loggingInterceptor = HttpLoggingInterceptor { message ->
             println(message)
@@ -50,7 +57,11 @@ class RegionalGuideRemoteDataSourceTest {
             .build()
 
         val apiService = retrofit.create(RegionalGuideApiService::class.java)
-        dataSource = RegionalGuideRemoteDataSource(apiService)
+
+        dataSource = RegionalGuideRemoteDataSource(
+            apiService = apiService,
+            keyProvider = FakePublicDataKeyProvider(),
+        )
     }
 
     @Test
@@ -74,5 +85,9 @@ class RegionalGuideRemoteDataSourceTest {
         )
 
         assertTrue("데이터가 비어있습니다.", !items.isNullOrEmpty())
+    }
+
+    private class FakePublicDataKeyProvider : PublicDataKeyProvider {
+        override val serviceKey: String = "test-service-key"
     }
 }
