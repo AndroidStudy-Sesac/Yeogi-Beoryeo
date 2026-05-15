@@ -1,6 +1,6 @@
 package com.team.yeogibeoryeo.data.regionalguide.remote
 
-import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
+import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import javax.inject.Inject
 
@@ -16,13 +16,13 @@ interface RegionalGuideDataSource {
  */
 class RegionalGuideRemoteDataSource @Inject constructor(
     private val apiService: RegionalGuideApiService,
-    private val keyProvider: PublicDataKeyProvider
+    private val keyProvider: AppKeyProvider
 ) : RegionalGuideDataSource {
 
     override suspend fun fetchRegionalGuides(sigunguName: String): Result<List<RegionalGuideItemDto>> {
         return try {
             val response = apiService.getRegionalGuides(
-                serviceKey = keyProvider.serviceKey,
+                serviceKey = keyProvider.publicDataServiceKey,
                 sigunguName = sigunguName
             )
 

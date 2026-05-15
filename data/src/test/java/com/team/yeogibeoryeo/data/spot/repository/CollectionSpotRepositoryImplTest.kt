@@ -1,6 +1,6 @@
 package com.team.yeogibeoryeo.data.spot.repository
 
-import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
+import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.spot.geocoder.SpotGeocoder
 import com.team.yeogibeoryeo.data.spot.mapper.SpotMapper
 import com.team.yeogibeoryeo.data.spot.remote.SpotApiService
@@ -113,8 +113,9 @@ class CollectionSpotRepositoryImplTest {
         )
     }
 
-    private class FakePublicDataKeyProvider : PublicDataKeyProvider {
-        override val serviceKey: String = TEST_SERVICE_KEY
+    private class FakePublicDataKeyProvider : AppKeyProvider {
+        override val publicDataServiceKey: String = TEST_SERVICE_KEY
+        override val naverClientId: String = "naver-client-id"
     }
 
     private class FakeSpotGeocoder : SpotGeocoder {

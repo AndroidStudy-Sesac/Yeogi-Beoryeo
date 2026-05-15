@@ -1,7 +1,7 @@
 package com.team.yeogibeoryeo.data.regionalguide.remote
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import com.team.yeogibeoryeo.data.core.key.PublicDataKeyProvider
+import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -87,7 +87,8 @@ class RegionalGuideRemoteDataSourceTest {
         assertTrue("데이터가 비어있습니다.", !items.isNullOrEmpty())
     }
 
-    private class FakePublicDataKeyProvider : PublicDataKeyProvider {
-        override val serviceKey: String = "test-service-key"
+    private class FakePublicDataKeyProvider : AppKeyProvider {
+        override val publicDataServiceKey: String = "test-service-key"
+        override val naverClientId: String = "naver-client-id"
     }
 }

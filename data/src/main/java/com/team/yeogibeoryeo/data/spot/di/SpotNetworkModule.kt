@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.spot.di
 
+import com.team.yeogibeoryeo.data.item.di.WasteRecyclingRetrofit
 import com.team.yeogibeoryeo.data.spot.remote.SpotApiService
 import dagger.Module
 import dagger.Provides
@@ -15,7 +16,7 @@ object SpotNetworkModule {
     @Provides
     @Singleton
     fun provideSpotApiService(
-        retrofit: Retrofit,
+        @WasteRecyclingRetrofit retrofit: Retrofit,
     ): SpotApiService {
         return retrofit.create(SpotApiService::class.java)
     }

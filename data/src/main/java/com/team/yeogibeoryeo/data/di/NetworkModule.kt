@@ -16,7 +16,8 @@ import retrofit2.Retrofit
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://apis.data.go.kr/B552584/RecyclingInfoService/"
+    private const val HOUSEHOLD_WASTE_INFO_BASE_URL =
+        "https://apis.data.go.kr/1741000/household_waste_info/"
 
     @Provides
     @Singleton
@@ -47,14 +48,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(
+    @HouseholdWasteInfoRetrofit
+    fun provideHouseholdWasteInfoRetrofit(
         json: Json,
         okHttpClient: OkHttpClient,
     ): Retrofit {
         val contentType = "application/json".toMediaType()
 
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(HOUSEHOLD_WASTE_INFO_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
