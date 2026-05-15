@@ -22,7 +22,7 @@ interface RegionalGuideApiService {
      * @param sigunguName 검색 조건: 시군구명 필터
      * @return [Response]로 감싸진 최상위 응답 DTO
      */
-    @GET("1741000/household_waste_info/info")
+    @GET("info")
     suspend fun getRegionalGuides(
         @Query("serviceKey") serviceKey: String,
         @Query("pageNo") pageNo: Int = 1,
