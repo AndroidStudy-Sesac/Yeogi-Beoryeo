@@ -16,8 +16,7 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
 ) : RegionalDisposalGuideRepository {
 
     override suspend fun getRegionalDisposalGuide(region: Region): RegionalDisposalGuide? {
-        val isSejong = region.sido?.contains("세종") == true
-        val sigungu = if (isSejong) "세종" else region.sigungu
+        val sigungu = if (region.sido == "세종특별자치시") "없음" else  region.sigungu
 
         if (sigungu.isNullOrBlank()) return null
 
