@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.data.item.repository
 import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
+import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
 import com.team.yeogibeoryeo.data.item.remote.ItemApiService
 import com.team.yeogibeoryeo.data.item.remote.datasource.ItemRemoteDataSource
 import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideBodyDto
@@ -97,6 +98,63 @@ class DisposalItemGuideRepositoryImplTest {
 
             assertTrue(results.isEmpty())
             assertTrue(capturedQueries.isEmpty())
+        }
+
+    @Test
+    fun `searchItemGuides는 품목사전 결과가 있으면 원격 API보다 우선 사용한다`() =
+        runBlocking {
+            val capturedQueries = mutableListOf<String>()
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    remoteDataSource = recordingRemote(capturedQueries, results = listOf("내열냄비" to "일반쓰레기")),
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "내열냄비",
+                                        categoryPaths = listOf(listOf("일반폐기물", "불연성종량제폐기물")),
+                                        dischargeMethods = listOf("내열냄비는 불연성 종량제봉투(마대)로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
+                )
+
+            val results = repository.searchItemGuides("내열냄비")
+
+            assertTrue(capturedQueries.isEmpty())
+            assertEquals(1, results.size)
+            assertEquals(
+                "내열냄비는 불연성 종량제봉투(마대)로 배출합니다.",
+                results.first().instructions.first().method,
+            )
+        }
+
+    @Test
+    fun `searchItemGuides는 품목사전 유사 품목도 검색한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    remoteDataSource = fakeRemote(results = emptyList()),
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "아이스박스",
+                                        similarItems = listOf("택배 박스（스티로폼）"),
+                                        categoryPaths = listOf(listOf("일반폐기물", "일반종량제폐기물")),
+                                        dischargeMethods = listOf("아이스박스는 종량제봉투로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                    publicDataKeyProvider = fakePublicDataKeyProvider,
+                )
+
+            val results = repository.searchItemGuides("박스")
+
+            assertEquals(listOf("아이스박스"), results.map { it.name })
         }
 
     @Test
@@ -431,6 +489,21 @@ class DisposalItemGuideRepositoryImplTest {
             relatedSpotTypes = null,
         )
 
+    private fun sampleDictionaryItem(
+        name: String,
+        categoryPaths: List<List<String>>,
+        dischargeMethods: List<String>,
+        similarItems: List<String> = emptyList(),
+    ): WasteDictionaryItem =
+        WasteDictionaryItem(
+            name = name,
+            categoryPaths = categoryPaths,
+            similarItems = similarItems,
+            dischargeMethods = dischargeMethods,
+            features = emptyList(),
+            notes = emptyList(),
+        )
+
     private val fakePublicDataKeyProvider =
         object : AppKeyProvider {
             override val publicDataServiceKey: String = "key"
@@ -444,6 +517,7 @@ class DisposalItemGuideRepositoryImplTest {
         private val guideDetails: Map<String, ItemGuideDetail> = emptyMap(),
         private val guideDetailAliases: Map<String, String> = emptyMap(),
         private val localItems: List<DisposalItemGuide> = emptyList(),
+        private val wasteDictionaryItems: List<WasteDictionaryItem> = emptyList(),
     ) : ItemCategoryLocalSource {
         override fun getCategoryMap() = categoryMap
 
@@ -456,5 +530,7 @@ class DisposalItemGuideRepositoryImplTest {
         override fun getGuideDetailAliases() = guideDetailAliases
 
         override fun getLocalItems() = localItems
+
+        override fun getWasteDictionaryItems() = wasteDictionaryItems
     }
 }
