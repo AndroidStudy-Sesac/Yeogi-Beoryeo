@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.data.item.repository
 import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.mapper.toDomain
+import com.team.yeogibeoryeo.data.item.mapper.toDomain as dictionaryToDomain
 import com.team.yeogibeoryeo.data.item.remote.datasource.ItemRemoteDataSource
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -28,6 +29,20 @@ class DisposalItemGuideRepositoryImpl
         val guideDetailAliases = localDataSource.getGuideDetailAliases()
 
         val resolvedQuery = synonyms[normalizedQuery] ?: normalizedQuery
+        val dictionaryItems =
+            localDataSource
+                .getWasteDictionaryItems()
+                .filter {
+                    it.name.contains(normalizedQuery, ignoreCase = true) ||
+                        it.name.contains(resolvedQuery, ignoreCase = true) ||
+                        it.similarItems.any { similarItem ->
+                            similarItem.contains(normalizedQuery, ignoreCase = true) ||
+                                similarItem.contains(resolvedQuery, ignoreCase = true)
+                        }
+                }.map { it.dictionaryToDomain() }
+                .distinctBy { it.name }
+
+        if (dictionaryItems.isNotEmpty()) return dictionaryItems
 
         val remoteItems =
             remoteDataSource

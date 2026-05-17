@@ -17,4 +17,6 @@ interface ItemCategoryLocalSource {
     fun getGuideDetailAliases(): Map<String, String>
 
     fun getLocalItems(): List<DisposalItemGuide>
+
+    fun getWasteDictionaryItems(): List<WasteDictionaryItem>
 }

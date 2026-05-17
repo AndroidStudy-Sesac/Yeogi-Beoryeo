@@ -22,6 +22,15 @@ data class ItemGuideDetail(
     val relatedSpotTypes: List<RelatedSpotType>,
 )
 
+data class WasteDictionaryItem(
+    val name: String,
+    val categoryPaths: List<List<String>>,
+    val similarItems: List<String>,
+    val dischargeMethods: List<String>,
+    val features: List<String>,
+    val notes: List<String>,
+)
+
 class ItemCategoryLocalDataSource
     @Inject
     constructor(
@@ -47,6 +56,8 @@ class ItemCategoryLocalDataSource
     override fun getGuideDetailAliases(): Map<String, String> = cachedGuideDetailAliases
 
     override fun getLocalItems(): List<DisposalItemGuide> = cachedLocalItems
+
+    override fun getWasteDictionaryItems(): List<WasteDictionaryItem> = cachedWasteDictionaryItems
 
     private val cachedCategoryMap: Map<String, Pair<DisposalCategory, DisposalSubCategory?>> by lazy {
         val raw = json.parseToJsonElement(readAsset("category_map.json")).jsonObject
@@ -78,7 +89,7 @@ class ItemCategoryLocalDataSource
     }
 
     private val cachedGuideDetails: Map<String, ItemGuideDetail> by lazy {
-        val raw = json.parseToJsonElement(readAsset("item_guide_details.json")).jsonObject
+        val raw = json.parseToJsonElement(readAsset("representative_guide_details.json")).jsonObject
         raw.entries.associate { (itemNm, value) ->
             val obj = value.jsonObject
             val relatedSpotTypes =
@@ -134,6 +145,26 @@ class ItemCategoryLocalDataSource
                 tip = tip ?: guideDetail?.tip,
                 isRecyclable = isRecyclable,
                 relatedSpotTypes = mergedRelatedSpotTypes,
+            )
+        }
+    }
+
+    private val cachedWasteDictionaryItems: List<WasteDictionaryItem> by lazy {
+        val array = json.parseToJsonElement(readAsset("item_disposal_guides.json")).jsonArray
+        array.map { element ->
+            val obj = element.jsonObject
+            WasteDictionaryItem(
+                name = obj["name"]!!.jsonPrimitive.content,
+                categoryPaths =
+                    obj["categoryPaths"]!!
+                        .jsonArray
+                        .map { path ->
+                            path.jsonArray.map { it.jsonPrimitive.content }
+                        },
+                similarItems = obj.stringList("similarItems"),
+                dischargeMethods = obj.stringList("dischargeMethods"),
+                features = obj.stringList("features"),
+                notes = obj.stringList("notes"),
             )
         }
     }

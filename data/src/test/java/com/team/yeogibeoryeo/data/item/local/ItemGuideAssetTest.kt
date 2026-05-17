@@ -18,7 +18,7 @@ class ItemGuideAssetTest {
 
     @Test
     fun `모든 가이드 별칭의 대상 키가 상세 가이드에 존재한다`() {
-        val guideDetails = parseObject("item_guide_details.json")
+        val guideDetails = parseObject("representative_guide_details.json")
         val aliases = parseObject("guide_detail_aliases.json")
 
         val missingTargets =
@@ -58,7 +58,7 @@ class ItemGuideAssetTest {
 
     @Test
     fun `모든 상세 가이드 키가 category_map에 존재한다`() {
-        val guideDetails = parseObject("item_guide_details.json")
+        val guideDetails = parseObject("representative_guide_details.json")
         val categoryMap = parseObject("category_map.json")
         val missingCategoryKeys =
             guideDetails
@@ -124,7 +124,7 @@ class ItemGuideAssetTest {
 
     @Test
     fun `상세 가이드의 relatedSpotTypes가 유효한 RelatedSpotType을 참조한다`() {
-        val map = parseObject("item_guide_details.json")
+        val map = parseObject("representative_guide_details.json")
         val invalidValues =
             map
                 .flatMap { (_, value) ->
@@ -139,5 +139,43 @@ class ItemGuideAssetTest {
         assertTrue("상세 가이드에 유효하지 않은 RelatedSpotType 값: $invalidValues", invalidValues.isEmpty())
     }
 
+    @Test
+    fun `품목사전 asset은 검색과 상세 화면에 필요한 필드를 가진다`() {
+        val array = parseArray("item_disposal_guides.json")
+        val invalidItems =
+            array.mapNotNull { element ->
+                val obj = element.jsonObject
+                val name = obj["name"]?.jsonPrimitive?.content
+                val categoryPaths = obj["categoryPaths"]?.jsonArray.orEmpty()
+                val dischargeMethods = obj["dischargeMethods"]?.jsonArray.orEmpty()
+                val hasRequiredCollections =
+                    obj["similarItems"]?.jsonArray != null &&
+                        obj["features"]?.jsonArray != null &&
+                        obj["notes"]?.jsonArray != null
+                if (name.isNullOrBlank() || categoryPaths.isEmpty() || dischargeMethods.isEmpty() || !hasRequiredCollections) {
+                    name ?: "<unknown>"
+                } else {
+                    null
+                }
+            }
+
+        assertTrue("필수 필드가 누락된 품목사전 항목: $invalidItems", invalidItems.isEmpty())
+    }
+
+    @Test
+    fun `품목사전 asset의 품목명은 중복되지 않는다`() {
+        val duplicatedNames =
+            parseArray("item_disposal_guides.json")
+                .map { it.jsonObject["name"]!!.jsonPrimitive.content }
+                .groupingBy { it }
+                .eachCount()
+                .filterValues { it > 1 }
+                .keys
+
+        assertTrue("중복된 품목사전 품목명: $duplicatedNames", duplicatedNames.isEmpty())
+    }
+
     private fun parseObject(fileName: String) = json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonObject
+
+    private fun parseArray(fileName: String) = json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonArray
 }
