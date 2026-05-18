@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.map
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -18,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.presentation.map.components.CollectionSpotNaverMap
 import com.team.yeogibeoryeo.presentation.map.components.EmptySpotResult
 import com.team.yeogibeoryeo.presentation.map.components.MapSearchBar
 import com.team.yeogibeoryeo.presentation.map.components.SpotBottomList
@@ -63,19 +62,14 @@ private fun CollectionSpotMapContent(
             onTypeClick = onTypeClick,
         )
 
-        Box(
+        CollectionSpotNaverMap(
+            spots = uiState.spots,
+            selectedSpot = uiState.selectedSpot,
+            onSpotClick = onSpotClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "지도 영역",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+                .weight(1f),
+        )
 
         when {
             uiState.isLoading -> {
@@ -96,13 +90,14 @@ private fun CollectionSpotMapContent(
                 )
             }
 
-            uiState.spots.isEmpty() && uiState.searchKeyword.isNotBlank() -> {
+            uiState.hasSearched && uiState.spots.isEmpty() -> {
                 EmptySpotResult()
             }
 
             uiState.spots.isNotEmpty() -> {
                 SpotBottomList(
                     spots = uiState.spots,
+                    selectedSpot = uiState.selectedSpot,
                     onSpotClick = onSpotClick,
                     modifier = Modifier.weight(0.45f),
                 )
@@ -119,6 +114,7 @@ private fun CollectionSpotMapContentPreview() {
             CollectionSpotMapContent(
                 uiState = CollectionSpotMapUiState(
                     searchKeyword = "문래동",
+                    hasSearched = true,
                 ),
                 onKeywordChanged = {},
                 onSearchClick = {},

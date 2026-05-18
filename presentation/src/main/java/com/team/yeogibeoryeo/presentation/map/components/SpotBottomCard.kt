@@ -24,6 +24,7 @@ import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 @Composable
 fun SpotBottomCard(
     spot: CollectionSpot,
+    isSelected: Boolean,
     onClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -34,10 +35,14 @@ fun SpotBottomCard(
                 onClick(spot)
             },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
+            defaultElevation = if (isSelected) 6.dp else 2.dp,
         ),
     ) {
         Column(
@@ -49,7 +54,11 @@ fun SpotBottomCard(
                 Text(
                     text = spot.type.toDisplayName(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
                 )
 
                 spot.distanceMeter?.let { distanceMeter ->
@@ -107,6 +116,32 @@ private fun SpotBottomCardPreview() {
                     distanceMeter = 120,
                     isBookmarked = false,
                 ),
+                isSelected = false,
+                onClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SpotBottomCardSelectedPreview() {
+    MaterialTheme {
+        Surface(
+            modifier = Modifier.padding(16.dp),
+        ) {
+            SpotBottomCard(
+                spot = CollectionSpot(
+                    id = "1",
+                    name = "폐건전지 수거함",
+                    type = CollectionSpotType.BATTERY_BIN,
+                    address = "서울특별시 영등포구 문래동",
+                    detailLocation = "주민센터 앞",
+                    coordinate = null,
+                    distanceMeter = 120,
+                    isBookmarked = false,
+                ),
+                isSelected = true,
                 onClick = {},
             )
         }
@@ -131,6 +166,7 @@ private fun SpotBottomCardWithoutDetailPreview() {
                     distanceMeter = null,
                     isBookmarked = false,
                 ),
+                isSelected = false,
                 onClick = {},
             )
         }

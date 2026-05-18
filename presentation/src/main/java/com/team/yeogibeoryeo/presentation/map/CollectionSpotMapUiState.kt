@@ -11,7 +11,8 @@ data class CollectionSpotMapUiState(
     val selectedTypes: Set<CollectionSpotType> = emptySet(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val hasSearched: Boolean = false,
 ) {
     val isEmpty: Boolean
-        get() = !isLoading && spots.isEmpty() && errorMessage == null
+        get() = hasSearched && !isLoading && spots.isEmpty() && errorMessage == null
 }

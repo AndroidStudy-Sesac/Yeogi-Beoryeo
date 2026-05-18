@@ -51,6 +51,9 @@ dependencies {
     // Coroutine
     implementation(libs.bundles.coroutines)
 
+    // Naver Map
+    implementation(libs.bundles.naver.map)
+
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)

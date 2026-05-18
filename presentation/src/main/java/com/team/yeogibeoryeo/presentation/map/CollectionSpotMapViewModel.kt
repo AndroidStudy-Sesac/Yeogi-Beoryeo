@@ -27,7 +27,10 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     fun onSearchKeywordChanged(keyword: String) {
         _uiState.update {
-            it.copy(searchKeyword = keyword)
+            it.copy(
+                searchKeyword = keyword,
+                errorMessage = null,
+            )
         }
     }
 
@@ -35,10 +38,14 @@ class CollectionSpotMapViewModel @Inject constructor(
         val keyword = uiState.value.searchKeyword.trim()
 
         if (keyword.isBlank()) {
+            originalSpots = emptyList()
+
             _uiState.update {
                 it.copy(
                     spots = emptyList(),
                     selectedSpot = null,
+                    isLoading = false,
+                    hasSearched = false,
                     errorMessage = "검색어를 입력해주세요.",
                 )
             }
@@ -49,6 +56,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isLoading = true,
+                    hasSearched = true,
                     errorMessage = null,
                     selectedSpot = null,
                     searchMode = MapSearchMode.KEYWORD,
@@ -71,7 +79,9 @@ class CollectionSpotMapViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         spots = filteredSpots,
+                        selectedSpot = null,
                         isLoading = false,
+                        hasSearched = true,
                         errorMessage = null,
                     )
                 }
@@ -81,8 +91,9 @@ class CollectionSpotMapViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         spots = emptyList(),
-                        isLoading = false,
                         selectedSpot = null,
+                        isLoading = false,
+                        hasSearched = true,
                         errorMessage = throwable.message ?: "수거 장소를 불러오지 못했습니다.",
                     )
                 }
