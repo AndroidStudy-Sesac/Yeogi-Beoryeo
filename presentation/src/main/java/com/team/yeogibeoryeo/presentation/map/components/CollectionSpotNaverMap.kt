@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.map.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
@@ -71,6 +72,7 @@ fun CollectionSpotNaverMap(
     ) {
         markerSpots.forEach { spot ->
             val coordinate = spot.coordinate ?: return@forEach
+            val isSelected = selectedSpot?.id == spot.id
 
             Marker(
                 state = MarkerState(
@@ -80,6 +82,16 @@ fun CollectionSpotNaverMap(
                     ),
                 ),
                 captionText = spot.name,
+                iconTintColor = if (isSelected) {
+                    SELECTED_MARKER_COLOR
+                } else {
+                    DEFAULT_MARKER_COLOR
+                },
+                zIndex = if (isSelected) {
+                    SELECTED_MARKER_Z_INDEX
+                } else {
+                    DEFAULT_MARKER_Z_INDEX
+                },
                 onClick = {
                     onSpotClick(spot)
                     true
@@ -94,6 +106,12 @@ private val DEFAULT_LOCATION = LatLng(
     126.9783881,
 )
 
+private val DEFAULT_MARKER_COLOR = Color(0xFF00C853)
+private val SELECTED_MARKER_COLOR = Color(0xFFFF7043)
+
 private const val DEFAULT_ZOOM = 12.0
 private const val SEARCH_RESULT_ZOOM = 15.0
 private const val SELECTED_SPOT_ZOOM = 16.0
+
+private const val DEFAULT_MARKER_Z_INDEX = 0
+private const val SELECTED_MARKER_Z_INDEX = 10
