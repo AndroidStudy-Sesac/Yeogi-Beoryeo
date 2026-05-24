@@ -43,6 +43,8 @@ espressoCore = "3.5.1"
 appcompat = "1.7.1"
 material = "1.13.0"
 
+playServicesLocation = "21.3.0"
+
 
 [libraries]
 # AndroidX Core
@@ -85,6 +87,8 @@ okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-i
 # Naver Map
 naver-map-sdk = { group = "com.naver.maps", name = "map-sdk", version.ref = "naverMapSdk" }
 naver-map-compose = { group = "io.github.fornewid", name = "naver-map-compose", version.ref = "naverMapCompose" }
+
+google-android-gms-play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
 # Room
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }

@@ -12,6 +12,7 @@ data class CollectionSpotMapUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val hasSearched: Boolean = false,
+    val locationNoticeMessage: String? = null,
 ) {
     val isEmpty: Boolean
         get() = hasSearched && !isLoading && spots.isEmpty() && errorMessage == null
