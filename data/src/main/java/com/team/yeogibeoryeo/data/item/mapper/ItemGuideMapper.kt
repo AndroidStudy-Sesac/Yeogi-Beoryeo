@@ -26,11 +26,17 @@ fun ItemGuideDto.toDomain(
         guideDetailsMap[itemNm]
             ?: guideDetailKey?.let { guideDetailsMap[it] }
     val (category, subCategory) =
-        categoryMap[itemNm]
-            ?: guideDetailKey?.let { categoryMap[it] }
-            ?: (DisposalCategory.OTHER to null)
+        resolveCategory(
+            itemNm = itemNm,
+            guideDetailKey = guideDetailKey,
+            guideDetail = guideDetail,
+            categoryMap = categoryMap,
+        )
     val instructions = methods.map { DisposalInstruction(method = it) }
-    val relatedSpotTypes = guideDetail?.relatedSpotTypes?.takeIf { it.isNotEmpty() } ?: relatedSpotsMap[itemNm]
+    val relatedSpotTypes =
+        guideDetail?.relatedSpotTypes?.takeIf { it.isNotEmpty() }
+            ?: relatedSpotsMap[itemNm]
+            ?: guideDetailKey?.let(relatedSpotsMap::get)
     val isRecyclable = DisposalRecyclability.fromMethods(methods)
 
     return DisposalItemGuide(
@@ -41,11 +47,25 @@ fun ItemGuideDto.toDomain(
         instructions = instructions,
         steps = guideDetail?.steps.orEmpty(),
         cautions = guideDetail?.cautions.orEmpty(),
+        detailSections = guideDetail?.sections.orEmpty(),
         tip = guideDetail?.tip,
         isRecyclable = isRecyclable,
         relatedSpotTypes = relatedSpotTypes,
     )
 }
+
+private fun resolveCategory(
+    itemNm: String,
+    guideDetailKey: String?,
+    guideDetail: ItemGuideDetail?,
+    categoryMap: Map<String, Pair<DisposalCategory, DisposalSubCategory?>>,
+): Pair<DisposalCategory, DisposalSubCategory?> =
+    guideDetail
+        ?.sourceCategory
+        .toSourceCategoryInfo()
+        ?: guideDetailKey?.let(categoryMap::get)
+        ?: categoryMap[itemNm]
+        ?: (DisposalCategory.OTHER to null)
 
 private fun fallbackGuideDetailKeyByMethod(
     methods: List<String>,

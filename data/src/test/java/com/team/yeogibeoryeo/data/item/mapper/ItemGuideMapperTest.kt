@@ -3,6 +3,8 @@ package com.team.yeogibeoryeo.data.item.mapper
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideDto
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
+import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
+import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import org.junit.Assert.assertEquals
@@ -23,12 +25,25 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "유리병" to
-                            ItemGuideDetail(
-                                steps = listOf("내용물을 비웁니다."),
-                                cautions = listOf("깨진 유리는 따로 배출합니다."),
-                                tip = "보증금 환급 대상은 환급처에 반환합니다.",
-                                relatedSpotTypes = listOf(RelatedSpotType.RECYCLING_BIN),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("내용물을 비웁니다."),
+                                    cautions = listOf("깨진 유리는 따로 배출합니다."),
+                                    sections =
+                                        listOf(
+                                            DisposalGuideSection(
+                                                title = "배출방법",
+                                                lines = listOf("내용물을 비웁니다."),
+                                                rows = listOf(
+                                                    DisposalGuideSectionRow(
+                                                        "유리병",
+                                                        "수거함에 배출합니다."
+                                                    )
+                                                ),
+                                            ),
+                                        ),
+                                    tip = "보증금 환급 대상은 환급처에 반환합니다.",
+                                    relatedSpotTypes = listOf(RelatedSpotType.RECYCLING_BIN),
+                                ),
                     ),
                 guideDetailAliases = emptyMap(),
             )
@@ -38,6 +53,16 @@ class ItemGuideMapperTest {
         assertEquals(DisposalSubCategory.GLASS_BOTTLE, result.subCategory)
         assertEquals(listOf("내용물을 비웁니다."), result.steps)
         assertEquals(listOf("깨진 유리는 따로 배출합니다."), result.cautions)
+        assertEquals(
+            listOf(
+                DisposalGuideSection(
+                    title = "배출방법",
+                    lines = listOf("내용물을 비웁니다."),
+                    rows = listOf(DisposalGuideSectionRow("유리병", "수거함에 배출합니다.")),
+                ),
+            ),
+            result.detailSections,
+        )
         assertEquals("보증금 환급 대상은 환급처에 반환합니다.", result.tip)
         assertEquals(listOf(RelatedSpotType.RECYCLING_BIN), result.relatedSpotTypes)
         assertEquals(listOf("재활용폐기물", "보증금 환급"), result.instructions.map { it.method })
@@ -56,12 +81,12 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "종이" to
-                            ItemGuideDetail(
-                                steps = listOf("이물질을 제거합니다."),
-                                cautions = listOf("오염된 종이는 종량제봉투로 배출합니다."),
-                                tip = "상자는 펼쳐서 배출합니다.",
-                                relatedSpotTypes = listOf(RelatedSpotType.RECYCLING_BIN),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("이물질을 제거합니다."),
+                                    cautions = listOf("오염된 종이는 종량제봉투로 배출합니다."),
+                                    tip = "상자는 펼쳐서 배출합니다.",
+                                    relatedSpotTypes = listOf(RelatedSpotType.RECYCLING_BIN),
+                                ),
                     ),
                 guideDetailAliases = mapOf("골판지" to "종이"),
             )
@@ -88,12 +113,12 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "금속캔" to
-                            ItemGuideDetail(
-                                steps = listOf("내용물을 비우고 헹굽니다."),
-                                cautions = emptyList(),
-                                tip = null,
-                                relatedSpotTypes = emptyList(),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("내용물을 비우고 헹굽니다."),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                ),
                     ),
                 guideDetailAliases = mapOf("맥주캔" to "금속캔"),
             )
@@ -101,6 +126,34 @@ class ItemGuideMapperTest {
         assertEquals(DisposalCategory.METAL, result.category)
         assertEquals(DisposalSubCategory.ALUMINUM_CAN, result.subCategory)
         assertEquals(listOf("내용물을 비우고 헹굽니다."), result.steps)
+    }
+
+    @Test
+    fun `상세 가이드의 sourceCategory로 카테고리를 해석한다`() {
+        val result =
+            ItemGuideDto(
+                itemNm = "스티로폼 완충재",
+                dschgMthd = "재활용폐기물",
+            ).toDomain(
+                categoryMap = mapOf("발포합성수지(스티로폼 등)" to (DisposalCategory.STYROFOAM to null)),
+                relatedSpotsMap = emptyMap(),
+                guideDetailsMap =
+                    mapOf(
+                        "스티로폼" to
+                                ItemGuideDetail(
+                                    steps = listOf("이물질을 제거합니다."),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                    sourceCategory = "발포합성수지(스티로폼 등)",
+                                ),
+                    ),
+                guideDetailAliases = mapOf("스티로폼 완충재" to "스티로폼"),
+            )
+
+        assertEquals(DisposalCategory.STYROFOAM, result.category)
+        assertEquals(null, result.subCategory)
+        assertEquals(listOf("이물질을 제거합니다."), result.steps)
     }
 
     @Test
@@ -137,12 +190,12 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "일반종량제폐기물" to
-                            ItemGuideDetail(
-                                steps = listOf("물기를 제거한 뒤 종량제봉투에 담습니다."),
-                                cautions = listOf("재활용품과 섞지 않습니다."),
-                                tip = "음식물로 분류되지 않는 것은 일반쓰레기로 배출합니다.",
-                                relatedSpotTypes = emptyList(),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("물기를 제거한 뒤 종량제봉투에 담습니다."),
+                                    cautions = listOf("재활용품과 섞지 않습니다."),
+                                    tip = "음식물로 분류되지 않는 것은 일반쓰레기로 배출합니다.",
+                                    relatedSpotTypes = emptyList(),
+                                ),
                     ),
                 guideDetailAliases = emptyMap(),
             )
@@ -164,12 +217,12 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "대형폐기물" to
-                            ItemGuideDetail(
-                                steps = listOf("지자체 대형폐기물 신고 후 배출합니다."),
-                                cautions = emptyList(),
-                                tip = null,
-                                relatedSpotTypes = emptyList(),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("지자체 대형폐기물 신고 후 배출합니다."),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                ),
                     ),
                 guideDetailAliases = emptyMap(),
             )
@@ -189,12 +242,12 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "불연성종량제폐기물" to
-                            ItemGuideDetail(
-                                steps = listOf("불연성 전용 봉투에 담아 배출합니다."),
-                                cautions = emptyList(),
-                                tip = null,
-                                relatedSpotTypes = emptyList(),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("불연성 전용 봉투에 담아 배출합니다."),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                ),
                     ),
                 guideDetailAliases = emptyMap(),
             )
@@ -214,12 +267,12 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "음식물쓰레기" to
-                            ItemGuideDetail(
-                                steps = listOf("물기를 제거한 뒤 음식물 전용 수거 방식에 맞춰 배출합니다."),
-                                cautions = emptyList(),
-                                tip = null,
-                                relatedSpotTypes = emptyList(),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("물기를 제거한 뒤 음식물 전용 수거 방식에 맞춰 배출합니다."),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                ),
                     ),
                 guideDetailAliases = emptyMap(),
             )
@@ -239,19 +292,19 @@ class ItemGuideMapperTest {
                 guideDetailsMap =
                     mapOf(
                         "일반종량제폐기물" to
-                            ItemGuideDetail(
-                                steps = listOf("종량제봉투 상세 가이드"),
-                                cautions = emptyList(),
-                                tip = null,
-                                relatedSpotTypes = emptyList(),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("종량제봉투 상세 가이드"),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                ),
                         "대형폐기물" to
-                            ItemGuideDetail(
-                                steps = listOf("대형폐기물 상세 가이드"),
-                                cautions = emptyList(),
-                                tip = null,
-                                relatedSpotTypes = emptyList(),
-                            ),
+                                ItemGuideDetail(
+                                    steps = listOf("대형폐기물 상세 가이드"),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                ),
                     ),
                 guideDetailAliases = emptyMap(),
             )
@@ -321,7 +374,12 @@ class ItemGuideMapperTest {
                 dschgMthd = "역회수",
             ).toDomain(
                 categoryMap = mapOf("냉장고" to (DisposalCategory.ELECTRONICS to DisposalSubCategory.LARGE_APPLIANCE)),
-                relatedSpotsMap = mapOf("냉장고" to listOf(RelatedSpotType.FREE_PICKUP, RelatedSpotType.E_WASTE_BIN)),
+                relatedSpotsMap = mapOf(
+                    "냉장고" to listOf(
+                        RelatedSpotType.FREE_PICKUP,
+                        RelatedSpotType.E_WASTE_BIN
+                    )
+                ),
                 guideDetailsMap = emptyMap(),
                 guideDetailAliases = emptyMap(),
             )
@@ -331,5 +389,30 @@ class ItemGuideMapperTest {
             result.relatedSpotTypes,
         )
         assertTrue(result.isRecyclable)
+    }
+
+    @Test
+    fun `가이드 별칭으로 상세 가이드를 찾으면 대표 키의 관련 장소 맵도 사용한다`() {
+        val result =
+            ItemGuideDto(
+                itemNm = "골판지",
+                dschgMthd = "재활용폐기물",
+            ).toDomain(
+                categoryMap = mapOf("종이" to (DisposalCategory.PAPER to null)),
+                relatedSpotsMap = mapOf("종이" to listOf(RelatedSpotType.RECYCLING_BIN)),
+                guideDetailsMap =
+                    mapOf(
+                        "종이" to
+                                ItemGuideDetail(
+                                    steps = emptyList(),
+                                    cautions = emptyList(),
+                                    tip = null,
+                                    relatedSpotTypes = emptyList(),
+                                ),
+                    ),
+                guideDetailAliases = mapOf("골판지" to "종이"),
+            )
+
+        assertEquals(listOf(RelatedSpotType.RECYCLING_BIN), result.relatedSpotTypes)
     }
 }
