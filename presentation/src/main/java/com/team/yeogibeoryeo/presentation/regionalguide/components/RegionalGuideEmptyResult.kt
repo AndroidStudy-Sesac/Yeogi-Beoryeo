@@ -11,39 +11,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 
 @Composable
-fun RegionalWasteScheduleCard(
-    schedule: RegionalWasteScheduleUiModel,
+fun RegionalGuideEmptyResult(
+    message: String,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = schedule.wasteTypeName,
+                text = "조회 결과가 없습니다",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
-            RegionalGuideInfoRow(
-                title = "요일",
-                value = schedule.disposalDays
-            )
-
-            RegionalGuideInfoRow(
-                title = "시간",
-                value = schedule.disposalTime
-            )
-
-            RegionalGuideInfoRow(
-                title = "방법",
-                value = schedule.disposalMethod
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
