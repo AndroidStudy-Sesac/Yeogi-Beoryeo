@@ -1,10 +1,10 @@
-package com.team.yeogibeoryeo.ui.theme
+package com.team.yeogibeoryeo.common.design.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import com.team.yeogibeoryeo.R
+import com.team.yeogibeoryeo.common.R
 
 val PretendardFontFamily = FontFamily(
     Font(R.font.pretendard_thin, FontWeight.Thin),
