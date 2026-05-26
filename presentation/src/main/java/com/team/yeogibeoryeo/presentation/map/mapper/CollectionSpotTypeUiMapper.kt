@@ -2,8 +2,8 @@ package com.team.yeogibeoryeo.presentation.map.mapper
 
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 
-fun CollectionSpotType.toDisplayName(): String {
-    return when (this) {
+fun CollectionSpotType.toDisplayName(): String =
+    when (this) {
         CollectionSpotType.SMALL_E_WASTE_BIN -> "중소형 수거함"
         CollectionSpotType.BATTERY_BIN -> "폐건전지"
         CollectionSpotType.PHONE_DROP_OFF -> "폐휴대폰"
@@ -11,4 +11,3 @@ fun CollectionSpotType.toDisplayName(): String {
         CollectionSpotType.STANDARD_BAG_STORE -> "종량제봉투"
         CollectionSpotType.OTHER -> "기타"
     }
-}
