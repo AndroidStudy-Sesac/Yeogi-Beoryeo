@@ -48,8 +48,14 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
+    // Location
+    implementation(libs.google.android.gms.play.services.location)
+
     // Coroutine
     implementation(libs.bundles.coroutines)
+
+    // Naver Map
+    implementation(libs.bundles.naver.map)
 
     // Hilt
     implementation(libs.hilt.android)
