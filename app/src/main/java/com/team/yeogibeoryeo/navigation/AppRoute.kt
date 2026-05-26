@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.common.navigation
+package com.team.yeogibeoryeo.navigation
 
 import kotlinx.serialization.Serializable
 
