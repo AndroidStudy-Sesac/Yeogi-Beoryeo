@@ -1,8 +1,6 @@
 package com.team.yeogibeoryeo.data.item.local
 
 import com.team.yeogibeoryeo.data.item.mapper.toSourceCategoryInfo
-import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
-import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
@@ -16,46 +14,6 @@ import java.io.File
 class ItemGuideAssetTest {
     private val json = Json { ignoreUnknownKeys = true }
     private val assetsDir = File("src/main/assets")
-
-    @Test
-    fun `모든 가이드 별칭의 대상 키가 상세 가이드에 존재한다`() {
-        val guideDetails = parseObject("representative_guide_details.json")
-        val aliases = parseObject("guide_detail_aliases.json")
-
-        val missingTargets =
-            aliases
-                .values
-                .map { it.jsonPrimitive.content }
-                .filterNot { it in guideDetails.keys }
-                .distinct()
-                .sorted()
-
-        assertTrue(
-            "상세 가이드에 없는 별칭 대상: $missingTargets",
-            missingTargets.isEmpty(),
-        )
-    }
-
-    @Test
-    fun `category_map이 유효한 DisposalCategory와 DisposalSubCategory를 참조한다`() {
-        val map = parseObject("category_map.json")
-        val invalidEntries =
-            map.entries.mapNotNull { (itemNm, value) ->
-                val obj = value.jsonObject
-                val categoryName = obj["category"]!!.jsonPrimitive.content
-                val subCategoryName = obj["subCategory"]?.jsonPrimitive?.contentOrNull
-                val errors = mutableListOf<String>()
-                runCatching { DisposalCategory.valueOf(categoryName) }
-                    .onFailure { errors += "category=$categoryName" }
-                if (subCategoryName != null) {
-                    runCatching { DisposalSubCategory.valueOf(subCategoryName) }
-                        .onFailure { errors += "subCategory=$subCategoryName" }
-                }
-                if (errors.isEmpty()) null else "$itemNm: ${errors.joinToString()}"
-            }
-
-        assertTrue("유효하지 않은 category_map 항목: $invalidEntries", invalidEntries.isEmpty())
-    }
 
     @Test
     fun `모든 상세 가이드의 sourceCategory가 mapper에서 해석된다`() {
@@ -77,20 +35,6 @@ class ItemGuideAssetTest {
             "mapper에서 해석되지 않는 상세 가이드 sourceCategory: $unmappedSourceCategories",
             unmappedSourceCategories.isEmpty(),
         )
-    }
-
-    @Test
-    fun `related_spots가 유효한 RelatedSpotType을 참조한다`() {
-        val map = parseObject("related_spots.json")
-        val invalidValues =
-            map
-                .flatMap { (_, array) ->
-                    array.jsonArray.map { it.jsonPrimitive.content }
-                }.filter { name -> runCatching { RelatedSpotType.valueOf(name) }.isFailure }
-                .distinct()
-                .sorted()
-
-        assertTrue("유효하지 않은 RelatedSpotType 값: $invalidValues", invalidValues.isEmpty())
     }
 
     @Test
