@@ -6,12 +6,16 @@ object DisposalRecyclability {
     private val RECYCLABLE_BY_CATEGORY =
         setOf(
             DisposalCategory.PAPER,
+            DisposalCategory.PAPER_PACK,
+            DisposalCategory.COLORLESS_PET,
             DisposalCategory.GLASS,
             DisposalCategory.METAL,
             DisposalCategory.PLASTIC,
             DisposalCategory.STYROFOAM,
             DisposalCategory.VINYL,
             DisposalCategory.ELECTRONICS,
+            DisposalCategory.BATTERY,
+            DisposalCategory.LIGHTING,
             DisposalCategory.CLOTHING,
         )
 

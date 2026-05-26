@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.item.local
 
+import com.team.yeogibeoryeo.data.item.mapper.toSourceCategoryInfo
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
@@ -57,18 +58,24 @@ class ItemGuideAssetTest {
     }
 
     @Test
-    fun `모든 상세 가이드 키가 category_map에 존재한다`() {
+    fun `모든 상세 가이드의 sourceCategory가 mapper에서 해석된다`() {
         val guideDetails = parseObject("representative_guide_details.json")
-        val categoryMap = parseObject("category_map.json")
-        val missingCategoryKeys =
+        val unmappedSourceCategories =
             guideDetails
-                .keys
-                .filterNot { it in categoryMap.keys }
+                .entries
+                .mapNotNull { (guideKey, value) ->
+                    val sourceCategory = value.jsonObject["sourceCategory"]?.jsonPrimitive?.contentOrNull
+                    when {
+                        sourceCategory.isNullOrBlank() -> "$guideKey: <empty>"
+                        sourceCategory.toSourceCategoryInfo() == null -> sourceCategory
+                        else -> null
+                    }
+                }
                 .sorted()
 
         assertTrue(
-            "category_map에 없는 상세 가이드 키: $missingCategoryKeys",
-            missingCategoryKeys.isEmpty(),
+            "mapper에서 해석되지 않는 상세 가이드 sourceCategory: $unmappedSourceCategories",
+            unmappedSourceCategories.isEmpty(),
         )
     }
 
@@ -98,31 +105,6 @@ class ItemGuideAssetTest {
     }
 
     @Test
-    fun `local_items가 유효한 카테고리와 하위 카테고리를 참조한다`() {
-        val array =
-            json
-                .parseToJsonElement(File(assetsDir, "local_items.json").readText())
-                .jsonArray
-        val invalidEntries =
-            array.mapNotNull { element ->
-                val obj = element.jsonObject
-                val name = obj["name"]!!.jsonPrimitive.content
-                val categoryName = obj["category"]!!.jsonPrimitive.content
-                val subCategoryName = obj["subCategory"]?.jsonPrimitive?.contentOrNull
-                val errors = mutableListOf<String>()
-                runCatching { DisposalCategory.valueOf(categoryName) }
-                    .onFailure { errors += "category=$categoryName" }
-                if (subCategoryName != null) {
-                    runCatching { DisposalSubCategory.valueOf(subCategoryName) }
-                        .onFailure { errors += "subCategory=$subCategoryName" }
-                }
-                if (errors.isEmpty()) null else "$name: ${errors.joinToString()}"
-            }
-
-        assertTrue("유효하지 않은 local_items 항목: $invalidEntries", invalidEntries.isEmpty())
-    }
-
-    @Test
     fun `상세 가이드의 relatedSpotTypes가 유효한 RelatedSpotType을 참조한다`() {
         val map = parseObject("representative_guide_details.json")
         val invalidValues =
@@ -140,6 +122,39 @@ class ItemGuideAssetTest {
     }
 
     @Test
+    fun `상세 가이드는 문서 섹션 기반 구조를 가진다`() {
+        val map = parseObject("representative_guide_details.json")
+        val invalidItems =
+            map.entries.mapNotNull { (name, value) ->
+                val obj = value.jsonObject
+                val sections = obj["sections"]?.jsonArray.orEmpty()
+                val hasLegacyFields =
+                    obj["steps"] != null ||
+                            obj["cautions"] != null ||
+                            obj["subGuides"] != null ||
+                            obj["tip"] != null
+                val hasInvalidSection =
+                    sections.isEmpty() ||
+                            sections.any { section ->
+                                val sectionObject = section.jsonObject
+                                val lines = sectionObject["lines"]?.jsonArray.orEmpty()
+                                val rows = sectionObject["rows"]?.jsonArray.orEmpty()
+                                sectionObject["title"]?.jsonPrimitive?.content.isNullOrBlank() ||
+                                        (lines.isEmpty() && rows.isEmpty()) ||
+                                        rows.any { row ->
+                                            val rowObject = row.jsonObject
+                                            rowObject["label"]?.jsonPrimitive?.content.isNullOrBlank() ||
+                                                    rowObject["value"]?.jsonPrimitive?.content.isNullOrBlank()
+                                        }
+                            }
+
+                if (hasLegacyFields || hasInvalidSection) name else null
+            }
+
+        assertTrue("sections 구조가 유효하지 않은 상세 가이드: $invalidItems", invalidItems.isEmpty())
+    }
+
+    @Test
     fun `품목사전 asset은 검색과 상세 화면에 필요한 필드를 가진다`() {
         val array = parseArray("item_disposal_guides.json")
         val invalidItems =
@@ -150,8 +165,8 @@ class ItemGuideAssetTest {
                 val dischargeMethods = obj["dischargeMethods"]?.jsonArray.orEmpty()
                 val hasRequiredCollections =
                     obj["similarItems"]?.jsonArray != null &&
-                        obj["features"]?.jsonArray != null &&
-                        obj["notes"]?.jsonArray != null
+                            obj["features"]?.jsonArray != null &&
+                            obj["notes"]?.jsonArray != null
                 if (name.isNullOrBlank() || categoryPaths.isEmpty() || dischargeMethods.isEmpty() || !hasRequiredCollections) {
                     name ?: "<unknown>"
                 } else {
@@ -175,7 +190,9 @@ class ItemGuideAssetTest {
         assertTrue("중복된 품목사전 품목명: $duplicatedNames", duplicatedNames.isEmpty())
     }
 
-    private fun parseObject(fileName: String) = json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonObject
+    private fun parseObject(fileName: String) =
+        json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonObject
 
-    private fun parseArray(fileName: String) = json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonArray
+    private fun parseArray(fileName: String) =
+        json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonArray
 }

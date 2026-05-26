@@ -1,0 +1,22 @@
+<resources>
+    <string name="item_search_query_label">무엇을 버리시나요?</string>
+    <string name="item_search_greeting">어서오세요!</string>
+    <string name="item_search_prompt">무엇을 도와드릴까요?</string>
+    <string name="search_action">검색</string>
+    <string name="loading_action">로딩 중</string>
+    <string name="retry_later_message">잠시 후 다시 시도해주세요.</string>
+    <string name="search_load_failed_message">검색 결과를 불러오지 못했어요.</string>
+    <string name="quick_categories">분리배출 분류</string>
+    <string name="no_search_results_title">검색 결과가 없어요.</string>
+    <string name="no_search_results_description">다른 이름으로 다시 검색해보세요.</string>
+    <string name="search_results_count">검색 결과 %1$d건</string>
+    <string name="disposal_method_title">버리는 방법</string>
+    <string name="features_title">품목 특징</string>
+    <string name="disposal_steps_title">배출 절차</string>
+    <string name="cautions_title">주의사항</string>
+    <string name="sub_guides_title">세부 분류</string>
+    <string name="tip_title">재활용·처리 정보</string>
+    <string name="local_disposal_notice_title">지역별 배출 기준 안내</string>
+    <string name="local_disposal_notice">배출방법은 지역별로 차이가 있을 수 있으니, 해당 지방자치단체에서 정하는 방법이 있는 경우에는 해당 방법에 따라 배출하시기 바랍니다.</string>
+    <string name="back_action">뒤로가기</string>
+</resources>

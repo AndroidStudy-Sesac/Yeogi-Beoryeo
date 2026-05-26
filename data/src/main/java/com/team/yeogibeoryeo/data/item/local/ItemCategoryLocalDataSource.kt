@@ -3,12 +3,12 @@ package com.team.yeogibeoryeo.data.item.local
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
-import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
-import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
+import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
+import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
+import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -18,8 +18,11 @@ import javax.inject.Inject
 data class ItemGuideDetail(
     val steps: List<String>,
     val cautions: List<String>,
+    val subGuides: List<DisposalSubGuide> = emptyList(),
+    val sections: List<DisposalGuideSection> = emptyList(),
     val tip: String?,
     val relatedSpotTypes: List<RelatedSpotType>,
+    val sourceCategory: String? = null,
 )
 
 data class WasteDictionaryItem(
@@ -32,11 +35,11 @@ data class WasteDictionaryItem(
 )
 
 class ItemCategoryLocalDataSource
-    @Inject
-    constructor(
+@Inject
+constructor(
     @param:ApplicationContext
     private val context: Context,
-    ) : ItemCategoryLocalSource {
+) : ItemCategoryLocalSource {
     private val json = Json { ignoreUnknownKeys = true }
 
     private fun readAsset(fileName: String): String =
@@ -45,7 +48,8 @@ class ItemCategoryLocalDataSource
             .bufferedReader()
             .use { it.readText() }
 
-    override fun getCategoryMap(): Map<String, Pair<DisposalCategory, DisposalSubCategory?>> = cachedCategoryMap
+    override fun getCategoryMap(): Map<String, Pair<DisposalCategory, DisposalSubCategory?>> =
+        cachedCategoryMap
 
     override fun getSynonyms(): Map<String, String> = cachedSynonyms
 
@@ -54,8 +58,6 @@ class ItemCategoryLocalDataSource
     override fun getGuideDetails(): Map<String, ItemGuideDetail> = cachedGuideDetails
 
     override fun getGuideDetailAliases(): Map<String, String> = cachedGuideDetailAliases
-
-    override fun getLocalItems(): List<DisposalItemGuide> = cachedLocalItems
 
     override fun getWasteDictionaryItems(): List<WasteDictionaryItem> = cachedWasteDictionaryItems
 
@@ -99,12 +101,43 @@ class ItemCategoryLocalDataSource
                     .orEmpty()
 
             itemNm to
-                ItemGuideDetail(
-                    steps = obj.stringList("steps"),
-                    cautions = obj.stringList("cautions"),
-                    tip = obj["tip"]?.jsonPrimitive?.contentOrNull,
-                    relatedSpotTypes = relatedSpotTypes,
-                )
+                    ItemGuideDetail(
+                        steps = obj.stringList("steps"),
+                        cautions = obj.stringList("cautions"),
+                        subGuides =
+                            obj["subGuides"]
+                                ?.jsonArray
+                                ?.map { subGuide ->
+                                    val subGuideObject = subGuide.jsonObject
+                                    DisposalSubGuide(
+                                        name = subGuideObject["name"]!!.jsonPrimitive.content,
+                                        summary = subGuideObject["summary"]!!.jsonPrimitive.content,
+                                    )
+                                }.orEmpty(),
+                        sections =
+                            obj["sections"]
+                                ?.jsonArray
+                                ?.map { section ->
+                                    val sectionObject = section.jsonObject
+                                    DisposalGuideSection(
+                                        title = sectionObject["title"]!!.jsonPrimitive.content,
+                                        lines = sectionObject.stringList("lines"),
+                                        rows =
+                                            sectionObject["rows"]
+                                                ?.jsonArray
+                                                ?.map { row ->
+                                                    val rowObject = row.jsonObject
+                                                    DisposalGuideSectionRow(
+                                                        label = rowObject["label"]!!.jsonPrimitive.content,
+                                                        value = rowObject["value"]!!.jsonPrimitive.content,
+                                                    )
+                                                }.orEmpty(),
+                                    )
+                                }.orEmpty(),
+                        tip = obj["tip"]?.jsonPrimitive?.contentOrNull,
+                        relatedSpotTypes = relatedSpotTypes,
+                        sourceCategory = obj["sourceCategory"]?.jsonPrimitive?.contentOrNull,
+                    )
         }
     }
 
@@ -112,40 +145,6 @@ class ItemCategoryLocalDataSource
         val raw = json.parseToJsonElement(readAsset("guide_detail_aliases.json")).jsonObject
         raw.entries.associate { (itemNm, guideKey) ->
             itemNm to guideKey.jsonPrimitive.content
-        }
-    }
-
-    private val cachedLocalItems: List<DisposalItemGuide> by lazy {
-        val array = json.parseToJsonElement(readAsset("local_items.json")).jsonArray
-        array.map { element ->
-            val obj = element.jsonObject
-            val name = obj["name"]!!.jsonPrimitive.content
-            val category = DisposalCategory.valueOf(obj["category"]!!.jsonPrimitive.content)
-            val subCategoryStr = obj["subCategory"]?.jsonPrimitive?.contentOrNull
-            val subCategory = subCategoryStr?.let { DisposalSubCategory.valueOf(it) }
-            val method = obj["method"]!!.jsonPrimitive.content
-            val tip = obj["tip"]?.jsonPrimitive?.contentOrNull
-            val isRecyclable = obj["isRecyclable"]!!.jsonPrimitive.boolean
-            val guideDetailKey = cachedGuideDetailAliases[name] ?: name
-            val guideDetail = cachedGuideDetails[name] ?: cachedGuideDetails[guideDetailKey]
-            val mergedRelatedSpotTypes =
-                guideDetail
-                    ?.relatedSpotTypes
-                    ?.takeIf { it.isNotEmpty() }
-                    ?: cachedRelatedSpots[name]
-
-            DisposalItemGuide(
-                id = "local_$name",
-                name = name,
-                category = category,
-                subCategory = subCategory,
-                instructions = listOf(DisposalInstruction(method = method, tip = tip)),
-                steps = guideDetail?.steps.orEmpty(),
-                cautions = guideDetail?.cautions.orEmpty(),
-                tip = tip ?: guideDetail?.tip,
-                isRecyclable = isRecyclable,
-                relatedSpotTypes = mergedRelatedSpotTypes,
-            )
         }
     }
 
