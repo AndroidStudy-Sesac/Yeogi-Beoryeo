@@ -16,7 +16,7 @@ import org.junit.Test
 
 class DisposalItemGuideRepositoryImplTest {
     @Test
-    fun `searchItemGuides는 동의어를 local 품목사전 검색어로 사용한다`() =
+    fun `searchItemGuides는 원문 검색 결과가 없을 때 동의어로 다시 검색한다`() =
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
@@ -38,6 +38,35 @@ class DisposalItemGuideRepositoryImplTest {
 
             assertEquals(listOf("음료캔"), results.map { it.name })
             assertEquals(DisposalCategory.METAL, results.first().category)
+        }
+
+    @Test
+    fun `searchItemGuides는 원문 검색 결과가 있으면 동의어보다 우선한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            synonyms = mapOf("캔" to "음료캔"),
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "캔",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류 금속캔")),
+                                        dischargeMethods = listOf("캔은 캔류로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "음료캔",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류 금속캔")),
+                                        dischargeMethods = listOf("음료캔은 캔류로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("캔")
+
+            assertEquals(listOf("캔"), results.map { it.name })
         }
 
     @Test
