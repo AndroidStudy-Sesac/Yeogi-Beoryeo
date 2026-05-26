@@ -4,8 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.team.yeogibeoryeo.common.design.theme.YeogiBeoryeoTheme
 import com.team.yeogibeoryeo.common.navigation.YeogiBeoryeoNavHost
-import com.team.yeogibeoryeo.ui.theme.YeogiBeoryeoTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

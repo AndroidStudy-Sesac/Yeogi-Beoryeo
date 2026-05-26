@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.ui.theme
+package com.team.yeogibeoryeo.common.design.theme
 
 import androidx.compose.ui.graphics.Color
 
