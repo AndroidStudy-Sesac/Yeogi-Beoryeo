@@ -2,10 +2,8 @@ package com.team.yeogibeoryeo.data.item.local
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
-import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import kotlinx.serialization.json.Json
@@ -48,45 +46,16 @@ constructor(
             .bufferedReader()
             .use { it.readText() }
 
-    override fun getCategoryMap(): Map<String, Pair<DisposalCategory, DisposalSubCategory?>> =
-        cachedCategoryMap
-
     override fun getSynonyms(): Map<String, String> = cachedSynonyms
-
-    override fun getRelatedSpots(): Map<String, List<RelatedSpotType>> = cachedRelatedSpots
 
     override fun getGuideDetails(): Map<String, ItemGuideDetail> = cachedGuideDetails
 
-    override fun getGuideDetailAliases(): Map<String, String> = cachedGuideDetailAliases
-
     override fun getWasteDictionaryItems(): List<WasteDictionaryItem> = cachedWasteDictionaryItems
-
-    private val cachedCategoryMap: Map<String, Pair<DisposalCategory, DisposalSubCategory?>> by lazy {
-        val raw = json.parseToJsonElement(readAsset("category_map.json")).jsonObject
-        raw.entries.associate { (itemNm, value) ->
-            val obj = value.jsonObject
-            val category = DisposalCategory.valueOf(obj["category"]!!.jsonPrimitive.content)
-            val subCategoryStr = obj["subCategory"]?.jsonPrimitive?.contentOrNull
-            val subCategory = subCategoryStr?.let { DisposalSubCategory.valueOf(it) }
-            itemNm to (category to subCategory)
-        }
-    }
 
     private val cachedSynonyms: Map<String, String> by lazy {
         val raw = json.parseToJsonElement(readAsset("synonyms.json")).jsonObject
         raw.entries.associate { (synonym, canonical) ->
             synonym to canonical.jsonPrimitive.content
-        }
-    }
-
-    private val cachedRelatedSpots: Map<String, List<RelatedSpotType>> by lazy {
-        val raw = json.parseToJsonElement(readAsset("related_spots.json")).jsonObject
-        raw.entries.associate { (itemNm, spotsArray) ->
-            val spots =
-                spotsArray.jsonArray.map {
-                    RelatedSpotType.valueOf(it.jsonPrimitive.content)
-                }
-            itemNm to spots
         }
     }
 
@@ -138,13 +107,6 @@ constructor(
                         relatedSpotTypes = relatedSpotTypes,
                         sourceCategory = obj["sourceCategory"]?.jsonPrimitive?.contentOrNull,
                     )
-        }
-    }
-
-    private val cachedGuideDetailAliases: Map<String, String> by lazy {
-        val raw = json.parseToJsonElement(readAsset("guide_detail_aliases.json")).jsonObject
-        raw.entries.associate { (itemNm, guideKey) ->
-            itemNm to guideKey.jsonPrimitive.content
         }
     }
 

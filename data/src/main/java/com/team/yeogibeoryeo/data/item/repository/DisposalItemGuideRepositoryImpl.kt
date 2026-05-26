@@ -1,13 +1,10 @@
 package com.team.yeogibeoryeo.data.item.repository
 
-import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
 import com.team.yeogibeoryeo.data.item.mapper.toSourceCategoryInfo
-import com.team.yeogibeoryeo.data.item.mapper.toDomain
 import com.team.yeogibeoryeo.data.item.mapper.toDomain as dictionaryToDomain
-import com.team.yeogibeoryeo.data.item.remote.datasource.ItemRemoteDataSource
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalRecyclability
@@ -18,20 +15,13 @@ import javax.inject.Inject
 class DisposalItemGuideRepositoryImpl
 @Inject
 constructor(
-    private val remoteDataSource: ItemRemoteDataSource,
     private val localDataSource: ItemCategoryLocalSource,
-    private val publicDataKeyProvider: AppKeyProvider,
 ) : DisposalItemGuideRepository {
     override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> {
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) return emptyList()
 
-        val categoryMap = localDataSource.getCategoryMap()
         val synonyms = localDataSource.getSynonyms()
-        val relatedSpots = localDataSource.getRelatedSpots()
-        val guideDetails = localDataSource.getGuideDetails()
-        val guideDetailAliases = localDataSource.getGuideDetailAliases()
-
         val resolvedQuery = synonyms[normalizedQuery] ?: normalizedQuery
         val dictionaryItems = localDataSource.getWasteDictionaryItems()
         val rankedDictionaryMatches =
@@ -55,40 +45,21 @@ constructor(
                 .map { (item, _) -> item.dictionaryToDomain() }
                 .distinctBy { it.name }
 
-        if (dictionaryMatches.isNotEmpty()) return dictionaryMatches
-
-        val remoteItems =
-            remoteDataSource
-                .searchItems(
-                    serviceKey = publicDataKeyProvider.publicDataServiceKey,
-                    itemNm = resolvedQuery,
-                ).map { it.toDomain(categoryMap, relatedSpots, guideDetails, guideDetailAliases) }
-                .distinctBy { it.name }
-
-        return remoteItems
+        return dictionaryMatches
     }
 
     override suspend fun getCategoryGuides(category: DisposalCategory): List<DisposalItemGuide> {
-        val categoryMap = localDataSource.getCategoryMap()
-        val relatedSpots = localDataSource.getRelatedSpots()
         val guideDetails = localDataSource.getGuideDetails()
 
         return guideDetails
             .mapNotNull { (guideDetailKey, guideDetail) ->
                 val categoryInfo =
                     resolveCategory(
-                        guideDetailKey = guideDetailKey,
                         guideDetail = guideDetail,
-                        categoryMap = categoryMap,
                     )
                 if (categoryInfo.first != category) return@mapNotNull null
 
                 val subCategory = categoryInfo.second
-                val mergedRelatedSpotTypes =
-                    guideDetail
-                        .relatedSpotTypes
-                        .takeIf { it.isNotEmpty() }
-                        ?: relatedSpots[guideDetailKey]
 
                 DisposalItemGuide(
                     id = guideDetailKey,
@@ -102,7 +73,7 @@ constructor(
                     detailSections = guideDetail.sections,
                     tip = guideDetail.tip,
                     isRecyclable = DisposalRecyclability.fromCategory(category),
-                    relatedSpotTypes = mergedRelatedSpotTypes,
+                    relatedSpotTypes = guideDetail.relatedSpotTypes.takeIf { it.isNotEmpty() },
                 )
             }
     }
@@ -163,13 +134,10 @@ constructor(
         }
 
     private fun resolveCategory(
-        guideDetailKey: String,
         guideDetail: ItemGuideDetail?,
-        categoryMap: Map<String, Pair<DisposalCategory, DisposalSubCategory?>>,
     ): Pair<DisposalCategory, DisposalSubCategory?> =
         guideDetail
             ?.sourceCategory
             .toSourceCategoryInfo()
-            ?: categoryMap[guideDetailKey]
             ?: (DisposalCategory.OTHER to null)
 }
