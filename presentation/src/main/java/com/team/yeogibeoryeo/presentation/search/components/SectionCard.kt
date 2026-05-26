@@ -19,7 +19,6 @@ import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 
 /**
@@ -53,7 +52,7 @@ fun SectionCard(
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = AppAccentColors.DarkSlate,
+                    color = MaterialTheme.colorScheme.onSurface,
                 ),
             )
             if (lines.isNotEmpty()) {
@@ -85,7 +84,7 @@ fun SectionCard(
                                 text = row.label,
                                 modifier = Modifier.widthIn(min = 88.dp, max = 112.dp),
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = AppAccentColors.DarkSlate,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.SemiBold,
                                     lineHeight = 21.sp,
                                     fontSize = 14.sp,
@@ -116,4 +115,3 @@ private val koreanBodyLineBreak =
         strictness = LineBreak.Strictness.Loose,
         wordBreak = LineBreak.WordBreak.Unspecified,
     )
-

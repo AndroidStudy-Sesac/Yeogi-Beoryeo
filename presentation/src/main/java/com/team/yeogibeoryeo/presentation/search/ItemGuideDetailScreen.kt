@@ -36,7 +36,6 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
@@ -57,7 +56,7 @@ fun ItemGuideDetailScreen(
             ?: RepresentativeGuideCategory.fromDisposalCategory(guide.category)
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = AppAccentColors.ScreenBackground,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -88,7 +87,7 @@ fun ItemGuideDetailScreen(
                         .size(88.dp)
                         .background(
                             color = representativeCategory?.containerColor()
-                                ?: AppAccentColors.SoftCyan,
+                                ?: MaterialTheme.colorScheme.primaryContainer,
                             shape = RoundedCornerShape(24.dp)
                         ),
                     contentAlignment = Alignment.Center
@@ -97,7 +96,7 @@ fun ItemGuideDetailScreen(
                         imageVector = representativeCategory?.icon ?: Icons.Outlined.Recycling,
                         contentDescription = null,
                         modifier = Modifier.size(44.dp),
-                        tint = representativeCategory?.iconTint() ?: AppAccentColors.MainCyan
+                        tint = representativeCategory?.iconTint() ?: MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -110,7 +109,7 @@ fun ItemGuideDetailScreen(
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 28.sp,
-                            color = AppAccentColors.DarkSlate
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     )
 
@@ -173,4 +172,3 @@ fun ItemGuideDetailScreen(
         }
     }
 }
-

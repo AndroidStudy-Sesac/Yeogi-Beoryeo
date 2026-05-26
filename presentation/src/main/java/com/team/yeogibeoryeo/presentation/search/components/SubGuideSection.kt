@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 
 @Composable
 fun SubGuideSection(
@@ -43,7 +42,7 @@ fun SubGuideSection(
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = AppAccentColors.DarkSlate,
+                    color = MaterialTheme.colorScheme.onSurface,
                 ),
             )
 
@@ -53,7 +52,7 @@ fun SubGuideSection(
                         text = subGuide.name,
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.SemiBold,
-                            color = AppAccentColors.DarkSlate,
+                            color = MaterialTheme.colorScheme.onSurface,
                         ),
                     )
                     Text(
