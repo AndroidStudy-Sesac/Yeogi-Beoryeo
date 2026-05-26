@@ -9,11 +9,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Recycling
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,28 +34,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Recycling
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
-import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
-import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
@@ -57,6 +54,8 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 
 @Composable
 fun ItemSearchRoute(
+    initialQuery: String? = null,
+    onGuideSelected: ((DisposalItemGuide) -> Unit)? = null,
     viewModel: ItemSearchViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -71,7 +70,20 @@ fun ItemSearchRoute(
         }
     }
 
-    if (selectedGuide != null) {
+    LaunchedEffect(initialQuery) {
+        if (!initialQuery.isNullOrBlank()) {
+            viewModel.search(initialQuery)
+        }
+    }
+
+    LaunchedEffect(selectedGuide?.id, onGuideSelected) {
+        if (selectedGuide != null && onGuideSelected != null) {
+            onGuideSelected(selectedGuide)
+            viewModel.clearSelectedGuide()
+        }
+    }
+
+    if (selectedGuide != null && onGuideSelected == null) {
         BackHandler(onBack = viewModel::clearSelectedGuide)
         ItemGuideDetailScreen(
             guide = selectedGuide,
@@ -88,7 +100,13 @@ fun ItemSearchRoute(
         uiState = uiState,
         onQueryChange = viewModel::onQueryChange,
         onSearchClick = viewModel::search,
-        onGuideClick = viewModel::selectGuide,
+        onGuideClick = {
+            if (onGuideSelected != null) {
+                onGuideSelected(it)
+            } else {
+                viewModel.selectGuide(it)
+            }
+        },
         onQuickCategoryClick = viewModel::openCategoryGuide,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
@@ -271,4 +289,3 @@ fun ItemSearchScreen(
         }
     }
 }
-

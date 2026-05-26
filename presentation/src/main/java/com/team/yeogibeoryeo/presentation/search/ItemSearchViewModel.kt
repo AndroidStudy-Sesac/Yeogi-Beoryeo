@@ -64,7 +64,13 @@ constructor(
 
     fun search() {
         val query = _uiState.value.query.trim()
-        if (query.isBlank()) {
+        search(query)
+    }
+
+    fun search(query: String) {
+        _uiState.update { it.copy(query = query) }
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isBlank()) {
             _uiState.update {
                 it.copy(
                     guides = emptyList(),
@@ -88,7 +94,7 @@ constructor(
                     )
                 }
 
-                runCatchingCancellable { searchDisposalItemGuidesUseCase(query) }
+                runCatchingCancellable { searchDisposalItemGuidesUseCase(trimmedQuery) }
                     .onSuccess { guides ->
                         _uiState.update {
                             it.copy(
