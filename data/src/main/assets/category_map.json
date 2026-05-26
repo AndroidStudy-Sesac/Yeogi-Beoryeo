@@ -228,7 +228,7 @@
     "subCategory": null
   },
   "공사장 생활폐기물": {
-    "category": "OTHER",
+    "category": "CONSTRUCTION_WASTE",
     "subCategory": null
   },
   "생활계 유해폐기물": {
@@ -256,11 +256,11 @@
     "subCategory": null
   },
   "투명페트병": {
-    "category": "PLASTIC",
+    "category": "COLORLESS_PET",
     "subCategory": "TRANSPARENT_PET_BOTTLE"
   },
   "무색페트병": {
-    "category": "PLASTIC",
+    "category": "COLORLESS_PET",
     "subCategory": "TRANSPARENT_PET_BOTTLE"
   },
   "페트병": {
@@ -392,11 +392,11 @@
     "subCategory": "BATTERY"
   },
   "형광등": {
-    "category": "ELECTRONICS",
+    "category": "LIGHTING",
     "subCategory": "FLUORESCENT_LAMP"
   },
   "LED등": {
-    "category": "ELECTRONICS",
+    "category": "LIGHTING",
     "subCategory": "FLUORESCENT_LAMP"
   },
   "헌옷": {
@@ -432,7 +432,7 @@
     "subCategory": null
   },
   "종이팩": {
-    "category": "PAPER",
+    "category": "PAPER_PACK",
     "subCategory": "MILK_CARTON"
   },
   "금속캔": {

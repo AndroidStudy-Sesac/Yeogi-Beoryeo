@@ -1,0 +1,13 @@
+package com.team.yeogibeoryeo.presentation.search
+
+import androidx.annotation.StringRes
+import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
+
+data class ItemSearchUiState(
+    val query: String = "",
+    val guides: List<DisposalItemGuide> = emptyList(),
+    val selectedGuide: DisposalItemGuide? = null,
+    val isLoading: Boolean = false,
+    val hasSearched: Boolean = false,
+    @param:StringRes val errorMessageResId: Int? = null,
+)

@@ -44,6 +44,7 @@ class DisposalRecyclabilityTest {
     fun `재활용 카테고리는 재활용 가능이다`() {
         listOf(
             DisposalCategory.PAPER,
+            DisposalCategory.COLORLESS_PET,
             DisposalCategory.GLASS,
             DisposalCategory.METAL,
             DisposalCategory.PLASTIC,
@@ -52,7 +53,10 @@ class DisposalRecyclabilityTest {
             DisposalCategory.ELECTRONICS,
             DisposalCategory.CLOTHING,
         ).forEach { category ->
-            assertTrue("$category 카테고리는 재활용 가능이어야 합니다", DisposalRecyclability.fromCategory(category))
+            assertTrue(
+                "$category 카테고리는 재활용 가능이어야 합니다",
+                DisposalRecyclability.fromCategory(category)
+            )
         }
     }
 
@@ -65,7 +69,10 @@ class DisposalRecyclabilityTest {
             DisposalCategory.GENERAL,
             DisposalCategory.OTHER,
         ).forEach { category ->
-            assertFalse("$category 카테고리는 재활용 불가여야 합니다", DisposalRecyclability.fromCategory(category))
+            assertFalse(
+                "$category 카테고리는 재활용 불가여야 합니다",
+                DisposalRecyclability.fromCategory(category)
+            )
         }
     }
 }

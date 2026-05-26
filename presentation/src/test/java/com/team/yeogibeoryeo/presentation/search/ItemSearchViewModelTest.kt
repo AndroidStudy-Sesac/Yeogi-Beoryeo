@@ -1,0 +1,307 @@
+package com.team.yeogibeoryeo.presentation.search
+
+import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
+import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
+import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
+import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
+import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalCategoryGuidesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
+import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Rule
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ItemSearchViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `빈 검색어는 검색하지 않고 초기 상태를 유지한다`() =
+        runTest {
+            val repository = FakeRepository()
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("   ")
+            viewModel.search()
+
+            assertEquals(0, repository.searchCallCount)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 성공 시 결과 목록을 노출한다`() =
+        runTest {
+            val expected = listOf(sampleGuide("유리병"))
+            val repository = FakeRepository(onSearch = { expected })
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("유리")
+            viewModel.search()
+
+            assertEquals(listOf("유리"), repository.queries)
+            assertEquals(expected, viewModel.uiState.value.guides)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 실패 시 에러 리소스 ID를 저장한다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { error("network") })
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("건전지")
+            viewModel.search()
+
+            assertEquals(
+                R.string.search_load_failed_message,
+                viewModel.uiState.value.errorMessageResId
+            )
+            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `검색어 변경 시 기존 에러를 초기화한다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { error("network") })
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("건전지")
+            viewModel.search()
+            viewModel.onQueryChange("비닐")
+
+            assertNull(viewModel.uiState.value.errorMessageResId)
+            assertEquals("비닐", viewModel.uiState.value.query)
+        }
+
+    @Test
+    fun `검색어 변경 시 이전 결과를 초기화하고 초기 상태로 돌아간다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide("유리병")) })
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("유리")
+            viewModel.search()
+            viewModel.onQueryChange("비닐")
+
+            assertEquals("비닐", viewModel.uiState.value.query)
+            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `나중 검색이 시작되면 이전 검색 결과는 반영되지 않는다`() =
+        runTest {
+            val firstResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val repository =
+                FakeRepository(
+                    onSearch = { query ->
+                        when (query) {
+                            "유리" -> firstResult.await()
+                            "비닐" -> listOf(sampleGuide("비닐"))
+                            else -> emptyList()
+                        }
+                    },
+                )
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("유리")
+            viewModel.search()
+            viewModel.onQueryChange("비닐")
+            viewModel.search()
+            advanceUntilIdle()
+
+            assertEquals(listOf("비닐"), viewModel.uiState.value.guides.map { it.name })
+
+            firstResult.complete(listOf(sampleGuide("유리병")))
+            advanceUntilIdle()
+
+            assertEquals(listOf("비닐"), viewModel.uiState.value.guides.map { it.name })
+        }
+
+    @Test
+    fun `검색 취소는 에러 상태로 표시하지 않는다`() =
+        runTest {
+            val firstResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val repository =
+                FakeRepository(
+                    onSearch = { query ->
+                        when (query) {
+                            "유리" -> firstResult.await()
+                            "비닐" -> listOf(sampleGuide("비닐"))
+                            else -> emptyList()
+                        }
+                    },
+                )
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("유리")
+            viewModel.search()
+            viewModel.onQueryChange("비닐")
+            viewModel.search()
+            advanceUntilIdle()
+
+            assertNull(viewModel.uiState.value.errorMessageResId)
+            assertEquals(listOf("비닐"), viewModel.uiState.value.guides.map { it.name })
+        }
+
+    @Test
+    fun `카테고리 조회 취소는 에러 상태로 표시하지 않는다`() =
+        runTest {
+            val firstResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val repository =
+                FakeRepository(
+                    onCategory = { category ->
+                        when (category) {
+                            DisposalCategory.VINYL -> firstResult.await()
+                            DisposalCategory.PAPER -> listOf(sampleGuide("종이"))
+                            else -> emptyList()
+                        }
+                    },
+                )
+            val viewModel = createViewModel(repository)
+
+            viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+            viewModel.openCategoryGuide(RepresentativeGuideCategory.PAPER)
+            advanceUntilIdle()
+
+            assertNull(viewModel.uiState.value.errorMessageResId)
+            assertEquals("종이", viewModel.uiState.value.selectedGuide?.name)
+        }
+
+    @Test
+    fun `카테고리 선택 시 대표 가이드를 상세 상태로 저장한다`() =
+        runTest {
+            val expected = listOf(
+                sampleGuide("비닐봉투"),
+                sampleGuide(RepresentativeGuideCategory.VINYL.representativeGuideName),
+            )
+            val repository = FakeRepository(onCategory = { expected })
+            val viewModel = createViewModel(repository)
+
+            viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+            advanceUntilIdle()
+
+            assertEquals(listOf(DisposalCategory.VINYL), repository.requestedCategories)
+            assertEquals(
+                RepresentativeGuideCategory.VINYL.representativeGuideName,
+                viewModel.uiState.value.selectedGuide?.name,
+            )
+            assertEquals("", viewModel.uiState.value.query)
+            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `카테고리 대표 가이드가 없으면 첫 가이드를 상세 상태로 저장한다`() =
+        runTest {
+            val expected = sampleGuide("첫 번째 가이드")
+            val repository =
+                FakeRepository(onCategory = { listOf(expected, sampleGuide("두 번째 가이드")) })
+            val viewModel = createViewModel(repository)
+
+            viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+            advanceUntilIdle()
+
+            assertEquals(expected, viewModel.uiState.value.selectedGuide)
+        }
+
+    @Test
+    fun `선택한 가이드를 초기화하면 검색 화면 상태로 돌아간다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val viewModel = createViewModel(FakeRepository())
+
+            viewModel.selectGuide(guide)
+            viewModel.clearSelectedGuide()
+
+            assertNull(viewModel.uiState.value.selectedGuide)
+        }
+
+    @Test
+    fun `검색 결과를 초기화하면 쿼리와 결과가 삭제되고 초기 상태로 돌아간다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide("유리병")) })
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("유리")
+            viewModel.search()
+            viewModel.clearSearch()
+
+            assertEquals("", viewModel.uiState.value.query)
+            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `카테고리 가이드 조회 실패 시 에러 리소스 ID를 저장한다`() =
+        runTest {
+            val repository = FakeRepository(onCategory = { error("category failure") })
+            val viewModel = createViewModel(repository)
+
+            viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+            advanceUntilIdle()
+
+            assertEquals(
+                R.string.search_load_failed_message,
+                viewModel.uiState.value.errorMessageResId
+            )
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    private fun createViewModel(repository: FakeRepository) =
+        ItemSearchViewModel(
+            SearchDisposalItemGuidesUseCase(repository),
+            GetDisposalCategoryGuidesUseCase(repository),
+        )
+
+    private fun sampleGuide(name: String): DisposalItemGuide =
+        DisposalItemGuide(
+            id = name,
+            name = name,
+            category = DisposalCategory.GLASS,
+            subCategory = null,
+            instructions = listOf(DisposalInstruction(method = "재활용폐기물")),
+            steps = emptyList(),
+            cautions = emptyList(),
+            tip = null,
+            isRecyclable = true,
+            relatedSpotTypes = emptyList(),
+        )
+
+    private class FakeRepository(
+        private val onSearch: suspend (String) -> List<DisposalItemGuide> = { emptyList() },
+        private val onCategory: suspend (DisposalCategory) -> List<DisposalItemGuide> = { emptyList() },
+    ) : DisposalItemGuideRepository {
+        val queries = mutableListOf<String>()
+        val requestedCategories = mutableListOf<DisposalCategory>()
+        var searchCallCount = 0
+
+        override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> {
+            searchCallCount += 1
+            queries += query
+            return onSearch(query)
+        }
+
+        override suspend fun getCategoryGuides(category: DisposalCategory): List<DisposalItemGuide> {
+            requestedCategories += category
+            return onCategory(category)
+        }
+
+        override fun getCategories(): List<DisposalCategory> = emptyList()
+    }
+}

@@ -9,7 +9,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * 모킹 프레임워크를 대체하는 Fake 데이터 소스.ㅇ
+ * 모킹 프레임워크를 대체하는 Fake 데이터 소스.
  */
 class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     var mockResult: Result<List<RegionalGuideItemDto>> = Result.success(emptyList())
@@ -33,14 +33,14 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
-    fun `세종시 지역 객체 전달 시 시군구가 없어도 세종 키워드로 API를 호출한다`() = runBlocking {
+    fun `세종시 지역 객체 전달 시 시군구가 없어도 없음 키워드로 API를 호출한다`() = runBlocking {
         val sejongRegion = Region(sido = "세종특별자치시", sigungu = "", eupmyeondong = "새롬동")
-        val mockData = listOf(RegionalGuideItemDto(sidoName = "세종특별자치시", dongName = "새롬동"))
+        val mockData = listOf(RegionalGuideItemDto(sidoName = "세종특별자치시", sigunguName = "없음", dongName = "새롬동"))
         fakeDataSource.mockResult = Result.success(mockData)
 
         val result = repository.getRegionalDisposalGuide(sejongRegion)
 
-        assertEquals("세종", fakeDataSource.calledSigunguName)
+        assertEquals("없음", fakeDataSource.calledSigunguName)
         assertEquals("새롬동", result?.region?.eupmyeondong)
     }
 
