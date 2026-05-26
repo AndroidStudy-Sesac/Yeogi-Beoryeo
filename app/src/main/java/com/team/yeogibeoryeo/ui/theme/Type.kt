@@ -1,34 +1,39 @@
 package com.team.yeogibeoryeo.ui.theme
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import com.team.yeogibeoryeo.R
 
-// Set of Material typography styles to start with
+val PretendardFontFamily = FontFamily(
+    Font(R.font.pretendard_thin, FontWeight.Thin),
+    Font(R.font.pretendard_extralight, FontWeight.ExtraLight),
+    Font(R.font.pretendard_light, FontWeight.Light),
+    Font(R.font.pretendard_regular, FontWeight.Normal),
+    Font(R.font.pretendard_medium, FontWeight.Medium),
+    Font(R.font.pretendard_semibold, FontWeight.SemiBold),
+    Font(R.font.pretendard_bold, FontWeight.Bold),
+    Font(R.font.pretendard_extrabold, FontWeight.ExtraBold),
+    Font(R.font.pretendard_black, FontWeight.Black),
+)
+
+private val DefaultTypography = Typography()
+
 val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-    */
+    displayLarge = DefaultTypography.displayLarge.copy(fontFamily = PretendardFontFamily),
+    displayMedium = DefaultTypography.displayMedium.copy(fontFamily = PretendardFontFamily),
+    displaySmall = DefaultTypography.displaySmall.copy(fontFamily = PretendardFontFamily),
+    headlineLarge = DefaultTypography.headlineLarge.copy(fontFamily = PretendardFontFamily),
+    headlineMedium = DefaultTypography.headlineMedium.copy(fontFamily = PretendardFontFamily),
+    headlineSmall = DefaultTypography.headlineSmall.copy(fontFamily = PretendardFontFamily),
+    titleLarge = DefaultTypography.titleLarge.copy(fontFamily = PretendardFontFamily),
+    titleMedium = DefaultTypography.titleMedium.copy(fontFamily = PretendardFontFamily),
+    titleSmall = DefaultTypography.titleSmall.copy(fontFamily = PretendardFontFamily),
+    bodyLarge = DefaultTypography.bodyLarge.copy(fontFamily = PretendardFontFamily),
+    bodyMedium = DefaultTypography.bodyMedium.copy(fontFamily = PretendardFontFamily),
+    bodySmall = DefaultTypography.bodySmall.copy(fontFamily = PretendardFontFamily),
+    labelLarge = DefaultTypography.labelLarge.copy(fontFamily = PretendardFontFamily),
+    labelMedium = DefaultTypography.labelMedium.copy(fontFamily = PretendardFontFamily),
+    labelSmall = DefaultTypography.labelSmall.copy(fontFamily = PretendardFontFamily),
 )
