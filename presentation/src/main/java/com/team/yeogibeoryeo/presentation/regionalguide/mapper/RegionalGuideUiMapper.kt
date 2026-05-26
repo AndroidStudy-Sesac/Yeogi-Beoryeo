@@ -68,10 +68,8 @@ private fun RegionalWasteSchedule.displayTime(): String {
     }
 }
 
-private fun String?.orInfoEmpty(): String {
-    return if (isNullOrBlank()) "정보 없음" else this
-}
+private fun String?.orInfoEmpty(): String =
+    if (isNullOrBlank()) "정보 없음" else this
 
-private fun String?.takeIfNotBlank(): String? {
-    return this?.takeIf { it.isNotBlank() }
-}
+private fun String?.takeIfNotBlank(): String? =
+    this?.takeIf { it.isNotBlank() }

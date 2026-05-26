@@ -58,7 +58,7 @@ fun RegionalGuideRoute(
         searchKeyword = searchKeyword,
         onSearchKeywordChange = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchCurrentKeyword,
-        onRetryClick = viewModel::searchCurrentKeyword
+        onRetryClick = viewModel::retryLastRequest
     )
 }
 

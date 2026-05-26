@@ -9,6 +9,8 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +30,9 @@ class RegionalGuideViewModel @Inject constructor(
     private val _searchKeyword = MutableStateFlow("")
     val searchKeyword: StateFlow<String> = _searchKeyword.asStateFlow()
 
+    private var guideLookupJob: Job? = null
+    private var lastRequest: RegionalGuideRequest? = null
+
     fun onSearchKeywordChanged(keyword: String) {
         _searchKeyword.value = keyword
     }
@@ -36,8 +41,18 @@ class RegionalGuideViewModel @Inject constructor(
         searchByKeyword(_searchKeyword.value)
     }
 
+    fun retryLastRequest() {
+        when (val request = lastRequest) {
+            is RegionalGuideRequest.Keyword -> searchByKeyword(request.keyword)
+            is RegionalGuideRequest.Address -> loadByAddress(request.address)
+            null -> searchCurrentKeyword()
+        }
+    }
+
     fun searchByKeyword(keyword: String) {
         val trimmedKeyword = keyword.trim()
+
+        guideLookupJob?.cancel()
 
         if (trimmedKeyword.isBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
@@ -47,7 +62,9 @@ class RegionalGuideViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        lastRequest = RegionalGuideRequest.Keyword(trimmedKeyword)
+
+        guideLookupJob = viewModelScope.launch {
             _uiState.value = RegionalGuideUiState.Loading(query = trimmedKeyword)
 
             try {
@@ -65,6 +82,8 @@ class RegionalGuideViewModel @Inject constructor(
                     query = trimmedKeyword,
                     region = region
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = RegionalGuideUiState.Error(
                     query = trimmedKeyword,
@@ -83,6 +102,8 @@ class RegionalGuideViewModel @Inject constructor(
     fun loadByAddress(address: String) {
         val trimmedAddress = address.trim()
 
+        guideLookupJob?.cancel()
+
         if (trimmedAddress.isBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
                 query = trimmedAddress,
@@ -91,7 +112,9 @@ class RegionalGuideViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        lastRequest = RegionalGuideRequest.Address(trimmedAddress)
+
+        guideLookupJob = viewModelScope.launch {
             _uiState.value = RegionalGuideUiState.Loading(query = trimmedAddress)
 
             try {
@@ -109,6 +132,8 @@ class RegionalGuideViewModel @Inject constructor(
                     query = trimmedAddress,
                     region = region
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = RegionalGuideUiState.Error(
                     query = trimmedAddress,
@@ -119,6 +144,8 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun resetState() {
+        guideLookupJob?.cancel()
+        lastRequest = null
         _uiState.value = RegionalGuideUiState.Idle
     }
 
@@ -145,5 +172,15 @@ class RegionalGuideViewModel @Inject constructor(
                 guide = this.toUiModel()
             )
         }
+    }
+
+    private sealed interface RegionalGuideRequest {
+        data class Keyword(
+            val keyword: String
+        ) : RegionalGuideRequest
+
+        data class Address(
+            val address: String
+        ) : RegionalGuideRequest
     }
 }
