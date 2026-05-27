@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 
@@ -56,5 +57,21 @@ fun RegionalWasteScheduleCard(
                 value = schedule.disposalMethod
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalWasteScheduleCardPreview() {
+    MaterialTheme {
+        RegionalWasteScheduleCard(
+            schedule = RegionalWasteScheduleUiModel(
+                wasteTypeName = "일반쓰레기",
+                disposalDays = "월, 수, 금",
+                disposalTime = "18:00 ~ 24:00",
+                disposalMethod = "종량제 봉투에 담아 배출",
+            ),
+            modifier = Modifier.padding(16.dp),
+        )
     }
 }

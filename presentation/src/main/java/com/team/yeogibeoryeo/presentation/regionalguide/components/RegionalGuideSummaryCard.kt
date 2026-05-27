@@ -13,8 +13,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 
 @Composable
 fun RegionalGuideSummaryCard(
@@ -83,5 +85,32 @@ fun RegionalGuideSummaryCard(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalGuideSummaryCardPreview() {
+    MaterialTheme {
+        RegionalGuideSummaryCard(
+            guide = RegionalGuideUiModel(
+                regionName = "서울특별시 영등포구 문래동",
+                managementZoneName = "영등포구",
+                targetRegionName = "문래동",
+                disposalPlaceType = "문전수거",
+                disposalPlaceDescription = "집 앞 지정 장소에 배출",
+                schedules = listOf(
+                    RegionalWasteScheduleUiModel(
+                        wasteTypeName = "일반쓰레기",
+                        disposalDays = "월, 수, 금",
+                        disposalTime = "18:00 ~ 24:00",
+                        disposalMethod = "종량제 봉투에 담아 배출",
+                    ),
+                ),
+                uncollectedDays = "토요일",
+                departmentInfo = "청소행정과 02-0000-0000",
+            ),
+            modifier = Modifier.padding(16.dp),
+        )
     }
 }
