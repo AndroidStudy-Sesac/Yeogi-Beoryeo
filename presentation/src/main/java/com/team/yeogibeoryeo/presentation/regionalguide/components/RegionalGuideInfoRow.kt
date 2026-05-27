@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun RegionalGuideInfoRow(
@@ -29,7 +30,11 @@ fun RegionalGuideInfoRow(
 
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                lineHeight = 22.sp,
+                fontSize = 15.sp,
+            ),
         )
     }
 }
