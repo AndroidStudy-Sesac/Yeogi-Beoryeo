@@ -244,7 +244,7 @@ private fun RegionDropdownChip(
 private fun RegionSelectorSectionPreview() {
     MaterialTheme {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = MaterialTheme.colorScheme.background,
         ) {
             RegionSelectorSection(
                 uiState = RegionSelectorUiState(
@@ -269,7 +269,7 @@ private fun RegionSelectorSectionPreview() {
 private fun RegionSelectorSectionSelectedPreview() {
     MaterialTheme {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = MaterialTheme.colorScheme.background,
         ) {
             RegionSelectorSection(
                 uiState = RegionSelectorUiState(
@@ -307,7 +307,7 @@ private fun RegionSelectorSectionSelectedPreview() {
 private fun RegionSelectorSectionCompactPreview() {
     MaterialTheme {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = MaterialTheme.colorScheme.background,
         ) {
             RegionSelectorSection(
                 uiState = RegionSelectorUiState(

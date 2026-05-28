@@ -98,55 +98,63 @@ fun RegionalGuideScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(20.dp)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = "지역별 배출 가이드",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(top = 20.dp)
+        ) {
+            Text(
+                text = "지역별 배출 가이드",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = "지역명을 입력하면 생활쓰레기, 음식물쓰레기, 재활용품 배출 정보를 확인할 수 있어요.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            Text(
+                text = "지역명을 입력하면 생활쓰레기, 음식물쓰레기, 재활용품 배출 정보를 확인할 수 있어요.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        RegionalGuideSearchBar(
-            keyword = searchKeyword,
-            onKeywordChange = onSearchKeywordChange,
-            onSearchClick = onSearchClick,
-        )
+            RegionalGuideSearchBar(
+                keyword = searchKeyword,
+                onKeywordChange = onSearchKeywordChange,
+                onSearchClick = onSearchClick,
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        RegionSelectorSection(
-            uiState = regionSelectorUiState,
-            compact = isRegionSelectorCompact,
-            onSidoSelected = onSidoSelected,
-            onSigunguSelected = onSigunguSelected,
-            onEupmyeondongSelected = onEupmyeondongSelected,
-            onSearchClick = {
-                isRegionSelectorExpanded = false
-                onRegionSelectionSearchClick()
-            },
-            onChangeClick = {
-                isRegionSelectorExpanded = true
-            },
-        )
+            RegionSelectorSection(
+                uiState = regionSelectorUiState,
+                compact = isRegionSelectorCompact,
+                onSidoSelected = onSidoSelected,
+                onSigunguSelected = onSigunguSelected,
+                onEupmyeondongSelected = onEupmyeondongSelected,
+                onSearchClick = {
+                    isRegionSelectorExpanded = false
+                    onRegionSelectionSearchClick()
+                },
+                onChangeClick = {
+                    isRegionSelectorExpanded = true
+                },
+            )
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+        }
 
         RegionalGuideContent(
             uiState = uiState,
             onRetryClick = onRetryClick,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 20.dp),
         )
     }
 }

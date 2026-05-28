@@ -33,7 +33,7 @@ fun RegionalGuideInfoRow(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 22.sp,
                 fontSize = 15.sp,
             ),
