@@ -1,10 +1,10 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,7 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -118,174 +117,181 @@ fun ItemSearchScreen(
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     onGuideClick: (DisposalItemGuide) -> Unit,
-    onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit = {},
     modifier: Modifier = Modifier,
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp)
-                .padding(top = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            // 검색창 (더욱 강조된 검색바 디자인)
-            val searchActionDescription = stringResource(R.string.search_action)
-            OutlinedTextField(
-                value = uiState.query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        text = stringResource(R.string.item_search_query_label),
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 16.sp
-                        )
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Recycling,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp),
-                        tint =
-                            if (uiState.query.isEmpty()) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            }
-                    )
-                },
-                trailingIcon = {
-                    Row(
-                        modifier = Modifier.padding(end = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (uiState.query.isNotEmpty()) {
-                            IconButton(onClick = { onQueryChange("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        IconButton(onClick = onSearchClick) {
-                            Icon(
-                                imageVector = Icons.Outlined.Search,
-                                contentDescription = searchActionDescription,
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .semantics {
-                                        contentDescription = searchActionDescription
-                                    },
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onSearchClick() }),
-                shape = RoundedCornerShape(28.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 24.dp)
+            .padding(top = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "여기 버려",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
             )
+            Text(
+                text = "품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-            // 검색 결과 또는 제안 섹션
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                when {
-                    uiState.isLoading -> {
-                        val loadingContentDescription = stringResource(R.string.loading_action)
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.semantics {
-                                    contentDescription = loadingContentDescription
-                                },
-                                color = MaterialTheme.colorScheme.primary,
+        // 검색창 (더욱 강조된 검색바 디자인)
+        val searchActionDescription = stringResource(R.string.search_action)
+        OutlinedTextField(
+            value = uiState.query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = stringResource(R.string.item_search_query_label),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 16.sp
+                    )
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Recycling,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint =
+                        if (uiState.query.isEmpty()) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                )
+            },
+            trailingIcon = {
+                Row(
+                    modifier = Modifier.padding(end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (uiState.query.isNotEmpty()) {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-
-                    uiState.errorMessageResId != null -> {
-                        EmptySearchResult(
-                            title = stringResource(uiState.errorMessageResId),
-                            description = stringResource(R.string.retry_later_message),
+                    IconButton(onClick = onSearchClick) {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = searchActionDescription,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .semantics {
+                                    contentDescription = searchActionDescription
+                                },
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
+                }
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearchClick() }),
+            shape = RoundedCornerShape(28.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color.Transparent,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                cursorColor = MaterialTheme.colorScheme.primary,
+            )
+        )
 
-                    !uiState.hasSearched -> {
-                        LazyColumn(
-                            state = categoryListState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 24.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            item {
-                                Text(
-                                    text = stringResource(R.string.quick_categories),
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    ),
-                                )
-                            }
-                            item {
-                                QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
-                            }
+        // 검색 결과 또는 제안 섹션
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    val loadingContentDescription = stringResource(R.string.loading_action)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.semantics {
+                                contentDescription = loadingContentDescription
+                            },
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                uiState.errorMessageResId != null -> {
+                    EmptySearchResult(
+                        title = stringResource(uiState.errorMessageResId),
+                        description = stringResource(R.string.retry_later_message),
+                    )
+                }
+
+                !uiState.hasSearched -> {
+                    LazyColumn(
+                        state = categoryListState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.quick_categories),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
+                            )
+                        }
+                        item {
+                            QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
                         }
                     }
+                }
 
-                    uiState.guides.isEmpty() -> {
-                        EmptySearchResult(
-                            title = stringResource(R.string.no_search_results_title),
-                            description = stringResource(R.string.no_search_results_description),
-                        )
-                    }
+                uiState.guides.isEmpty() -> {
+                    EmptySearchResult(
+                        title = stringResource(R.string.no_search_results_title),
+                        description = stringResource(R.string.no_search_results_description),
+                    )
+                }
 
-                    else -> {
-                        Text(
-                            text = stringResource(
-                                R.string.search_results_count,
-                                uiState.guides.size
-                            ),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            ),
-                        )
-                        LazyColumn(
-                            state = searchResultListState,
-                            contentPadding = PaddingValues(bottom = 24.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(uiState.guides, key = { it.id }) { guide ->
-                                DisposalItemCard(
-                                    guide = guide,
-                                    onClick = { onGuideClick(guide) },
-                                )
-                            }
+                else -> {
+                    Text(
+                        text = stringResource(
+                            R.string.search_results_count,
+                            uiState.guides.size
+                        ),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                    )
+                    LazyColumn(
+                        state = searchResultListState,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(uiState.guides, key = { it.id }) { guide ->
+                            DisposalItemCard(
+                                guide = guide,
+                                onClick = { onGuideClick(guide) },
+                            )
                         }
                     }
                 }
