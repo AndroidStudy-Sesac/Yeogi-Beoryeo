@@ -12,16 +12,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Recycling
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -50,8 +51,8 @@ fun DisposalRouteChip(
         MetadataChip(
             text = route.label,
             modifier = modifier,
-            containerColor = route.containerColor,
-            contentColor = route.contentColor,
+            containerColor = route.containerColor(),
+            contentColor = route.contentColor(),
         )
         return
     }
@@ -61,7 +62,7 @@ fun DisposalRouteChip(
             modifier
                 .semantics { contentDescription = route.label }
                 .background(
-                    color = route.containerColor,
+                    color = route.containerColor(),
                     shape = RoundedCornerShape(8.dp),
                 )
                 .padding(8.dp),
@@ -71,7 +72,7 @@ fun DisposalRouteChip(
             imageVector = route.icon,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = route.contentColor,
+            tint = route.contentColor(),
         )
     }
 }
@@ -79,18 +80,30 @@ fun DisposalRouteChip(
 private enum class DisposalRouteStatus(
     val label: String,
     val icon: ImageVector?,
-    val containerColor: androidx.compose.ui.graphics.Color,
-    val contentColor: androidx.compose.ui.graphics.Color,
 ) {
     RECYCLABLE(
         "재활용 분리배출",
         Icons.Outlined.Recycling,
-        AppAccentColors.SoftMint,
-        AppAccentColors.Mint
     ),
-    LARGE_WASTE("신고 후 배출", Icons.Outlined.Phone, AppAccentColors.SoftAmber, AppAccentColors.Amber),
-    DEDICATED_COLLECTION("전용 수거", null, AppAccentColors.SoftSky, AppAccentColors.Sky),
+    LARGE_WASTE("신고 후 배출", Icons.Outlined.Phone),
+    DEDICATED_COLLECTION("전용 수거", null),
     ;
+
+    @Composable
+    fun containerColor(): Color =
+        when (this) {
+            RECYCLABLE -> MaterialTheme.colorScheme.secondaryContainer
+            LARGE_WASTE -> MaterialTheme.colorScheme.tertiaryContainer
+            DEDICATED_COLLECTION -> MaterialTheme.colorScheme.primaryContainer
+        }
+
+    @Composable
+    fun contentColor(): Color =
+        when (this) {
+            RECYCLABLE -> MaterialTheme.colorScheme.onSecondaryContainer
+            LARGE_WASTE -> MaterialTheme.colorScheme.onTertiaryContainer
+            DEDICATED_COLLECTION -> MaterialTheme.colorScheme.onPrimaryContainer
+        }
 
     companion object {
         fun from(guide: DisposalItemGuide): DisposalRouteStatus? =

@@ -17,7 +17,6 @@ import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 
@@ -34,8 +33,8 @@ fun DisposalInstructionCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppAccentColors.MainCyan,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
         )
     ) {
         Column(
@@ -81,4 +80,3 @@ private val koreanBodyLineBreak =
         strictness = LineBreak.Strictness.Loose,
         wordBreak = LineBreak.WordBreak.Unspecified,
     )
-

@@ -46,7 +46,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
@@ -126,7 +125,7 @@ fun ItemSearchScreen(
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = AppAccentColors.ScreenBackground,
+        containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -146,7 +145,7 @@ fun ItemSearchScreen(
                     Text(
                         text = stringResource(R.string.item_search_query_label),
                         style = MaterialTheme.typography.bodyLarge.copy(
-                            color = AppAccentColors.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp
                         )
                     )
@@ -156,7 +155,12 @@ fun ItemSearchScreen(
                         imageVector = Icons.Outlined.Recycling,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = if (uiState.query.isEmpty()) AppAccentColors.Gray else AppAccentColors.MainCyan
+                        tint =
+                            if (uiState.query.isEmpty()) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
                     )
                 },
                 trailingIcon = {
@@ -170,7 +174,7 @@ fun ItemSearchScreen(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(20.dp),
-                                    tint = AppAccentColors.Gray
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -183,7 +187,7 @@ fun ItemSearchScreen(
                                     .semantics {
                                         contentDescription = searchActionDescription
                                     },
-                                tint = AppAccentColors.MainCyan
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -193,11 +197,11 @@ fun ItemSearchScreen(
                 keyboardActions = KeyboardActions(onSearch = { onSearchClick() }),
                 shape = RoundedCornerShape(28.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppAccentColors.MainCyan,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = AppAccentColors.SoftGray,
-                    unfocusedContainerColor = AppAccentColors.SoftGray,
-                    cursorColor = AppAccentColors.MainCyan,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    cursorColor = MaterialTheme.colorScheme.primary,
                 )
             )
 
@@ -242,7 +246,7 @@ fun ItemSearchScreen(
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp,
-                                        color = AppAccentColors.DarkSlate
+                                        color = MaterialTheme.colorScheme.onSurface
                                     ),
                                 )
                             }
@@ -268,7 +272,7 @@ fun ItemSearchScreen(
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
-                                color = AppAccentColors.DarkSlate
+                                color = MaterialTheme.colorScheme.onSurface
                             ),
                         )
                         LazyColumn(

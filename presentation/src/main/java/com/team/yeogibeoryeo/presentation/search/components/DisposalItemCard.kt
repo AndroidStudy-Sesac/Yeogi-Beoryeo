@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.size
@@ -27,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
 
 /**
  * 검색 결과 리스트에 표시되는 개별 품목 카드입니다.
@@ -45,9 +43,9 @@ fun DisposalItemCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
-        border = BorderStroke(1.dp, AppAccentColors.SoftGrayStrong),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -66,7 +64,7 @@ fun DisposalItemCard(
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = AppAccentColors.DarkSlate
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                 )
 
@@ -77,7 +75,7 @@ fun DisposalItemCard(
                     Text(
                         text = firstInstruction,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = AppAccentColors.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp,
                             lineHeight = 22.sp
                         ),
@@ -91,7 +89,7 @@ fun DisposalItemCard(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = AppAccentColors.SoftGrayStrong
+                tint = MaterialTheme.colorScheme.outlineVariant
             )
         }
     }
@@ -100,4 +98,3 @@ fun DisposalItemCard(
 
 private fun String.toDisplayLabel(): String =
     if (this == "일반종량제폐기물") "종량제봉투" else this
-
