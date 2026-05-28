@@ -1,5 +1,6 @@
-package com.team.yeogibeoryeo.navigation
+package com.team.yeogibeoryeo.presentation.favorites
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,9 +20,12 @@ fun FavoritesScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(20.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 20.dp)
+                .padding(top = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(

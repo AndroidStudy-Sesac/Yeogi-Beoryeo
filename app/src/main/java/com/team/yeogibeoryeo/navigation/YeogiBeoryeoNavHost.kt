@@ -3,8 +3,8 @@ package com.team.yeogibeoryeo.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Recycling
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -20,6 +20,7 @@ import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.common.navigation.BottomNavigationItem
 import com.team.yeogibeoryeo.common.navigation.hasRouteName
 import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
+import com.team.yeogibeoryeo.presentation.favorites.FavoritesScreen
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
@@ -40,10 +41,10 @@ fun YeogiBeoryeoNavHost(
                 items =
                     listOf(
                         BottomNavigationItem(
-                            label = "Home",
-                            icon = Icons.Outlined.Home,
-                            selected = currentDestination.isHomeSelected(),
-                            onClick = { navController.navigateBottomTab(HomeRoute) },
+                            label = "Search",
+                            icon = Icons.Outlined.Recycling,
+                            selected = currentDestination.isItemSearchSelected(),
+                            onClick = { navController.navigateBottomTab(ItemSearchRoute()) },
                         ),
                         BottomNavigationItem(
                             label = "Map",
@@ -69,22 +70,9 @@ fun YeogiBeoryeoNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = HomeRoute,
+            startDestination = ItemSearchRoute(),
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<HomeRoute> {
-                HomeScreen(
-                    onItemSearch = { query ->
-                        navController.navigate(ItemSearchRoute(initialQuery = query))
-                    },
-                    onMapClick = { navController.navigateBottomTab(MapRoute) },
-                    onRegionalGuideClick = {
-                        navController.navigateBottomTab(RegionalGuideRoute())
-                    },
-                    onFavoritesClick = { navController.navigateBottomTab(FavoritesRoute) },
-                )
-            }
-
             composable<MapRoute> {
                 CollectionSpotMapScreen()
             }
@@ -122,7 +110,6 @@ fun YeogiBeoryeoNavHost(
     }
 }
 
-private fun NavDestination?.isHomeSelected(): Boolean =
-    hasRouteName<HomeRoute>() ||
-        hasRouteName<ItemSearchRoute>() ||
+private fun NavDestination?.isItemSearchSelected(): Boolean =
+    hasRouteName<ItemSearchRoute>() ||
         hasRouteName<ItemGuideDetailRoute>()
