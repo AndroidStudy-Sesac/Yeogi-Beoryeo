@@ -461,6 +461,60 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `getItemGuide는 대표 가이드 상세를 id로 직접 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            guideDetails =
+                                mapOf(
+                                    "플라스틱 용기" to
+                                            ItemGuideDetail(
+                                                steps = listOf("내용물을 비웁니다."),
+                                                cautions = emptyList(),
+                                                tip = null,
+                                                relatedSpotTypes = emptyList(),
+                                                sourceCategory = "플라스틱류",
+                                            ),
+                                ),
+                        ),
+                )
+
+            val result = repository.getItemGuide("플라스틱 용기")
+
+            assertEquals("플라스틱 용기", result?.name)
+            assertEquals(DisposalCategory.PLASTIC, result?.category)
+            assertEquals(DisposalSubCategory.PLASTIC_CONTAINER, result?.subCategory)
+            assertEquals(listOf("내용물을 비웁니다."), result?.steps)
+        }
+
+    @Test
+    fun `getItemGuide는 대표 가이드 상세가 없으면 품목 사전 검색 결과를 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "유리병",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "유리병")),
+                                        dischargeMethods = listOf("유리병 수거함으로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val result = repository.getItemGuide("유리병")
+
+            assertEquals("유리병", result?.name)
+            assertEquals(DisposalCategory.GLASS, result?.category)
+            assertEquals("유리병 수거함으로 배출합니다.", result?.instructions?.first()?.method)
+        }
+
+    @Test
     fun `getCategories는 모든 도메인 카테고리를 반환한다`() {
         val repository =
             DisposalItemGuideRepositoryImpl(

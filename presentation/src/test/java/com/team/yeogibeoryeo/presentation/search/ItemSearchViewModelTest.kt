@@ -302,6 +302,8 @@ class ItemSearchViewModelTest {
             return onCategory(category)
         }
 
+        override suspend fun getItemGuide(guideId: String): DisposalItemGuide? = null
+
         override fun getCategories(): List<DisposalCategory> = emptyList()
     }
 }
