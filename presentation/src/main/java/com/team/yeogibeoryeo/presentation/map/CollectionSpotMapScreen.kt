@@ -1,12 +1,5 @@
 package com.team.yeogibeoryeo.presentation.map
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.LocationManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,68 +13,38 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
-import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.map.components.CollectionSpotNaverMap
 import com.team.yeogibeoryeo.presentation.map.components.CurrentLocationButton
 import com.team.yeogibeoryeo.presentation.map.components.EmptySpotResult
 import com.team.yeogibeoryeo.presentation.map.components.MapSearchBar
 import com.team.yeogibeoryeo.presentation.map.components.SpotBottomList
 import com.team.yeogibeoryeo.presentation.map.components.SpotFilterChipRow
+import com.team.yeogibeoryeo.presentation.map.location.rememberCurrentLocationSearchRequester
 
 @Composable
 fun CollectionSpotMapScreen(
     modifier: Modifier = Modifier,
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { isGranted ->
-        if (isGranted) {
-            val coordinate = getLastKnownCoordinate(context)
-
-            if (coordinate != null) {
-                viewModel.searchByCurrentLocation(
-                    latitude = coordinate.latitude,
-                    longitude = coordinate.longitude,
-                )
-            } else {
-                viewModel.onCurrentLocationNotFound()
-            }
-        } else {
-            viewModel.onLocationPermissionDenied()
-        }
-    }
+    val requestCurrentLocationSearch = rememberCurrentLocationSearchRequester(
+        onGranted = viewModel::searchByCurrentLocation,
+        onDenied = viewModel::onLocationPermissionDenied,
+    )
 
     CollectionSpotMapContent(
         uiState = uiState,
         onKeywordChanged = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchByKeyword,
         onCurrentLocationClick = {
-            if (hasFineLocationPermission(context)) {
-                val coordinate = getLastKnownCoordinate(context)
-
-                if (coordinate != null) {
-                    viewModel.searchByCurrentLocation(
-                        latitude = coordinate.latitude,
-                        longitude = coordinate.longitude,
-                    )
-                } else {
-                    viewModel.onCurrentLocationNotFound()
-                }
-            } else {
-                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
+            requestCurrentLocationSearch()
         },
         onTypeClick = viewModel::onSpotTypeClick,
         onSpotClick = viewModel::onSpotClick,
@@ -171,43 +134,6 @@ private fun CollectionSpotMapContent(
                 )
             }
         }
-    }
-}
-
-private fun hasFineLocationPermission(
-    context: Context,
-): Boolean {
-    return ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.ACCESS_FINE_LOCATION,
-    ) == PackageManager.PERMISSION_GRANTED
-}
-
-@SuppressLint("MissingPermission")
-private fun getLastKnownCoordinate(
-    context: Context,
-): Coordinate? {
-    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-
-    return try {
-        val providers = locationManager.getProviders(true)
-
-        providers
-            .asSequence()
-            .mapNotNull { provider ->
-                locationManager.getLastKnownLocation(provider)
-            }
-            .maxByOrNull { location ->
-                location.time
-            }
-            ?.let { location ->
-                Coordinate(
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                )
-            }
-    } catch (exception: SecurityException) {
-        null
     }
 }
 

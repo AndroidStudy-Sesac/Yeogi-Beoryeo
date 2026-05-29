@@ -8,6 +8,8 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
+import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
+import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val searchCollectionSpotsByKeywordUseCase: SearchCollectionSpotsByKeywordUseCase,
     private val searchCollectionSpotsByLocationUseCase: SearchCollectionSpotsByLocationUseCase,
     private val filterCollectionSpotsUseCase: FilterCollectionSpotsUseCase,
+    private val currentLocationProvider: CurrentLocationProvider,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
@@ -85,10 +88,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    fun searchByCurrentLocation(
-        latitude: Double,
-        longitude: Double,
-    ) {
+    fun searchByCurrentLocation() {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -101,22 +101,38 @@ class CollectionSpotMapViewModel @Inject constructor(
                 )
             }
 
-            runCatching {
-                searchCollectionSpotsByLocationUseCase(
-                    coordinate = Coordinate(
-                        latitude = latitude,
-                        longitude = longitude,
-                    ),
-                    radiusMeter = DEFAULT_RADIUS_METER,
-                    types = emptySet(),
-                )
-            }.onSuccess { spots ->
-                updateSpotResult(spots)
-            }.onFailure { throwable ->
-                updateSpotFailure(
-                    message = throwable.message ?: "현재 위치 주변 수거 장소를 불러오지 못했습니다.",
-                )
+
+            when (val result = currentLocationProvider.getCurrentLocation()) {
+                is CurrentLocationResult.Found -> {
+                    searchByLocation(result.coordinate)
+                }
+
+                CurrentLocationResult.NotFound -> {
+                    onCurrentLocationNotFound()
+                }
+
+                CurrentLocationResult.PermissionDenied -> {
+                    onLocationPermissionDenied()
+                }
             }
+        }
+    }
+
+    private suspend fun searchByLocation(
+        coordinate: Coordinate,
+    ) {
+        runCatching {
+            searchCollectionSpotsByLocationUseCase(
+                coordinate = coordinate,
+                radiusMeter = DEFAULT_RADIUS_METER,
+                types = emptySet(),
+            )
+        }.onSuccess { spots ->
+            updateSpotResult(spots)
+        }.onFailure { throwable ->
+            updateSpotFailure(
+                message = throwable.message ?: "현재 위치 주변 수거 장소를 불러오지 못했습니다.",
+            )
         }
     }
 
@@ -155,7 +171,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = false,
                 errorMessage = null,
-                locationNoticeMessage = "현재 위치 검색은 위치 권한을 허용하면 사용할 수 있어요. 직접 동네나 주소를 검색할 수도 있습니다.",
+                locationNoticeMessage = "현재 위치 검색은 정확한 위치 권한을 허용하면 사용할 수 있어요. 직접 동네나 주소를 검색할 수도 있습니다.",
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
