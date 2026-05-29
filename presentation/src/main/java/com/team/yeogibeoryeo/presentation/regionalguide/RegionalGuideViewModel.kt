@@ -8,6 +8,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
+import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
@@ -155,20 +156,28 @@ class RegionalGuideViewModel @Inject constructor(
             _uiState.value = RegionalGuideUiState.Loading(query = trimmedKeyword)
 
             try {
-                val region = resolveRegionFromKeywordUseCase(trimmedKeyword)
+                when (val result = resolveRegionFromKeywordUseCase(trimmedKeyword)) {
+                    ResolveRegionFromKeywordResult.Ambiguous -> {
+                        _uiState.value = RegionalGuideUiState.Empty(
+                            query = trimmedKeyword,
+                            message = "여러 지역이 검색됩니다. 시도나 시군구를 함께 입력해주세요."
+                        )
+                    }
 
-                if (region == null) {
-                    _uiState.value = RegionalGuideUiState.Empty(
-                        query = trimmedKeyword,
-                        message = "입력한 지역명을 찾을 수 없습니다."
-                    )
-                    return@launch
+                    ResolveRegionFromKeywordResult.NotFound -> {
+                        _uiState.value = RegionalGuideUiState.Empty(
+                            query = trimmedKeyword,
+                            message = "입력한 지역명을 찾을 수 없습니다."
+                        )
+                    }
+
+                    is ResolveRegionFromKeywordResult.Resolved -> {
+                        loadRegionalGuide(
+                            query = trimmedKeyword,
+                            region = result.region
+                        )
+                    }
                 }
-
-                loadRegionalGuide(
-                    query = trimmedKeyword,
-                    region = region
-                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

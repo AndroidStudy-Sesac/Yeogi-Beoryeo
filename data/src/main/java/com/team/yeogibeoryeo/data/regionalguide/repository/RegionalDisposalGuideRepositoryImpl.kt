@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.data.regionalguide.repository
 
 import com.team.yeogibeoryeo.data.regionalguide.mapper.RegionalGuideMapper
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideDataSource
+import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
@@ -16,7 +17,7 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
 ) : RegionalDisposalGuideRepository {
 
     override suspend fun getRegionalDisposalGuide(region: Region): RegionalDisposalGuide? {
-        val sigungu = if (region.sido == "세종특별자치시") "없음" else  region.sigungu
+        val sigungu = if (region.sido == "세종특별자치시") "없음" else region.sigungu
 
         if (sigungu.isNullOrBlank()) return null
 
@@ -26,18 +27,31 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
             val dtoList = result.getOrNull() ?: emptyList()
             if (dtoList.isEmpty()) return null
 
+            val candidateDtos = dtoList.filterBySido(region.sido)
+            if (candidateDtos.isEmpty()) return null
+
             val eupmyeondong = region.eupmyeondong
 
             val targetDto = if (!eupmyeondong.isNullOrBlank()) {
-                dtoList.find { it.dongName?.trim() == eupmyeondong.trim() }
-                    ?: dtoList.find { it.dongName?.contains(eupmyeondong) == true }
-                    ?: dtoList.first()
+                candidateDtos.find { it.dongName?.trim() == eupmyeondong.trim() }
+                    ?: candidateDtos.find { it.dongName?.contains(eupmyeondong) == true }
+                    ?: candidateDtos.first()
             } else {
-                dtoList.first()
+                candidateDtos.first()
             }
             return RegionalGuideMapper.mapToDomain(region, targetDto)
         } else {
             return null
+        }
+    }
+
+    private fun List<RegionalGuideItemDto>.filterBySido(
+        sido: String?
+    ): List<RegionalGuideItemDto> {
+        if (sido.isNullOrBlank()) return this
+
+        return filter { dto ->
+            dto.sidoName?.trim() == sido.trim()
         }
     }
 }

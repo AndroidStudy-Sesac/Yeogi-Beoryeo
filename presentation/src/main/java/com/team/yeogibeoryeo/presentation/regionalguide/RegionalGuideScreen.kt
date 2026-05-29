@@ -90,10 +90,11 @@ fun RegionalGuideScreen(
     modifier: Modifier = Modifier,
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
+    val compactRegionText = uiState.queryOrNull()
     val isRegionSelectorCompact =
         uiState !is RegionalGuideUiState.Idle &&
             !isRegionSelectorExpanded &&
-            regionSelectorUiState.selectedRegionText != null
+            compactRegionText != null
 
     Column(
         modifier = modifier
@@ -134,6 +135,7 @@ fun RegionalGuideScreen(
             RegionSelectorSection(
                 uiState = regionSelectorUiState,
                 compact = isRegionSelectorCompact,
+                compactRegionText = compactRegionText,
                 onSidoSelected = onSidoSelected,
                 onSigunguSelected = onSigunguSelected,
                 onEupmyeondongSelected = onEupmyeondongSelected,
@@ -158,6 +160,15 @@ fun RegionalGuideScreen(
         )
     }
 }
+
+private fun RegionalGuideUiState.queryOrNull(): String? =
+    when (this) {
+        RegionalGuideUiState.Idle -> null
+        is RegionalGuideUiState.Loading -> query
+        is RegionalGuideUiState.Success -> query
+        is RegionalGuideUiState.Empty -> query
+        is RegionalGuideUiState.Error -> query
+    }?.takeIf { query -> query.isNotBlank() }
 
 @Composable
 private fun RegionalGuideContent(

@@ -35,6 +35,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorUiState
 fun RegionSelectorSection(
     uiState: RegionSelectorUiState,
     compact: Boolean = false,
+    compactRegionText: String? = uiState.selectedRegionText,
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
@@ -42,11 +43,9 @@ fun RegionSelectorSection(
     onChangeClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val selectedRegionText = uiState.selectedRegionText
-
-    if (compact && selectedRegionText != null) {
+    if (compact && compactRegionText != null) {
         RegionSelectorCompactCard(
-            selectedRegionText = selectedRegionText,
+            selectedRegionText = compactRegionText,
             onChangeClick = onChangeClick,
             modifier = modifier,
         )

@@ -1,6 +1,8 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.RegionOptionsLocalDataSource
+import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
+import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import javax.inject.Inject
 
@@ -36,10 +38,43 @@ class RegionOptionsRepositoryImpl @Inject constructor(
         return localDataSource.getRegions()
             .filter { region ->
                 region.sidoName == sido &&
-                        region.sigunguName.ifBlank { region.sidoName } == sigungu
+                    region.sigunguName.ifBlank { region.sidoName } == sigungu
             }
             .map { region -> region.eupmyeondongName }
             .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
             .distinct()
+    }
+
+    override suspend fun findRegionsByEupmyeondongKeyword(
+        keyword: String
+    ): List<Region> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val regions = localDataSource.getRegions()
+        val exactMatches = regions
+            .filter { region -> region.eupmyeondongName == targetKeyword }
+
+        val matchedRegions = exactMatches.ifEmpty {
+            regions.filter { region ->
+                region.eupmyeondongName.startsWith(targetKeyword)
+            }
+        }
+
+        return matchedRegions
+            .mapToRegion()
+            .distinct()
+    }
+
+    private fun List<AdministrativeRegionDto>.mapToRegion(): List<Region> {
+        return map { region ->
+            RegionNormalizer.normalize(
+                Region(
+                    sido = region.sidoName,
+                    sigungu = region.sigunguName.ifBlank { null },
+                    eupmyeondong = region.eupmyeondongName
+                )
+            )
+        }
     }
 }
