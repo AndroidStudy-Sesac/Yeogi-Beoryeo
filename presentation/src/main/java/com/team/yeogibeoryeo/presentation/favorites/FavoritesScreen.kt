@@ -3,57 +3,75 @@ package com.team.yeogibeoryeo.presentation.favorites
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.favorites.components.EmptyFavoritesCard
+import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteCard
 
 @Composable
 fun FavoritesScreen(
+    uiState: FavoritesUiState,
+    onItemGuideClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    LazyColumn(
         modifier =
             modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 20.dp)
-                .padding(top = 20.dp),
+                .padding(horizontal = 20.dp),
+        contentPadding = PaddingValues(top = 20.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "즐겨찾기",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-        )
+        item {
+            Text(
+                text = "즐겨찾기",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+        }
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = "즐겨찾기 화면은 준비 중입니다",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "저장된 장소와 품목 가이드 확인 기능은 후속 작업에서 연결할 예정입니다.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        when {
+            uiState.isLoading -> {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillParentMaxSize()
+                            .padding(top = 96.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+
+            uiState.favorites.isEmpty() -> {
+                item {
+                    EmptyFavoritesCard()
+                }
+            }
+
+            else -> {
+                items(
+                    items = uiState.favorites,
+                    key = { it.targetId },
+                ) { favorite ->
+                    FavoriteCard(
+                        favorite = favorite,
+                        onClick = { onItemGuideClick(favorite.targetId) },
+                    )
+                }
             }
         }
     }

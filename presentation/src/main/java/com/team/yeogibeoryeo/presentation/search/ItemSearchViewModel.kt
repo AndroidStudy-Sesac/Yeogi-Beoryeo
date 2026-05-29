@@ -2,6 +2,8 @@ package com.team.yeogibeoryeo.presentation.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalCategoryGuidesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
@@ -23,10 +25,27 @@ class ItemSearchViewModel
 constructor(
     private val searchDisposalItemGuidesUseCase: SearchDisposalItemGuidesUseCase,
     private val getDisposalCategoryGuidesUseCase: GetDisposalCategoryGuidesUseCase,
+    observeFavoritesUseCase: ObserveFavoritesUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ItemSearchUiState())
     val uiState: StateFlow<ItemSearchUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            observeFavoritesUseCase(FavoriteTargetType.ITEM_GUIDE)
+                .collect { favorites ->
+                    _uiState.update { state ->
+                        state.copy(
+                            favoriteGuideIds =
+                                favorites
+                                    .map { it.targetId }
+                                    .toSet(),
+                        )
+                    }
+                }
+        }
+    }
 
     fun onQueryChange(query: String) {
         searchJob?.cancel()
@@ -34,7 +53,7 @@ constructor(
             it.copy(
                 query = query,
                 guides = emptyList(),
-                selectedGuide = null,
+                pendingGuideToOpen = null,
                 isLoading = false,
                 hasSearched = false,
                 errorMessageResId = null,
@@ -42,12 +61,8 @@ constructor(
         }
     }
 
-    fun selectGuide(guide: DisposalItemGuide) {
-        _uiState.update { it.copy(selectedGuide = guide) }
-    }
-
-    fun clearSelectedGuide() {
-        _uiState.update { it.copy(selectedGuide = null) }
+    fun clearPendingGuideToOpen() {
+        _uiState.update { it.copy(pendingGuideToOpen = null) }
     }
 
     fun clearSearch() {
@@ -74,7 +89,7 @@ constructor(
             _uiState.update {
                 it.copy(
                     guides = emptyList(),
-                    selectedGuide = null,
+                    pendingGuideToOpen = null,
                     hasSearched = false,
                     errorMessageResId = null,
                 )
@@ -88,7 +103,7 @@ constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = true,
-                        selectedGuide = null,
+                        pendingGuideToOpen = null,
                         hasSearched = true,
                         errorMessageResId = null,
                     )
@@ -107,7 +122,7 @@ constructor(
                         _uiState.update {
                             it.copy(
                                 guides = emptyList(),
-                                selectedGuide = null,
+                                pendingGuideToOpen = null,
                                 isLoading = false,
                                 errorMessageResId = R.string.search_load_failed_message,
                             )
@@ -123,7 +138,7 @@ constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = true,
-                        selectedGuide = null,
+                        pendingGuideToOpen = null,
                         errorMessageResId = null,
                     )
                 }
@@ -137,7 +152,7 @@ constructor(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                selectedGuide = representativeGuide,
+                                pendingGuideToOpen = representativeGuide,
                             )
                         }
                     }
