@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -117,7 +118,7 @@ fun ItemSearchScreen(
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     onGuideClick: (DisposalItemGuide) -> Unit,
-    onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit = {},
+    onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
@@ -246,6 +247,7 @@ fun ItemSearchScreen(
                     LazyColumn(
                         state = categoryListState,
                         modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         item {
@@ -285,6 +287,7 @@ fun ItemSearchScreen(
                     )
                     LazyColumn(
                         state = searchResultListState,
+                        contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(uiState.guides, key = { it.id }) { guide ->

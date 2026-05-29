@@ -14,6 +14,7 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -31,6 +32,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -50,6 +52,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -71,6 +74,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -110,6 +114,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -127,6 +132,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -147,6 +153,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = { clickedGuide = it },
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -167,6 +174,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = { searchClickCount += 1 },
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -185,6 +193,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -203,6 +212,7 @@ class ItemSearchScreenTest {
                     onQueryChange = {},
                     onSearchClick = { searchClickCount += 1 },
                     onGuideClick = {},
+                    onQuickCategoryClick = {},
                 )
             }
         }
@@ -210,6 +220,29 @@ class ItemSearchScreenTest {
         composeTestRule.onNode(hasImeAction(ImeAction.Search)).performImeAction()
 
         assertEquals(1, searchClickCount)
+    }
+
+    @Test
+    fun quick_category를_누르면_카테고리_클릭_콜백을_호출한다() {
+        var clickedCategory: RepresentativeGuideCategory? = null
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = { clickedCategory = it },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("플라스틱")
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(RepresentativeGuideCategory.PLASTIC, clickedCategory)
     }
 
     private fun sampleGuide(name: String): DisposalItemGuide =

@@ -60,7 +60,7 @@ fun ItemGuideDetailScreen(
                 start = 24.dp,
                 top = 16.dp,
                 end = 24.dp,
-                bottom = 0.dp,
+                bottom = 24.dp,
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
