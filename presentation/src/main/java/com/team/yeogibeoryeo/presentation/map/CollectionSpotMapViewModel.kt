@@ -12,6 +12,8 @@ import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +32,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     val uiState: StateFlow<CollectionSpotMapUiState> = _uiState.asStateFlow()
 
     private var originalSpots: List<CollectionSpot> = emptyList()
+    private var spotSearchJob: Job? = null
 
     fun onSearchKeywordChanged(keyword: String) {
         _uiState.update {
@@ -45,6 +48,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         val keyword = uiState.value.searchKeyword.trim()
 
         if (keyword.isBlank()) {
+            spotSearchJob?.cancel()
             originalSpots = emptyList()
 
             _uiState.update {
@@ -61,7 +65,8 @@ class CollectionSpotMapViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        spotSearchJob?.cancel()
+        spotSearchJob = viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -81,6 +86,8 @@ class CollectionSpotMapViewModel @Inject constructor(
             }.onSuccess { spots ->
                 updateSpotResult(spots)
             }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
+
                 updateSpotFailure(
                     message = throwable.message ?: "수거 장소를 불러오지 못했습니다.",
                 )
@@ -89,7 +96,8 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun searchByCurrentLocation() {
-        viewModelScope.launch {
+        spotSearchJob?.cancel()
+        spotSearchJob = viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -100,7 +108,6 @@ class CollectionSpotMapViewModel @Inject constructor(
                     searchMode = MapSearchMode.CURRENT_LOCATION,
                 )
             }
-
 
             when (val result = currentLocationProvider.getCurrentLocation()) {
                 is CurrentLocationResult.Found -> {
@@ -130,6 +137,8 @@ class CollectionSpotMapViewModel @Inject constructor(
         }.onSuccess { spots ->
             updateSpotResult(spots)
         }.onFailure { throwable ->
+            if (throwable is CancellationException) throw throwable
+
             updateSpotFailure(
                 message = throwable.message ?: "현재 위치 주변 수거 장소를 불러오지 못했습니다.",
             )
@@ -166,8 +175,12 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onLocationPermissionDenied() {
+        originalSpots = emptyList()
+
         _uiState.update {
             it.copy(
+                spots = emptyList(),
+                selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
                 errorMessage = null,
@@ -178,9 +191,14 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onCurrentLocationNotFound() {
+        originalSpots = emptyList()
+
         _uiState.update {
             it.copy(
+                spots = emptyList(),
+                selectedSpot = null,
                 isLoading = false,
+                hasSearched = false,
                 errorMessage = null,
                 locationNoticeMessage = "현재 위치를 확인하지 못했습니다. 직접 동네나 주소를 검색해 주세요.",
                 searchMode = MapSearchMode.KEYWORD,

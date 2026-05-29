@@ -10,7 +10,9 @@ import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocation
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -35,6 +37,7 @@ class CollectionSpotMapViewModelTest {
             viewModel.searchByCurrentLocation()
 
             assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
@@ -55,6 +58,7 @@ class CollectionSpotMapViewModelTest {
             viewModel.searchByCurrentLocation()
 
             assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
@@ -130,6 +134,38 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
+    fun `현재 위치 검색 중 키워드 검색을 실행하면 최신 키워드 검색 결과를 유지한다`() =
+        runTest {
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(keywordSpot),
+                locationSpots = listOf(locationSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+            )
+
+            viewModel.searchByCurrentLocation()
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+
+            locationResult.complete(
+                CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals(listOf(keywordSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
     fun `위치 권한 거부 후에도 키워드 검색은 정상 동작한다`() =
         runTest {
             val expectedSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
@@ -153,11 +189,21 @@ class CollectionSpotMapViewModelTest {
         repository: FakeCollectionSpotRepository,
         currentLocationResult: CurrentLocationResult,
     ): CollectionSpotMapViewModel {
+        return createViewModel(
+            repository = repository,
+            currentLocationProvider = FakeCurrentLocationProvider(currentLocationResult),
+        )
+    }
+
+    private fun createViewModel(
+        repository: FakeCollectionSpotRepository,
+        currentLocationProvider: CurrentLocationProvider,
+    ): CollectionSpotMapViewModel {
         return CollectionSpotMapViewModel(
             searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(repository),
             searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
             filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
-            currentLocationProvider = FakeCurrentLocationProvider(currentLocationResult),
+            currentLocationProvider = currentLocationProvider,
         )
     }
 
@@ -176,10 +222,12 @@ class CollectionSpotMapViewModelTest {
     }
 
     private class FakeCurrentLocationProvider(
-        private val result: CurrentLocationResult,
+        private val resultProvider: suspend () -> CurrentLocationResult,
     ) : CurrentLocationProvider {
 
-        override suspend fun getCurrentLocation(): CurrentLocationResult = result
+        constructor(result: CurrentLocationResult) : this({ result })
+
+        override suspend fun getCurrentLocation(): CurrentLocationResult = resultProvider()
     }
 
     private class FakeCollectionSpotRepository(
