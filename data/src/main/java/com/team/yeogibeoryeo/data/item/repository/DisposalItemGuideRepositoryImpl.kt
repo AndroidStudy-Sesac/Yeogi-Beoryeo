@@ -57,29 +57,29 @@ constructor(
 
         return guideDetails
             .mapNotNull { (guideDetailKey, guideDetail) ->
-                val categoryInfo =
-                    resolveCategory(
-                        guideDetail = guideDetail,
-                    )
+                val categoryInfo = resolveCategory(guideDetail)
                 if (categoryInfo.first != category) return@mapNotNull null
 
-                val subCategory = categoryInfo.second
-
-                DisposalItemGuide(
-                    id = guideDetailKey,
-                    name = guideDetailKey,
-                    category = category,
-                    subCategory = subCategory,
-                    instructions = emptyList(),
-                    steps = guideDetail.steps,
-                    cautions = guideDetail.cautions,
-                    subGuides = guideDetail.subGuides,
-                    detailSections = guideDetail.sections,
-                    tip = guideDetail.tip,
-                    isRecyclable = DisposalRecyclability.fromCategory(category),
-                    relatedSpotTypes = guideDetail.relatedSpotTypes.takeIf { it.isNotEmpty() },
+                guideDetail.toDomain(
+                    guideDetailKey = guideDetailKey,
+                    categoryInfo = categoryInfo,
                 )
             }
+    }
+
+    override suspend fun getItemGuide(guideId: String): DisposalItemGuide? {
+        val guideDetail = localDataSource.getGuideDetails()[guideId]
+
+        return if (guideDetail != null) {
+            guideDetail.toDomain(
+                guideDetailKey = guideId,
+                categoryInfo = resolveCategory(guideDetail),
+            )
+        } else {
+            val searchResults = searchItemGuides(guideId)
+            searchResults.firstOrNull { it.id == guideId || it.name == guideId }
+                ?: searchResults.firstOrNull()
+        }
     }
 
     override fun getCategories(): List<DisposalCategory> = DisposalCategory.entries.toList()
@@ -117,4 +117,26 @@ constructor(
             ?.sourceCategory
             .toSourceCategoryInfo()
             ?: (DisposalCategory.OTHER to null)
+
+    private fun ItemGuideDetail.toDomain(
+        guideDetailKey: String,
+        categoryInfo: Pair<DisposalCategory, DisposalSubCategory?>,
+    ): DisposalItemGuide {
+        val category = categoryInfo.first
+
+        return DisposalItemGuide(
+            id = guideDetailKey,
+            name = guideDetailKey,
+            category = category,
+            subCategory = categoryInfo.second,
+            instructions = emptyList(),
+            steps = steps,
+            cautions = cautions,
+            subGuides = subGuides,
+            detailSections = sections,
+            tip = tip,
+            isRecyclable = DisposalRecyclability.fromCategory(category),
+            relatedSpotTypes = relatedSpotTypes.takeIf { it.isNotEmpty() },
+        )
+    }
 }

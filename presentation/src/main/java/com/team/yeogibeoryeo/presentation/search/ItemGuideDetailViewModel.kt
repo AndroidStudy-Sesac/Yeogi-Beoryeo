@@ -3,7 +3,7 @@ package com.team.yeogibeoryeo.presentation.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
-import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 class ItemGuideDetailViewModel
 @Inject
 constructor(
-    private val searchDisposalItemGuidesUseCase: SearchDisposalItemGuidesUseCase,
+    private val getDisposalItemGuideUseCase: GetDisposalItemGuideUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ItemGuideDetailUiState>(ItemGuideDetailUiState.Loading)
     val uiState: StateFlow<ItemGuideDetailUiState> = _uiState.asStateFlow()
@@ -26,10 +26,7 @@ constructor(
             _uiState.value = ItemGuideDetailUiState.Loading
 
             try {
-                val guides = searchDisposalItemGuidesUseCase(guideId)
-                val guide =
-                    guides.firstOrNull { it.id == guideId || it.name == guideId }
-                        ?: guides.firstOrNull()
+                val guide = getDisposalItemGuideUseCase(guideId)
 
                 _uiState.value =
                     if (guide != null) {
