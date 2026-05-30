@@ -3,7 +3,7 @@ package com.team.yeogibeoryeo.presentation.map.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
@@ -20,8 +20,11 @@ fun CollectionSpotNaverMap(
     spots: List<CollectionSpot>,
     selectedSpot: CollectionSpot?,
     onSpotClick: (CollectionSpot) -> Unit,
+    onMapClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaultMarkerColor = MaterialTheme.colorScheme.primary
+    val selectedMarkerColor = MaterialTheme.colorScheme.tertiary
     val markerSpots = spots.filter { spot ->
         spot.coordinate != null
     }
@@ -69,6 +72,9 @@ fun CollectionSpotNaverMap(
     NaverMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
+        onMapClick = { _, _ ->
+            onMapClick()
+        },
     ) {
         markerSpots.forEach { spot ->
             val coordinate = spot.coordinate ?: return@forEach
@@ -83,9 +89,9 @@ fun CollectionSpotNaverMap(
                 ),
                 captionText = spot.name,
                 iconTintColor = if (isSelected) {
-                    SELECTED_MARKER_COLOR
+                    selectedMarkerColor
                 } else {
-                    DEFAULT_MARKER_COLOR
+                    defaultMarkerColor
                 },
                 zIndex = if (isSelected) {
                     SELECTED_MARKER_Z_INDEX
@@ -105,9 +111,6 @@ private val DEFAULT_LOCATION = LatLng(
     37.5666102,
     126.9783881,
 )
-
-private val DEFAULT_MARKER_COLOR = Color(0xFF00C853)
-private val SELECTED_MARKER_COLOR = Color(0xFFFF7043)
 
 private const val DEFAULT_ZOOM = 12.0
 private const val SEARCH_RESULT_ZOOM = 15.0
