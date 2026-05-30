@@ -78,13 +78,9 @@ private fun CollectionSpotMapContent(
         uiState.searchMode == MapSearchMode.CURRENT_LOCATION
     val shouldShowBottomSheet = uiState.shouldShowBottomSheet && !isCurrentLocationSearching
     var mapUiMode by remember { mutableStateOf(MapUiMode.Browsing) }
+    var sheetLevel by remember { mutableStateOf(MapSheetLevel.Hidden) }
     var sheetRevealRequest by remember { mutableStateOf(0) }
     val selectedSpot = uiState.selectedSpot
-    val sheetLevel = when {
-        !shouldShowBottomSheet || mapUiMode == MapUiMode.Browsing -> MapSheetLevel.Hidden
-        mapUiMode == MapUiMode.SpotDetail && selectedSpot != null -> MapSheetLevel.Medium
-        else -> MapSheetLevel.Peek
-    }
 
     LaunchedEffect(
         uiState.hasSearched,
@@ -96,14 +92,17 @@ private fun CollectionSpotMapContent(
         when {
             isCurrentLocationSearching -> {
                 mapUiMode = MapUiMode.Browsing
+                sheetLevel = MapSheetLevel.Hidden
             }
 
             uiState.isLoading || uiState.errorMessage != null || uiState.locationNoticeMessage != null -> {
                 mapUiMode = MapUiMode.ResultList
+                sheetLevel = MapSheetLevel.Peek
             }
 
             uiState.hasSearched && mapUiMode == MapUiMode.Browsing -> {
                 mapUiMode = MapUiMode.ResultList
+                sheetLevel = MapSheetLevel.Peek
             }
         }
     }
@@ -111,8 +110,10 @@ private fun CollectionSpotMapContent(
     LaunchedEffect(selectedSpot?.id, uiState.spots) {
         if (selectedSpot == null && mapUiMode == MapUiMode.SpotDetail) {
             mapUiMode = if (uiState.hasSearched) {
+                sheetLevel = MapSheetLevel.Peek
                 MapUiMode.ResultList
             } else {
+                sheetLevel = MapSheetLevel.Hidden
                 MapUiMode.Browsing
             }
         }
@@ -126,14 +127,17 @@ private fun CollectionSpotMapContent(
             selectedSpot = uiState.selectedSpot,
             onSpotClick = { spot ->
                 mapUiMode = MapUiMode.SpotDetail
+                sheetLevel = MapSheetLevel.Medium
                 sheetRevealRequest += 1
                 onSpotClick(spot)
             },
             onMapClick = {
-                mapUiMode = if (mapUiMode == MapUiMode.Browsing) {
-                    MapUiMode.ResultList.takeIf { shouldShowBottomSheet } ?: MapUiMode.Browsing
+                if (mapUiMode == MapUiMode.Browsing) {
+                    mapUiMode = MapUiMode.ResultList.takeIf { shouldShowBottomSheet } ?: MapUiMode.Browsing
+                    sheetLevel = MapSheetLevel.Peek.takeIf { shouldShowBottomSheet } ?: MapSheetLevel.Hidden
                 } else {
-                    MapUiMode.Browsing
+                    mapUiMode = MapUiMode.Browsing
+                    sheetLevel = MapSheetLevel.Hidden
                 }
             },
             modifier = Modifier
@@ -147,14 +151,17 @@ private fun CollectionSpotMapContent(
                 onKeywordChanged = onKeywordChanged,
                 onSearchClick = {
                     mapUiMode = MapUiMode.ResultList
+                    sheetLevel = MapSheetLevel.Peek
                     onSearchClick()
                 },
                 onTypeClick = { type ->
                     mapUiMode = MapUiMode.ResultList
+                    sheetLevel = MapSheetLevel.Peek
                     onTypeClick(type)
                 },
                 onCurrentLocationClick = {
                     mapUiMode = MapUiMode.ResultList
+                    sheetLevel = MapSheetLevel.Peek
                     onCurrentLocationClick()
                 },
             )
@@ -168,6 +175,9 @@ private fun CollectionSpotMapContent(
             ThreeStepMapBottomSheet(
                 sheetLevel = sheetLevel,
                 revealKey = "$mapUiMode-${selectedSpot?.id}-$sheetRevealRequest",
+                onSheetLevelChanged = { level ->
+                    sheetLevel = level
+                },
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 when {
@@ -176,6 +186,7 @@ private fun CollectionSpotMapContent(
                             spot = selectedSpot,
                             onCloseClick = {
                                 mapUiMode = MapUiMode.ResultList
+                                sheetLevel = MapSheetLevel.Peek
                             },
                         )
                     }
@@ -192,6 +203,7 @@ private fun CollectionSpotMapContent(
                             onTypeClick = onTypeClick,
                             onSpotClick = { spot ->
                                 mapUiMode = MapUiMode.SpotDetail
+                                sheetLevel = MapSheetLevel.Medium
                                 sheetRevealRequest += 1
                                 onSpotClick(spot)
                             },
@@ -207,6 +219,7 @@ private fun CollectionSpotMapContent(
 private fun ThreeStepMapBottomSheet(
     sheetLevel: MapSheetLevel,
     revealKey: Any?,
+    onSheetLevelChanged: (MapSheetLevel) -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -227,12 +240,15 @@ private fun ThreeStepMapBottomSheet(
             (sheetHeight - MapSpotDetailBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
         }
         val expandedOffset = 0f
-        val targetOffset = when (sheetLevel) {
-            MapSheetLevel.Hidden -> hiddenOffset
-            MapSheetLevel.Peek -> peekOffset
-            MapSheetLevel.Medium -> mediumOffset
-            MapSheetLevel.Expanded -> expandedOffset
-        }
+        fun offsetFor(level: MapSheetLevel): Float =
+            when (level) {
+                MapSheetLevel.Hidden -> hiddenOffset
+                MapSheetLevel.Peek -> peekOffset
+                MapSheetLevel.Medium -> mediumOffset
+                MapSheetLevel.Expanded -> expandedOffset
+            }
+
+        val targetOffset = offsetFor(sheetLevel)
         val sheetOffset = remember(sheetHeightPx) {
             Animatable(targetOffset)
         }
@@ -263,17 +279,13 @@ private fun ThreeStepMapBottomSheet(
                             }
                         },
                         onDragEnd = {
-                            val nearestOffset = listOf(
-                                hiddenOffset,
-                                peekOffset,
-                                mediumOffset,
-                                expandedOffset,
-                            ).minBy { offset ->
-                                kotlin.math.abs(offset - sheetOffset.value)
+                            val nearestLevel = MapSheetLevel.entries.minBy { level ->
+                                kotlin.math.abs(offsetFor(level) - sheetOffset.value)
                             }
 
+                            onSheetLevelChanged(nearestLevel)
                             coroutineScope.launch {
-                                sheetOffset.animateTo(nearestOffset)
+                                sheetOffset.animateTo(offsetFor(nearestLevel))
                             }
                         },
                     )

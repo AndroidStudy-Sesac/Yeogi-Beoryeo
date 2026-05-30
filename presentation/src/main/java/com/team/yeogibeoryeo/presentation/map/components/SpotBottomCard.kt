@@ -26,7 +26,7 @@ import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 fun SpotBottomCard(
     spot: CollectionSpot,
     isSelected: Boolean,
-    onClick: (CollectionSpot) -> Unit,
+    onClick: ((CollectionSpot) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val containerColor = if (isSelected) {
@@ -44,13 +44,18 @@ fun SpotBottomCard(
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val cardModifier = modifier.fillMaxWidth().let { baseModifier ->
+        if (onClick == null) {
+            baseModifier
+        } else {
+            baseModifier.clickable {
+                onClick(spot)
+            }
+        }
+    }
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick(spot)
-            },
+        modifier = cardModifier,
         colors = CardDefaults.cardColors(
             containerColor = containerColor,
             contentColor = contentColor,

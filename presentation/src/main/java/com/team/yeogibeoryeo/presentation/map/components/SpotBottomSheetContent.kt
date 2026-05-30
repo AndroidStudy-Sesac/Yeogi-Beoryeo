@@ -140,7 +140,7 @@ fun SpotDetailBottomSheetContent(
         SpotBottomCard(
             spot = spot,
             isSelected = true,
-            onClick = {},
+            onClick = null,
             modifier = Modifier.fillMaxWidth(),
         )
 
