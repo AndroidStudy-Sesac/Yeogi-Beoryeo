@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordU
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
+import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -185,25 +186,109 @@ class CollectionSpotMapViewModelTest {
             assertNull(viewModel.uiState.value.locationNoticeMessage)
         }
 
+    @Test
+    fun `지도 진입 시 위치 권한이 있으면 현재 위치 검색을 자동 실행한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val expectedSpots = listOf(sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE))
+            val repository = FakeCollectionSpotRepository(locationSpots = expectedSpots)
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(currentCoordinate, repository.lastLocationCoordinate)
+            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `지도 진입 시 위치 권한이 없으면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = false,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
+            assertNull(viewModel.uiState.value.errorMessage)
+        }
+
+    @Test
+    fun `지도 진입 자동 현재 위치 검색은 여러 번 호출되어도 한 번만 실행된다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(1, repository.locationSearchCallCount)
+        }
+
+    @Test
+    fun `지도 진입 시 사용자가 검색어를 입력한 상태면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+        }
+
     private fun createViewModel(
         repository: FakeCollectionSpotRepository,
         currentLocationResult: CurrentLocationResult,
+        hasFineLocationPermission: Boolean = true,
     ): CollectionSpotMapViewModel {
         return createViewModel(
             repository = repository,
             currentLocationProvider = FakeCurrentLocationProvider(currentLocationResult),
+            hasFineLocationPermission = hasFineLocationPermission,
         )
     }
 
     private fun createViewModel(
         repository: FakeCollectionSpotRepository,
         currentLocationProvider: CurrentLocationProvider,
+        hasFineLocationPermission: Boolean = true,
     ): CollectionSpotMapViewModel {
         return CollectionSpotMapViewModel(
             searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(repository),
             searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
             filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
             currentLocationProvider = currentLocationProvider,
+            locationPermissionChecker = FakeLocationPermissionChecker(hasFineLocationPermission),
         )
     }
 
@@ -228,6 +313,12 @@ class CollectionSpotMapViewModelTest {
         constructor(result: CurrentLocationResult) : this({ result })
 
         override suspend fun getCurrentLocation(): CurrentLocationResult = resultProvider()
+    }
+
+    private class FakeLocationPermissionChecker(
+        private val hasFineLocationPermission: Boolean,
+    ) : LocationPermissionChecker {
+        override fun hasFineLocationPermission(): Boolean = hasFineLocationPermission
     }
 
     private class FakeCollectionSpotRepository(
