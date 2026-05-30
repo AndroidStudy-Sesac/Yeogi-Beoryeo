@@ -1,13 +1,7 @@
 package com.team.yeogibeoryeo.presentation.map
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,28 +10,29 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.naver.maps.map.compose.LocationTrackingMode
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.map.components.CollectionSpotNaverMap
 import com.team.yeogibeoryeo.presentation.map.components.CurrentLocationSearchLoadingOverlay
 import com.team.yeogibeoryeo.presentation.map.components.MapOverlayControls
+import com.team.yeogibeoryeo.presentation.map.components.MapResultBottomSheetPeekHeight
+import com.team.yeogibeoryeo.presentation.map.components.MapSheetLevel
+import com.team.yeogibeoryeo.presentation.map.components.MapSpotDetailBottomSheetPeekHeight
+import com.team.yeogibeoryeo.presentation.map.components.MyLocationButton
 import com.team.yeogibeoryeo.presentation.map.components.SpotBottomSheetContent
 import com.team.yeogibeoryeo.presentation.map.components.SpotDetailBottomSheetContent
+import com.team.yeogibeoryeo.presentation.map.components.ThreeStepMapBottomSheet
+import com.team.yeogibeoryeo.presentation.map.location.rememberFineLocationPermissionGranted
 import com.team.yeogibeoryeo.presentation.map.location.rememberCurrentLocationSearchRequester
-import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
 
 @Composable
 fun CollectionSpotMapScreen(
@@ -45,9 +40,35 @@ fun CollectionSpotMapScreen(
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val hasFineLocationPermission = rememberFineLocationPermissionGranted()
+    var hasGrantedLocationPermissionInSession by rememberSaveable {
+        mutableStateOf(false)
+    }
+    val isLocationPermissionGranted =
+        hasFineLocationPermission || hasGrantedLocationPermissionInSession
+    var locationTrackingMode by remember {
+        mutableStateOf(LocationTrackingMode.None)
+    }
+
+    LaunchedEffect(hasFineLocationPermission) {
+        if (!hasFineLocationPermission) {
+            hasGrantedLocationPermissionInSession = false
+        }
+    }
 
     val requestCurrentLocationSearch = rememberCurrentLocationSearchRequester(
-        onGranted = viewModel::searchByCurrentLocation,
+        onGranted = {
+            hasGrantedLocationPermissionInSession = true
+            locationTrackingMode = LocationTrackingMode.NoFollow
+            viewModel.searchByCurrentLocation()
+        },
+        onDenied = viewModel::onLocationPermissionDenied,
+    )
+    val requestMyLocationTracking = rememberCurrentLocationSearchRequester(
+        onGranted = {
+            hasGrantedLocationPermissionInSession = true
+            locationTrackingMode = LocationTrackingMode.Follow
+        },
         onDenied = viewModel::onLocationPermissionDenied,
     )
 
@@ -57,10 +78,18 @@ fun CollectionSpotMapScreen(
 
     CollectionSpotMapContent(
         uiState = uiState,
+        isLocationPermissionGranted = isLocationPermissionGranted,
+        locationTrackingMode = locationTrackingMode,
+        onLocationTrackingModeChange = { mode ->
+            locationTrackingMode = mode
+        },
         onKeywordChanged = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchByKeyword,
         onCurrentLocationClick = {
             requestCurrentLocationSearch()
+        },
+        onMyLocationPermissionRequest = {
+            requestMyLocationTracking()
         },
         onTypeClick = viewModel::onSpotTypeClick,
         onSpotClick = viewModel::onSpotClick,
@@ -71,9 +100,13 @@ fun CollectionSpotMapScreen(
 @Composable
 private fun CollectionSpotMapContent(
     uiState: CollectionSpotMapUiState,
+    isLocationPermissionGranted: Boolean,
+    locationTrackingMode: LocationTrackingMode,
+    onLocationTrackingModeChange: (LocationTrackingMode) -> Unit,
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
     onCurrentLocationClick: () -> Unit,
+    onMyLocationPermissionRequest: () -> Unit,
     onTypeClick: (CollectionSpotType) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
@@ -85,6 +118,17 @@ private fun CollectionSpotMapContent(
     var sheetLevel by remember { mutableStateOf(MapSheetLevel.Hidden) }
     var sheetRevealRequest by remember { mutableStateOf(0) }
     val selectedSpot = uiState.selectedSpot
+    val mapLocationTrackingMode = when {
+        !isLocationPermissionGranted -> LocationTrackingMode.None
+        locationTrackingMode == LocationTrackingMode.None -> LocationTrackingMode.NoFollow
+        else -> locationTrackingMode
+    }
+
+    LaunchedEffect(isLocationPermissionGranted) {
+        if (!isLocationPermissionGranted) {
+            onLocationTrackingModeChange(LocationTrackingMode.None)
+        }
+    }
 
     LaunchedEffect(
         uiState.hasSearched,
@@ -129,13 +173,17 @@ private fun CollectionSpotMapContent(
         CollectionSpotNaverMap(
             spots = uiState.spots,
             selectedSpot = uiState.selectedSpot,
+            isLocationPermissionGranted = isLocationPermissionGranted,
+            locationTrackingMode = mapLocationTrackingMode,
             onSpotClick = { spot ->
+                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                 mapUiMode = MapUiMode.SpotDetail
                 sheetLevel = MapSheetLevel.Medium
                 sheetRevealRequest += 1
                 onSpotClick(spot)
             },
             onMapClick = {
+                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                 if (mapUiMode == MapUiMode.Browsing) {
                     mapUiMode = MapUiMode.ResultList.takeIf { shouldShowBottomSheet } ?: MapUiMode.Browsing
                     sheetLevel = MapSheetLevel.Peek.takeIf { shouldShowBottomSheet } ?: MapSheetLevel.Hidden
@@ -154,6 +202,7 @@ private fun CollectionSpotMapContent(
                 selectedTypes = uiState.selectedTypes,
                 onKeywordChanged = onKeywordChanged,
                 onSearchClick = {
+                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                     mapUiMode = MapUiMode.ResultList
                     sheetLevel = MapSheetLevel.Peek
                     onSearchClick()
@@ -164,10 +213,33 @@ private fun CollectionSpotMapContent(
                     onTypeClick(type)
                 },
                 onCurrentLocationClick = {
+                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                     mapUiMode = MapUiMode.ResultList
                     sheetLevel = MapSheetLevel.Peek
                     onCurrentLocationClick()
                 },
+            )
+        }
+
+        if (mapUiMode != MapUiMode.SpotDetail) {
+            MyLocationButton(
+                isTracking = mapLocationTrackingMode == LocationTrackingMode.Follow,
+                onClick = {
+                    if (isLocationPermissionGranted) {
+                        onLocationTrackingModeChange(LocationTrackingMode.Follow)
+                    } else {
+                        onMyLocationPermissionRequest()
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = MyLocationButtonHorizontalPadding,
+                        bottom = myLocationButtonBottomPadding(
+                            sheetLevel = sheetLevel,
+                            shouldShowBottomSheet = shouldShowBottomSheet,
+                        ),
+                    ),
             )
         }
 
@@ -206,6 +278,7 @@ private fun CollectionSpotMapContent(
                             errorMessage = uiState.errorMessage,
                             onTypeClick = onTypeClick,
                             onSpotClick = { spot ->
+                                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                                 mapUiMode = MapUiMode.SpotDetail
                                 sheetLevel = MapSheetLevel.Medium
                                 sheetRevealRequest += 1
@@ -214,92 +287,6 @@ private fun CollectionSpotMapContent(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThreeStepMapBottomSheet(
-    sheetLevel: MapSheetLevel,
-    revealKey: Any?,
-    onSheetLevelChanged: (MapSheetLevel) -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val density = LocalDensity.current
-        val coroutineScope = rememberCoroutineScope()
-        val sheetHeight = maxHeight - MapSheetTopMargin
-        val sheetHeightPx = with(density) {
-            sheetHeight.toPx().coerceAtLeast(1f)
-        }
-        val hiddenOffset = with(density) {
-            (sheetHeight - Dp.Hairline).toPx().coerceIn(0f, sheetHeightPx)
-        }
-        val peekOffset = with(density) {
-            (sheetHeight - MapResultBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
-        }
-        val mediumOffset = with(density) {
-            (sheetHeight - MapSpotDetailBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
-        }
-        val expandedOffset = 0f
-        fun offsetFor(level: MapSheetLevel): Float =
-            when (level) {
-                MapSheetLevel.Hidden -> hiddenOffset
-                MapSheetLevel.Peek -> peekOffset
-                MapSheetLevel.Medium -> mediumOffset
-                MapSheetLevel.Expanded -> expandedOffset
-            }
-
-        val targetOffset = offsetFor(sheetLevel)
-        val sheetOffset = remember(sheetHeightPx) {
-            Animatable(targetOffset)
-        }
-
-        LaunchedEffect(targetOffset, revealKey) {
-            sheetOffset.animateTo(targetOffset)
-        }
-
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(sheetHeight)
-                .offset {
-                    IntOffset(x = 0, y = sheetOffset.value.roundToInt())
-                }
-                .pointerInput(sheetHeightPx, hiddenOffset, peekOffset, mediumOffset) {
-                    detectVerticalDragGestures(
-                        onVerticalDrag = { change, dragAmount ->
-                            change.consume()
-                            coroutineScope.launch {
-                                sheetOffset.snapTo(
-                                    (sheetOffset.value + dragAmount).coerceIn(
-                                        expandedOffset,
-                                        hiddenOffset,
-                                    ),
-                                )
-                            }
-                        },
-                        onDragEnd = {
-                            val nearestLevel = MapSheetLevel.entries.minBy { level ->
-                                kotlin.math.abs(offsetFor(level) - sheetOffset.value)
-                            }
-
-                            onSheetLevelChanged(nearestLevel)
-                            coroutineScope.launch {
-                                sheetOffset.animateTo(offsetFor(nearestLevel))
-                            }
-                        },
-                    )
-                },
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp,
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                content()
             }
         }
     }
@@ -318,17 +305,19 @@ private enum class MapUiMode {
     SpotDetail,
 }
 
-private enum class MapSheetLevel {
-    Hidden,
-    Peek,
-    Medium,
-    Expanded,
+private fun myLocationButtonBottomPadding(
+    sheetLevel: MapSheetLevel,
+    shouldShowBottomSheet: Boolean,
+) = if (!shouldShowBottomSheet) {
+    MyLocationButtonBottomPadding
+} else {
+    when (sheetLevel) {
+        MapSheetLevel.Hidden -> MyLocationButtonBottomPadding
+        MapSheetLevel.Peek -> MapResultBottomSheetPeekHeight + MyLocationButtonBottomPadding
+        MapSheetLevel.Medium -> MapSpotDetailBottomSheetPeekHeight + MyLocationButtonBottomPadding
+        MapSheetLevel.Expanded -> MyLocationButtonBottomPadding
+    }
 }
-
-private val MapSheetTopMargin = 72.dp
-private val MapStatusBottomSheetPeekHeight = 132.dp
-private val MapResultBottomSheetPeekHeight = 144.dp
-private val MapSpotDetailBottomSheetPeekHeight = 220.dp
 
 @Preview(showBackground = true)
 @Composable
@@ -340,12 +329,19 @@ private fun CollectionSpotMapContentPreview() {
                     searchKeyword = "문래동",
                     hasSearched = true,
                 ),
+                isLocationPermissionGranted = true,
+                locationTrackingMode = LocationTrackingMode.NoFollow,
+                onLocationTrackingModeChange = {},
                 onKeywordChanged = {},
                 onSearchClick = {},
                 onCurrentLocationClick = {},
+                onMyLocationPermissionRequest = {},
                 onTypeClick = {},
                 onSpotClick = {},
             )
         }
     }
 }
+
+private val MyLocationButtonHorizontalPadding = 16.dp
+private val MyLocationButtonBottomPadding = 16.dp

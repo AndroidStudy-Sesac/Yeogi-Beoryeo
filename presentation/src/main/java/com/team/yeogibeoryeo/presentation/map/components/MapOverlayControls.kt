@@ -116,6 +116,7 @@ private fun MapOverlayQuickControlArea(
 
         CurrentLocationButton(
             onClick = onCurrentLocationClick,
+            modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
 }
