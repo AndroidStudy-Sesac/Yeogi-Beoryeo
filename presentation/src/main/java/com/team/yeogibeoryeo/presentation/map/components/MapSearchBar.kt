@@ -15,11 +15,15 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MapSearchBar(
     keyword: String,
@@ -27,10 +31,19 @@ fun MapSearchBar(
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    fun submitSearch() {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+        onSearchClick()
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
     ) {
         OutlinedTextField(
             value = keyword,
@@ -44,7 +57,7 @@ fun MapSearchBar(
             singleLine = true,
             trailingIcon = {
                 IconButton(
-                    onClick = onSearchClick,
+                    onClick = ::submitSearch,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -57,7 +70,7 @@ fun MapSearchBar(
             ),
             keyboardActions = KeyboardActions(
                 onSearch = {
-                    onSearchClick()
+                    submitSearch()
                 },
             ),
         )

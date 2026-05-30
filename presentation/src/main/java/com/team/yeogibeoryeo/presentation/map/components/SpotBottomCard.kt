@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,25 +26,48 @@ import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 fun SpotBottomCard(
     spot: CollectionSpot,
     isSelected: Boolean,
-    onClick: (CollectionSpot) -> Unit,
+    onClick: ((CollectionSpot) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable {
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.tertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.onTertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val supportingContentColor = if (isSelected) {
+        MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.78f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val cardModifier = modifier.fillMaxWidth().let { baseModifier ->
+        if (onClick == null) {
+            baseModifier
+        } else {
+            baseModifier.clickable {
                 onClick(spot)
-            },
+            }
+        }
+    }
+
+    Card(
+        modifier = cardModifier,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
+            containerColor = containerColor,
+            contentColor = contentColor,
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 6.dp else 2.dp,
+            defaultElevation = if (isSelected) 8.dp else 2.dp,
         ),
+        border = if (isSelected) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary)
+        } else {
+            null
+        },
     ) {
         Column(
             modifier = Modifier
@@ -55,7 +79,7 @@ fun SpotBottomCard(
                     text = spot.type.toDisplayName(),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (isSelected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
+                        MaterialTheme.colorScheme.tertiary
                     } else {
                         MaterialTheme.colorScheme.primary
                     },
@@ -67,7 +91,7 @@ fun SpotBottomCard(
                     Text(
                         text = "${distanceMeter}m",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = supportingContentColor,
                     )
                 }
             }
@@ -83,7 +107,7 @@ fun SpotBottomCard(
                 text = spot.address,
                 modifier = Modifier.padding(top = 4.dp),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = supportingContentColor,
             )
 
             spot.detailLocation?.let { detailLocation ->
@@ -91,7 +115,7 @@ fun SpotBottomCard(
                     text = detailLocation,
                     modifier = Modifier.padding(top = 2.dp),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = supportingContentColor,
                 )
             }
         }
