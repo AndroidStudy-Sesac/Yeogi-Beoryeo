@@ -20,7 +20,7 @@ import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.common.navigation.BottomNavigationItem
 import com.team.yeogibeoryeo.common.navigation.hasRouteName
 import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
-import com.team.yeogibeoryeo.presentation.favorites.FavoritesScreen
+import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
@@ -86,7 +86,11 @@ fun YeogiBeoryeoNavHost(
             }
 
             composable<FavoritesRoute> {
-                FavoritesScreen()
+                FavoritesScreenRoute(
+                    onItemGuideClick = { guideId ->
+                        navController.navigate(ItemGuideDetailRoute(guideId = guideId))
+                    },
+                )
             }
 
             composable<ItemSearchRoute> { backStackEntry ->

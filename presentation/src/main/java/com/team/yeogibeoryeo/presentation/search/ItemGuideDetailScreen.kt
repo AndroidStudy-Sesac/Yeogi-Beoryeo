@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,10 +45,13 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 @Composable
 fun ItemGuideDetailScreen(
     guide: DisposalItemGuide,
+    isFavorite: Boolean,
     onBackClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val backActionDescription = stringResource(R.string.back_action)
+    val favoriteActionDescription = if (isFavorite) "즐겨찾기 해제" else "즐겨찾기 추가"
     val representativeCategory =
         RepresentativeGuideCategory.fromGuideName(guide.name)
             ?: RepresentativeGuideCategory.fromDisposalCategory(guide.category)
@@ -64,15 +69,37 @@ fun ItemGuideDetailScreen(
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        IconButton(onClick = onBackClick) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = backActionDescription,
-                modifier = Modifier.semantics {
-                    contentDescription = backActionDescription
-                },
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = backActionDescription,
+                    modifier = Modifier.semantics {
+                        contentDescription = backActionDescription
+                    },
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            IconButton(onClick = onFavoriteClick) {
+                Icon(
+                    imageVector = if (isFavorite) {
+                        Icons.Filled.Favorite
+                    } else {
+                        Icons.Outlined.FavoriteBorder
+                    },
+                    contentDescription = favoriteActionDescription,
+                    tint = if (isFavorite) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
         }
 
         Row(

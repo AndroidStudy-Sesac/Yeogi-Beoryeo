@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,11 +55,12 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 @Composable
 fun ItemSearchRoute(
     initialQuery: String? = null,
-    onGuideSelected: ((DisposalItemGuide) -> Unit)? = null,
+    onGuideSelected: (DisposalItemGuide) -> Unit,
     viewModel: ItemSearchViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectedGuide = uiState.selectedGuide
+    val pendingGuideToOpen = uiState.pendingGuideToOpen
+    val currentOnGuideSelected by rememberUpdatedState(onGuideSelected)
 
     val searchResultListState = rememberLazyListState()
     val categoryListState = rememberLazyListState()
@@ -75,20 +77,11 @@ fun ItemSearchRoute(
         }
     }
 
-    LaunchedEffect(selectedGuide?.id, onGuideSelected) {
-        if (selectedGuide != null && onGuideSelected != null) {
-            onGuideSelected(selectedGuide)
-            viewModel.clearSelectedGuide()
+    LaunchedEffect(pendingGuideToOpen?.id) {
+        if (pendingGuideToOpen != null) {
+            currentOnGuideSelected(pendingGuideToOpen)
+            viewModel.clearPendingGuideToOpen()
         }
-    }
-
-    if (selectedGuide != null && onGuideSelected == null) {
-        BackHandler(onBack = viewModel::clearSelectedGuide)
-        ItemGuideDetailScreen(
-            guide = selectedGuide,
-            onBackClick = viewModel::clearSelectedGuide,
-        )
-        return
     }
 
     if (uiState.hasSearched) {
@@ -99,13 +92,7 @@ fun ItemSearchRoute(
         uiState = uiState,
         onQueryChange = viewModel::onQueryChange,
         onSearchClick = viewModel::search,
-        onGuideClick = {
-            if (onGuideSelected != null) {
-                onGuideSelected(it)
-            } else {
-                viewModel.selectGuide(it)
-            }
-        },
+        onGuideClick = onGuideSelected,
         onQuickCategoryClick = viewModel::openCategoryGuide,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
@@ -294,6 +281,7 @@ fun ItemSearchScreen(
                             DisposalItemCard(
                                 guide = guide,
                                 onClick = { onGuideClick(guide) },
+                                isFavorite = guide.id in uiState.favoriteGuideIds,
                             )
                         }
                     }

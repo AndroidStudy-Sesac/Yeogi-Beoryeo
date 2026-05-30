@@ -40,6 +40,10 @@ dependencies {
     // Coroutine
     implementation(libs.bundles.coroutines)
 
+    // Room
+    implementation(libs.bundles.room)
+    ksp(libs.androidx.room.compiler)
+
     // Network
     implementation(libs.bundles.network)
 
