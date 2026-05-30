@@ -78,6 +78,7 @@ private fun CollectionSpotMapContent(
         uiState.searchMode == MapSearchMode.CURRENT_LOCATION
     val shouldShowBottomSheet = uiState.shouldShowBottomSheet && !isCurrentLocationSearching
     var mapUiMode by remember { mutableStateOf(MapUiMode.Browsing) }
+    var sheetRevealRequest by remember { mutableStateOf(0) }
     val selectedSpot = uiState.selectedSpot
     val sheetLevel = when {
         !shouldShowBottomSheet || mapUiMode == MapUiMode.Browsing -> MapSheetLevel.Hidden
@@ -125,6 +126,7 @@ private fun CollectionSpotMapContent(
             selectedSpot = uiState.selectedSpot,
             onSpotClick = { spot ->
                 mapUiMode = MapUiMode.SpotDetail
+                sheetRevealRequest += 1
                 onSpotClick(spot)
             },
             onMapClick = {
@@ -165,6 +167,7 @@ private fun CollectionSpotMapContent(
         if (shouldShowBottomSheet) {
             ThreeStepMapBottomSheet(
                 sheetLevel = sheetLevel,
+                revealKey = "$mapUiMode-${selectedSpot?.id}-$sheetRevealRequest",
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 when {
@@ -189,6 +192,7 @@ private fun CollectionSpotMapContent(
                             onTypeClick = onTypeClick,
                             onSpotClick = { spot ->
                                 mapUiMode = MapUiMode.SpotDetail
+                                sheetRevealRequest += 1
                                 onSpotClick(spot)
                             },
                         )
@@ -202,6 +206,7 @@ private fun CollectionSpotMapContent(
 @Composable
 private fun ThreeStepMapBottomSheet(
     sheetLevel: MapSheetLevel,
+    revealKey: Any?,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -232,7 +237,7 @@ private fun ThreeStepMapBottomSheet(
             Animatable(targetOffset)
         }
 
-        LaunchedEffect(targetOffset) {
+        LaunchedEffect(targetOffset, revealKey) {
             sheetOffset.animateTo(targetOffset)
         }
 
@@ -307,7 +312,7 @@ private enum class MapSheetLevel {
 private val MapSheetTopMargin = 72.dp
 private val MapStatusBottomSheetPeekHeight = 132.dp
 private val MapResultBottomSheetPeekHeight = 144.dp
-private val MapSpotDetailBottomSheetPeekHeight = 292.dp
+private val MapSpotDetailBottomSheetPeekHeight = 220.dp
 
 @Preview(showBackground = true)
 @Composable
