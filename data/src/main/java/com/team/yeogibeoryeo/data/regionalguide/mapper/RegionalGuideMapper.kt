@@ -17,10 +17,8 @@ object RegionalGuideMapper {
                 sido = baseRegion.sido ?: dto.sidoName?.trim(),
                 sigungu = baseRegion.sigungu ?: dto.sigunguName
                     ?.trim()
-                    ?.takeIf { sigunguName -> sigunguName.isSpecificRegionName() },
-                eupmyeondong = targetRegionName
-                    ?.takeIf { regionName -> regionName.isSpecificRegionName() }
-                    ?: baseRegion.eupmyeondong
+                    ?.takeIf { sigunguName -> sigunguName.isSpecificSigunguName() },
+                eupmyeondong = baseRegion.eupmyeondong
             )
         )
 
@@ -37,27 +35,6 @@ object RegionalGuideMapper {
         )
     }
 
-    private fun String.isSpecificRegionName(): Boolean {
-        return isNotBlank() &&
-            this !in NON_SPECIFIC_TARGET_REGION_NAMES &&
-            !endsWith("전체") &&
-            !endsWith("전역") &&
-            containsEupmyeondongName()
-    }
-
-    private fun String.containsEupmyeondongName(): Boolean {
-        return split("+", ",").any { regionName ->
-            val trimmedRegionName = regionName.trim()
-            trimmedRegionName.endsWith("읍") ||
-                trimmedRegionName.endsWith("면") ||
-                trimmedRegionName.endsWith("동")
-        }
-    }
-
-    private val NON_SPECIFIC_TARGET_REGION_NAMES = setOf(
-        "없음",
-        "전체",
-        "전역",
-        "관내"
-    )
+    private fun String.isSpecificSigunguName(): Boolean =
+        isNotBlank() && this != "없음"
 }

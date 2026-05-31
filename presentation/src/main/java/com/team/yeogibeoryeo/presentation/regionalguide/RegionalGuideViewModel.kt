@@ -158,7 +158,7 @@ class RegionalGuideViewModel @Inject constructor(
             try {
                 when (val result = resolveRegionFromKeywordUseCase(trimmedKeyword)) {
                     ResolveRegionFromKeywordResult.Ambiguous -> {
-                        _uiState.value = RegionalGuideUiState.Empty(
+                        _uiState.value = RegionalGuideUiState.Ambiguous(
                             query = trimmedKeyword,
                             message = "여러 지역이 검색됩니다. 시도나 시군구를 함께 입력해주세요."
                         )

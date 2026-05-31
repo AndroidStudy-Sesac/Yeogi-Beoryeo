@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionSelectorSection
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideAmbiguousResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideEmptyResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSearchBar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
@@ -167,6 +168,7 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
         is RegionalGuideUiState.Loading -> query
         is RegionalGuideUiState.Success -> query
         is RegionalGuideUiState.Empty -> query
+        is RegionalGuideUiState.Ambiguous -> query
         is RegionalGuideUiState.Error -> query
     }?.takeIf { query -> query.isNotBlank() }
 
@@ -197,6 +199,13 @@ private fun RegionalGuideContent(
 
         is RegionalGuideUiState.Empty -> {
             RegionalGuideEmptyResult(
+                message = uiState.message,
+                modifier = modifier
+            )
+        }
+
+        is RegionalGuideUiState.Ambiguous -> {
+            RegionalGuideAmbiguousResult(
                 message = uiState.message,
                 modifier = modifier
             )
@@ -418,6 +427,30 @@ private fun RegionalGuideScreenEmptyPreview() {
                 message = "해당 지역의 배출 가이드 정보가 없습니다."
             ),
             searchKeyword = "없는 지역",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
+            ),
+            onSearchKeywordChange = {},
+            onSearchClick = {},
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalGuideScreenAmbiguousPreview() {
+    MaterialTheme {
+        RegionalGuideScreen(
+            uiState = RegionalGuideUiState.Ambiguous(
+                query = "신흥동",
+                message = "여러 지역이 검색됩니다. 시도나 시군구를 함께 입력해주세요."
+            ),
+            searchKeyword = "신흥동",
             regionSelectorUiState = RegionSelectorUiState(
                 sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
             ),

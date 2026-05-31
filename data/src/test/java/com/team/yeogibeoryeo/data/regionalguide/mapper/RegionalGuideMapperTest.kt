@@ -87,7 +87,7 @@ class RegionalGuideMapperTest {
     }
 
     @Test
-    fun `대상지역이 구체적인 읍면동이면 Region 읍면동에 반영한다`() {
+    fun `대상지역이 구체적인 읍면동이어도 Region 읍면동을 덮어쓰지 않는다`() {
         val result = RegionalGuideMapper.mapToDomain(
             baseRegion = Region(
                 sido = "서울특별시",
@@ -101,8 +101,28 @@ class RegionalGuideMapperTest {
             )
         )
 
-        assertEquals("문래동", result.region.eupmyeondong)
+        assertNull(result.region.eupmyeondong)
         assertEquals("문래동", result.targetRegionName)
+    }
+
+    @Test
+    fun `기존 Region 읍면동이 있으면 대상지역 설명과 분리하여 유지한다`() {
+        val result = RegionalGuideMapper.mapToDomain(
+            baseRegion = Region(
+                sido = "인천광역시",
+                sigungu = "중구",
+                eupmyeondong = "신흥동",
+            ),
+            dto = RegionalGuideItemDto(
+                sidoName = "인천광역시",
+                sigunguName = "중구",
+                managementZoneName = "중구",
+                dongName = "신흥동+율목동+영종동+영종1동+영종2동+용유동",
+            )
+        )
+
+        assertEquals("신흥동", result.region.eupmyeondong)
+        assertEquals("신흥동+율목동+영종동+영종1동+영종2동+용유동", result.targetRegionName)
     }
 
     @Test

@@ -15,6 +15,7 @@ class RegionOptionsRepositoryImpl @Inject constructor(
             .map { region -> region.sidoName }
             .filter { sido -> sido.isNotBlank() }
             .distinct()
+            .sorted()
     }
 
     override suspend fun getSigunguOptions(
@@ -29,6 +30,7 @@ class RegionOptionsRepositoryImpl @Inject constructor(
             }
             .filter { sigungu -> sigungu.isNotBlank() }
             .distinct()
+            .sorted()
     }
 
     override suspend fun getEupmyeondongOptions(
@@ -43,6 +45,7 @@ class RegionOptionsRepositoryImpl @Inject constructor(
             .map { region -> region.eupmyeondongName }
             .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
             .distinct()
+            .sorted()
     }
 
     override suspend fun findRegionsByEupmyeondongKeyword(
@@ -64,6 +67,7 @@ class RegionOptionsRepositoryImpl @Inject constructor(
         return matchedRegions
             .mapToRegion()
             .distinct()
+            .sortedWith(REGION_NAME_COMPARATOR)
     }
 
     private fun List<AdministrativeRegionDto>.mapToRegion(): List<Region> {
@@ -76,5 +80,13 @@ class RegionOptionsRepositoryImpl @Inject constructor(
                 )
             )
         }
+    }
+
+    companion object {
+        private val REGION_NAME_COMPARATOR = compareBy<Region>(
+            { region -> region.sido.orEmpty() },
+            { region -> region.sigungu.orEmpty() },
+            { region -> region.eupmyeondong.orEmpty() }
+        )
     }
 }
