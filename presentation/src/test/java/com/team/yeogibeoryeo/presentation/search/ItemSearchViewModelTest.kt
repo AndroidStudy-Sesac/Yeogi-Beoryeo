@@ -13,9 +13,12 @@ import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -59,6 +62,20 @@ class ItemSearchViewModelTest {
             assertEquals(expected, viewModel.uiState.value.guides)
             assertFalse(viewModel.uiState.value.isLoading)
             assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 성공 시 검색 결과 버전을 증가시킨다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide(it)) })
+            val viewModel = createViewModel(repository)
+
+            viewModel.search("유리")
+            val firstVersion = viewModel.uiState.value.searchResultVersion
+            viewModel.search("비닐")
+
+            assertEquals(1, firstVersion)
+            assertEquals(2, viewModel.uiState.value.searchResultVersion)
         }
 
     @Test
@@ -179,17 +196,21 @@ class ItemSearchViewModelTest {
                     },
                 )
             val viewModel = createViewModel(repository)
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
 
             viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
             viewModel.openCategoryGuide(RepresentativeGuideCategory.PAPER)
             advanceUntilIdle()
 
             assertNull(viewModel.uiState.value.errorMessageResId)
-            assertEquals("종이", viewModel.uiState.value.pendingGuideToOpen?.name)
+            assertEquals(
+                "종이",
+                (event.await() as ItemSearchEvent.NavigateToGuide).guide.name,
+            )
         }
 
     @Test
-    fun `카테고리 선택 시 대표 가이드를 상세 상태로 저장한다`() =
+    fun `카테고리 선택 시 대표 가이드 이동 이벤트를 발행한다`() =
         runTest {
             val expected = listOf(
                 sampleGuide("비닐봉투"),
@@ -197,6 +218,7 @@ class ItemSearchViewModelTest {
             )
             val repository = FakeRepository(onCategory = { expected })
             val viewModel = createViewModel(repository)
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
 
             viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
             advanceUntilIdle()
@@ -204,7 +226,7 @@ class ItemSearchViewModelTest {
             assertEquals(listOf(DisposalCategory.VINYL), repository.requestedCategories)
             assertEquals(
                 RepresentativeGuideCategory.VINYL.representativeGuideName,
-                viewModel.uiState.value.pendingGuideToOpen?.name,
+                (event.await() as ItemSearchEvent.NavigateToGuide).guide.name,
             )
             assertEquals("", viewModel.uiState.value.query)
             assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
@@ -213,17 +235,18 @@ class ItemSearchViewModelTest {
         }
 
     @Test
-    fun `카테고리 대표 가이드가 없으면 첫 가이드를 상세 상태로 저장한다`() =
+    fun `카테고리 대표 가이드가 없으면 첫 가이드 이동 이벤트를 발행한다`() =
         runTest {
             val expected = sampleGuide("첫 번째 가이드")
             val repository =
                 FakeRepository(onCategory = { listOf(expected, sampleGuide("두 번째 가이드")) })
             val viewModel = createViewModel(repository)
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
 
             viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
             advanceUntilIdle()
 
-            assertEquals(expected, viewModel.uiState.value.pendingGuideToOpen)
+            assertEquals(expected, (event.await() as ItemSearchEvent.NavigateToGuide).guide)
         }
 
     @Test

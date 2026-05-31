@@ -13,8 +13,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,6 +32,8 @@ constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ItemSearchUiState())
     val uiState: StateFlow<ItemSearchUiState> = _uiState.asStateFlow()
+    private val _events = MutableSharedFlow<ItemSearchEvent>()
+    val events: SharedFlow<ItemSearchEvent> = _events.asSharedFlow()
     private var searchJob: Job? = null
 
     init {
@@ -53,16 +58,11 @@ constructor(
             it.copy(
                 query = query,
                 guides = emptyList(),
-                pendingGuideToOpen = null,
                 isLoading = false,
                 hasSearched = false,
                 errorMessageResId = null,
             )
         }
-    }
-
-    fun clearPendingGuideToOpen() {
-        _uiState.update { it.copy(pendingGuideToOpen = null) }
     }
 
     fun clearSearch() {
@@ -89,7 +89,6 @@ constructor(
             _uiState.update {
                 it.copy(
                     guides = emptyList(),
-                    pendingGuideToOpen = null,
                     hasSearched = false,
                     errorMessageResId = null,
                 )
@@ -103,7 +102,6 @@ constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = true,
-                        pendingGuideToOpen = null,
                         hasSearched = true,
                         errorMessageResId = null,
                     )
@@ -114,6 +112,7 @@ constructor(
                         _uiState.update {
                             it.copy(
                                 guides = guides,
+                                searchResultVersion = it.searchResultVersion + 1,
                                 isLoading = false,
                             )
                         }
@@ -122,7 +121,6 @@ constructor(
                         _uiState.update {
                             it.copy(
                                 guides = emptyList(),
-                                pendingGuideToOpen = null,
                                 isLoading = false,
                                 errorMessageResId = R.string.search_load_failed_message,
                             )
@@ -138,7 +136,6 @@ constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = true,
-                        pendingGuideToOpen = null,
                         errorMessageResId = null,
                     )
                 }
@@ -149,11 +146,9 @@ constructor(
                             guides.firstOrNull { it.name == category.representativeGuideName }
                                 ?: guides.firstOrNull()
 
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                pendingGuideToOpen = representativeGuide,
-                            )
+                        _uiState.update { it.copy(isLoading = false) }
+                        if (representativeGuide != null) {
+                            _events.emit(ItemSearchEvent.NavigateToGuide(representativeGuide))
                         }
                     }
                     .onFailure {
