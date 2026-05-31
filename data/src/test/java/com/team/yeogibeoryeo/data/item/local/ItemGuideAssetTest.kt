@@ -1,6 +1,6 @@
 package com.team.yeogibeoryeo.data.item.local
 
-import com.team.yeogibeoryeo.data.item.mapper.toSourceCategoryInfo
+import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
@@ -25,7 +25,7 @@ class ItemGuideAssetTest {
                     val sourceCategory = value.jsonObject["sourceCategory"]?.jsonPrimitive?.contentOrNull
                     when {
                         sourceCategory.isNullOrBlank() -> "$guideKey: <empty>"
-                        sourceCategory.toSourceCategoryInfo() == null -> sourceCategory
+                        DisposalCategory.fromDisplayName(sourceCategory) == null -> sourceCategory
                         else -> null
                     }
                 }

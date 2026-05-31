@@ -5,7 +5,6 @@ import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
-import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -297,7 +296,7 @@ class DisposalItemGuideRepositoryImplTest {
                                                 cautions = emptyList(),
                                                 tip = null,
                                                 relatedSpotTypes = emptyList(),
-                                                sourceCategory = "종이류",
+                                                sourceCategory = "종이",
                                             ),
                                     "유리병" to
                                             ItemGuideDetail(
@@ -358,7 +357,7 @@ class DisposalItemGuideRepositoryImplTest {
                                                 cautions = emptyList(),
                                                 tip = null,
                                                 relatedSpotTypes = emptyList(),
-                                                sourceCategory = "종이류",
+                                                sourceCategory = "종이",
                                             ),
                                 ),
                         ),
@@ -416,7 +415,7 @@ class DisposalItemGuideRepositoryImplTest {
                                                 ),
                                                 tip = "상자는 펼쳐서",
                                                 relatedSpotTypes = listOf(RelatedSpotType.RECYCLING_BIN),
-                                                sourceCategory = "종이류",
+                                                sourceCategory = "종이",
                                             ),
                                 ),
                         ),
@@ -485,7 +484,7 @@ class DisposalItemGuideRepositoryImplTest {
 
             assertEquals("플라스틱류", result?.name)
             assertEquals(DisposalCategory.PLASTIC, result?.category)
-            assertEquals(DisposalSubCategory.PLASTIC_CONTAINER, result?.subCategory)
+            assertNull(result?.subCategory)
             assertEquals(listOf("내용물을 비웁니다."), result?.steps)
         }
 

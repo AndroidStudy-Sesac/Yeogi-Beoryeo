@@ -41,7 +41,7 @@ class SearchComponentsTest {
             }
         }
 
-        composeTestRule.onNodeWithText("종이류").assertIsDisplayed()
+        composeTestRule.onNodeWithText("종이").assertIsDisplayed()
         composeTestRule.onNodeWithText("우유팩").assertIsDisplayed()
     }
 
@@ -54,11 +54,11 @@ class SearchComponentsTest {
         }
 
         composeTestRule.onNodeWithContentDescription("재활용 분리배출").assertIsDisplayed()
-        composeTestRule.onNodeWithText("유리류").assertIsDisplayed()
+        composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
     }
 
     @Test
-    fun 유해폐기물_가이드_메타데이터_칩은_전용_수거를_텍스트로_표시한다() {
+    fun 생활계_유해폐기물_가이드_메타데이터_칩은_전용_수거를_텍스트로_표시한다() {
         composeTestRule.setContent {
             MaterialTheme {
                 DisposalGuideMetadataChips(
@@ -72,7 +72,7 @@ class SearchComponentsTest {
         }
 
         composeTestRule.onNodeWithText("전용 수거").assertIsDisplayed()
-        composeTestRule.onNodeWithText("유해폐기물").assertIsDisplayed()
+        composeTestRule.onNodeWithText("생활계 유해폐기물").assertIsDisplayed()
     }
 
     @Test

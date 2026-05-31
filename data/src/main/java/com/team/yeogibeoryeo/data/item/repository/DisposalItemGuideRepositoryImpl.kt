@@ -3,12 +3,10 @@ package com.team.yeogibeoryeo.data.item.repository
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
-import com.team.yeogibeoryeo.data.item.mapper.toSourceCategoryInfo
 import com.team.yeogibeoryeo.data.item.mapper.toDomain as dictionaryToDomain
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalRecyclability
-import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
 import javax.inject.Inject
 
@@ -57,12 +55,12 @@ constructor(
 
         return guideDetails
             .mapNotNull { (guideDetailKey, guideDetail) ->
-                val categoryInfo = resolveCategory(guideDetail)
-                if (categoryInfo.first != category) return@mapNotNull null
+                val sourceCategory = resolveCategory(guideDetail)
+                if (sourceCategory != category) return@mapNotNull null
 
                 guideDetail.toDomain(
                     guideDetailKey = guideDetailKey,
-                    categoryInfo = categoryInfo,
+                    category = sourceCategory,
                 )
             }
     }
@@ -73,7 +71,7 @@ constructor(
         return if (guideDetail != null) {
             guideDetail.toDomain(
                 guideDetailKey = guideId,
-                categoryInfo = resolveCategory(guideDetail),
+                category = resolveCategory(guideDetail),
             )
         } else {
             val searchResults = searchItemGuides(guideId)
@@ -112,23 +110,21 @@ constructor(
 
     private fun resolveCategory(
         guideDetail: ItemGuideDetail?,
-    ): Pair<DisposalCategory, DisposalSubCategory?> =
+    ): DisposalCategory =
         guideDetail
             ?.sourceCategory
-            .toSourceCategoryInfo()
-            ?: (DisposalCategory.OTHER to null)
+            ?.let(DisposalCategory::fromDisplayName)
+            ?: DisposalCategory.OTHER
 
     private fun ItemGuideDetail.toDomain(
         guideDetailKey: String,
-        categoryInfo: Pair<DisposalCategory, DisposalSubCategory?>,
+        category: DisposalCategory,
     ): DisposalItemGuide {
-        val category = categoryInfo.first
-
         return DisposalItemGuide(
             id = guideDetailKey,
             name = guideDetailKey,
             category = category,
-            subCategory = categoryInfo.second,
+            subCategory = null,
             instructions = emptyList(),
             steps = steps,
             cautions = cautions,
