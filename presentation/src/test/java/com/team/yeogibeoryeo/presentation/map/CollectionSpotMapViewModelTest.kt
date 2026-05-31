@@ -247,6 +247,59 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
+    fun `지도 진입 시 이미 검색 결과가 있으면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(keywordSpot),
+                locationSpots = listOf(sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(listOf(keywordSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `지도 진입 시 다른 검색이 로딩 중이면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(locationSpots = listOf(locationSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocation()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            locationResult.complete(
+                CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(listOf(locationSpot), viewModel.uiState.value.spots)
+        }
+
+    @Test
     fun `지도 진입 시 사용자가 검색어를 입력한 상태면 자동 현재 위치 검색을 실행하지 않는다`() =
         runTest {
             val repository = FakeCollectionSpotRepository()
@@ -264,6 +317,37 @@ class CollectionSpotMapViewModelTest {
             assertEquals(0, repository.locationSearchCallCount)
             assertFalse(viewModel.uiState.value.hasSearched)
             assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+        }
+
+    @Test
+    fun `지도 진입 자동 현재 위치 검색 중 검색어를 입력하면 현재 위치 결과를 반영하지 않는다`() =
+        runTest {
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(locationSpots = listOf(locationSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            viewModel.onSearchKeywordChanged("문래동")
+            locationResult.complete(
+                CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
         }
 
     private fun createViewModel(

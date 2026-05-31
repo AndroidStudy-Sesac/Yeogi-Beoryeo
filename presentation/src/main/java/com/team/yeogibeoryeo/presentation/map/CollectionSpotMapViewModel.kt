@@ -38,11 +38,44 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var hasRequestedInitialCurrentLocationSearch = false
 
     fun onSearchKeywordChanged(keyword: String) {
+        val shouldCancelCurrentLocationSearch =
+            uiState.value.isLoading &&
+                uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION
+
+        if (shouldCancelCurrentLocationSearch) {
+            spotSearchJob?.cancel()
+        }
+
         _uiState.update {
             it.copy(
                 searchKeyword = keyword,
+                spots = if (shouldCancelCurrentLocationSearch) {
+                    emptyList()
+                } else {
+                    it.spots
+                },
+                selectedSpot = if (shouldCancelCurrentLocationSearch) {
+                    null
+                } else {
+                    it.selectedSpot
+                },
+                isLoading = if (shouldCancelCurrentLocationSearch) {
+                    false
+                } else {
+                    it.isLoading
+                },
+                hasSearched = if (shouldCancelCurrentLocationSearch) {
+                    false
+                } else {
+                    it.hasSearched
+                },
                 errorMessage = null,
                 locationNoticeMessage = null,
+                searchMode = if (shouldCancelCurrentLocationSearch) {
+                    MapSearchMode.KEYWORD
+                } else {
+                    it.searchMode
+                },
             )
         }
     }
