@@ -20,34 +20,47 @@ class RepresentativeGuideCategoryTest {
     }
 
     @Test
+    fun `대표 분리배출 분류의 표시명과 상세 조회명은 같다`() {
+        RepresentativeGuideCategory.entries.forEach { category ->
+            assertEquals(category.displayName, category.representativeGuideName)
+        }
+    }
+
+    @Test
+    fun `대표 분리배출 분류는 공식 분류 순서로 노출된다`() {
+        val expectedDisplayNames =
+            listOf(
+                "종이",
+                "종이팩",
+                "무색페트병",
+                "플라스틱류",
+                "비닐류",
+                "발포합성수지",
+                "유리병",
+                "금속류",
+                "의류 및 원단",
+                "전지",
+                "조명제품",
+                "전기전자제품",
+                "음식물류폐기물",
+                "일반종량제폐기물",
+                "불연성종량제폐기물",
+                "대형폐기물",
+                "공사장 생활폐기물",
+                "생활계 유해폐기물",
+                "기타",
+            )
+
+        assertEquals(expectedDisplayNames, RepresentativeGuideCategory.entries.map { it.displayName })
+    }
+
+    @Test
     fun `도메인 카테고리를 대표 카테고리로 매핑한다`() {
-        assertEquals(
-            RepresentativeGuideCategory.ELECTRONICS,
-            RepresentativeGuideCategory.fromDisposalCategory(DisposalCategory.ELECTRONICS),
-        )
-        assertEquals(
-            RepresentativeGuideCategory.GENERAL,
-            RepresentativeGuideCategory.fromDisposalCategory(DisposalCategory.GENERAL),
-        )
-        assertEquals(
-            RepresentativeGuideCategory.PAPER_PACK,
-            RepresentativeGuideCategory.fromDisposalCategory(DisposalCategory.PAPER_PACK),
-        )
-        assertEquals(
-            RepresentativeGuideCategory.BATTERY,
-            RepresentativeGuideCategory.fromDisposalCategory(DisposalCategory.BATTERY),
-        )
-        assertEquals(
-            RepresentativeGuideCategory.LIGHTING,
-            RepresentativeGuideCategory.fromDisposalCategory(DisposalCategory.LIGHTING),
-        )
-        assertEquals(
-            RepresentativeGuideCategory.NON_COMBUSTIBLE,
-            RepresentativeGuideCategory.fromDisposalCategory(DisposalCategory.NON_COMBUSTIBLE),
-        )
-        assertEquals(
-            RepresentativeGuideCategory.CONSTRUCTION_WASTE,
-            RepresentativeGuideCategory.fromDisposalCategory(DisposalCategory.CONSTRUCTION_WASTE),
-        )
+        RepresentativeGuideCategory.entries.forEach { category ->
+            assertEquals(
+                category,
+                RepresentativeGuideCategory.fromDisposalCategory(category.disposalCategory),
+            )
+        }
     }
 }

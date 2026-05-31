@@ -469,7 +469,7 @@ class DisposalItemGuideRepositoryImplTest {
                         FakeLocalSource(
                             guideDetails =
                                 mapOf(
-                                    "플라스틱 용기" to
+                                    "플라스틱류" to
                                             ItemGuideDetail(
                                                 steps = listOf("내용물을 비웁니다."),
                                                 cautions = emptyList(),
@@ -481,9 +481,9 @@ class DisposalItemGuideRepositoryImplTest {
                         ),
                 )
 
-            val result = repository.getItemGuide("플라스틱 용기")
+            val result = repository.getItemGuide("플라스틱류")
 
-            assertEquals("플라스틱 용기", result?.name)
+            assertEquals("플라스틱류", result?.name)
             assertEquals(DisposalCategory.PLASTIC, result?.category)
             assertEquals(DisposalSubCategory.PLASTIC_CONTAINER, result?.subCategory)
             assertEquals(listOf("내용물을 비웁니다."), result?.steps)

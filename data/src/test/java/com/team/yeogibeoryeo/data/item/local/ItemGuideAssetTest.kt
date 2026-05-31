@@ -66,6 +66,52 @@ class ItemGuideAssetTest {
     }
 
     @Test
+    fun `대표 상세 가이드의 key와 sourceCategory는 같은 공식 분류명이다`() {
+        val mismatchedItems =
+            parseObject("representative_guide_details.json")
+                .entries
+                .mapNotNull { (guideKey, value) ->
+                    val sourceCategory = value.jsonObject["sourceCategory"]?.jsonPrimitive?.contentOrNull
+                    if (guideKey == sourceCategory) null else "$guideKey: $sourceCategory"
+                }
+
+        assertTrue("key와 sourceCategory가 다른 상세 가이드: $mismatchedItems", mismatchedItems.isEmpty())
+    }
+
+    @Test
+    fun `대표 상세 가이드는 공식 분리배출 분류 순서를 따른다`() {
+        val expectedGuideKeys =
+            listOf(
+                "종이",
+                "종이팩",
+                "무색페트병",
+                "플라스틱류",
+                "비닐류",
+                "발포합성수지",
+                "유리병",
+                "금속류",
+                "의류 및 원단",
+                "전지",
+                "조명제품",
+                "전기전자제품",
+                "음식물류폐기물",
+                "일반종량제폐기물",
+                "불연성종량제폐기물",
+                "대형폐기물",
+                "공사장 생활폐기물",
+                "생활계 유해폐기물",
+                "기타",
+            )
+
+        val actualGuideKeys = parseObject("representative_guide_details.json").keys.toList()
+
+        assertTrue(
+            "대표 상세 가이드 순서가 공식 분류 순서와 다릅니다: $actualGuideKeys",
+            actualGuideKeys == expectedGuideKeys,
+        )
+    }
+
+    @Test
     fun `상세 가이드는 문서 섹션 기반 구조를 가진다`() {
         val map = parseObject("representative_guide_details.json")
         val invalidItems =
