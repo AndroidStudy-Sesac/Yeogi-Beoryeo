@@ -8,17 +8,22 @@ import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.LocationTrackingMode
+import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.MarkerState
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.presentation.map.location.rememberMapLocationSource
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun CollectionSpotNaverMap(
     spots: List<CollectionSpot>,
     selectedSpot: CollectionSpot?,
+    isLocationPermissionGranted: Boolean,
+    locationTrackingMode: LocationTrackingMode,
     onSpotClick: (CollectionSpot) -> Unit,
     onMapClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -28,6 +33,14 @@ fun CollectionSpotNaverMap(
     val markerSpots = spots.filter { spot ->
         spot.coordinate != null
     }
+    val locationSource = rememberMapLocationSource()
+    val mapProperties = MapProperties(
+        locationTrackingMode = if (isLocationPermissionGranted) {
+            locationTrackingMode
+        } else {
+            LocationTrackingMode.None
+        },
+    )
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition(
@@ -72,6 +85,10 @@ fun CollectionSpotNaverMap(
     NaverMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
+        properties = mapProperties,
+        locationSource = locationSource.takeIf {
+            isLocationPermissionGranted
+        },
         onMapClick = { _, _ ->
             onMapClick()
         },
