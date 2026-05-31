@@ -7,7 +7,7 @@ data class ItemSearchUiState(
     val query: String = "",
     val guides: List<DisposalItemGuide> = emptyList(),
     val favoriteGuideIds: Set<String> = emptySet(),
-    val pendingGuideToOpen: DisposalItemGuide? = null,
+    val searchResultVersion: Int = 0,
     val isLoading: Boolean = false,
     val hasSearched: Boolean = false,
     @param:StringRes val errorMessageResId: Int? = null,

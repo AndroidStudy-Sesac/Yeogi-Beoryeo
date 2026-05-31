@@ -9,7 +9,8 @@ import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavDestination
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,7 +19,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.common.navigation.BottomNavigationItem
-import com.team.yeogibeoryeo.common.navigation.hasRouteName
 import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
@@ -31,8 +31,8 @@ fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
-    val currentDestination =
-        navController.currentBackStackEntryAsState().value?.destination
+    val currentBackStackEntry = navController.currentBackStackEntryAsState().value
+    val currentDestination = currentBackStackEntry?.destination
 
     Scaffold(
         modifier = modifier,
@@ -43,25 +43,25 @@ fun YeogiBeoryeoNavHost(
                         BottomNavigationItem(
                             label = "Search",
                             icon = Icons.Outlined.Recycling,
-                            selected = currentDestination.isItemSearchSelected(),
+                            selected = currentBackStackEntry.isItemSearchSelected(),
                             onClick = { navController.navigateBottomTab(ItemSearchRoute()) },
                         ),
                         BottomNavigationItem(
                             label = "Map",
                             icon = Icons.Outlined.LocationOn,
-                            selected = currentDestination.hasRouteName<MapRoute>(),
+                            selected = currentDestination?.hasRoute<MapRoute>() == true,
                             onClick = { navController.navigateBottomTab(MapRoute) },
                         ),
                         BottomNavigationItem(
                             label = "Guide",
                             icon = Icons.Outlined.Today,
-                            selected = currentDestination.hasRouteName<RegionalGuideRoute>(),
+                            selected = currentDestination?.hasRoute<RegionalGuideRoute>() == true,
                             onClick = { navController.navigateBottomTab(RegionalGuideRoute()) },
                         ),
                         BottomNavigationItem(
                             label = "Favorites",
                             icon = Icons.Outlined.FavoriteBorder,
-                            selected = currentDestination.hasRouteName<FavoritesRoute>(),
+                            selected = currentBackStackEntry.isFavoritesSelected(),
                             onClick = { navController.navigateBottomTab(FavoritesRoute) },
                         ),
                     ),
@@ -88,7 +88,12 @@ fun YeogiBeoryeoNavHost(
             composable<FavoritesRoute> {
                 FavoritesScreenRoute(
                     onItemGuideClick = { guideId ->
-                        navController.navigate(ItemGuideDetailRoute(guideId = guideId))
+                        navController.navigate(
+                            ItemGuideDetailRoute(
+                                guideId = guideId,
+                                source = ItemGuideDetailSource.FAVORITES,
+                            ),
+                        )
                     },
                 )
             }
@@ -98,7 +103,12 @@ fun YeogiBeoryeoNavHost(
                 ItemSearchScreenRoute(
                     initialQuery = route.initialQuery,
                     onGuideSelected = { guide ->
-                        navController.navigate(ItemGuideDetailRoute(guideId = guide.id))
+                        navController.navigate(
+                            ItemGuideDetailRoute(
+                                guideId = guide.id,
+                                source = ItemGuideDetailSource.SEARCH,
+                            ),
+                        )
                     },
                 )
             }
@@ -114,6 +124,15 @@ fun YeogiBeoryeoNavHost(
     }
 }
 
-private fun NavDestination?.isItemSearchSelected(): Boolean =
-    hasRouteName<ItemSearchRoute>() ||
-        hasRouteName<ItemGuideDetailRoute>()
+private fun NavBackStackEntry?.isItemSearchSelected(): Boolean =
+    this?.destination?.hasRoute<ItemSearchRoute>() == true ||
+        isItemGuideDetailSource(ItemGuideDetailSource.SEARCH)
+
+private fun NavBackStackEntry?.isFavoritesSelected(): Boolean =
+    this?.destination?.hasRoute<FavoritesRoute>() == true ||
+        isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES)
+
+private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSource): Boolean =
+    this != null &&
+        destination.hasRoute<ItemGuideDetailRoute>() &&
+        toRoute<ItemGuideDetailRoute>().source == source

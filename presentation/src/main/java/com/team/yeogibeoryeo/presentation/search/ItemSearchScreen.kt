@@ -32,7 +32,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,15 +62,20 @@ fun ItemSearchRoute(
     viewModel: ItemSearchViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val pendingGuideToOpen = uiState.pendingGuideToOpen
     val currentOnGuideSelected by rememberUpdatedState(onGuideSelected)
 
     val searchResultListState = rememberLazyListState()
     val categoryListState = rememberLazyListState()
+    var handledSearchResultVersion by rememberSaveable { mutableIntStateOf(0) }
 
-    LaunchedEffect(uiState.guides) {
-        if (uiState.hasSearched && uiState.guides.isNotEmpty()) {
+    LaunchedEffect(uiState.searchResultVersion) {
+        if (
+            uiState.searchResultVersion != handledSearchResultVersion &&
+            uiState.hasSearched &&
+            uiState.guides.isNotEmpty()
+        ) {
             searchResultListState.scrollToItem(0)
+            handledSearchResultVersion = uiState.searchResultVersion
         }
     }
 
@@ -77,10 +85,11 @@ fun ItemSearchRoute(
         }
     }
 
-    LaunchedEffect(pendingGuideToOpen?.id) {
-        if (pendingGuideToOpen != null) {
-            currentOnGuideSelected(pendingGuideToOpen)
-            viewModel.clearPendingGuideToOpen()
+    LaunchedEffect(viewModel.events) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is ItemSearchEvent.NavigateToGuide -> currentOnGuideSelected(event.guide)
+            }
         }
     }
 

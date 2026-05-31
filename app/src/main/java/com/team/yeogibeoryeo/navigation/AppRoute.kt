@@ -22,4 +22,11 @@ data class ItemSearchRoute(
 @Serializable
 data class ItemGuideDetailRoute(
     val guideId: String,
+    val source: ItemGuideDetailSource = ItemGuideDetailSource.SEARCH,
 )
+
+@Serializable
+enum class ItemGuideDetailSource {
+    SEARCH,
+    FAVORITES,
+}
