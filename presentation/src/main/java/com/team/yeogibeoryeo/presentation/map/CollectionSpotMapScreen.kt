@@ -51,6 +51,10 @@ fun CollectionSpotMapScreen(
         onDenied = viewModel::onLocationPermissionDenied,
     )
 
+    LaunchedEffect(Unit) {
+        viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+    }
+
     CollectionSpotMapContent(
         uiState = uiState,
         onKeywordChanged = viewModel::onSearchKeywordChanged,

@@ -10,6 +10,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordU
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
+import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -26,6 +27,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val searchCollectionSpotsByLocationUseCase: SearchCollectionSpotsByLocationUseCase,
     private val filterCollectionSpotsUseCase: FilterCollectionSpotsUseCase,
     private val currentLocationProvider: CurrentLocationProvider,
+    private val locationPermissionChecker: LocationPermissionChecker,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
@@ -33,13 +35,47 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private var originalSpots: List<CollectionSpot> = emptyList()
     private var spotSearchJob: Job? = null
+    private var hasRequestedInitialCurrentLocationSearch = false
 
     fun onSearchKeywordChanged(keyword: String) {
+        val shouldCancelCurrentLocationSearch =
+            uiState.value.isLoading &&
+                uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION
+
+        if (shouldCancelCurrentLocationSearch) {
+            spotSearchJob?.cancel()
+        }
+
         _uiState.update {
             it.copy(
                 searchKeyword = keyword,
+                spots = if (shouldCancelCurrentLocationSearch) {
+                    emptyList()
+                } else {
+                    it.spots
+                },
+                selectedSpot = if (shouldCancelCurrentLocationSearch) {
+                    null
+                } else {
+                    it.selectedSpot
+                },
+                isLoading = if (shouldCancelCurrentLocationSearch) {
+                    false
+                } else {
+                    it.isLoading
+                },
+                hasSearched = if (shouldCancelCurrentLocationSearch) {
+                    false
+                } else {
+                    it.hasSearched
+                },
                 errorMessage = null,
                 locationNoticeMessage = null,
+                searchMode = if (shouldCancelCurrentLocationSearch) {
+                    MapSearchMode.KEYWORD
+                } else {
+                    it.searchMode
+                },
             )
         }
     }
@@ -188,6 +224,22 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
+    }
+
+    fun searchByCurrentLocationOnMapEntryIfPermitted() {
+        val currentState = uiState.value
+        if (
+            hasRequestedInitialCurrentLocationSearch ||
+            currentState.hasSearched ||
+            currentState.isLoading ||
+            currentState.searchKeyword.isNotBlank() ||
+            !locationPermissionChecker.hasFineLocationPermission()
+        ) {
+            return
+        }
+
+        hasRequestedInitialCurrentLocationSearch = true
+        searchByCurrentLocation()
     }
 
     fun onCurrentLocationNotFound() {
