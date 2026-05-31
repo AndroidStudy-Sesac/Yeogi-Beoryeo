@@ -34,6 +34,8 @@ private class PlayServicesMapLocationSource(
 
     @SuppressLint("MissingPermission")
     override fun activate(listener: LocationSource.OnLocationChangedListener) {
+        deactivate()
+
         if (!context.hasFineLocationPermission()) return
 
         val request = LocationRequest.Builder(
@@ -49,12 +51,16 @@ private class PlayServicesMapLocationSource(
             }
         }
 
-        locationCallback = callback
-        fusedLocationProviderClient.requestLocationUpdates(
-            request,
-            callback,
-            Looper.getMainLooper(),
-        )
+        try {
+            fusedLocationProviderClient.requestLocationUpdates(
+                request,
+                callback,
+                Looper.getMainLooper(),
+            )
+            locationCallback = callback
+        } catch (exception: SecurityException) {
+            locationCallback = null
+        }
     }
 
     override fun deactivate() {
