@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.hilt.android)
 }
@@ -48,6 +49,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.kotlinx.serialization.json)
 
     // Location
     implementation(libs.google.android.gms.play.services.location)

@@ -8,6 +8,8 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
+import com.team.yeogibeoryeo.presentation.map.cache.RecentCurrentLocationSpotCache
+import com.team.yeogibeoryeo.presentation.map.cache.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
@@ -28,6 +30,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val filterCollectionSpotsUseCase: FilterCollectionSpotsUseCase,
     private val currentLocationProvider: CurrentLocationProvider,
     private val locationPermissionChecker: LocationPermissionChecker,
+    private val recentCurrentLocationSpotCache: RecentCurrentLocationSpotCache,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
@@ -35,9 +38,12 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private var originalSpots: List<CollectionSpot> = emptyList()
     private var spotSearchJob: Job? = null
+    private var currentLocationRefreshJob: Job? = null
     private var hasRequestedInitialCurrentLocationSearch = false
 
     fun onSearchKeywordChanged(keyword: String) {
+        currentLocationRefreshJob?.cancel()
+
         val shouldCancelCurrentLocationSearch =
             uiState.value.isLoading &&
                 uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION
@@ -82,6 +88,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     fun searchByKeyword() {
         val keyword = uiState.value.searchKeyword.trim()
+        currentLocationRefreshJob?.cancel()
 
         if (keyword.isBlank()) {
             spotSearchJob?.cancel()
@@ -132,52 +139,44 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun searchByCurrentLocation() {
+        currentLocationRefreshJob?.cancel()
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    hasSearched = true,
-                    errorMessage = null,
-                    locationNoticeMessage = null,
-                    selectedSpot = null,
-                    searchMode = MapSearchMode.CURRENT_LOCATION,
-                )
-            }
-
-            when (val result = currentLocationProvider.getCurrentLocation()) {
-                is CurrentLocationResult.Found -> {
-                    searchByLocation(result.coordinate)
-                }
-
-                CurrentLocationResult.NotFound -> {
-                    onCurrentLocationNotFound()
-                }
-
-                CurrentLocationResult.PermissionDenied -> {
-                    onLocationPermissionDenied()
-                }
-            }
+            searchByCurrentLocationInternal(
+                showLoading = true,
+                preservePreviousResultOnFailure = false,
+            )
         }
     }
 
     private suspend fun searchByLocation(
         coordinate: Coordinate,
+        preservePreviousResultOnFailure: Boolean,
     ) {
-        runCatching {
-            searchCollectionSpotsByLocationUseCase(
+        try {
+            val spots = searchCollectionSpotsByLocationUseCase(
                 coordinate = coordinate,
                 radiusMeter = DEFAULT_RADIUS_METER,
                 types = emptySet(),
             )
-        }.onSuccess { spots ->
+
+            if (!canApplyCurrentLocationResult()) return
+
             updateSpotResult(spots)
-        }.onFailure { throwable ->
+            recentCurrentLocationSpotCache.saveRecentCurrentLocationSpots(
+                RecentCurrentLocationSpotCacheEntry(
+                    spots = spots,
+                    savedAtMillis = System.currentTimeMillis(),
+                ),
+            )
+        } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
 
-            updateSpotFailure(
-                message = throwable.message ?: "현재 위치 주변 수거 장소를 불러오지 못했습니다.",
-            )
+            if (!preservePreviousResultOnFailure) {
+                updateSpotFailure(
+                    message = throwable.message ?: "현재 위치 주변 수거 장소를 불러오지 못했습니다.",
+                )
+            }
         }
     }
 
@@ -239,7 +238,24 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
 
         hasRequestedInitialCurrentLocationSearch = true
-        searchByCurrentLocation()
+        spotSearchJob?.cancel()
+        spotSearchJob = viewModelScope.launch {
+            val cachedEntry = recentCurrentLocationSpotCache.getRecentCurrentLocationSpots()
+            val hasFreshCache = cachedEntry?.isFresh(System.currentTimeMillis()) == true
+
+            if (hasFreshCache && canStartInitialCurrentLocationSearch()) {
+                showCachedCurrentLocationSpots(cachedEntry.spots)
+                refreshCurrentLocationSilently()
+                return@launch
+            }
+
+            if (canStartInitialCurrentLocationSearch()) {
+                searchByCurrentLocationInternal(
+                    showLoading = true,
+                    preservePreviousResultOnFailure = false,
+                )
+            }
+        }
     }
 
     fun onCurrentLocationNotFound() {
@@ -297,6 +313,91 @@ class CollectionSpotMapViewModel @Inject constructor(
                 locationNoticeMessage = null,
             )
         }
+    }
+
+    private suspend fun searchByCurrentLocationInternal(
+        showLoading: Boolean,
+        preservePreviousResultOnFailure: Boolean,
+    ) {
+        if (showLoading) {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    hasSearched = true,
+                    errorMessage = null,
+                    locationNoticeMessage = null,
+                    selectedSpot = null,
+                    searchMode = MapSearchMode.CURRENT_LOCATION,
+                )
+            }
+        }
+
+        when (val result = currentLocationProvider.getCurrentLocation()) {
+            is CurrentLocationResult.Found -> {
+                searchByLocation(
+                    coordinate = result.coordinate,
+                    preservePreviousResultOnFailure = preservePreviousResultOnFailure,
+                )
+            }
+
+            CurrentLocationResult.NotFound -> {
+                if (!preservePreviousResultOnFailure) {
+                    onCurrentLocationNotFound()
+                }
+            }
+
+            CurrentLocationResult.PermissionDenied -> {
+                if (!preservePreviousResultOnFailure) {
+                    onLocationPermissionDenied()
+                }
+            }
+        }
+    }
+
+    private fun showCachedCurrentLocationSpots(spots: List<CollectionSpot>) {
+        originalSpots = spots
+
+        val filteredSpots = filterCollectionSpotsUseCase(
+            spots = originalSpots,
+            selectedTypes = uiState.value.selectedTypes,
+        )
+
+        _uiState.update {
+            it.copy(
+                spots = filteredSpots,
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = true,
+                errorMessage = null,
+                locationNoticeMessage = null,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+            )
+        }
+    }
+
+    private fun refreshCurrentLocationSilently() {
+        currentLocationRefreshJob?.cancel()
+        currentLocationRefreshJob = viewModelScope.launch {
+            searchByCurrentLocationInternal(
+                showLoading = false,
+                preservePreviousResultOnFailure = true,
+            )
+        }
+    }
+
+    private fun canStartInitialCurrentLocationSearch(): Boolean {
+        val currentState = uiState.value
+
+        return currentState.searchKeyword.isBlank() &&
+            (!currentState.hasSearched || currentState.searchMode == MapSearchMode.CURRENT_LOCATION) &&
+            locationPermissionChecker.hasFineLocationPermission()
+    }
+
+    private fun canApplyCurrentLocationResult(): Boolean {
+        val currentState = uiState.value
+
+        return currentState.searchKeyword.isBlank() &&
+            currentState.searchMode == MapSearchMode.CURRENT_LOCATION
     }
 
     private companion object {
