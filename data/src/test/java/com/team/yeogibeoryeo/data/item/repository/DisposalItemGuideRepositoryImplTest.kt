@@ -252,6 +252,34 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `searchItemGuides는 같은 매칭 등급이면 품목명 가나다순으로 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "전기히터",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("전기히터는 폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "전기다리미",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("전기다리미는 폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("전기")
+
+            assertEquals(listOf("전기다리미", "전기히터"), results.map { it.name })
+        }
+
+    @Test
     fun `searchItemGuides는 유사 품목 정확 일치를 유사 품목 부분 일치보다 우선한다`() =
         runBlocking {
             val repository =

@@ -42,7 +42,6 @@ constructor(
             .sortedWith(
                 compareBy(
                     { (_, rank) -> rank },
-                    { (item, _) -> item.name.length },
                     { (item, _) -> item.name },
                 ),
             )
