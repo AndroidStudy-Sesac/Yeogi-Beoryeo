@@ -1,52 +1,35 @@
 package com.team.yeogibeoryeo.presentation.search.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BatteryFull
-import androidx.compose.material.icons.outlined.Chair
-import androidx.compose.material.icons.outlined.Construction
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Diamond
-import androidx.compose.material.icons.outlined.DryCleaning
-import androidx.compose.material.icons.outlined.Fastfood
-import androidx.compose.material.icons.outlined.FreeBreakfast
-import androidx.compose.material.icons.outlined.Grass
-import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.Kitchen
-import androidx.compose.material.icons.outlined.Lightbulb
-import androidx.compose.material.icons.outlined.Liquor
-import androidx.compose.material.icons.outlined.LocalDrink
-import androidx.compose.material.icons.outlined.PropaneTank
-import androidx.compose.material.icons.outlined.ShoppingBag
-import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
-val RepresentativeGuideCategory.icon: ImageVector
+@get:DrawableRes
+val RepresentativeGuideCategory.iconResId: Int
     get() =
         when (this) {
-            RepresentativeGuideCategory.CONSTRUCTION_WASTE -> Icons.Outlined.Construction
-            RepresentativeGuideCategory.METAL -> Icons.Outlined.PropaneTank
-            RepresentativeGuideCategory.LARGE_WASTE -> Icons.Outlined.Chair
-            RepresentativeGuideCategory.COLORLESS_PET -> Icons.Outlined.LocalDrink
-            RepresentativeGuideCategory.STYROFOAM -> Icons.Outlined.Inventory2
-            RepresentativeGuideCategory.NON_COMBUSTIBLE -> Icons.Outlined.Diamond
-            RepresentativeGuideCategory.VINYL -> Icons.Outlined.ShoppingBag
-            RepresentativeGuideCategory.HAZARDOUS -> Icons.Outlined.WarningAmber
-            RepresentativeGuideCategory.GLASS -> Icons.Outlined.Liquor
-            RepresentativeGuideCategory.FOOD_WASTE -> Icons.Outlined.Fastfood
-            RepresentativeGuideCategory.CLOTHING -> Icons.Outlined.DryCleaning
-            RepresentativeGuideCategory.GENERAL -> Icons.Outlined.DeleteOutline
-            RepresentativeGuideCategory.ELECTRONICS -> Icons.Outlined.Kitchen
-            RepresentativeGuideCategory.BATTERY -> Icons.Outlined.BatteryFull
-            RepresentativeGuideCategory.LIGHTING -> Icons.Outlined.Lightbulb
-            RepresentativeGuideCategory.PAPER -> Icons.Outlined.Description
-            RepresentativeGuideCategory.PAPER_PACK -> Icons.Outlined.FreeBreakfast
-            RepresentativeGuideCategory.PLASTIC -> Icons.Outlined.Inventory2
-            RepresentativeGuideCategory.OTHER -> Icons.Outlined.Grass
+            RepresentativeGuideCategory.PAPER -> R.drawable.ic_disposal_category_paper
+            RepresentativeGuideCategory.PAPER_PACK -> R.drawable.ic_disposal_category_paper_pack
+            RepresentativeGuideCategory.COLORLESS_PET -> R.drawable.ic_disposal_category_colorless_pet
+            RepresentativeGuideCategory.PLASTIC -> R.drawable.ic_disposal_category_plastic
+            RepresentativeGuideCategory.VINYL -> R.drawable.ic_disposal_category_vinyl
+            RepresentativeGuideCategory.STYROFOAM -> R.drawable.ic_disposal_category_styrofoam
+            RepresentativeGuideCategory.GLASS -> R.drawable.ic_disposal_category_glass
+            RepresentativeGuideCategory.METAL -> R.drawable.ic_disposal_category_metal
+            RepresentativeGuideCategory.CLOTHING -> R.drawable.ic_disposal_category_clothing
+            RepresentativeGuideCategory.BATTERY -> R.drawable.ic_disposal_category_battery
+            RepresentativeGuideCategory.LIGHTING -> R.drawable.ic_disposal_category_lighting
+            RepresentativeGuideCategory.ELECTRONICS -> R.drawable.ic_disposal_category_electronics
+            RepresentativeGuideCategory.FOOD_WASTE -> R.drawable.ic_disposal_category_food_waste
+            RepresentativeGuideCategory.GENERAL -> R.drawable.ic_disposal_category_general
+            RepresentativeGuideCategory.NON_COMBUSTIBLE -> R.drawable.ic_disposal_category_non_combustible
+            RepresentativeGuideCategory.LARGE_WASTE -> R.drawable.ic_disposal_category_large_waste
+            RepresentativeGuideCategory.CONSTRUCTION_WASTE -> R.drawable.ic_disposal_category_construction_waste
+            RepresentativeGuideCategory.HAZARDOUS -> R.drawable.ic_disposal_category_hazardous
+            RepresentativeGuideCategory.OTHER -> R.drawable.ic_disposal_category_other
         }
 
 @Composable

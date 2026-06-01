@@ -1,15 +1,15 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun MyLocationButton(
@@ -32,7 +32,7 @@ fun MyLocationButton(
         },
     ) {
         Icon(
-            imageVector = Icons.Default.MyLocation,
+            painter = painterResource(id = CommonR.drawable.ic_action_current_location),
             contentDescription = "내 위치로 이동",
         )
     }

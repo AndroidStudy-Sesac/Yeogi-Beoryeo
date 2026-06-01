@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -33,12 +30,13 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
+import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
 import com.team.yeogibeoryeo.presentation.search.components.containerColor
-import com.team.yeogibeoryeo.presentation.search.components.icon
+import com.team.yeogibeoryeo.presentation.search.components.iconResId
 import com.team.yeogibeoryeo.presentation.search.components.iconTint
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
@@ -78,7 +76,7 @@ fun ItemGuideDetailScreen(
         ) {
             IconButton(onClick = onBackClick) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    painter = painterResource(id = CommonR.drawable.ic_action_back),
                     contentDescription = backActionDescription,
                     modifier = Modifier.semantics {
                         contentDescription = backActionDescription
@@ -89,11 +87,13 @@ fun ItemGuideDetailScreen(
 
             IconButton(onClick = onFavoriteClick) {
                 Icon(
-                    imageVector = if (isFavorite) {
-                        Icons.Filled.Favorite
-                    } else {
-                        Icons.Outlined.FavoriteBorder
-                    },
+                    painter = painterResource(
+                        id = if (isFavorite) {
+                            CommonR.drawable.ic_action_favorite_filled
+                        } else {
+                            CommonR.drawable.ic_action_favorite
+                        },
+                    ),
                     contentDescription = favoriteActionDescription,
                     tint = if (isFavorite) {
                         MaterialTheme.colorScheme.tertiary
@@ -119,7 +119,7 @@ fun ItemGuideDetailScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = representativeCategory.icon,
+                    painter = painterResource(id = representativeCategory.iconResId),
                     contentDescription = null,
                     modifier = Modifier.size(44.dp),
                     tint = representativeCategory.iconTint()

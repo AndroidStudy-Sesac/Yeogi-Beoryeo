@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,21 +9,20 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Phone
-import androidx.compose.material.icons.outlined.Recycling
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
+import com.team.yeogibeoryeo.common.R as CommonR
+import com.team.yeogibeoryeo.presentation.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -50,7 +50,7 @@ fun DisposalRouteChip(
     modifier: Modifier = Modifier,
 ) {
     val route = DisposalRouteStatus.from(guide) ?: return
-    if (route.icon == null) {
+    if (route.iconResId == null) {
         MetadataChip(
             text = route.label,
             modifier = modifier,
@@ -72,7 +72,7 @@ fun DisposalRouteChip(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = route.icon,
+            painter = painterResource(id = route.iconResId),
             contentDescription = null,
             modifier = Modifier.size(20.dp),
             tint = route.contentColor(),
@@ -82,13 +82,13 @@ fun DisposalRouteChip(
 
 private enum class DisposalRouteStatus(
     val label: String,
-    val icon: ImageVector?,
+    @param:DrawableRes val iconResId: Int?,
 ) {
     RECYCLABLE(
         "재활용 분리배출",
-        Icons.Outlined.Recycling,
+        CommonR.drawable.ic_symbol_recycle,
     ),
-    LARGE_WASTE("신고 후 배출", Icons.Outlined.Phone),
+    LARGE_WASTE("신고 후 배출", R.drawable.ic_disposal_route_report),
     DEDICATED_COLLECTION("전용 수거", null),
     ;
 
