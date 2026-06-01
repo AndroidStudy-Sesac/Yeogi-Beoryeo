@@ -29,6 +29,7 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 fun DisposalGuideMetadataChips(
     guide: DisposalItemGuide,
     modifier: Modifier = Modifier,
+    showCategoryChip: Boolean = true,
 ) {
     FlowRow(
         modifier = modifier,
@@ -36,7 +37,9 @@ fun DisposalGuideMetadataChips(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         DisposalRouteChip(guide = guide)
-        DisposalCategoryChip(category = guide.category)
+        if (showCategoryChip) {
+            DisposalCategoryChip(category = guide.category)
+        }
         guide.subCategory?.let { DisposalSubCategoryChip(subCategory = it) }
     }
 }

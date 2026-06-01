@@ -1,8 +1,10 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -29,14 +31,16 @@ class ItemGuideDetailScreenTest {
             MaterialTheme {
                 ItemGuideDetailScreen(
                     guide = sampleGuide(),
+                    isFavorite = false,
                     onBackClick = {},
+                    onFavoriteClick = {},
                 )
             }
         }
 
         composeTestRule.onNodeWithText("유리컵").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("재활용 분리배출").assertIsDisplayed()
-        composeTestRule.onNodeWithText("유리류").assertIsDisplayed()
+        composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
         composeTestRule.onNodeWithText("유리컵·그릇").assertIsDisplayed()
         composeTestRule.onNodeWithText("주의사항").assertIsDisplayed()
         composeTestRule.onNodeWithText("품목 특징").performScrollTo().assertIsDisplayed()
@@ -52,7 +56,9 @@ class ItemGuideDetailScreenTest {
             MaterialTheme {
                 ItemGuideDetailScreen(
                     guide = sampleGuide(),
+                    isFavorite = false,
                     onBackClick = { backClickCount += 1 },
+                    onFavoriteClick = {},
                 )
             }
         }
@@ -68,7 +74,9 @@ class ItemGuideDetailScreenTest {
             MaterialTheme {
                 ItemGuideDetailScreen(
                     guide = sampleGuide(),
+                    isFavorite = false,
                     onBackClick = {},
+                    onFavoriteClick = {},
                 )
             }
         }
@@ -90,7 +98,9 @@ class ItemGuideDetailScreenTest {
                                     DisposalSubGuide("기타 종이류", "이물질을 제거합니다."),
                                 ),
                         ),
+                    isFavorite = false,
                     onBackClick = {},
+                    onFavoriteClick = {},
                 )
             }
         }
@@ -113,7 +123,9 @@ class ItemGuideDetailScreenTest {
                                     DisposalGuideSection("배출방법", listOf("내용물을 비웁니다.")),
                                 ),
                         ),
+                    isFavorite = false,
                     onBackClick = {},
+                    onFavoriteClick = {},
                 )
             }
         }
@@ -146,7 +158,9 @@ class ItemGuideDetailScreenTest {
                                     ),
                                 ),
                         ),
+                    isFavorite = false,
                     onBackClick = {},
+                    onFavoriteClick = {},
                 )
             }
         }
@@ -164,7 +178,9 @@ class ItemGuideDetailScreenTest {
             MaterialTheme {
                 ItemGuideDetailScreen(
                     guide = sampleGuide(),
+                    isFavorite = false,
                     onBackClick = {},
+                    onFavoriteClick = {},
                 )
             }
         }
@@ -191,7 +207,9 @@ class ItemGuideDetailScreenTest {
                                     DisposalGuideSection("배출방법", listOf("종이류로 분리배출합니다.")),
                                 ),
                         ),
+                    isFavorite = false,
                     onBackClick = {},
+                    onFavoriteClick = {},
                 )
             }
         }
@@ -200,6 +218,28 @@ class ItemGuideDetailScreenTest {
             .onNodeWithText("지역별 배출 기준 안내")
             .performScrollTo()
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun 대표_카테고리_상세_화면은_제목과_같은_카테고리_칩을_숨긴다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemGuideDetailScreen(
+                    guide =
+                        sampleGuide().copy(
+                            id = "paper",
+                            name = RepresentativeGuideCategory.PAPER.representativeGuideName,
+                            category = DisposalCategory.PAPER,
+                            subCategory = null,
+                        ),
+                    isFavorite = false,
+                    onBackClick = {},
+                    onFavoriteClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onAllNodesWithText("종이").assertCountEquals(1)
     }
 
     private fun sampleGuide() =
@@ -217,3 +257,4 @@ class ItemGuideDetailScreenTest {
             relatedSpotTypes = emptyList(),
         )
 }
+

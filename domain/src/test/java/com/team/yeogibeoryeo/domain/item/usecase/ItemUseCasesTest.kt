@@ -51,7 +51,7 @@ class ItemUseCasesTest {
     fun `GetDisposalItemGuideUseCase는 id를 저장소에 전달한다`() =
         runBlocking {
             val captured = mutableListOf<String>()
-            val expected = sampleGuide("플라스틱 용기")
+            val expected = sampleGuide("플라스틱류")
             val repository =
                 FakeRepository(
                     onItem = { guideId ->
@@ -60,9 +60,9 @@ class ItemUseCasesTest {
                     },
                 )
 
-            val result = GetDisposalItemGuideUseCase(repository).invoke("플라스틱 용기")
+            val result = GetDisposalItemGuideUseCase(repository).invoke("플라스틱류")
 
-            assertEquals(listOf("플라스틱 용기"), captured)
+            assertEquals(listOf("플라스틱류"), captured)
             assertEquals(expected, result)
         }
 

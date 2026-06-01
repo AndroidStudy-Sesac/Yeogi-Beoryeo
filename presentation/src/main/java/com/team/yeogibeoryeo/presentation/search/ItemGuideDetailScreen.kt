@@ -52,8 +52,10 @@ fun ItemGuideDetailScreen(
 ) {
     val backActionDescription = stringResource(R.string.back_action)
     val favoriteActionDescription = if (isFavorite) "즐겨찾기 해제" else "즐겨찾기 추가"
+    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
+    val isRepresentativeGuide = matchedRepresentativeCategory != null
     val representativeCategory =
-        RepresentativeGuideCategory.fromGuideName(guide.name)
+        matchedRepresentativeCategory
             ?: RepresentativeGuideCategory.fromDisposalCategory(guide.category)
 
     Column(
@@ -137,7 +139,10 @@ fun ItemGuideDetailScreen(
                     )
                 )
 
-                DisposalGuideMetadataChips(guide = guide)
+                DisposalGuideMetadataChips(
+                    guide = guide,
+                    showCategoryChip = !isRepresentativeGuide,
+                )
             }
         }
 
