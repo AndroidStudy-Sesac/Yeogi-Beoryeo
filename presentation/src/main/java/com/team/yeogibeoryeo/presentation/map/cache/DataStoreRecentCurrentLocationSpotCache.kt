@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -29,6 +30,8 @@ class DataStoreRecentCurrentLocationSpotCache @Inject constructor(
         } catch (exception: IllegalArgumentException) {
             clearRecentCurrentLocationSpots()
             null
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             null
         }
@@ -43,6 +46,8 @@ class DataStoreRecentCurrentLocationSpotCache @Inject constructor(
             dataStore.edit { preferences ->
                 preferences[RECENT_CURRENT_LOCATION_SPOTS_KEY] = cacheJson
             }
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             // Cache writes must not fail the current location search success flow.
         }
@@ -53,6 +58,8 @@ class DataStoreRecentCurrentLocationSpotCache @Inject constructor(
             dataStore.edit { preferences ->
                 preferences.remove(RECENT_CURRENT_LOCATION_SPOTS_KEY)
             }
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             // Cache invalidation failure can be ignored safely.
         }
