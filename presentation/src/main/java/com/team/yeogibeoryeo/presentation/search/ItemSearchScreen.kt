@@ -18,10 +18,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Recycling
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
+import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
@@ -158,7 +156,7 @@ fun ItemSearchScreen(
             },
             leadingIcon = {
                 Icon(
-                    imageVector = Icons.Outlined.Recycling,
+                    painter = painterResource(id = CommonR.drawable.ic_symbol_recycle),
                     contentDescription = null,
                     modifier = Modifier.size(22.dp),
                     tint =
@@ -177,7 +175,7 @@ fun ItemSearchScreen(
                     if (uiState.query.isNotEmpty()) {
                         IconButton(onClick = { onQueryChange("") }) {
                             Icon(
-                                imageVector = Icons.Default.Close,
+                                painter = painterResource(id = CommonR.drawable.ic_action_close),
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -186,7 +184,7 @@ fun ItemSearchScreen(
                     }
                     IconButton(onClick = onSearchClick) {
                         Icon(
-                            imageVector = Icons.Outlined.Search,
+                            painter = painterResource(id = CommonR.drawable.ic_action_search),
                             contentDescription = searchActionDescription,
                             modifier = Modifier
                                 .size(24.dp)

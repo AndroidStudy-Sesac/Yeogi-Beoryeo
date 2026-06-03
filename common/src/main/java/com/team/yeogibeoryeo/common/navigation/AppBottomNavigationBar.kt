@@ -1,15 +1,16 @@
 package com.team.yeogibeoryeo.common.navigation
 
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 
 data class BottomNavigationItem(
     val label: String,
-    val icon: ImageVector,
+    @param:DrawableRes val iconResId: Int,
     val selected: Boolean,
     val onClick: () -> Unit,
 )
@@ -23,7 +24,12 @@ fun AppBottomNavigationBar(
             NavigationBarItem(
                 selected = item.selected,
                 onClick = item.onClick,
-                icon = { Icon(item.icon, contentDescription = null) },
+                icon = {
+                    Icon(
+                        painter = painterResource(id = item.iconResId),
+                        contentDescription = null,
+                    )
+                },
                 label = { Text(item.label) },
             )
         }

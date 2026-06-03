@@ -1,11 +1,6 @@
 package com.team.yeogibeoryeo.navigation
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Recycling
-import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,6 +18,8 @@ import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
+import com.team.yeogibeoryeo.common.R as CommonR
+import com.team.yeogibeoryeo.R as AppR
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
 
@@ -42,25 +39,25 @@ fun YeogiBeoryeoNavHost(
                     listOf(
                         BottomNavigationItem(
                             label = "Search",
-                            icon = Icons.Outlined.Recycling,
+                            iconResId = CommonR.drawable.ic_symbol_recycle,
                             selected = currentBackStackEntry.isItemSearchSelected(),
                             onClick = { navController.navigateBottomTab(ItemSearchRoute()) },
                         ),
                         BottomNavigationItem(
                             label = "Map",
-                            icon = Icons.Outlined.LocationOn,
+                            iconResId = AppR.drawable.ic_navigation_map,
                             selected = currentDestination?.hasRoute<MapRoute>() == true,
                             onClick = { navController.navigateBottomTab(MapRoute) },
                         ),
                         BottomNavigationItem(
                             label = "Guide",
-                            icon = Icons.Outlined.Today,
+                            iconResId = AppR.drawable.ic_navigation_guide,
                             selected = currentDestination?.hasRoute<RegionalGuideRoute>() == true,
                             onClick = { navController.navigateBottomTab(RegionalGuideRoute()) },
                         ),
                         BottomNavigationItem(
                             label = "Favorites",
-                            icon = Icons.Outlined.FavoriteBorder,
+                            iconResId = CommonR.drawable.ic_favorite,
                             selected = currentBackStackEntry.isFavoritesSelected(),
                             onClick = { navController.navigateBottomTab(FavoritesRoute) },
                         ),
