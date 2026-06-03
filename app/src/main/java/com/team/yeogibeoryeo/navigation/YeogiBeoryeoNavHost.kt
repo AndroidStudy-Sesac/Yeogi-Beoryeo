@@ -56,7 +56,7 @@ fun YeogiBeoryeoNavHost(
                         ),
                         BottomNavigationItem(
                             label = "Favorites",
-                            iconResId = CommonR.drawable.ic_action_favorite,
+                            iconResId = CommonR.drawable.ic_navigation_favorites,
                             selected = currentBackStackEntry.isFavoritesSelected(),
                             onClick = { navController.navigateBottomTab(FavoritesRoute) },
                         ),
