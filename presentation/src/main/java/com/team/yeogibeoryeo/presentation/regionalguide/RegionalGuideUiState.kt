@@ -19,6 +19,11 @@ sealed interface RegionalGuideUiState {
         val message: String = "조회된 지역별 배출 가이드가 없습니다."
     ) : RegionalGuideUiState
 
+    data class Ambiguous(
+        val query: String,
+        val message: String
+    ) : RegionalGuideUiState
+
     data class Error(
         val query: String,
         val message: String

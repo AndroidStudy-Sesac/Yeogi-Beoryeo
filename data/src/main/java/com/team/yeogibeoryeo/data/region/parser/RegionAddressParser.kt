@@ -4,14 +4,14 @@ import com.team.yeogibeoryeo.data.region.RegionNormalizer
 import com.team.yeogibeoryeo.domain.region.model.Region
 import javax.inject.Inject
 
-/**
- * 주소 문자열을 분석하여 [Region] 객체로 매핑하는 파서 (Parser)
- * 띄어쓰기 및 접미사 단위로 행정구역을 추출한 뒤, [RegionNormalizer]를 거쳐 최종 반환합니다.
- */
 class RegionAddressParser @Inject constructor() {
 
     fun parse(address: String): Region {
-        val parts = address.trim().split("\\s+".toRegex())
+        val normalizedAddress = address.trim()
+        val parts = normalizedAddress
+            .split(WHITESPACE_REGEX)
+            .map { part -> part.cleanRegionToken() }
+            .filter { part -> part.isNotBlank() }
 
         var sido: String? = null
         var sigungu: String? = null
@@ -19,27 +19,52 @@ class RegionAddressParser @Inject constructor() {
 
         parts.forEach { part ->
             when {
-                (part.endsWith("도") || part.endsWith("시") || part in SIDO_ABBR) && sido == null -> {
+                part.isSidoName() && sido == null -> {
                     sido = part
                 }
-                (part.endsWith("시") || part.endsWith("군") || part.endsWith("구")) && part != sido -> {
+
+                part.isSigunguName() && part != sido -> {
                     if (sigungu == null) sigungu = part
                 }
-                part.endsWith("읍") || part.endsWith("면") || part.endsWith("동") -> {
+
+                part.isEupmyeondongName() -> {
                     if (eupmyeondong == null) eupmyeondong = part
                 }
             }
         }
 
-        // 1차 파싱된 데이터를 정규화 유틸리티를 거쳐 최종 포맷으로 변환
-        val parsedRegion = Region(sido = sido, sigungu = sigungu, eupmyeondong = eupmyeondong)
+        val parsedRegion = Region(
+            sido = sido,
+            sigungu = sigungu,
+            eupmyeondong = eupmyeondong ?: normalizedAddress.extractParenthesizedEupmyeondong()
+        )
+
         return RegionNormalizer.normalize(parsedRegion)
     }
 
+    private fun String.cleanRegionToken(): String =
+        trim().trim('(', ')', '[', ']', ',', '.', ' ')
+
+    private fun String.extractParenthesizedEupmyeondong(): String? {
+        return PARENTHESIZED_REGION_REGEX
+            .findAll(this)
+            .mapNotNull { matchResult ->
+                matchResult.groupValues.getOrNull(1)?.cleanRegionToken()
+            }
+            .firstOrNull { token -> token.isEupmyeondongName() }
+    }
+
+    private fun String.isSidoName(): Boolean =
+        RegionNormalizer.isSidoName(this)
+
+    private fun String.isSigunguName(): Boolean =
+        endsWith("시") || endsWith("군") || endsWith("구")
+
+    private fun String.isEupmyeondongName(): Boolean =
+        endsWith("읍") || endsWith("면") || endsWith("동")
+
     companion object {
-        private val SIDO_ABBR = setOf(
-            "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
-            "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
-        )
+        private val WHITESPACE_REGEX = "\\s+".toRegex()
+        private val PARENTHESIZED_REGION_REGEX = "\\(([^)]+)\\)".toRegex()
     }
 }
