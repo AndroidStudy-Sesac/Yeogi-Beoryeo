@@ -33,7 +33,7 @@ fun FavoriteSnackbar(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                painter = painterResource(id = CommonR.drawable.ic_action_favorite_filled),
+                painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.tertiary,

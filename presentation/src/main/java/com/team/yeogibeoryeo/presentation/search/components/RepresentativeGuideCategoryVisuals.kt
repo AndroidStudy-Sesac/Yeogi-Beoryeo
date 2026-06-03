@@ -17,14 +17,14 @@ val RepresentativeGuideCategory.iconResId: Int
             RepresentativeGuideCategory.PLASTIC -> R.drawable.ic_disposal_category_plastic
             RepresentativeGuideCategory.VINYL -> R.drawable.ic_disposal_category_vinyl
             RepresentativeGuideCategory.STYROFOAM -> R.drawable.ic_disposal_category_styrofoam
-            RepresentativeGuideCategory.GLASS -> R.drawable.ic_disposal_category_glass
+            RepresentativeGuideCategory.GLASS -> R.drawable.ic_disposal_category_glass_bottle
             RepresentativeGuideCategory.METAL -> R.drawable.ic_disposal_category_metal
             RepresentativeGuideCategory.CLOTHING -> R.drawable.ic_disposal_category_clothing
             RepresentativeGuideCategory.BATTERY -> R.drawable.ic_disposal_category_battery
             RepresentativeGuideCategory.LIGHTING -> R.drawable.ic_disposal_category_lighting
             RepresentativeGuideCategory.ELECTRONICS -> R.drawable.ic_disposal_category_electronics
             RepresentativeGuideCategory.FOOD_WASTE -> R.drawable.ic_disposal_category_food_waste
-            RepresentativeGuideCategory.GENERAL -> R.drawable.ic_disposal_category_general
+            RepresentativeGuideCategory.GENERAL -> R.drawable.ic_disposal_category_general_waste
             RepresentativeGuideCategory.NON_COMBUSTIBLE -> R.drawable.ic_disposal_category_non_combustible
             RepresentativeGuideCategory.LARGE_WASTE -> R.drawable.ic_disposal_category_large_waste
             RepresentativeGuideCategory.CONSTRUCTION_WASTE -> R.drawable.ic_disposal_category_construction_waste

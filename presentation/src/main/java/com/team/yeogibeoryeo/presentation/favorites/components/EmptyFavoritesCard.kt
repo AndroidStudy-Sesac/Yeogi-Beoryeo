@@ -34,7 +34,7 @@ fun EmptyFavoritesCard(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
-                painter = painterResource(id = CommonR.drawable.ic_action_favorite),
+                painter = painterResource(id = CommonR.drawable.ic_favorite),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.tertiary,
             )

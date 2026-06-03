@@ -89,9 +89,9 @@ fun ItemGuideDetailScreen(
                 Icon(
                     painter = painterResource(
                         id = if (isFavorite) {
-                            CommonR.drawable.ic_action_favorite_filled
+                            CommonR.drawable.ic_favorite_filled
                         } else {
-                            CommonR.drawable.ic_action_favorite
+                            CommonR.drawable.ic_favorite
                         },
                     ),
                     contentDescription = favoriteActionDescription,

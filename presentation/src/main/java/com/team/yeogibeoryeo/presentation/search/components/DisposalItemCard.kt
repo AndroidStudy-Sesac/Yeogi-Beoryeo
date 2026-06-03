@@ -61,7 +61,7 @@ fun DisposalItemCard(
         ) {
             if (isFavorite) {
                 Icon(
-                    painter = painterResource(id = CommonR.drawable.ic_action_favorite_filled),
+                    painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
                     contentDescription = null,
                     modifier = Modifier
                         .align(Alignment.TopEnd)

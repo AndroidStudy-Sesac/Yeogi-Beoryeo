@@ -19,6 +19,7 @@ import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesS
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.common.R as CommonR
+import com.team.yeogibeoryeo.R as AppR
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
 
@@ -44,19 +45,19 @@ fun YeogiBeoryeoNavHost(
                         ),
                         BottomNavigationItem(
                             label = "Map",
-                            iconResId = CommonR.drawable.ic_navigation_map,
+                            iconResId = AppR.drawable.ic_navigation_map,
                             selected = currentDestination?.hasRoute<MapRoute>() == true,
                             onClick = { navController.navigateBottomTab(MapRoute) },
                         ),
                         BottomNavigationItem(
                             label = "Guide",
-                            iconResId = CommonR.drawable.ic_navigation_guide,
+                            iconResId = AppR.drawable.ic_navigation_guide,
                             selected = currentDestination?.hasRoute<RegionalGuideRoute>() == true,
                             onClick = { navController.navigateBottomTab(RegionalGuideRoute()) },
                         ),
                         BottomNavigationItem(
                             label = "Favorites",
-                            iconResId = CommonR.drawable.ic_navigation_favorites,
+                            iconResId = CommonR.drawable.ic_favorite,
                             selected = currentBackStackEntry.isFavoritesSelected(),
                             onClick = { navController.navigateBottomTab(FavoritesRoute) },
                         ),
