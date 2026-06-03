@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.presentation.map.cache
+package com.team.yeogibeoryeo.data.spot.cache
 
 import kotlinx.serialization.Serializable
 

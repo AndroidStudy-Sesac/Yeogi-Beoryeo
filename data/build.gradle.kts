@@ -36,6 +36,7 @@ dependencies {
     implementation(project(":domain"))
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.datastore.preferences)
 
     // Coroutine
     implementation(libs.bundles.coroutines)
