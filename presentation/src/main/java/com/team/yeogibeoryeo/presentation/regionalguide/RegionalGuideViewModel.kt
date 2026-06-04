@@ -43,6 +43,8 @@ class RegionalGuideViewModel @Inject constructor(
         _regionSelectorUiState.asStateFlow()
 
     private var guideLookupJob: Job? = null
+    private var sigunguOptionsJob: Job? = null
+    private var eupmyeondongOptionsJob: Job? = null
     private var lastRequest: RegionalGuideRequest? = null
 
     init {
@@ -54,35 +56,57 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onSidoSelected(sido: String) {
-        viewModelScope.launch {
+        sigunguOptionsJob?.cancel()
+        eupmyeondongOptionsJob?.cancel()
+
+        _regionSelectorUiState.update { state ->
+            state.copy(
+                selectedSido = sido,
+                selectedSigungu = null,
+                selectedEupmyeondong = null,
+                sigunguOptions = emptyList(),
+                eupmyeondongOptions = emptyList()
+            )
+        }
+
+        sigunguOptionsJob = viewModelScope.launch {
             val sigunguOptions = getSigunguOptionsUseCase(sido)
 
             _regionSelectorUiState.update { state ->
-                state.copy(
-                    selectedSido = sido,
-                    selectedSigungu = null,
-                    selectedEupmyeondong = null,
-                    sigunguOptions = sigunguOptions,
-                    eupmyeondongOptions = emptyList()
-                )
+                if (state.selectedSido == sido) {
+                    state.copy(sigunguOptions = sigunguOptions)
+                } else {
+                    state
+                }
             }
         }
     }
 
     fun onSigunguSelected(sigungu: String) {
-        viewModelScope.launch {
-            val selectedSido = regionSelectorUiState.value.selectedSido ?: return@launch
+        eupmyeondongOptionsJob?.cancel()
+
+        val selectedSido = regionSelectorUiState.value.selectedSido ?: return
+
+        _regionSelectorUiState.update { state ->
+            state.copy(
+                selectedSigungu = sigungu,
+                selectedEupmyeondong = null,
+                eupmyeondongOptions = emptyList()
+            )
+        }
+
+        eupmyeondongOptionsJob = viewModelScope.launch {
             val eupmyeondongOptions = getEupmyeondongOptionsUseCase(
                 sido = selectedSido,
                 sigungu = sigungu
             )
 
             _regionSelectorUiState.update { state ->
-                state.copy(
-                    selectedSigungu = sigungu,
-                    selectedEupmyeondong = null,
-                    eupmyeondongOptions = eupmyeondongOptions
-                )
+                if (state.selectedSido == selectedSido && state.selectedSigungu == sigungu) {
+                    state.copy(eupmyeondongOptions = eupmyeondongOptions)
+                } else {
+                    state
+                }
             }
         }
     }
@@ -235,6 +259,8 @@ class RegionalGuideViewModel @Inject constructor(
 
     fun resetState() {
         guideLookupJob?.cancel()
+        sigunguOptionsJob?.cancel()
+        eupmyeondongOptionsJob?.cancel()
         lastRequest = null
         _uiState.value = RegionalGuideUiState.Idle
     }
