@@ -38,25 +38,25 @@ fun YeogiBeoryeoNavHost(
                 items =
                     listOf(
                         BottomNavigationItem(
-                            label = "Search",
+                            label = "품목",
                             iconResId = CommonR.drawable.ic_symbol_recycle,
                             selected = currentBackStackEntry.isItemSearchSelected(),
                             onClick = { navController.navigateBottomTab(ItemSearchRoute()) },
                         ),
                         BottomNavigationItem(
-                            label = "Map",
+                            label = "지도",
                             iconResId = AppR.drawable.ic_navigation_map,
                             selected = currentDestination?.hasRoute<MapRoute>() == true,
                             onClick = { navController.navigateBottomTab(MapRoute) },
                         ),
                         BottomNavigationItem(
-                            label = "Guide",
+                            label = "안내",
                             iconResId = AppR.drawable.ic_navigation_guide,
                             selected = currentDestination?.hasRoute<RegionalGuideRoute>() == true,
                             onClick = { navController.navigateBottomTab(RegionalGuideRoute()) },
                         ),
                         BottomNavigationItem(
-                            label = "Favorites",
+                            label = "저장",
                             iconResId = CommonR.drawable.ic_favorite,
                             selected = currentBackStackEntry.isFavoritesSelected(),
                             onClick = { navController.navigateBottomTab(FavoritesRoute) },
