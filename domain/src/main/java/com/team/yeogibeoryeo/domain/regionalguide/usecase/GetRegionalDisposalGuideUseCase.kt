@@ -1,7 +1,9 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import javax.inject.Inject
 
@@ -16,12 +18,22 @@ class GetRegionalDisposalGuideUseCase @Inject constructor(
 
         val candidates = repository.getRegionalDisposalGuideCandidates(query)
             .getOrElse { throwable ->
-                return RegionalGuideLookupResult.Failure(throwable)
+                return RegionalGuideLookupResult.Failure(
+                    reason = throwable.toFailureReason(),
+                    throwable = throwable
+                )
             }
 
         return selectRegionalGuideCandidateUseCase(
             candidates = candidates,
             query = query
         )
+    }
+
+    private fun Throwable.toFailureReason(): RegionalGuideFailureReason {
+        return when (this) {
+            is RegionalGuideLookupException -> reason
+            else -> RegionalGuideFailureReason.UNKNOWN
+        }
     }
 }

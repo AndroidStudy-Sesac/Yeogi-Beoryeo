@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.presentation.regionalguide
+﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 

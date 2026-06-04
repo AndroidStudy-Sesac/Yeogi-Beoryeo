@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
@@ -337,8 +338,21 @@ class RegionalGuideViewModel @Inject constructor(
 
             is RegionalGuideLookupResult.Failure -> RegionalGuideUiState.Error(
                 query = query,
-                message = throwable?.message ?: "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
+                message = reason.toErrorMessage()
             )
+        }
+    }
+
+    private fun RegionalGuideFailureReason.toErrorMessage(): String {
+        return when (this) {
+            RegionalGuideFailureReason.NETWORK ->
+                "네트워크 연결을 확인한 뒤 다시 시도해주세요."
+
+            RegionalGuideFailureReason.API ->
+                "지역별 배출 가이드 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+
+            RegionalGuideFailureReason.UNKNOWN ->
+                "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
         }
     }
 

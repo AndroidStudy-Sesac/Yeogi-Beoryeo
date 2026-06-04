@@ -10,6 +10,18 @@ sealed interface RegionalGuideLookupResult {
     data object CandidateNotFound : RegionalGuideLookupResult
 
     data class Failure(
+        val reason: RegionalGuideFailureReason = RegionalGuideFailureReason.UNKNOWN,
         val throwable: Throwable? = null
     ) : RegionalGuideLookupResult
 }
+
+enum class RegionalGuideFailureReason {
+    NETWORK,
+    API,
+    UNKNOWN
+}
+
+class RegionalGuideLookupException(
+    val reason: RegionalGuideFailureReason,
+    cause: Throwable? = null
+) : RuntimeException(cause)
