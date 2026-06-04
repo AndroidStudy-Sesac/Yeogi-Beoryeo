@@ -77,6 +77,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     it.hasSearched
                 },
                 errorMessage = null,
+                locationNotice = null,
                 locationNoticeMessage = null,
                 searchMode = if (shouldCancelCurrentLocationSearch) {
                     MapSearchMode.KEYWORD
@@ -102,6 +103,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     isLoading = false,
                     hasSearched = false,
                     errorMessage = "검색어를 입력해주세요.",
+                    locationNotice = null,
                     locationNoticeMessage = null,
                     searchMode = MapSearchMode.KEYWORD,
                 )
@@ -116,6 +118,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     isLoading = true,
                     hasSearched = true,
                     errorMessage = null,
+                    locationNotice = null,
                     locationNoticeMessage = null,
                     selectedSpot = null,
                     searchMode = MapSearchMode.KEYWORD,
@@ -133,7 +136,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 if (throwable is CancellationException) throw throwable
 
                 updateSpotFailure(
-                    message = throwable.message ?: "수거 장소를 불러오지 못했습니다.",
+                    message = MapLocationNotices.SpotSearchFailureMessage,
                 )
             }
         }
@@ -170,7 +173,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             if (!preservePreviousResultOnFailure) {
                 updateSpotFailure(
-                    message = throwable.message ?: "현재 위치 주변 수거 장소를 불러오지 못했습니다.",
+                    message = MapLocationNotices.CurrentLocationSpotSearchFailureMessage,
                 )
             }
         }
@@ -215,7 +218,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = false,
                 errorMessage = null,
-                locationNoticeMessage = "현재 위치 검색은 정확한 위치 권한을 허용하면 사용할 수 있어요. 직접 동네나 주소를 검색할 수도 있습니다.",
+                locationNotice = MapLocationNotices.PermissionDenied,
+                locationNoticeMessage = MapLocationNotices.PermissionDenied.message,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -263,7 +267,25 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = false,
                 errorMessage = null,
-                locationNoticeMessage = "현재 위치를 확인하지 못했습니다. 직접 동네나 주소를 검색해 주세요.",
+                locationNotice = MapLocationNotices.CurrentLocationUnavailable,
+                locationNoticeMessage = MapLocationNotices.CurrentLocationUnavailable.message,
+                searchMode = MapSearchMode.KEYWORD,
+            )
+        }
+    }
+
+    fun onLocationServiceDisabled() {
+        originalSpots = emptyList()
+
+        _uiState.update {
+            it.copy(
+                spots = emptyList(),
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                errorMessage = null,
+                locationNotice = MapLocationNotices.LocationServiceDisabled,
+                locationNoticeMessage = MapLocationNotices.LocationServiceDisabled.message,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -290,6 +312,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = true,
                 errorMessage = null,
+                locationNotice = null,
                 locationNoticeMessage = null,
             )
         }
@@ -305,6 +328,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = true,
                 errorMessage = message,
+                locationNotice = null,
                 locationNoticeMessage = null,
             )
         }
@@ -321,6 +345,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     hasSearched = true,
                     searchKeyword = "",
                     errorMessage = null,
+                    locationNotice = null,
                     locationNoticeMessage = null,
                     selectedSpot = null,
                     searchMode = MapSearchMode.CURRENT_LOCATION,
@@ -339,6 +364,12 @@ class CollectionSpotMapViewModel @Inject constructor(
             CurrentLocationResult.NotFound -> {
                 if (!preservePreviousResultOnFailure) {
                     onCurrentLocationNotFound()
+                }
+            }
+
+            CurrentLocationResult.LocationServiceDisabled -> {
+                if (!preservePreviousResultOnFailure) {
+                    onLocationServiceDisabled()
                 }
             }
 
@@ -365,6 +396,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = true,
                 errorMessage = null,
+                locationNotice = null,
                 locationNoticeMessage = null,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
             )

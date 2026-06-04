@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -18,6 +19,8 @@ fun EmptySpotResult(
     modifier: Modifier = Modifier,
     title: String = "검색 결과가 없습니다.",
     description: String = "다른 동네명이나 주소로 다시 검색해 주세요.",
+    actionLabel: String? = null,
+    onActionClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -38,6 +41,15 @@ fun EmptySpotResult(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (actionLabel != null && onActionClick != null) {
+            TextButton(
+                onClick = onActionClick,
+                modifier = Modifier.padding(top = 12.dp),
+            ) {
+                Text(text = actionLabel)
+            }
+        }
     }
 }
 

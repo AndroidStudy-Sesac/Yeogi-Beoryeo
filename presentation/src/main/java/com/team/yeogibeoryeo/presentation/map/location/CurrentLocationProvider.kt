@@ -13,5 +13,7 @@ sealed interface CurrentLocationResult {
 
     data object PermissionDenied : CurrentLocationResult
 
+    data object LocationServiceDisabled : CurrentLocationResult
+
     data object NotFound : CurrentLocationResult
 }
