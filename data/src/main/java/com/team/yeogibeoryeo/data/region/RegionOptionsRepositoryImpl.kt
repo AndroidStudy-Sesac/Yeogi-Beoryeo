@@ -70,6 +70,40 @@ class RegionOptionsRepositoryImpl @Inject constructor(
             .sortedWith(REGION_NAME_COMPARATOR)
     }
 
+    override suspend fun findRegionsBySigunguKeyword(
+        keyword: String
+    ): List<Region> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val regions = localDataSource.getRegions()
+        val exactMatches = regions.filter { region ->
+            region.sigunguName == targetKeyword
+        }
+
+        val prefixMatches = exactMatches.ifEmpty {
+            regions.filter { region ->
+                region.sigunguName.startsWith(targetKeyword)
+            }
+        }
+
+        val matchedRegions = prefixMatches.ifEmpty {
+            regions.filter { region ->
+                region.sigunguName.contains(targetKeyword)
+            }
+        }
+
+        return matchedRegions
+            .mapToRegion()
+            .distinctBy { region ->
+                listOf(
+                    region.sido.orEmpty(),
+                    region.sigungu.orEmpty()
+                )
+            }
+            .sortedWith(REGION_NAME_COMPARATOR)
+    }
+
     private fun List<AdministrativeRegionDto>.mapToRegion(): List<Region> {
         return map { region ->
             RegionNormalizer.normalize(

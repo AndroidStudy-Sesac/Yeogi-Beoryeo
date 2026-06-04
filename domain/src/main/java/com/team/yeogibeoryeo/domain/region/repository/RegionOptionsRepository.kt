@@ -18,4 +18,8 @@ interface RegionOptionsRepository {
     suspend fun findRegionsByEupmyeondongKeyword(
         keyword: String
     ): List<Region>
+
+    suspend fun findRegionsBySigunguKeyword(
+        keyword: String
+    ): List<Region>
 }
