@@ -1,14 +1,4 @@
-package com.team.yeogibeoryeo.presentation.map.cache
-
-import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
-
-interface RecentCurrentLocationSpotCache {
-    suspend fun getRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheEntry?
-
-    suspend fun saveRecentCurrentLocationSpots(entry: RecentCurrentLocationSpotCacheEntry)
-
-    suspend fun clearRecentCurrentLocationSpots()
-}
+package com.team.yeogibeoryeo.domain.spot.model
 
 data class RecentCurrentLocationSpotCacheEntry(
     val spots: List<CollectionSpot>,

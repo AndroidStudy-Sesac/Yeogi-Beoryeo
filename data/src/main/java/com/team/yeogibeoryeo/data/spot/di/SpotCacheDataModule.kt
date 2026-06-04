@@ -1,11 +1,11 @@
-package com.team.yeogibeoryeo.presentation.map.di
+package com.team.yeogibeoryeo.data.spot.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import com.team.yeogibeoryeo.presentation.map.cache.DataStoreRecentCurrentLocationSpotCache
-import com.team.yeogibeoryeo.presentation.map.cache.RecentCurrentLocationSpotCache
+import com.team.yeogibeoryeo.data.spot.cache.DataStoreRecentCurrentLocationSpotCacheRepository
+import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -20,18 +20,18 @@ private val Context.mapCacheDataStore by preferencesDataStore(
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class MapCacheBindModule {
+abstract class SpotCacheBindModule {
 
     @Binds
     @Singleton
-    abstract fun bindRecentCurrentLocationSpotCache(
-        dataStoreRecentCurrentLocationSpotCache: DataStoreRecentCurrentLocationSpotCache,
-    ): RecentCurrentLocationSpotCache
+    abstract fun bindRecentCurrentLocationSpotCacheRepository(
+        dataStoreRecentCurrentLocationSpotCacheRepository: DataStoreRecentCurrentLocationSpotCacheRepository,
+    ): RecentCurrentLocationSpotCacheRepository
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
-object MapCacheProvideModule {
+object SpotCacheProvideModule {
 
     @Provides
     @Singleton

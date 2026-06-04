@@ -1,9 +1,11 @@
-package com.team.yeogibeoryeo.presentation.map.cache
+package com.team.yeogibeoryeo.data.spot.cache
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
+import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -11,9 +13,9 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class DataStoreRecentCurrentLocationSpotCache @Inject constructor(
+class DataStoreRecentCurrentLocationSpotCacheRepository @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-) : RecentCurrentLocationSpotCache {
+) : RecentCurrentLocationSpotCacheRepository {
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true

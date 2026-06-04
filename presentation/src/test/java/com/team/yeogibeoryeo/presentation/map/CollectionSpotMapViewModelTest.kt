@@ -3,12 +3,15 @@ package com.team.yeogibeoryeo.presentation.map
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
+import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
-import com.team.yeogibeoryeo.presentation.map.cache.RecentCurrentLocationSpotCache
-import com.team.yeogibeoryeo.presentation.map.cache.RecentCurrentLocationSpotCacheEntry
+import com.team.yeogibeoryeo.domain.time.TimeProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
@@ -189,6 +192,34 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
+    fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 비우고 현재 위치 결과를 반영한다`() =
+        runTest {
+            val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(keywordSpot),
+                locationSpots = listOf(locationSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+
+            viewModel.onSearchKeywordChanged("용답동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            assertEquals("", viewModel.uiState.value.searchKeyword)
+            assertEquals(listOf(locationSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
     fun `지도 진입 시 위치 권한이 있으면 현재 위치 검색을 자동 실행한다`() =
         runTest {
             val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
@@ -357,7 +388,7 @@ class CollectionSpotMapViewModelTest {
         runTest {
             val locationResult = CompletableDeferred<CurrentLocationResult>()
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
-            val cache = FakeRecentCurrentLocationSpotCache(
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = freshCacheEntry(listOf(cachedSpot)),
             )
             val repository = FakeCollectionSpotRepository(
@@ -369,7 +400,7 @@ class CollectionSpotMapViewModelTest {
                     locationResult.await()
                 },
                 hasFineLocationPermission = true,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
@@ -381,11 +412,42 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
+    fun `캐시 결과에서도 필터칩 선택 시 정상 필터링된다`() =
+        runTest {
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val standardBagSpot = sampleSpot("cache-standard", CollectionSpotType.STANDARD_BAG_STORE)
+            val recyclingCenterSpot = sampleSpot("cache-recycling", CollectionSpotType.RECYCLING_CENTER)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = freshCacheEntry(
+                    spots = listOf(standardBagSpot, recyclingCenterSpot),
+                ),
+            )
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(sampleSpot("refresh", CollectionSpotType.OTHER)),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+                hasFineLocationPermission = true,
+                recentCurrentLocationSpotCacheRepository = cache,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            viewModel.onSpotTypeClick(CollectionSpotType.RECYCLING_CENTER)
+
+            assertEquals(setOf(CollectionSpotType.RECYCLING_CENTER), viewModel.uiState.value.selectedTypes)
+            assertEquals(listOf(recyclingCenterSpot), viewModel.uiState.value.spots)
+            assertEquals(0, repository.locationSearchCallCount)
+        }
+
+    @Test
     fun `유효한 캐시 표시 후 refresh 성공 시 화면 결과와 캐시를 최신 결과로 교체한다`() =
         runTest {
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val refreshedSpot = sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)
-            val cache = FakeRecentCurrentLocationSpotCache(
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = freshCacheEntry(listOf(cachedSpot)),
             )
             val repository = FakeCollectionSpotRepository(locationSpots = listOf(refreshedSpot))
@@ -395,7 +457,7 @@ class CollectionSpotMapViewModelTest {
                     Coordinate(latitude = 37.5666102, longitude = 126.9783881),
                 ),
                 hasFineLocationPermission = true,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
@@ -411,7 +473,7 @@ class CollectionSpotMapViewModelTest {
     fun `유효한 캐시 표시 후 refresh 실패 시 기존 캐시 결과를 유지한다`() =
         runTest {
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
-            val cache = FakeRecentCurrentLocationSpotCache(
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = freshCacheEntry(listOf(cachedSpot)),
             )
             val repository = FakeCollectionSpotRepository()
@@ -419,7 +481,7 @@ class CollectionSpotMapViewModelTest {
                 repository = repository,
                 currentLocationResult = CurrentLocationResult.NotFound,
                 hasFineLocationPermission = true,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
@@ -439,13 +501,13 @@ class CollectionSpotMapViewModelTest {
         runTest {
             val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
             val expectedSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
-            val cache = FakeRecentCurrentLocationSpotCache()
+            val cache = FakeRecentCurrentLocationSpotCacheRepository()
             val repository = FakeCollectionSpotRepository(locationSpots = listOf(expectedSpot))
             val viewModel = createViewModel(
                 repository = repository,
                 currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
                 hasFineLocationPermission = true,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
@@ -462,7 +524,7 @@ class CollectionSpotMapViewModelTest {
         runTest {
             val expiredSpot = sampleSpot("expired", CollectionSpotType.OTHER)
             val expectedSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
-            val cache = FakeRecentCurrentLocationSpotCache(
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = listOf(expiredSpot),
                     savedAtMillis = 0L,
@@ -475,7 +537,7 @@ class CollectionSpotMapViewModelTest {
                     Coordinate(latitude = 37.5666102, longitude = 126.9783881),
                 ),
                 hasFineLocationPermission = true,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
@@ -489,7 +551,7 @@ class CollectionSpotMapViewModelTest {
     fun `위치 권한이 없으면 캐시가 있어도 자동 표시하지 않는다`() =
         runTest {
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
-            val cache = FakeRecentCurrentLocationSpotCache(
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = freshCacheEntry(listOf(cachedSpot)),
             )
             val repository = FakeCollectionSpotRepository()
@@ -499,7 +561,7 @@ class CollectionSpotMapViewModelTest {
                     Coordinate(latitude = 37.5666102, longitude = 126.9783881),
                 ),
                 hasFineLocationPermission = false,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
@@ -517,7 +579,7 @@ class CollectionSpotMapViewModelTest {
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
             val refreshSpot = sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)
-            val cache = FakeRecentCurrentLocationSpotCache(
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = freshCacheEntry(listOf(cachedSpot)),
             )
             val repository = FakeCollectionSpotRepository(
@@ -530,7 +592,7 @@ class CollectionSpotMapViewModelTest {
                     locationResult.await()
                 },
                 hasFineLocationPermission = true,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
@@ -553,14 +615,14 @@ class CollectionSpotMapViewModelTest {
     fun `현재 위치 버튼 수동 검색 성공 시 캐시를 갱신한다`() =
         runTest {
             val expectedSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
-            val cache = FakeRecentCurrentLocationSpotCache()
+            val cache = FakeRecentCurrentLocationSpotCacheRepository()
             val repository = FakeCollectionSpotRepository(locationSpots = listOf(expectedSpot))
             val viewModel = createViewModel(
                 repository = repository,
                 currentLocationResult = CurrentLocationResult.Found(
                     Coordinate(latitude = 37.5666102, longitude = 126.9783881),
                 ),
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.searchByCurrentLocation()
@@ -573,12 +635,12 @@ class CollectionSpotMapViewModelTest {
     fun `키워드 검색 성공 시 캐시를 갱신하지 않는다`() =
         runTest {
             val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
-            val cache = FakeRecentCurrentLocationSpotCache()
+            val cache = FakeRecentCurrentLocationSpotCacheRepository()
             val repository = FakeCollectionSpotRepository(keywordSpots = listOf(keywordSpot))
             val viewModel = createViewModel(
                 repository = repository,
                 currentLocationResult = CurrentLocationResult.NotFound,
-                recentCurrentLocationSpotCache = cache,
+                recentCurrentLocationSpotCacheRepository = cache,
             )
 
             viewModel.onSearchKeywordChanged("문래동")
@@ -593,13 +655,16 @@ class CollectionSpotMapViewModelTest {
         repository: FakeCollectionSpotRepository,
         currentLocationResult: CurrentLocationResult,
         hasFineLocationPermission: Boolean = true,
-        recentCurrentLocationSpotCache: RecentCurrentLocationSpotCache = FakeRecentCurrentLocationSpotCache(),
+        recentCurrentLocationSpotCacheRepository: RecentCurrentLocationSpotCacheRepository =
+            FakeRecentCurrentLocationSpotCacheRepository(),
+        timeProvider: TimeProvider = FakeTimeProvider(),
     ): CollectionSpotMapViewModel {
         return createViewModel(
             repository = repository,
             currentLocationProvider = FakeCurrentLocationProvider(currentLocationResult),
             hasFineLocationPermission = hasFineLocationPermission,
-            recentCurrentLocationSpotCache = recentCurrentLocationSpotCache,
+            recentCurrentLocationSpotCacheRepository = recentCurrentLocationSpotCacheRepository,
+            timeProvider = timeProvider,
         )
     }
 
@@ -607,7 +672,9 @@ class CollectionSpotMapViewModelTest {
         repository: FakeCollectionSpotRepository,
         currentLocationProvider: CurrentLocationProvider,
         hasFineLocationPermission: Boolean = true,
-        recentCurrentLocationSpotCache: RecentCurrentLocationSpotCache = FakeRecentCurrentLocationSpotCache(),
+        recentCurrentLocationSpotCacheRepository: RecentCurrentLocationSpotCacheRepository =
+            FakeRecentCurrentLocationSpotCacheRepository(),
+        timeProvider: TimeProvider = FakeTimeProvider(),
     ): CollectionSpotMapViewModel {
         return CollectionSpotMapViewModel(
             searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(repository),
@@ -615,7 +682,14 @@ class CollectionSpotMapViewModelTest {
             filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
             currentLocationProvider = currentLocationProvider,
             locationPermissionChecker = FakeLocationPermissionChecker(hasFineLocationPermission),
-            recentCurrentLocationSpotCache = recentCurrentLocationSpotCache,
+            getFreshRecentCurrentLocationSpotsUseCase = GetFreshRecentCurrentLocationSpotsUseCase(
+                repository = recentCurrentLocationSpotCacheRepository,
+                timeProvider = timeProvider,
+            ),
+            saveRecentCurrentLocationSpotsUseCase = SaveRecentCurrentLocationSpotsUseCase(
+                repository = recentCurrentLocationSpotCacheRepository,
+                timeProvider = timeProvider,
+            ),
         )
     }
 
@@ -624,7 +698,7 @@ class CollectionSpotMapViewModelTest {
     ): RecentCurrentLocationSpotCacheEntry {
         return RecentCurrentLocationSpotCacheEntry(
             spots = spots,
-            savedAtMillis = System.currentTimeMillis(),
+            savedAtMillis = TEST_NOW_MILLIS,
         )
     }
 
@@ -657,9 +731,15 @@ class CollectionSpotMapViewModelTest {
         override fun hasFineLocationPermission(): Boolean = hasFineLocationPermission
     }
 
-    private class FakeRecentCurrentLocationSpotCache(
+    private class FakeTimeProvider(
+        private val nowMillis: Long = TEST_NOW_MILLIS,
+    ) : TimeProvider {
+        override fun currentTimeMillis(): Long = nowMillis
+    }
+
+    private class FakeRecentCurrentLocationSpotCacheRepository(
         var entry: RecentCurrentLocationSpotCacheEntry? = null,
-    ) : RecentCurrentLocationSpotCache {
+    ) : RecentCurrentLocationSpotCacheRepository {
         var getCallCount = 0
             private set
         var saveCallCount = 0
@@ -712,5 +792,9 @@ class CollectionSpotMapViewModelTest {
         }
 
         override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot = spot
+    }
+
+    private companion object {
+        const val TEST_NOW_MILLIS = 20 * 60 * 1_000L
     }
 }

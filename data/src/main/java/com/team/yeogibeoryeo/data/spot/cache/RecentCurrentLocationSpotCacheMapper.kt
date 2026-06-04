@@ -1,8 +1,9 @@
-package com.team.yeogibeoryeo.presentation.map.cache
+package com.team.yeogibeoryeo.data.spot.cache
 
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 
 internal fun RecentCurrentLocationSpotCacheEntry.toDto(): RecentCurrentLocationSpotCacheDto {
     return RecentCurrentLocationSpotCacheDto(

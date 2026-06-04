@@ -6,10 +6,10 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
-import com.team.yeogibeoryeo.presentation.map.cache.RecentCurrentLocationSpotCache
-import com.team.yeogibeoryeo.presentation.map.cache.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
@@ -30,7 +30,8 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val filterCollectionSpotsUseCase: FilterCollectionSpotsUseCase,
     private val currentLocationProvider: CurrentLocationProvider,
     private val locationPermissionChecker: LocationPermissionChecker,
-    private val recentCurrentLocationSpotCache: RecentCurrentLocationSpotCache,
+    private val getFreshRecentCurrentLocationSpotsUseCase: GetFreshRecentCurrentLocationSpotsUseCase,
+    private val saveRecentCurrentLocationSpotsUseCase: SaveRecentCurrentLocationSpotsUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
@@ -163,12 +164,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             if (!canApplyCurrentLocationResult()) return
 
             updateSpotResult(spots)
-            recentCurrentLocationSpotCache.saveRecentCurrentLocationSpots(
-                RecentCurrentLocationSpotCacheEntry(
-                    spots = spots,
-                    savedAtMillis = System.currentTimeMillis(),
-                ),
-            )
+            saveRecentCurrentLocationSpotsUseCase(spots)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
 
@@ -240,10 +236,9 @@ class CollectionSpotMapViewModel @Inject constructor(
         hasRequestedInitialCurrentLocationSearch = true
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
-            val cachedEntry = recentCurrentLocationSpotCache.getRecentCurrentLocationSpots()
-            val hasFreshCache = cachedEntry?.isFresh(System.currentTimeMillis()) == true
+            val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
 
-            if (hasFreshCache && canStartInitialCurrentLocationSearch()) {
+            if (cachedEntry != null && canStartInitialCurrentLocationSearch()) {
                 showCachedCurrentLocationSpots(cachedEntry.spots)
                 refreshCurrentLocationSilently()
                 return@launch
@@ -324,6 +319,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
+                    searchKeyword = "",
                     errorMessage = null,
                     locationNoticeMessage = null,
                     selectedSpot = null,
