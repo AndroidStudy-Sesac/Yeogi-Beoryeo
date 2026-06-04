@@ -149,6 +149,39 @@ class SelectRegionalGuideCandidateUseCaseTest {
         assertTrue(result is RegionalGuideLookupResult.CandidateNotFound)
     }
 
+    @Test
+    fun `읍면동 없이 복수 권역 후보만 있으면 임의 선택하지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동"),
+                guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신포동+연안동")
+            ),
+            query = query(
+                displayRegion = Region(sido = "인천광역시", sigungu = "중구"),
+                sigunguQuery = "중구"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `읍면동 없이 단일 권역 후보만 있으면 해당 후보를 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동")
+            ),
+            query = query(
+                displayRegion = Region(sido = "인천광역시", sigungu = "중구"),
+                sigunguQuery = "중구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("신흥동+율목동", guide.targetRegionName)
+    }
+
     private fun query(
         displayRegion: Region,
         sigunguQuery: String

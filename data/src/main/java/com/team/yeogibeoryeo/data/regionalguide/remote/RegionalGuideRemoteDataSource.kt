@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReas
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import java.io.IOException
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * 데이터 소스를 추상화한 인터페이스.
@@ -46,6 +47,8 @@ class RegionalGuideRemoteDataSource @Inject constructor(
                     cause = e
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

@@ -71,7 +71,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         return candidates.firstOrNull { guide ->
             guide.targetRegionName.isOverallTarget(sigunguQuery)
-        } ?: candidates.firstOrNull()
+        } ?: candidates.singleOrNull()
     }
 
     private fun RegionalDisposalGuide.withDisplayRegion(
