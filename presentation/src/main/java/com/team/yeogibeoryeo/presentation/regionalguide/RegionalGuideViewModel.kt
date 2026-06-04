@@ -9,7 +9,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -285,23 +285,33 @@ class RegionalGuideViewModel @Inject constructor(
         query: String,
         region: Region
     ) {
-        val guide = getRegionalDisposalGuideUseCase(region)
+        val result = getRegionalDisposalGuideUseCase(region)
 
-        _uiState.value = guide.toUiState(query)
+        _uiState.value = result.toUiState(query)
     }
 
-    private fun RegionalDisposalGuide?.toUiState(
+    private fun RegionalGuideLookupResult.toUiState(
         query: String
     ): RegionalGuideUiState {
-        return if (this == null) {
-            RegionalGuideUiState.Empty(
+        return when (this) {
+            is RegionalGuideLookupResult.Success -> RegionalGuideUiState.Success(
+                query = query,
+                guide = guide.toUiModel()
+            )
+
+            RegionalGuideLookupResult.NotFound -> RegionalGuideUiState.Empty(
                 query = query,
                 message = "해당 지역의 배출 가이드 정보가 없습니다."
             )
-        } else {
-            RegionalGuideUiState.Success(
+
+            RegionalGuideLookupResult.CandidateNotFound -> RegionalGuideUiState.Empty(
                 query = query,
-                guide = this.toUiModel()
+                message = "선택한 지역에 맞는 배출 가이드를 찾을 수 없습니다."
+            )
+
+            is RegionalGuideLookupResult.Failure -> RegionalGuideUiState.Error(
+                query = query,
+                message = throwable?.message ?: "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
             )
         }
     }
