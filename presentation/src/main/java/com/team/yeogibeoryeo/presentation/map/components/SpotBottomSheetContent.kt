@@ -18,6 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.presentation.map.MapLocationNotice
+import com.team.yeogibeoryeo.presentation.map.MapLocationNoticeAction
 
 @Composable
 fun SpotBottomSheetContent(
@@ -26,12 +28,18 @@ fun SpotBottomSheetContent(
     isLoading: Boolean,
     hasSearched: Boolean,
     selectedTypes: Set<CollectionSpotType>,
+    locationNotice: MapLocationNotice?,
     locationNoticeMessage: String?,
     errorMessage: String?,
     onTypeClick: (CollectionSpotType) -> Unit,
+    onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hasNoticeOrError = locationNotice != null ||
+        locationNoticeMessage != null ||
+        errorMessage != null
+
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -40,7 +48,7 @@ fun SpotBottomSheetContent(
             hasSearched = hasSearched,
         )
 
-        if (hasSearched && !isLoading) {
+        if (hasSearched && !isLoading && !hasNoticeOrError) {
             SpotFilterChipRow(
                 selectedTypes = selectedTypes,
                 onTypeClick = onTypeClick,
@@ -51,6 +59,17 @@ fun SpotBottomSheetContent(
         when {
             isLoading -> {
                 SpotBottomSheetLoading()
+            }
+
+            locationNotice != null -> {
+                EmptySpotResult(
+                    title = locationNotice.title,
+                    description = locationNotice.message,
+                    actionLabel = locationNotice.action?.toActionLabel(),
+                    onActionClick = locationNotice.action?.let { action ->
+                        { onLocationNoticeActionClick(action) }
+                    },
+                )
             }
 
             locationNoticeMessage != null -> {
@@ -167,9 +186,11 @@ private fun SpotBottomSheetContentPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = setOf(CollectionSpotType.BATTERY_BIN),
+                locationNotice = null,
                 locationNoticeMessage = null,
                 errorMessage = null,
                 onTypeClick = {},
+                onLocationNoticeActionClick = {},
                 onSpotClick = {},
             )
         }
@@ -187,9 +208,11 @@ private fun SpotBottomSheetContentLoadingPreview() {
                 isLoading = true,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                locationNotice = null,
                 locationNoticeMessage = null,
                 errorMessage = null,
                 onTypeClick = {},
+                onLocationNoticeActionClick = {},
                 onSpotClick = {},
             )
         }
@@ -207,9 +230,11 @@ private fun SpotBottomSheetContentEmptyPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                locationNotice = null,
                 locationNoticeMessage = null,
                 errorMessage = null,
                 onTypeClick = {},
+                onLocationNoticeActionClick = {},
                 onSpotClick = {},
             )
         }
@@ -278,3 +303,10 @@ private fun sampleSpotBottomSheetSpots(): List<CollectionSpot> {
 }
 
 private val SpotBottomSheetListMaxHeight = 560.dp
+
+private fun MapLocationNoticeAction.toActionLabel(): String {
+    return when (this) {
+        MapLocationNoticeAction.OpenAppSettings -> "앱 설정 열기"
+        MapLocationNoticeAction.OpenLocationSettings -> "위치 설정 열기"
+    }
+}

@@ -50,6 +50,12 @@ class CollectionSpotMapViewModelTest {
                 "현재 위치 검색은 정확한 위치 권한을 허용하면 사용할 수 있어요. 직접 동네나 주소를 검색할 수도 있습니다.",
                 viewModel.uiState.value.locationNoticeMessage,
             )
+            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(
+                viewModel.uiState.value.locationNotice?.message,
+                viewModel.uiState.value.locationNoticeMessage,
+            )
+            assertEquals(MapLocationNoticeAction.OpenAppSettings, viewModel.uiState.value.locationNotice?.action)
         }
 
     @Test
@@ -68,9 +74,42 @@ class CollectionSpotMapViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
-                "현재 위치를 확인하지 못했습니다. 직접 동네나 주소를 검색해 주세요.",
+                "현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도하거나 직접 동네명/주소를 검색해 주세요.",
                 viewModel.uiState.value.locationNoticeMessage,
             )
+            assertEquals("현재 위치를 확인하지 못했습니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(
+                viewModel.uiState.value.locationNotice?.message,
+                viewModel.uiState.value.locationNoticeMessage,
+            )
+            assertNull(viewModel.uiState.value.locationNotice?.action)
+        }
+
+    @Test
+    fun `위치 서비스가 꺼져 있으면 위치 설정 안내를 표시한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.LocationServiceDisabled,
+            )
+
+            viewModel.searchByCurrentLocation()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertEquals(
+                "기기의 위치 서비스가 꺼져 있어 현재 위치를 확인할 수 없어요. 위치 서비스를 켠 뒤 다시 시도하거나 직접 동네명/주소를 검색해 주세요.",
+                viewModel.uiState.value.locationNoticeMessage,
+            )
+            assertEquals("위치 서비스가 꺼져 있습니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(
+                viewModel.uiState.value.locationNotice?.message,
+                viewModel.uiState.value.locationNoticeMessage,
+            )
+            assertEquals(MapLocationNoticeAction.OpenLocationSettings, viewModel.uiState.value.locationNotice?.action)
         }
 
     @Test
@@ -95,6 +134,58 @@ class CollectionSpotMapViewModelTest {
             assertNull(viewModel.uiState.value.locationNoticeMessage)
             assertNull(viewModel.uiState.value.errorMessage)
             assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `현재 위치 주변 수거 장소 검색 실패 시 errorMessage를 표시하고 notice는 설정하지 않는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                locationSearchThrowable = IllegalStateException(
+                    "Unable to resolve host \"apis.data.go.kr\": No address associated with hostname",
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+
+            viewModel.searchByCurrentLocation()
+
+            assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(
+                "네트워크 연결을 확인한 뒤 다시 시도하거나 직접 동네명/주소를 검색해 주세요.",
+                viewModel.uiState.value.errorMessage,
+            )
+            assertNull(viewModel.uiState.value.locationNotice)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
+        }
+
+    @Test
+    fun `키워드 검색 실패 시 원문 예외 대신 안내 문구를 표시한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                keywordSearchThrowable = IllegalStateException(
+                    "Unable to resolve host \"apis.data.go.kr\": No address associated with hostname",
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("용답동")
+            viewModel.searchByKeyword()
+
+            assertEquals(listOf("용답동"), repository.keywords)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals("네트워크 연결을 확인한 뒤 다시 시도해 주세요.", viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.locationNotice)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
         }
 
     @Test
@@ -188,7 +279,44 @@ class CollectionSpotMapViewModelTest {
             assertEquals(listOf("문래동"), repository.keywords)
             assertEquals(listOf(expectedSpot), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertNull(viewModel.uiState.value.locationNotice)
             assertNull(viewModel.uiState.value.locationNoticeMessage)
+            assertNull(viewModel.uiState.value.errorMessage)
+        }
+
+    @Test
+    fun `현재 위치 검색 실패 안내 후 재시도하면 이전 notice를 새 실패 상태로 갱신한다`() =
+        runTest {
+            val firstResult = CompletableDeferred<CurrentLocationResult>()
+            val secondResult = CompletableDeferred<CurrentLocationResult>()
+            var requestCount = 0
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    requestCount += 1
+                    if (requestCount == 1) {
+                        firstResult.await()
+                    } else {
+                        secondResult.await()
+                    }
+                },
+            )
+
+            viewModel.searchByCurrentLocation()
+            firstResult.complete(CurrentLocationResult.NotFound)
+            advanceUntilIdle()
+            viewModel.searchByCurrentLocation()
+            secondResult.complete(CurrentLocationResult.LocationServiceDisabled)
+            advanceUntilIdle()
+
+            assertEquals("위치 서비스가 꺼져 있습니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNoticeAction.OpenLocationSettings, viewModel.uiState.value.locationNotice?.action)
+            assertEquals(
+                viewModel.uiState.value.locationNotice?.message,
+                viewModel.uiState.value.locationNoticeMessage,
+            )
+            assertNull(viewModel.uiState.value.errorMessage)
         }
 
     @Test
@@ -490,6 +618,7 @@ class CollectionSpotMapViewModelTest {
             assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.locationNotice)
             assertNull(viewModel.uiState.value.locationNoticeMessage)
             assertNull(viewModel.uiState.value.errorMessage)
             assertEquals(0, repository.locationSearchCallCount)
@@ -569,6 +698,8 @@ class CollectionSpotMapViewModelTest {
             assertEquals(0, cache.getCallCount)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.hasSearched)
+            assertNull(viewModel.uiState.value.locationNotice)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
             assertEquals(0, repository.locationSearchCallCount)
         }
 
@@ -766,6 +897,8 @@ class CollectionSpotMapViewModelTest {
     private class FakeCollectionSpotRepository(
         private val keywordSpots: List<CollectionSpot> = emptyList(),
         private val locationSpots: List<CollectionSpot> = emptyList(),
+        private val keywordSearchThrowable: Throwable? = null,
+        private val locationSearchThrowable: Throwable? = null,
     ) : CollectionSpotRepository {
         val keywords = mutableListOf<String>()
         var locationSearchCallCount = 0
@@ -777,6 +910,7 @@ class CollectionSpotMapViewModelTest {
             types: Set<CollectionSpotType>,
         ): List<CollectionSpot> {
             keywords += keyword
+            keywordSearchThrowable?.let { throw it }
             return keywordSpots
         }
 
@@ -788,6 +922,7 @@ class CollectionSpotMapViewModelTest {
             locationSearchCallCount += 1
             lastLocationCoordinate = coordinate
             lastRadiusMeter = radiusMeter
+            locationSearchThrowable?.let { throw it }
             return locationSpots
         }
 
