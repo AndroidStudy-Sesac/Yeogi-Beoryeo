@@ -5,6 +5,10 @@ sealed interface RegionalGuideLookupResult {
         val guide: RegionalDisposalGuide
     ) : RegionalGuideLookupResult
 
+    data class Candidates(
+        val guides: List<RegionalDisposalGuide>
+    ) : RegionalGuideLookupResult
+
     data object NotFound : RegionalGuideLookupResult
 
     data object CandidateNotFound : RegionalGuideLookupResult

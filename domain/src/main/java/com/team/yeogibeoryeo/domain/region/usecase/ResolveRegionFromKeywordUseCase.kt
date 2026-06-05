@@ -21,11 +21,23 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
         }
 
         val eupmyeondongKeyword = parsedRegion?.eupmyeondong ?: keyword
-        val candidates = regionOptionsRepository.findRegionsByEupmyeondongKeyword(eupmyeondongKeyword)
+        val eupmyeondongCandidates = regionOptionsRepository.findRegionsByEupmyeondongKeyword(
+            eupmyeondongKeyword
+        )
+        val sigunguCandidates = regionOptionsRepository.findRegionsBySigunguKeyword(keyword)
+        val candidates = (sigunguCandidates + eupmyeondongCandidates)
+            .distinctBy { region ->
+                listOf(
+                    region.sido.orEmpty(),
+                    region.sigungu.orEmpty(),
+                    region.eupmyeondong.orEmpty()
+                )
+            }
+            .sortedWith(REGION_CANDIDATE_COMPARATOR)
 
         return when {
             candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
-            candidates.size > 1 -> ResolveRegionFromKeywordResult.Ambiguous
+            candidates.size > 1 -> ResolveRegionFromKeywordResult.Ambiguous(candidates)
             parsedRegion != null -> ResolveRegionFromKeywordResult.Resolved(parsedRegion)
             else -> ResolveRegionFromKeywordResult.NotFound
         }
@@ -39,7 +51,7 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
 
         return when {
             candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
-            candidates.hasExactSigunguMatch(sigungu) -> ResolveRegionFromKeywordResult.Ambiguous
+            candidates.hasExactSigunguMatch(sigungu) -> ResolveRegionFromKeywordResult.Ambiguous(candidates)
             else -> ResolveRegionFromKeywordResult.Resolved(parsedRegion)
         }
     }
@@ -56,6 +68,14 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
         sido.isNullOrBlank() &&
             !sigungu.isNullOrBlank() &&
             eupmyeondong.isNullOrBlank()
+
+    private companion object {
+        val REGION_CANDIDATE_COMPARATOR = compareBy<Region>(
+            { region -> region.sido.orEmpty() },
+            { region -> region.sigungu.orEmpty() },
+            { region -> region.eupmyeondong.orEmpty() }
+        )
+    }
 }
 
 sealed interface ResolveRegionFromKeywordResult {
@@ -63,7 +83,9 @@ sealed interface ResolveRegionFromKeywordResult {
         val region: Region
     ) : ResolveRegionFromKeywordResult
 
-    data object Ambiguous : ResolveRegionFromKeywordResult
+    data class Ambiguous(
+        val candidates: List<Region>
+    ) : ResolveRegionFromKeywordResult
 
     data object NotFound : ResolveRegionFromKeywordResult
 }

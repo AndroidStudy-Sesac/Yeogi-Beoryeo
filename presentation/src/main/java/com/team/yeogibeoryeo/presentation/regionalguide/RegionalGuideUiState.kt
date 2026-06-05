@@ -1,6 +1,8 @@
 ﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 sealed interface RegionalGuideUiState {
     data object Idle : RegionalGuideUiState
@@ -21,7 +23,14 @@ sealed interface RegionalGuideUiState {
 
     data class Ambiguous(
         val query: String,
-        val message: String
+        val message: String,
+        val candidates: List<RegionSearchCandidateUiModel>
+    ) : RegionalGuideUiState
+
+    data class GuideCandidates(
+        val query: String,
+        val message: String,
+        val candidates: List<RegionalGuideCandidateUiModel>
     ) : RegionalGuideUiState
 
     data class Error(
