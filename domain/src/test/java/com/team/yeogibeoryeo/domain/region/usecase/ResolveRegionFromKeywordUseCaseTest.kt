@@ -167,7 +167,13 @@ class ResolveRegionFromKeywordUseCaseTest {
                 regions = listOf(
                     Region(
                         sido = "경기도",
-                        sigungu = "수원시 장안구"
+                        sigungu = "수원시 장안구",
+                        eupmyeondong = "파장동"
+                    ),
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구",
+                        eupmyeondong = "정자1동"
                     )
                 )
             )
@@ -261,6 +267,13 @@ class ResolveRegionFromKeywordUseCaseTest {
                 regions.filter { region ->
                     region.sigungu?.contains(keyword) == true
                 }
+            }.map { region ->
+                region.copy(eupmyeondong = null)
+            }.distinctBy { region ->
+                listOf(
+                    region.sido.orEmpty(),
+                    region.sigungu.orEmpty()
+                )
             }
         }
     }

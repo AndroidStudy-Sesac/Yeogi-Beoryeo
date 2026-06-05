@@ -22,6 +22,12 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return RegionalGuideLookupResult.CandidateNotFound
         }
 
+        if (filteredCandidates.size == 1) {
+            return RegionalGuideLookupResult.Success(
+                guide = filteredCandidates.first().withDisplayRegion(query.displayRegion)
+            )
+        }
+
         val selectedGuide = selectByTargetRegion(
             candidates = filteredCandidates,
             requestedRegion = query.displayRegion,
@@ -69,9 +75,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             }
         }
 
-        return candidates.firstOrNull { guide ->
-            guide.targetRegionName.isOverallTarget(sigunguQuery)
-        } ?: candidates.singleOrNull()
+        return null
     }
 
     private fun RegionalDisposalGuide.withDisplayRegion(

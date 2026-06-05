@@ -117,7 +117,63 @@ class SelectRegionalGuideCandidateUseCaseTest {
     }
 
     @Test
-    fun `전체 적용 대상지역은 읍면동이 없을 때 우선 선택된다`() {
+    fun `필터링된 후보가 1건이면 대상지역 값과 관계없이 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(sido = "경기도", sigungu = "수원시", targetRegionName = "수원시 전체")
+            ),
+            query = query(
+                displayRegion = Region(sido = "경기도", sigungu = "수원시"),
+                sigunguQuery = "수원시"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("수원시 전체", guide.targetRegionName)
+    }
+
+    @Test
+    fun `단일 후보의 대상지역이 없음이어도 해당 후보를 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(sido = "경기도", sigungu = "수원시", targetRegionName = "없음")
+            ),
+            query = query(
+                displayRegion = Region(sido = "경기도", sigungu = "수원시 장안구"),
+                sigunguQuery = "수원시"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("없음", guide.targetRegionName)
+        assertEquals("수원시 장안구", guide.region.sigungu)
+    }
+
+    @Test
+    fun `단일 후보의 대상지역이 동 목록이어도 해당 후보를 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(
+                    sido = "서울특별시",
+                    sigungu = "강남구",
+                    targetRegionName = "신사동+압구정동+논현1동"
+                )
+            ),
+            query = query(
+                displayRegion = Region(sido = "서울특별시", sigungu = "강남구"),
+                sigunguQuery = "강남구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("신사동+압구정동+논현1동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `읍면동 없이 복수 후보가 있으면 전체 적용 후보가 있어도 임의 선택하지 않는다`() {
         val result = useCase(
             candidates = listOf(
                 guide(sido = "경기도", sigungu = "수원시", targetRegionName = "수원시 전체"),
@@ -129,9 +185,7 @@ class SelectRegionalGuideCandidateUseCaseTest {
             )
         )
 
-        val guide = (result as RegionalGuideLookupResult.Success).guide
-
-        assertEquals("수원시 전체", guide.targetRegionName)
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
     }
 
     @Test

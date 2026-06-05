@@ -94,7 +94,7 @@ class RegionOptionsRepositoryImpl @Inject constructor(
         }
 
         return matchedRegions
-            .mapToRegion()
+            .mapToSigunguRegion()
             .distinctBy { region ->
                 listOf(
                     region.sido.orEmpty(),
@@ -111,6 +111,18 @@ class RegionOptionsRepositoryImpl @Inject constructor(
                     sido = region.sidoName,
                     sigungu = region.sigunguName.ifBlank { null },
                     eupmyeondong = region.eupmyeondongName
+                )
+            )
+        }
+    }
+
+    private fun List<AdministrativeRegionDto>.mapToSigunguRegion(): List<Region> {
+        return map { region ->
+            RegionNormalizer.normalize(
+                Region(
+                    sido = region.sidoName,
+                    sigungu = region.sigunguName.ifBlank { null },
+                    eupmyeondong = null
                 )
             )
         }

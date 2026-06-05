@@ -40,6 +40,22 @@ class NormalizeRegionalGuideQueryUseCaseTest {
     }
 
     @Test
+    fun `행정구가 포함된 시군구의 표시 지역은 유지하고 조회 key만 시 단위로 정규화한다`() {
+        val result = useCase(
+            Region(
+                sido = "경기도",
+                sigungu = "수원시 장안구",
+                eupmyeondong = null
+            )
+        )
+
+        assertEquals("수원시", result?.sigunguQuery)
+        assertEquals("경기도", result?.displayRegion?.sido)
+        assertEquals("수원시 장안구", result?.displayRegion?.sigungu)
+        assertNull(result?.displayRegion?.eupmyeondong)
+    }
+
+    @Test
     fun `세종특별자치시는 없음 key로 조회하고 표시 region의 시군구는 비운다`() {
         val result = useCase(
             Region(
