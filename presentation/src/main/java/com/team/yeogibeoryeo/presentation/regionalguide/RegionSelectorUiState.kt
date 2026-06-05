@@ -7,6 +7,7 @@ data class RegionSelectorUiState(
     val selectedSido: String? = null,
     val selectedSigungu: String? = null,
     val selectedEupmyeondong: String? = null,
+    val expandedDropdown: RegionSelectorDropdown? = null,
 ) {
     val selectedRegionText: String?
         get() = selectedRegionParts
@@ -29,4 +30,10 @@ data class RegionSelectorUiState(
             selectedSigungu,
             selectedEupmyeondong,
         )
+}
+
+enum class RegionSelectorDropdown {
+    SIDO,
+    SIGUNGU,
+    EUPMYEONDONG,
 }

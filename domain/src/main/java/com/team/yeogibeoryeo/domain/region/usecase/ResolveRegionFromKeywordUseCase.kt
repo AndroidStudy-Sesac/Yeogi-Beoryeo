@@ -52,6 +52,7 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
         return when {
             candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
             candidates.hasExactSigunguMatch(sigungu) -> ResolveRegionFromKeywordResult.Ambiguous(candidates)
+            sigungu.isAdministrativeDistrictName() -> ResolveRegionFromKeywordResult.NotFound
             else -> ResolveRegionFromKeywordResult.Resolved(parsedRegion)
         }
     }
@@ -69,7 +70,12 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
             !sigungu.isNullOrBlank() &&
             eupmyeondong.isNullOrBlank()
 
+    private fun String.isAdministrativeDistrictName(): Boolean =
+        endsWith(ADMINISTRATIVE_DISTRICT_SUFFIX)
+
     private companion object {
+        const val ADMINISTRATIVE_DISTRICT_SUFFIX = "구"
+
         val REGION_CANDIDATE_COMPARATOR = compareBy<Region>(
             { region -> region.sido.orEmpty() },
             { region -> region.sigungu.orEmpty() },

@@ -227,6 +227,25 @@ class SelectRegionalGuideCandidateUseCaseTest {
     }
 
     @Test
+    fun `읍면동 없이 복수 후보의 대상지역이 모두 전체 적용이면 대표 후보를 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(sido = "경기도", sigungu = "성남시", targetRegionName = "없음"),
+                guide(sido = "경기도", sigungu = "성남시", targetRegionName = "없음")
+            ),
+            query = query(
+                displayRegion = Region(sido = "경기도", sigungu = "성남시"),
+                sigunguQuery = "성남시"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("성남시", guide.region.sigungu)
+        assertEquals("없음", guide.targetRegionName)
+    }
+
+    @Test
     fun `조회 key와 일치하는 시군구 후보가 없으면 CandidateNotFound를 반환한다`() {
         val result = useCase(
             candidates = listOf(

@@ -7,6 +7,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCa
 import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
+import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
@@ -14,6 +15,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGui
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -163,6 +165,59 @@ class RegionalGuideViewModelTest {
     }
 
     @Test
+    fun `keyword search collapses expanded region selector dropdown`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onRegionSelectorDropdownExpanded(RegionSelectorDropdown.SIDO)
+
+        assertEquals(
+            RegionSelectorDropdown.SIDO,
+            viewModel.regionSelectorUiState.value.expandedDropdown
+        )
+
+        viewModel.onSearchKeywordChanged("없는지역")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        assertNull(viewModel.regionSelectorUiState.value.expandedDropdown)
+    }
+
+    @Test
+    fun `selected region search collapses expanded region selector dropdown`() = runTest {
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = listOf(
+                sampleGuide(
+                    sido = "경기도",
+                    sigungu = "수원시",
+                    targetRegionName = "없음"
+                )
+            )
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("수원시")
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("경기도")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("수원시")
+        advanceUntilIdle()
+        viewModel.onRegionSelectorDropdownExpanded(RegionSelectorDropdown.SIGUNGU)
+
+        viewModel.onRegionSelectionSearchClick()
+        advanceUntilIdle()
+
+        assertNull(viewModel.regionSelectorUiState.value.expandedDropdown)
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+    }
+
+    @Test
     fun `retry last request repeats selected region lookup`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
@@ -258,8 +313,71 @@ class RegionalGuideViewModelTest {
 
         val state = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
 
+        assertEquals("on", viewModel.searchKeyword.value)
         assertEquals("on", state.query)
         assertEquals(2, state.candidates.size)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertNull(selectedSido)
+            assertNull(selectedSigungu)
+            assertNull(selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `keyword suggestion keeps typed typo keyword without replacing it`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중안구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중안구")
+        advanceTimeBy(400)
+        advanceUntilIdle()
+
+        assertEquals("중안구", viewModel.searchKeyword.value)
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertNull(selectedSido)
+            assertNull(selectedSigungu)
+            assertNull(selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `keyword search restores submitted keyword when current input was corrected by ime`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중안구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("장안구")
+        viewModel.searchByKeyword("중안구")
+        advanceUntilIdle()
+
+        assertEquals("중안구", viewModel.searchKeyword.value)
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
     }
 
     @Test
@@ -343,6 +461,7 @@ class RegionalGuideViewModelTest {
         viewModel.onRegionCandidateSelected(candidate)
         advanceUntilIdle()
 
+        assertEquals(candidate.displayText, viewModel.searchKeyword.value)
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
         assertEquals("울주군", regionalGuideRepository.queries.single().sigunguQuery)
 
@@ -350,6 +469,137 @@ class RegionalGuideViewModelTest {
             assertEquals("울산광역시", selectedSido)
             assertEquals("울주군", selectedSigungu)
             assertEquals("온양읍", selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `candidate selection normalizes administrative district for selector state`() = runTest {
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = listOf(
+                sampleGuide(
+                    sido = "경기도",
+                    sigungu = "수원시",
+                    targetRegionName = "없음"
+                )
+            )
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("수원시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경기도" to mapOf(
+                        "수원시" to listOf("파장동")
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository
+        )
+        advanceUntilIdle()
+
+        viewModel.onRegionCandidateSelected(
+            RegionSearchCandidateUiModel(
+                sido = "경기도",
+                sigungu = "수원시 장안구",
+                eupmyeondong = "파장동"
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals("수원시", regionalGuideRepository.queries.single().sigunguQuery)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("경기도", selectedSido)
+            assertEquals("수원시", selectedSigungu)
+            assertEquals("파장동", selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `address lookup normalizes administrative district before selector and guide lookup`() = runTest {
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = listOf(
+                sampleGuide(
+                    sido = "경기도",
+                    sigungu = "성남시",
+                    targetRegionName = "없음"
+                )
+            )
+        )
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                extractedRegion = Region(
+                    sido = "경기도",
+                    sigungu = "성남시 중원구",
+                    eupmyeondong = "중앙동"
+                )
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("성남시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경기도" to mapOf(
+                        "성남시" to listOf("중앙동")
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository
+        )
+        advanceUntilIdle()
+
+        viewModel.loadByAddress("경기도 성남시 중원구 중앙동")
+        advanceUntilIdle()
+
+        assertEquals("성남시", regionalGuideRepository.queries.single().sigunguQuery)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("경기도", selectedSido)
+            assertEquals("성남시", selectedSigungu)
+            assertEquals("중앙동", selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `keyword not found clears previous selected region`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중안구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onRegionCandidateSelected(
+            RegionSearchCandidateUiModel(
+                sido = "경기도",
+                sigungu = "수원시 장안구",
+                eupmyeondong = null
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals("수원시", viewModel.regionSelectorUiState.value.selectedSigungu)
+
+        viewModel.onSearchKeywordChanged("중안구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        assertEquals("중안구", viewModel.searchKeyword.value)
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertNull(selectedSido)
+            assertNull(selectedSigungu)
+            assertNull(selectedEupmyeondong)
         }
     }
 
@@ -491,7 +741,10 @@ class RegionalGuideViewModelTest {
             ),
             getSidoOptionsUseCase = GetSidoOptionsUseCase(regionOptionsRepository),
             getSigunguOptionsUseCase = GetSigunguOptionsUseCase(regionOptionsRepository),
-            getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository)
+            getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
+            normalizeRegionForRegionalGuideUseCase = NormalizeRegionForRegionalGuideUseCase(
+                regionOptionsRepository
+            )
         )
     }
 
@@ -511,9 +764,10 @@ class RegionalGuideViewModelTest {
     }
 
     private class FakeRegionRepository(
-        private val resolvedRegion: Region? = null
+        private val resolvedRegion: Region? = null,
+        private val extractedRegion: Region? = null
     ) : RegionRepository {
-        override fun extractRegionFromAddress(address: String): Region? = null
+        override fun extractRegionFromAddress(address: String): Region? = extractedRegion
 
         override suspend fun resolveRegionFromKeyword(keyword: String): Region? = resolvedRegion
 
@@ -577,6 +831,27 @@ class RegionalGuideViewModelTest {
                     region.sigungu?.contains(keyword) == true
                 }
             }
+        }
+
+        override suspend fun normalizeRegionForRegionalGuide(
+            region: Region
+        ): Region {
+            val selectedSido = region.sido
+            val selectedSigungu = region.sigungu
+                ?.takeIf { sigungu -> sigungu.isNotBlank() }
+                ?.substringBefore(" ")
+                ?.let { sigungu ->
+                    if (sigungu.contains("시") && sigungu.contains("구")) {
+                        sigungu.substringBefore("시") + "시"
+                    } else {
+                        sigungu
+                    }
+                }
+
+            return region.copy(
+                sido = selectedSido,
+                sigungu = selectedSigungu
+            )
         }
     }
 

@@ -69,11 +69,13 @@ fun RegionalGuideRoute(
         searchKeyword = searchKeyword,
         regionSelectorUiState = regionSelectorUiState,
         onSearchKeywordChange = viewModel::onSearchKeywordChanged,
-        onSearchClick = viewModel::searchCurrentKeyword,
+        onSearchClick = viewModel::searchByKeyword,
         onRetryClick = viewModel::retryLastRequest,
         onSidoSelected = viewModel::onSidoSelected,
         onSigunguSelected = viewModel::onSigunguSelected,
         onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
+        onRegionSelectorDropdownExpanded = viewModel::onRegionSelectorDropdownExpanded,
+        onRegionSelectorDropdownDismissed = viewModel::onRegionSelectorDropdownDismissed,
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
@@ -87,11 +89,13 @@ fun RegionalGuideScreen(
     searchKeyword: String,
     regionSelectorUiState: RegionSelectorUiState,
     onSearchKeywordChange: (String) -> Unit,
-    onSearchClick: () -> Unit,
+    onSearchClick: (String) -> Unit,
     onRetryClick: () -> Unit,
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
+    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
+    onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
@@ -113,6 +117,12 @@ fun RegionalGuideScreen(
             uiState !is RegionalGuideUiState.GuideCandidates &&
             !isRegionSelectorExpanded &&
             compactRegionText != null
+
+    LaunchedEffect(uiState) {
+        if (uiState is RegionalGuideUiState.Loading) {
+            isRegionSelectorExpanded = false
+        }
+    }
 
     Column(
         modifier = modifier
@@ -145,20 +155,32 @@ fun RegionalGuideScreen(
             RegionalGuideSearchBar(
                 keyword = searchKeyword,
                 onKeywordChange = onSearchKeywordChange,
-                onSearchClick = onSearchClick,
+                onSearchClick = { submittedKeyword ->
+                    isRegionSelectorExpanded = false
+                    onRegionSelectorDropdownDismissed()
+                    onSearchClick(submittedKeyword)
+                },
                 candidateContent = if (hasSearchCandidates) {
                     {
                         if (ambiguousState != null) {
                             RegionalGuideAmbiguousResult(
                                 candidates = ambiguousState.candidates,
-                                onCandidateClick = onCandidateClick,
+                                onCandidateClick = { candidate ->
+                                    isRegionSelectorExpanded = false
+                                    onRegionSelectorDropdownDismissed()
+                                    onCandidateClick(candidate)
+                                },
                             )
                         }
 
                         if (guideCandidatesState != null) {
                             RegionalGuideCandidateResult(
                                 candidates = guideCandidatesState.candidates,
-                                onCandidateClick = onGuideCandidateClick,
+                                onCandidateClick = { candidate ->
+                                    isRegionSelectorExpanded = false
+                                    onRegionSelectorDropdownDismissed()
+                                    onGuideCandidateClick(candidate)
+                                },
                             )
                         }
                     }
@@ -176,8 +198,11 @@ fun RegionalGuideScreen(
                 onSidoSelected = onSidoSelected,
                 onSigunguSelected = onSigunguSelected,
                 onEupmyeondongSelected = onEupmyeondongSelected,
+                onDropdownExpanded = onRegionSelectorDropdownExpanded,
+                onDropdownDismissed = onRegionSelectorDropdownDismissed,
                 onSearchClick = {
                     isRegionSelectorExpanded = false
+                    onRegionSelectorDropdownDismissed()
                     onRegionSelectionSearchClick()
                 },
                 onChangeClick = {

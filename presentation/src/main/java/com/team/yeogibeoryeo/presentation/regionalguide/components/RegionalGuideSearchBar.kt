@@ -17,33 +17,32 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun RegionalGuideSearchBar(
     keyword: String,
     onKeywordChange: (String) -> Unit,
-    onSearchClick: () -> Unit,
+    onSearchClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     candidateContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
     val hasCandidates = candidateContent != null
 
     fun submitSearch() {
         if (keyword.isBlank()) return
 
-        focusManager.clearFocus()
-        keyboardController?.hide()
-        onSearchClick()
+        onSearchClick(keyword)
     }
 
     Column(
@@ -52,7 +51,15 @@ fun RegionalGuideSearchBar(
         OutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = SEARCH_FIELD_MIN_HEIGHT),
+                .heightIn(min = SEARCH_FIELD_MIN_HEIGHT)
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
+                        submitSearch()
+                        true
+                    } else {
+                        false
+                    }
+                },
             value = keyword,
             onValueChange = onKeywordChange,
             singleLine = true,
@@ -76,6 +83,11 @@ fun RegionalGuideSearchBar(
                 SEARCH_FIELD_DEFAULT_SHAPE
             },
             keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.None,
+                autoCorrectEnabled = false,
+                // 지역명은 고유명사가 많아 IME 자동 보정이 오탐을 만들 수 있습니다.
+                // visualTransformation을 지정하지 않으므로 입력값은 검색창에 그대로 표시됩니다.
+                keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Search
             ),
             keyboardActions = KeyboardActions(

@@ -1,51 +1,41 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.RegionOptionsLocalDataSource
+import com.team.yeogibeoryeo.data.region.local.RegionalGuideRegionOptionsLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import javax.inject.Inject
 
 class RegionOptionsRepositoryImpl @Inject constructor(
-    private val localDataSource: RegionOptionsLocalDataSource
+    private val localDataSource: RegionOptionsLocalDataSource,
+    private val regionalGuideRegionOptionsLocalDataSource: RegionalGuideRegionOptionsLocalDataSource
 ) : RegionOptionsRepository {
 
     override suspend fun getSidoOptions(): List<String> {
-        return localDataSource.getRegions()
-            .map { region -> region.sidoName }
-            .filter { sido -> sido.isNotBlank() }
-            .distinct()
-            .sorted()
+        return RegionOptionsMapper.getSidoOptions(
+            regionalGuideRegions = regionalGuideRegionOptionsLocalDataSource.getRegions()
+        )
     }
 
     override suspend fun getSigunguOptions(
         sido: String
     ): List<String> {
-        return localDataSource.getRegions()
-            .filter { region -> region.sidoName == sido }
-            .map { region ->
-                region.sigunguName.ifBlank {
-                    region.sidoName
-                }
-            }
-            .filter { sigungu -> sigungu.isNotBlank() }
-            .distinct()
-            .sorted()
+        return RegionOptionsMapper.getSigunguOptions(
+            regionalGuideRegions = regionalGuideRegionOptionsLocalDataSource.getRegions(),
+            sido = sido
+        )
     }
 
     override suspend fun getEupmyeondongOptions(
         sido: String,
         sigungu: String
     ): List<String> {
-        return localDataSource.getRegions()
-            .filter { region ->
-                region.sidoName == sido &&
-                    region.sigunguName.ifBlank { region.sidoName } == sigungu
-            }
-            .map { region -> region.eupmyeondongName }
-            .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
-            .distinct()
-            .sorted()
+        return RegionOptionsMapper.getEupmyeondongOptions(
+            administrativeRegions = localDataSource.getRegions(),
+            sido = sido,
+            sigungu = sigungu
+        )
     }
 
     override suspend fun findRegionsByEupmyeondongKeyword(
@@ -73,35 +63,20 @@ class RegionOptionsRepositoryImpl @Inject constructor(
     override suspend fun findRegionsBySigunguKeyword(
         keyword: String
     ): List<Region> {
-        val targetKeyword = keyword.trim()
-        if (targetKeyword.isBlank()) return emptyList()
+        return RegionOptionsMapper.findSigunguRegions(
+            administrativeRegions = localDataSource.getRegions(),
+            regionalGuideRegions = regionalGuideRegionOptionsLocalDataSource.getRegions(),
+            keyword = keyword
+        )
+    }
 
-        val regions = localDataSource.getRegions()
-        val exactMatches = regions.filter { region ->
-            region.sigunguName == targetKeyword
-        }
-
-        val prefixMatches = exactMatches.ifEmpty {
-            regions.filter { region ->
-                region.sigunguName.startsWith(targetKeyword)
-            }
-        }
-
-        val matchedRegions = prefixMatches.ifEmpty {
-            regions.filter { region ->
-                region.sigunguName.contains(targetKeyword)
-            }
-        }
-
-        return matchedRegions
-            .mapToSigunguRegion()
-            .distinctBy { region ->
-                listOf(
-                    region.sido.orEmpty(),
-                    region.sigungu.orEmpty()
-                )
-            }
-            .sortedWith(REGION_NAME_COMPARATOR)
+    override suspend fun normalizeRegionForRegionalGuide(
+        region: Region
+    ): Region {
+        return RegionOptionsMapper.normalizeRegionForRegionalGuide(
+            region = region,
+            regionalGuideRegions = regionalGuideRegionOptionsLocalDataSource.getRegions()
+        )
     }
 
     private fun List<AdministrativeRegionDto>.mapToRegion(): List<Region> {
@@ -116,19 +91,7 @@ class RegionOptionsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun List<AdministrativeRegionDto>.mapToSigunguRegion(): List<Region> {
-        return map { region ->
-            RegionNormalizer.normalize(
-                Region(
-                    sido = region.sidoName,
-                    sigungu = region.sigunguName.ifBlank { null },
-                    eupmyeondong = null
-                )
-            )
-        }
-    }
-
-    companion object {
+    private companion object {
         private val REGION_NAME_COMPARATOR = compareBy<Region>(
             { region -> region.sido.orEmpty() },
             { region -> region.sigungu.orEmpty() },

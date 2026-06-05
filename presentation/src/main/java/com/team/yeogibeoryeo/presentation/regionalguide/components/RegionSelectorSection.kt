@@ -20,10 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorDropdown
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +36,8 @@ fun RegionSelectorSection(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
+    onDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
+    onDropdownDismissed: () -> Unit = {},
     onSearchClick: () -> Unit,
     onChangeClick: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -73,6 +72,9 @@ fun RegionSelectorSection(
                 RegionDropdownChip(
                     label = uiState.selectedSido ?: "시도 선택",
                     options = uiState.sidoOptions,
+                    expanded = uiState.expandedDropdown == RegionSelectorDropdown.SIDO,
+                    onExpanded = { onDropdownExpanded(RegionSelectorDropdown.SIDO) },
+                    onDismissed = onDropdownDismissed,
                     onOptionSelected = onSidoSelected,
                     modifier = Modifier.weight(1f),
                 )
@@ -81,6 +83,9 @@ fun RegionSelectorSection(
                     label = uiState.selectedSigungu ?: "시군구 선택",
                     options = uiState.sigunguOptions,
                     enabled = uiState.isSigunguSelectionEnabled,
+                    expanded = uiState.expandedDropdown == RegionSelectorDropdown.SIGUNGU,
+                    onExpanded = { onDropdownExpanded(RegionSelectorDropdown.SIGUNGU) },
+                    onDismissed = onDropdownDismissed,
                     onOptionSelected = onSigunguSelected,
                     modifier = Modifier.weight(1f),
                 )
@@ -90,6 +95,9 @@ fun RegionSelectorSection(
                 label = uiState.selectedEupmyeondong ?: "읍면동 선택",
                 options = uiState.eupmyeondongOptions,
                 enabled = uiState.isEupmyeondongSelectionEnabled,
+                expanded = uiState.expandedDropdown == RegionSelectorDropdown.EUPMYEONDONG,
+                onExpanded = { onDropdownExpanded(RegionSelectorDropdown.EUPMYEONDONG) },
+                onDismissed = onDropdownDismissed,
                 onOptionSelected = onEupmyeondongSelected,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -181,12 +189,13 @@ private fun RegionSelectorCompactCard(
 private fun RegionDropdownChip(
     label: String,
     options: List<String>,
+    expanded: Boolean,
+    onExpanded: () -> Unit,
+    onDismissed: () -> Unit,
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Column(
         modifier = modifier,
     ) {
@@ -196,7 +205,7 @@ private fun RegionDropdownChip(
             enabled = enabled,
             onClick = {
                 if (options.isNotEmpty()) {
-                    expanded = true
+                    onExpanded()
                 }
             },
             label = {
@@ -219,9 +228,7 @@ private fun RegionDropdownChip(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = {
-                expanded = false
-            },
+            onDismissRequest = onDismissed,
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -230,7 +237,6 @@ private fun RegionDropdownChip(
                     },
                     onClick = {
                         onOptionSelected(option)
-                        expanded = false
                     },
                 )
             }
