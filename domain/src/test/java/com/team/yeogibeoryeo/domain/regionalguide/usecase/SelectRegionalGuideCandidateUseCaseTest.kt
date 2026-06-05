@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.domain.regionalguide.usecase
+﻿package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
@@ -173,7 +173,41 @@ class SelectRegionalGuideCandidateUseCaseTest {
     }
 
     @Test
-    fun `읍면동 없이 복수 후보가 있으면 전체 적용 후보가 있어도 임의 선택하지 않는다`() {
+    fun `읍면동 접미사가 없는 대상지역 토큰도 선택 읍면동과 매칭한다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(
+                    sido = "울산광역시",
+                    sigungu = "울주군",
+                    targetRegionName = "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"
+                ),
+                guide(
+                    sido = "울산광역시",
+                    sigungu = "울주군",
+                    targetRegionName = "두동, 두서, 삼동"
+                )
+            ),
+            query = query(
+                displayRegion = Region(
+                    sido = "울산광역시",
+                    sigungu = "울주군",
+                    eupmyeondong = "온양읍"
+                ),
+                sigunguQuery = "울주군"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("온양읍", guide.region.eupmyeondong)
+        assertEquals(
+            "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생",
+            guide.targetRegionName
+        )
+    }
+
+    @Test
+    fun `읍면동 없이 복수 후보가 있으면 전체 적용 후보가 있어도 후보 목록을 반환한다`() {
         val result = useCase(
             candidates = listOf(
                 guide(sido = "경기도", sigungu = "수원시", targetRegionName = "수원시 전체"),
@@ -185,7 +219,11 @@ class SelectRegionalGuideCandidateUseCaseTest {
             )
         )
 
-        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals("수원시 전체", candidates[0].targetRegionName)
+        assertEquals("일부 권역", candidates[1].targetRegionName)
     }
 
     @Test
@@ -204,7 +242,7 @@ class SelectRegionalGuideCandidateUseCaseTest {
     }
 
     @Test
-    fun `읍면동 없이 복수 권역 후보만 있으면 임의 선택하지 않는다`() {
+    fun `읍면동 없이 복수 권역 후보만 있으면 후보 목록을 반환한다`() {
         val result = useCase(
             candidates = listOf(
                 guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동"),
@@ -216,7 +254,11 @@ class SelectRegionalGuideCandidateUseCaseTest {
             )
         )
 
-        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals("신흥동+율목동", candidates[0].targetRegionName)
+        assertEquals("신포동+연안동", candidates[1].targetRegionName)
     }
 
     @Test

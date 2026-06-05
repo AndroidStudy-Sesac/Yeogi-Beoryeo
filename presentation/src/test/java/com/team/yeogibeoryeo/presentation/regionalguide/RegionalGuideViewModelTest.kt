@@ -196,6 +196,181 @@ class RegionalGuideViewModelTest {
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
     }
 
+    @Test
+    fun `ambiguous keyword search exposes region candidates`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        eupmyeondong = "온양읍"
+                    ),
+                    Region(
+                        sido = "충청남도",
+                        sigungu = "아산시",
+                        eupmyeondong = "온양1동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("온양")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
+
+        assertEquals("온양", state.query)
+        assertEquals(2, state.candidates.size)
+        assertEquals("울산광역시 > 울주군 > 온양읍", state.candidates.first().displayText)
+    }
+
+    @Test
+    fun `candidate selection runs selected region lookup and updates selector state`() = runTest {
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = listOf(
+                sampleGuide(
+                    sido = "울산광역시",
+                    sigungu = "울주군",
+                    targetRegionName = "온양읍"
+                )
+            )
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "울산광역시" to listOf("울주군")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "울산광역시" to mapOf(
+                        "울주군" to listOf("온양읍")
+                    )
+                ),
+                keywordRegions = listOf(
+                    Region(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        eupmyeondong = "온양읍"
+                    ),
+                    Region(
+                        sido = "충청남도",
+                        sigungu = "아산시",
+                        eupmyeondong = "온양1동"
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("온양")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val candidate = (viewModel.uiState.value as RegionalGuideUiState.Ambiguous)
+            .candidates
+            .first()
+
+        viewModel.onRegionCandidateSelected(candidate)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+        assertEquals("울주군", regionalGuideRepository.queries.single().sigunguQuery)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("울산광역시", selectedSido)
+            assertEquals("울주군", selectedSigungu)
+            assertEquals("온양읍", selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `regional guide lookup exposes multiple guide candidates`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "울주군")
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"
+                    ),
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "두동, 두서, 삼동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("울주군")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+
+        assertEquals("울주군", state.query)
+        assertEquals(2, state.candidates.size)
+        assertEquals(
+            "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생",
+            state.candidates.first().displayText
+        )
+    }
+
+    @Test
+    fun `regional guide candidate selection shows selected guide`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "울주군")
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"
+                    ),
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "두동, 두서, 삼동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("울주군")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val candidate = (viewModel.uiState.value as RegionalGuideUiState.GuideCandidates)
+            .candidates
+            .first()
+
+        viewModel.onRegionalGuideCandidateSelected(candidate)
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertEquals("울주군", state.query)
+        assertEquals(
+            "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생",
+            state.guide.targetRegionName
+        )
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("울산광역시", selectedSido)
+            assertEquals("울주군", selectedSigungu)
+            assertNull(selectedEupmyeondong)
+        }
+    }
+
     private fun createViewModel(
         regionRepository: RegionRepository = FakeRegionRepository(),
         regionOptionsRepository: RegionOptionsRepository = FakeRegionOptionsRepository(),
@@ -233,10 +408,12 @@ class RegionalGuideViewModelTest {
         )
     }
 
-    private class FakeRegionRepository : RegionRepository {
+    private class FakeRegionRepository(
+        private val resolvedRegion: Region? = null
+    ) : RegionRepository {
         override fun extractRegionFromAddress(address: String): Region? = null
 
-        override suspend fun resolveRegionFromKeyword(keyword: String): Region? = null
+        override suspend fun resolveRegionFromKeyword(keyword: String): Region? = resolvedRegion
 
         override suspend fun resolveRegionFromCoordinate(
             latitude: Double,
@@ -249,6 +426,7 @@ class RegionalGuideViewModelTest {
         private val sigunguOptionsBySido: Map<String, List<String>> = emptyMap(),
         private val eupmyeondongOptionsByRegion: Map<String, Map<String, List<String>>> = emptyMap(),
         private val delayedSigunguOptionsBySido: Map<String, CompletableDeferred<List<String>>> = emptyMap(),
+        private val keywordRegions: List<Region> = emptyList(),
     ) : RegionOptionsRepository {
 
         override suspend fun getSidoOptions(): List<String> = sidoOptions
@@ -271,11 +449,33 @@ class RegionalGuideViewModelTest {
 
         override suspend fun findRegionsByEupmyeondongKeyword(
             keyword: String
-        ): List<Region> = emptyList()
+        ): List<Region> {
+            val exactMatches = keywordRegions.filter { region -> region.eupmyeondong == keyword }
+
+            return exactMatches.ifEmpty {
+                keywordRegions.filter { region ->
+                    region.eupmyeondong?.startsWith(keyword) == true
+                }
+            }
+        }
 
         override suspend fun findRegionsBySigunguKeyword(
             keyword: String
-        ): List<Region> = emptyList()
+        ): List<Region> {
+            val exactMatches = keywordRegions.filter { region -> region.sigungu == keyword }
+
+            val prefixMatches = exactMatches.ifEmpty {
+                keywordRegions.filter { region ->
+                    region.sigungu?.startsWith(keyword) == true
+                }
+            }
+
+            return prefixMatches.ifEmpty {
+                keywordRegions.filter { region ->
+                    region.sigungu?.contains(keyword) == true
+                }
+            }
+        }
     }
 
     private class FakeRegionalDisposalGuideRepository(

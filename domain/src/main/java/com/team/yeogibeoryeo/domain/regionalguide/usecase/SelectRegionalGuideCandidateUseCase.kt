@@ -32,7 +32,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             candidates = filteredCandidates,
             requestedRegion = query.displayRegion,
             sigunguQuery = query.sigunguQuery
-        ) ?: return RegionalGuideLookupResult.CandidateNotFound
+        ) ?: return filteredCandidates.toCandidateResultOrNotFound(query.displayRegion)
 
         return RegionalGuideLookupResult.Success(
             guide = selectedGuide.withDisplayRegion(query.displayRegion)
@@ -64,9 +64,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         if (!eupmyeondong.isNullOrBlank()) {
             return candidates.firstOrNull { guide ->
-                guide.targetRegionName?.trim() == eupmyeondong
-            } ?: candidates.firstOrNull { guide ->
-                guide.targetRegionName?.contains(eupmyeondong) == true
+                guide.targetRegionName.matchesEupmyeondong(eupmyeondong)
             } ?: candidates.firstOrNull { guide ->
                 guide.targetRegionName.isSejongDongArea() &&
                     eupmyeondong in SEJONG_DONG_AREA_NAMES
@@ -77,6 +75,41 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         return null
     }
+
+    private fun List<RegionalDisposalGuide>.toCandidateResultOrNotFound(
+        displayRegion: Region
+    ): RegionalGuideLookupResult {
+        if (!displayRegion.eupmyeondong.isNullOrBlank() || size <= 1) {
+            return RegionalGuideLookupResult.CandidateNotFound
+        }
+
+        return RegionalGuideLookupResult.Candidates(
+            guides = map { guide -> guide.withDisplayRegion(displayRegion) }
+        )
+    }
+
+    private fun String?.matchesEupmyeondong(
+        eupmyeondong: String
+    ): Boolean {
+        val targetRegionName = this?.trim().orEmpty()
+        if (targetRegionName.isBlank()) return false
+
+        if (targetRegionName == eupmyeondong || targetRegionName.contains(eupmyeondong)) {
+            return true
+        }
+
+        val normalizedEupmyeondong = eupmyeondong.removeAdministrativeSuffix()
+
+        return targetRegionName
+            .split(TARGET_REGION_DELIMITER)
+            .map { token -> token.trim().removeAdministrativeSuffix() }
+            .any { token -> token == normalizedEupmyeondong }
+    }
+
+    private fun String.removeAdministrativeSuffix(): String =
+        removeSuffix(EUP)
+            .removeSuffix(MYEON)
+            .removeSuffix(DONG)
 
     private fun RegionalDisposalGuide.withDisplayRegion(
         displayRegion: Region
@@ -115,6 +148,11 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         const val OVERALL_ALL = "전체"
         const val OVERALL_WHOLE_AREA = "전역"
         const val OVERALL_WITHIN_REGION = "관내"
+        const val EUP = "읍"
+        const val MYEON = "면"
+        const val DONG = "동"
+
+        val TARGET_REGION_DELIMITER = Regex("[,+/\\s]+")
 
         val SEJONG_DONG_AREA_NAMES = setOf(
             "한솔동",

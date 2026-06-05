@@ -25,9 +25,11 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
 
         return when {
             candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
-            candidates.size > 1 -> ResolveRegionFromKeywordResult.Ambiguous
-            parsedRegion != null -> ResolveRegionFromKeywordResult.Resolved(parsedRegion)
-            else -> ResolveRegionFromKeywordResult.NotFound
+            candidates.size > 1 -> ResolveRegionFromKeywordResult.Ambiguous(candidates)
+            else -> resolveSigunguKeyword(
+                keyword = keyword,
+                fallbackRegion = parsedRegion
+            )
         }
     }
 
@@ -39,8 +41,22 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
 
         return when {
             candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
-            candidates.hasExactSigunguMatch(sigungu) -> ResolveRegionFromKeywordResult.Ambiguous
+            candidates.hasExactSigunguMatch(sigungu) -> ResolveRegionFromKeywordResult.Ambiguous(candidates)
             else -> ResolveRegionFromKeywordResult.Resolved(parsedRegion)
+        }
+    }
+
+    private suspend fun resolveSigunguKeyword(
+        keyword: String,
+        fallbackRegion: Region? = null
+    ): ResolveRegionFromKeywordResult {
+        val candidates = regionOptionsRepository.findRegionsBySigunguKeyword(keyword)
+
+        return when {
+            candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
+            candidates.size > 1 -> ResolveRegionFromKeywordResult.Ambiguous(candidates)
+            fallbackRegion != null -> ResolveRegionFromKeywordResult.Resolved(fallbackRegion)
+            else -> ResolveRegionFromKeywordResult.NotFound
         }
     }
 
@@ -63,7 +79,9 @@ sealed interface ResolveRegionFromKeywordResult {
         val region: Region
     ) : ResolveRegionFromKeywordResult
 
-    data object Ambiguous : ResolveRegionFromKeywordResult
+    data class Ambiguous(
+        val candidates: List<Region>
+    ) : ResolveRegionFromKeywordResult
 
     data object NotFound : ResolveRegionFromKeywordResult
 }

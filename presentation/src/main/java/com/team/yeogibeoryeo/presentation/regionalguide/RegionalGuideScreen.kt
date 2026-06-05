@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -33,12 +33,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionSelectorSection
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideAmbiguousResult
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideCandidateResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideEmptyResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSearchBar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalWasteScheduleCard
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 @Composable
 fun RegionalGuideRoute(
@@ -72,6 +75,8 @@ fun RegionalGuideRoute(
         onSigunguSelected = viewModel::onSigunguSelected,
         onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
+        onCandidateClick = viewModel::onRegionCandidateSelected,
+        onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
         modifier = modifier,
     )
 }
@@ -88,12 +93,24 @@ fun RegionalGuideScreen(
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
     onRegionSelectionSearchClick: () -> Unit,
+    onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
+    onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
-    val compactRegionText = uiState.queryOrNull()
+    val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous
+    val guideCandidatesState = uiState as? RegionalGuideUiState.GuideCandidates
+    val hasSearchCandidates = ambiguousState != null || guideCandidatesState != null
+    val compactRegionText = when (uiState) {
+        is RegionalGuideUiState.Success ->
+            regionSelectorUiState.selectedRegionText ?: uiState.query
+
+        else -> uiState.queryOrNull()
+    }
     val isRegionSelectorCompact =
         uiState !is RegionalGuideUiState.Idle &&
+            uiState !is RegionalGuideUiState.Ambiguous &&
+            uiState !is RegionalGuideUiState.GuideCandidates &&
             !isRegionSelectorExpanded &&
             compactRegionText != null
 
@@ -129,6 +146,25 @@ fun RegionalGuideScreen(
                 keyword = searchKeyword,
                 onKeywordChange = onSearchKeywordChange,
                 onSearchClick = onSearchClick,
+                candidateContent = if (hasSearchCandidates) {
+                    {
+                        if (ambiguousState != null) {
+                            RegionalGuideAmbiguousResult(
+                                candidates = ambiguousState.candidates,
+                                onCandidateClick = onCandidateClick,
+                            )
+                        }
+
+                        if (guideCandidatesState != null) {
+                            RegionalGuideCandidateResult(
+                                candidates = guideCandidatesState.candidates,
+                                onCandidateClick = onGuideCandidateClick,
+                            )
+                        }
+                    }
+                } else {
+                    null
+                },
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -155,6 +191,8 @@ fun RegionalGuideScreen(
         RegionalGuideContent(
             uiState = uiState,
             onRetryClick = onRetryClick,
+            onCandidateClick = onCandidateClick,
+            onGuideCandidateClick = onGuideCandidateClick,
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 20.dp),
@@ -169,6 +207,7 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
         is RegionalGuideUiState.Success -> query
         is RegionalGuideUiState.Empty -> query
         is RegionalGuideUiState.Ambiguous -> query
+        is RegionalGuideUiState.GuideCandidates -> query
         is RegionalGuideUiState.Error -> query
     }?.takeIf { query -> query.isNotBlank() }
 
@@ -176,6 +215,8 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
 private fun RegionalGuideContent(
     uiState: RegionalGuideUiState,
     onRetryClick: () -> Unit,
+    onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
+    onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (uiState) {
@@ -205,10 +246,11 @@ private fun RegionalGuideContent(
         }
 
         is RegionalGuideUiState.Ambiguous -> {
-            RegionalGuideAmbiguousResult(
-                message = uiState.message,
-                modifier = modifier
-            )
+            Spacer(modifier = modifier)
+        }
+
+        is RegionalGuideUiState.GuideCandidates -> {
+            Spacer(modifier = modifier)
         }
 
         is RegionalGuideUiState.Error -> {
@@ -333,6 +375,8 @@ private fun RegionalGuideScreenIdlePreview() {
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
             onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
@@ -356,6 +400,8 @@ private fun RegionalGuideScreenLoadingPreview() {
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
             onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
@@ -413,6 +459,8 @@ private fun RegionalGuideScreenSuccessPreview() {
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
             onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
@@ -437,6 +485,8 @@ private fun RegionalGuideScreenEmptyPreview() {
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
             onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
@@ -448,7 +498,19 @@ private fun RegionalGuideScreenAmbiguousPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.Ambiguous(
                 query = "신흥동",
-                message = "여러 지역이 검색됩니다. 시도나 시군구를 함께 입력해주세요."
+                message = "여러 지역이 검색됩니다. 원하는 지역을 선택해주세요.",
+                candidates = listOf(
+                    RegionSearchCandidateUiModel(
+                        sido = "인천광역시",
+                        sigungu = "중구",
+                        eupmyeondong = "신흥동",
+                    ),
+                    RegionSearchCandidateUiModel(
+                        sido = "대전광역시",
+                        sigungu = "동구",
+                        eupmyeondong = "신흥동",
+                    ),
+                )
             ),
             searchKeyword = "신흥동",
             regionSelectorUiState = RegionSelectorUiState(
@@ -461,6 +523,54 @@ private fun RegionalGuideScreenAmbiguousPreview() {
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
             onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalGuideScreenGuideCandidatesPreview() {
+    MaterialTheme {
+        RegionalGuideScreen(
+            uiState = RegionalGuideUiState.GuideCandidates(
+                query = "울주군",
+                message = "여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해주세요.",
+                candidates = listOf(
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "울산광역시 울주군",
+                            targetRegionName = "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"
+                        ),
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        eupmyeondong = null
+                    ),
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "울산광역시 울주군",
+                            targetRegionName = "두동, 두서, 삼동"
+                        ),
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        eupmyeondong = null
+                    ),
+                )
+            ),
+            searchKeyword = "울주군",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "울산광역시", "경기도"),
+            ),
+            onSearchKeywordChange = {},
+            onSearchClick = {},
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
@@ -485,6 +595,23 @@ private fun RegionalGuideScreenErrorPreview() {
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
             onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
+
+private fun previewRegionalGuide(
+    regionName: String,
+    targetRegionName: String
+): RegionalGuideUiModel =
+    RegionalGuideUiModel(
+        regionName = regionName,
+        managementZoneName = regionName,
+        targetRegionName = targetRegionName,
+        disposalPlaceType = "문전수거",
+        disposalPlaceDescription = "문전",
+        schedules = emptyList(),
+        uncollectedDays = "토, 일",
+        departmentInfo = "환경자원과"
+    )
