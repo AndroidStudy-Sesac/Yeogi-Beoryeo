@@ -20,11 +20,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -219,7 +219,7 @@ class RegionalGuideViewModel @Inject constructor(
                     is ResolveRegionFromKeywordResult.Ambiguous -> {
                         _uiState.value = RegionalGuideUiState.Ambiguous(
                             query = trimmedKeyword,
-                            message = "여러 지역이 검색됩니다. 원하는 지역을 선택해주세요.",
+                            message = AMBIGUOUS_REGION_MESSAGE,
                             candidates = result.candidates
                                 .map { region -> region.toCandidateUiModel() }
                         )
@@ -348,7 +348,7 @@ class RegionalGuideViewModel @Inject constructor(
                         if (searchKeyword.value.trim() == trimmedKeyword) {
                             _uiState.value = RegionalGuideUiState.Ambiguous(
                                 query = trimmedKeyword,
-                                message = "?щ윭 吏??씠 寃?됰맗?덈떎. ?먰븯??吏??쓣 ?좏깮?댁＜?몄슂.",
+                                message = AMBIGUOUS_REGION_MESSAGE,
                                 candidates = result.candidates
                                     .map { region -> region.toCandidateUiModel() }
                             )
@@ -361,7 +361,7 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // 자동 후보 추천은 보조 UX이므로 실패해도 기존 화면 상태를 유지합니다.
+                // 입력 중 후보 추천은 명시 조회가 아니므로 실패해도 현재 화면 상태를 유지합니다.
             }
         }
     }
@@ -545,5 +545,6 @@ class RegionalGuideViewModel @Inject constructor(
 
     private companion object {
         const val KEYWORD_SUGGESTION_DEBOUNCE_MILLIS = 400L
+        const val AMBIGUOUS_REGION_MESSAGE = "여러 지역이 검색됩니다. 원하는 지역을 선택해주세요."
     }
 }
