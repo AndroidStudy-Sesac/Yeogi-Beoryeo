@@ -119,6 +119,51 @@ class ResolveRegionFromKeywordUseCaseTest {
     }
 
     @Test
+    fun `검색어가 시군구와 읍면동 후보에 모두 포함되면 함께 후보로 반환한다`() = runBlocking {
+        val useCase = ResolveRegionFromKeywordUseCase(
+            repository = FakeRegionRepository(
+                resolvedRegion = null
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                regions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구",
+                        eupmyeondong = "파장동"
+                    ),
+                    Region(
+                        sido = "부산광역시",
+                        sigungu = "기장군",
+                        eupmyeondong = "장안읍"
+                    )
+                )
+            )
+        )
+
+        val result = useCase("장안")
+
+        val candidates = (result as ResolveRegionFromKeywordResult.Ambiguous).candidates
+
+        assertEquals(2, candidates.size)
+        assertEquals(
+            Region(
+                sido = "경기도",
+                sigungu = "수원시 장안구",
+                eupmyeondong = null
+            ),
+            candidates[0]
+        )
+        assertEquals(
+            Region(
+                sido = "부산광역시",
+                sigungu = "기장군",
+                eupmyeondong = "장안읍"
+            ),
+            candidates[1]
+        )
+    }
+
+    @Test
     fun `검색어로 해석할 지역이 없으면 NotFound를 반환한다`() = runBlocking {
         val useCase = ResolveRegionFromKeywordUseCase(
             repository = FakeRegionRepository(
