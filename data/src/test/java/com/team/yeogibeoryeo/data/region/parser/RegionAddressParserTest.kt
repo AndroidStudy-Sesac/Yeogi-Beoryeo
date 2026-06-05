@@ -131,7 +131,29 @@ class RegionAddressParserTest {
         )
 
         assertEquals("경기도", result.sido)
-        assertEquals("수원시", result.sigungu)
+        assertEquals("수원시 영통구", result.sigungu)
         assertEquals("망포동", result.eupmyeondong)
+    }
+
+    @Test
+    fun `시와 구가 함께 입력되면 시군구를 행정구 포함 형태로 파싱한다`() {
+        val result = parser.parse(
+            "경기도 수원시 장안구 파장동"
+        )
+
+        assertEquals("경기도", result.sido)
+        assertEquals("수원시 장안구", result.sigungu)
+        assertEquals("파장동", result.eupmyeondong)
+    }
+
+    @Test
+    fun `시도 없이 시와 구만 입력되어도 시군구를 행정구 포함 형태로 파싱한다`() {
+        val result = parser.parse(
+            "수원시 장안구"
+        )
+
+        assertNull(result.sido)
+        assertEquals("수원시 장안구", result.sigungu)
+        assertNull(result.eupmyeondong)
     }
 }

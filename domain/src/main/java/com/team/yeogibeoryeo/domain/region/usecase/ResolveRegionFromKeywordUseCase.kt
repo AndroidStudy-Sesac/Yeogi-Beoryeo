@@ -12,8 +12,12 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
     suspend operator fun invoke(keyword: String): ResolveRegionFromKeywordResult {
         val parsedRegion = repository.resolveRegionFromKeyword(keyword)
 
-        if (parsedRegion?.hasUpperRegion() == true) {
+        if (parsedRegion?.hasSido() == true) {
             return ResolveRegionFromKeywordResult.Resolved(parsedRegion)
+        }
+
+        if (parsedRegion?.hasOnlySigungu() == true) {
+            return resolveSigunguOnlyRegion(parsedRegion)
         }
 
         val eupmyeondongKeyword = parsedRegion?.eupmyeondong ?: keyword
@@ -27,8 +31,31 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
         }
     }
 
-    private fun Region.hasUpperRegion(): Boolean =
-        !sido.isNullOrBlank() || !sigungu.isNullOrBlank()
+    private suspend fun resolveSigunguOnlyRegion(
+        parsedRegion: Region
+    ): ResolveRegionFromKeywordResult {
+        val sigungu = parsedRegion.sigungu.orEmpty()
+        val candidates = regionOptionsRepository.findRegionsBySigunguKeyword(sigungu)
+
+        return when {
+            candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
+            candidates.hasExactSigunguMatch(sigungu) -> ResolveRegionFromKeywordResult.Ambiguous
+            else -> ResolveRegionFromKeywordResult.Resolved(parsedRegion)
+        }
+    }
+
+    private fun List<Region>.hasExactSigunguMatch(
+        sigungu: String
+    ): Boolean =
+        any { region -> region.sigungu == sigungu }
+
+    private fun Region.hasSido(): Boolean =
+        !sido.isNullOrBlank()
+
+    private fun Region.hasOnlySigungu(): Boolean =
+        sido.isNullOrBlank() &&
+            !sigungu.isNullOrBlank() &&
+            eupmyeondong.isNullOrBlank()
 }
 
 sealed interface ResolveRegionFromKeywordResult {

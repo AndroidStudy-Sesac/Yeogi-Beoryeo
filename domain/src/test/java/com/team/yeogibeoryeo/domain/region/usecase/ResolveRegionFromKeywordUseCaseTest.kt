@@ -142,8 +142,11 @@ class ResolveRegionFromKeywordUseCaseTest {
                 regions = listOf(
                     Region(
                         sido = "경기도",
-                        sigungu = "수원시",
-                        eupmyeondong = "수원시"
+                        sigungu = "수원시 장안구"
+                    ),
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 영통구"
                     )
                 )
             )
@@ -152,6 +155,62 @@ class ResolveRegionFromKeywordUseCaseTest {
         val result = useCase("수원시")
 
         assertEquals(ResolveRegionFromKeywordResult.Resolved(parsedRegion), result)
+    }
+
+    @Test
+    fun `행정구 단독 검색어가 유일하면 상위 지역을 보완한다`() = runBlocking {
+        val useCase = ResolveRegionFromKeywordUseCase(
+            repository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "장안구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                regions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구",
+                        eupmyeondong = "파장동"
+                    ),
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구",
+                        eupmyeondong = "정자1동"
+                    )
+                )
+            )
+        )
+
+        val result = useCase("장안구")
+
+        val region = (result as ResolveRegionFromKeywordResult.Resolved).region
+
+        assertEquals("경기도", region.sido)
+        assertEquals("수원시 장안구", region.sigungu)
+        assertEquals(null, region.eupmyeondong)
+    }
+
+    @Test
+    fun `시도 없는 동일 시군구 후보가 여러 개면 임의로 보완하지 않는다`() = runBlocking {
+        val useCase = ResolveRegionFromKeywordUseCase(
+            repository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                regions = listOf(
+                    Region(
+                        sido = "서울특별시",
+                        sigungu = "중구"
+                    ),
+                    Region(
+                        sido = "대구광역시",
+                        sigungu = "중구"
+                    )
+                )
+            )
+        )
+
+        val result = useCase("중구")
+
+        assertEquals(ResolveRegionFromKeywordResult.Ambiguous, result)
     }
 
     private class FakeRegionRepository(
@@ -190,6 +249,31 @@ class ResolveRegionFromKeywordUseCaseTest {
                 regions.filter { region ->
                     region.eupmyeondong?.startsWith(keyword) == true
                 }
+            }
+        }
+
+        override suspend fun findRegionsBySigunguKeyword(
+            keyword: String
+        ): List<Region> {
+            val exactMatches = regions.filter { region -> region.sigungu == keyword }
+
+            val prefixMatches = exactMatches.ifEmpty {
+                regions.filter { region ->
+                    region.sigungu?.startsWith(keyword) == true
+                }
+            }
+
+            return prefixMatches.ifEmpty {
+                regions.filter { region ->
+                    region.sigungu?.contains(keyword) == true
+                }
+            }.map { region ->
+                region.copy(eupmyeondong = null)
+            }.distinctBy { region ->
+                listOf(
+                    region.sido.orEmpty(),
+                    region.sigungu.orEmpty()
+                )
             }
         }
     }

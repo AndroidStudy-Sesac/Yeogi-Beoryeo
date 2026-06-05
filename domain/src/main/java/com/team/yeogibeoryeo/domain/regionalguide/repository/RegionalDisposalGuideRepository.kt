@@ -1,9 +1,11 @@
 package com.team.yeogibeoryeo.domain.regionalguide.repository
 
-import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 
 interface RegionalDisposalGuideRepository {
 
-    suspend fun getRegionalDisposalGuide(region: Region): RegionalDisposalGuide?
+    suspend fun getRegionalDisposalGuideCandidates(
+        query: RegionalGuideQuery
+    ): Result<List<RegionalDisposalGuide>>
 }

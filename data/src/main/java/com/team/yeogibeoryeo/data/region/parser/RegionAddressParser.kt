@@ -17,20 +17,33 @@ class RegionAddressParser @Inject constructor() {
         var sigungu: String? = null
         var eupmyeondong: String? = null
 
-        parts.forEach { part ->
+        var index = 0
+        while (index < parts.size) {
+            val part = parts[index]
+
             when {
                 part.isSidoName() && sido == null -> {
                     sido = part
                 }
 
                 part.isSigunguName() && part != sido -> {
-                    if (sigungu == null) sigungu = part
+                    if (sigungu == null) {
+                        val nextPart = parts.getOrNull(index + 1)
+
+                        sigungu = if (part.endsWith("시") && nextPart?.endsWith("구") == true) {
+                            "$part $nextPart"
+                        } else {
+                            part
+                        }
+                    }
                 }
 
                 part.isEupmyeondongName() -> {
                     if (eupmyeondong == null) eupmyeondong = part
                 }
             }
+
+            index += 1
         }
 
         val parsedRegion = Region(

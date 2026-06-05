@@ -70,6 +70,40 @@ class RegionOptionsRepositoryImpl @Inject constructor(
             .sortedWith(REGION_NAME_COMPARATOR)
     }
 
+    override suspend fun findRegionsBySigunguKeyword(
+        keyword: String
+    ): List<Region> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val regions = localDataSource.getRegions()
+        val exactMatches = regions.filter { region ->
+            region.sigunguName == targetKeyword
+        }
+
+        val prefixMatches = exactMatches.ifEmpty {
+            regions.filter { region ->
+                region.sigunguName.startsWith(targetKeyword)
+            }
+        }
+
+        val matchedRegions = prefixMatches.ifEmpty {
+            regions.filter { region ->
+                region.sigunguName.contains(targetKeyword)
+            }
+        }
+
+        return matchedRegions
+            .mapToSigunguRegion()
+            .distinctBy { region ->
+                listOf(
+                    region.sido.orEmpty(),
+                    region.sigungu.orEmpty()
+                )
+            }
+            .sortedWith(REGION_NAME_COMPARATOR)
+    }
+
     private fun List<AdministrativeRegionDto>.mapToRegion(): List<Region> {
         return map { region ->
             RegionNormalizer.normalize(
@@ -77,6 +111,18 @@ class RegionOptionsRepositoryImpl @Inject constructor(
                     sido = region.sidoName,
                     sigungu = region.sigunguName.ifBlank { null },
                     eupmyeondong = region.eupmyeondongName
+                )
+            )
+        }
+    }
+
+    private fun List<AdministrativeRegionDto>.mapToSigunguRegion(): List<Region> {
+        return map { region ->
+            RegionNormalizer.normalize(
+                Region(
+                    sido = region.sidoName,
+                    sigungu = region.sigunguName.ifBlank { null },
+                    eupmyeondong = null
                 )
             )
         }
