@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -47,6 +48,7 @@ class RegionalGuideViewModel @Inject constructor(
         _regionSelectorUiState.asStateFlow()
 
     private var guideLookupJob: Job? = null
+    private var keywordSuggestionJob: Job? = null
     private var sigunguOptionsJob: Job? = null
     private var eupmyeondongOptionsJob: Job? = null
     private var lastRequest: RegionalGuideRequest? = null
@@ -57,6 +59,8 @@ class RegionalGuideViewModel @Inject constructor(
 
     fun onSearchKeywordChanged(keyword: String) {
         _searchKeyword.value = keyword
+        clearStaleCandidateState(keyword)
+        scheduleKeywordSuggestion(keyword)
     }
 
     fun onSidoSelected(sido: String) {
@@ -177,6 +181,8 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onRegionalGuideCandidateSelected(candidate: RegionalGuideCandidateUiModel) {
+        keywordSuggestionJob?.cancel()
+
         val query = (uiState.value as? RegionalGuideUiState.GuideCandidates)
             ?.query
             ?: candidate.displayText
@@ -192,6 +198,7 @@ class RegionalGuideViewModel @Inject constructor(
     fun searchByKeyword(keyword: String) {
         val trimmedKeyword = keyword.trim()
 
+        keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
 
         if (trimmedKeyword.isBlank()) {
@@ -247,6 +254,7 @@ class RegionalGuideViewModel @Inject constructor(
     fun loadByAddress(address: String) {
         val trimmedAddress = address.trim()
 
+        keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
 
         if (trimmedAddress.isBlank()) {
@@ -291,6 +299,7 @@ class RegionalGuideViewModel @Inject constructor(
 
     fun resetState() {
         guideLookupJob?.cancel()
+        keywordSuggestionJob?.cancel()
         sigunguOptionsJob?.cancel()
         eupmyeondongOptionsJob?.cancel()
         lastRequest = null
@@ -309,10 +318,59 @@ class RegionalGuideViewModel @Inject constructor(
         }
     }
 
+    private fun clearStaleCandidateState(keyword: String) {
+        val trimmedKeyword = keyword.trim()
+        val candidateQuery = when (val state = uiState.value) {
+            is RegionalGuideUiState.Ambiguous -> state.query
+            is RegionalGuideUiState.GuideCandidates -> state.query
+            else -> return
+        }
+
+        if (candidateQuery != trimmedKeyword) {
+            _uiState.value = RegionalGuideUiState.Idle
+        }
+    }
+
+    private fun scheduleKeywordSuggestion(keyword: String) {
+        keywordSuggestionJob?.cancel()
+
+        val trimmedKeyword = keyword.trim()
+        if (trimmedKeyword.isBlank()) return
+
+        keywordSuggestionJob = viewModelScope.launch {
+            delay(KEYWORD_SUGGESTION_DEBOUNCE_MILLIS)
+
+            if (searchKeyword.value.trim() != trimmedKeyword) return@launch
+
+            try {
+                when (val result = resolveRegionFromKeywordUseCase(trimmedKeyword)) {
+                    is ResolveRegionFromKeywordResult.Ambiguous -> {
+                        if (searchKeyword.value.trim() == trimmedKeyword) {
+                            _uiState.value = RegionalGuideUiState.Ambiguous(
+                                query = trimmedKeyword,
+                                message = "?щ윭 吏??씠 寃?됰맗?덈떎. ?먰븯??吏??쓣 ?좏깮?댁＜?몄슂.",
+                                candidates = result.candidates
+                                    .map { region -> region.toCandidateUiModel() }
+                            )
+                        }
+                    }
+
+                    ResolveRegionFromKeywordResult.NotFound,
+                    is ResolveRegionFromKeywordResult.Resolved -> Unit
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // 자동 후보 추천은 보조 UX이므로 실패해도 기존 화면 상태를 유지합니다.
+            }
+        }
+    }
+
     private fun searchBySelectedRegion(
         query: String,
         region: Region
     ) {
+        keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
 
         lastRequest = RegionalGuideRequest.SelectedRegion(
@@ -483,5 +541,9 @@ class RegionalGuideViewModel @Inject constructor(
             val query: String,
             val region: Region
         ) : RegionalGuideRequest
+    }
+
+    private companion object {
+        const val KEYWORD_SUGGESTION_DEBOUNCE_MILLIS = 400L
     }
 }

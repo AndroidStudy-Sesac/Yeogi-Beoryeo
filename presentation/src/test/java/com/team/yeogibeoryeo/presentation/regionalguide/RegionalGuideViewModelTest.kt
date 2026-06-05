@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -228,6 +229,72 @@ class RegionalGuideViewModelTest {
     }
 
     @Test
+    fun `keyword input shows region candidates after debounce without explicit search`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "SidoA",
+                        sigungu = "SigunguA",
+                        eupmyeondong = "onyang"
+                    ),
+                    Region(
+                        sido = "SidoB",
+                        sigungu = "SigunguB",
+                        eupmyeondong = "onyang2"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("on")
+        advanceTimeBy(399)
+
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+
+        advanceTimeBy(1)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
+
+        assertEquals("on", state.query)
+        assertEquals(2, state.candidates.size)
+    }
+
+    @Test
+    fun `candidate list is cleared when keyword changes after ambiguous search`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "SidoA",
+                        sigungu = "SigunguA",
+                        eupmyeondong = "onyang"
+                    ),
+                    Region(
+                        sido = "SidoB",
+                        sigungu = "SigunguB",
+                        eupmyeondong = "onyang2"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("on")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Ambiguous)
+
+        viewModel.onSearchKeywordChanged("o")
+
+        assertEquals("o", viewModel.searchKeyword.value)
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+    }
+
+    @Test
     fun `candidate selection runs selected region lookup and updates selector state`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
@@ -321,6 +388,41 @@ class RegionalGuideViewModelTest {
             "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생",
             state.candidates.first().displayText
         )
+    }
+
+    @Test
+    fun `guide candidate list is cleared when keyword changes after guide candidate search`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sido = "SidoA", sigungu = "SigunguA")
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "SidoA",
+                        sigungu = "SigunguA",
+                        targetRegionName = "zone1"
+                    ),
+                    sampleGuide(
+                        sido = "SidoA",
+                        sigungu = "SigunguA",
+                        targetRegionName = "zone2"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("SigunguA")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.GuideCandidates)
+
+        viewModel.onSearchKeywordChanged("Sigungu")
+
+        assertEquals("Sigungu", viewModel.searchKeyword.value)
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
     }
 
     @Test
