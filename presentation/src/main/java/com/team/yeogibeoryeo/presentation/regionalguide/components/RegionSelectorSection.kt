@@ -1,11 +1,14 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -23,6 +26,7 @@ import androidx.compose.runtime.Composable
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorDropdown
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -196,49 +200,61 @@ private fun RegionDropdownChip(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    Column(
+    BoxWithConstraints(
         modifier = modifier,
     ) {
-        FilterChip(
-            modifier = Modifier.fillMaxWidth(),
-            selected = enabled && label in options,
-            enabled = enabled,
-            onClick = {
-                if (options.isNotEmpty()) {
-                    onExpanded()
-                }
-            },
-            label = {
-                Text(
-                    text = label,
-                    maxLines = 1,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            },
-            shape = RoundedCornerShape(14.dp),
-            colors = FilterChipDefaults.filterChipColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                labelColor = MaterialTheme.colorScheme.onSurface,
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-        )
+        val dropdownWidth = maxWidth
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = onDismissed,
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = {
-                        Text(text = option)
-                    },
-                    onClick = {
-                        onOptionSelected(option)
-                    },
-                )
+        Column {
+            FilterChip(
+                modifier = Modifier.fillMaxWidth(),
+                selected = enabled && label in options,
+                enabled = enabled,
+                onClick = {
+                    if (options.isNotEmpty()) {
+                        onExpanded()
+                    }
+                },
+                label = {
+                    Text(
+                        text = label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                },
+                shape = RoundedCornerShape(14.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    labelColor = MaterialTheme.colorScheme.onSurface,
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            )
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = onDismissed,
+                modifier = Modifier
+                    .width(dropdownWidth)
+                    .heightIn(max = 280.dp),
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = option,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        onClick = {
+                            onOptionSelected(option)
+                        },
+                    )
+                }
             }
         }
     }
