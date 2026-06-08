@@ -60,21 +60,14 @@ private fun MapOverlaySearchArea(
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
+    MapSearchBar(
+        keyword = keyword,
+        onKeywordChanged = onKeywordChanged,
+        onSearchClick = onSearchClick,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 2.dp,
-    ) {
-        MapSearchBar(
-            keyword = keyword,
-            onKeywordChanged = onKeywordChanged,
-            onSearchClick = onSearchClick,
-        )
-    }
+    )
 }
 
 @Composable

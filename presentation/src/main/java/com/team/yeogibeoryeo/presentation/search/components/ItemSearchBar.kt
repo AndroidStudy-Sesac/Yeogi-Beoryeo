@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.presentation.map.components
+package com.team.yeogibeoryeo.presentation.search.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -7,45 +7,34 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.SearchBarField
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun MapSearchBar(
+fun ItemSearchBar(
     keyword: String,
-    onKeywordChanged: (String) -> Unit,
+    onKeywordChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
+    placeholder: String,
 ) {
-    val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    fun submitSearch() {
-        focusManager.clearFocus()
-        keyboardController?.hide()
-        onSearchClick()
-    }
-
     SearchBarField(
         modifier = modifier.fillMaxWidth(),
         keyword = keyword,
-        onKeywordChange = onKeywordChanged,
+        onKeywordChange = onKeywordChange,
         onSearch = {
-            submitSearch()
+            if (keyword.isNotBlank()) {
+                onSearchClick()
+            }
         },
-        placeholder = "동네 또는 주소를 검색해주세요.",
+        placeholder = placeholder,
         trailingContent = { isFocused ->
             val searchIconColor = when {
                 keyword.isNotBlank() || isFocused -> MaterialTheme.colorScheme.primary
@@ -53,7 +42,7 @@ fun MapSearchBar(
             }
 
             if (keyword.isNotBlank()) {
-                IconButton(onClick = { onKeywordChanged("") }) {
+                IconButton(onClick = { onKeywordChange("") }) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "검색어 지우기",
@@ -66,7 +55,7 @@ fun MapSearchBar(
             IconButton(
                 onClick = {
                     if (keyword.isNotBlank()) {
-                        submitSearch()
+                        onSearchClick()
                     }
                 },
                 enabled = isFocused || keyword.isNotBlank(),
@@ -86,28 +75,12 @@ fun MapSearchBar(
 
 @Preview(showBackground = true)
 @Composable
-private fun MapSearchBarPreview() {
-    MaterialTheme {
-        Surface {
-            MapSearchBar(
-                keyword = "",
-                onKeywordChanged = {},
-                onSearchClick = {},
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun MapSearchBarWithKeywordPreview() {
-    MaterialTheme {
-        Surface {
-            MapSearchBar(
-                keyword = "용답동",
-                onKeywordChanged = {},
-                onSearchClick = {},
-            )
-        }
-    }
+private fun ItemSearchBarPreview() {
+    ItemSearchBar(
+        keyword = "비닐",
+        onKeywordChange = {},
+        onSearchClick = {},
+        placeholder = "품목 검색",
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
