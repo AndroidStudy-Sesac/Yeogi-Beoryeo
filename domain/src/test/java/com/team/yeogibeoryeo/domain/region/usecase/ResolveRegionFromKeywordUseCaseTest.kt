@@ -237,6 +237,56 @@ class ResolveRegionFromKeywordUseCaseTest {
     }
 
     @Test
+    fun `행정구 단독 검색어가 행정구역 후보에 없으면 NotFound를 반환한다`() = runBlocking {
+        val useCase = ResolveRegionFromKeywordUseCase(
+            repository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중안구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                regions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "성남시 중원구"
+                    ),
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구"
+                    )
+                )
+            )
+        )
+
+        val result = useCase("중안구")
+
+        assertEquals(ResolveRegionFromKeywordResult.NotFound, result)
+    }
+
+    @Test
+    fun `행정구 단독 검색어가 행정구역 후보에 있으면 상위 지역을 보완한다`() = runBlocking {
+        val useCase = ResolveRegionFromKeywordUseCase(
+            repository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중원구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                regions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "성남시 중원구"
+                    )
+                )
+            )
+        )
+
+        val result = useCase("중원구")
+
+        val region = (result as ResolveRegionFromKeywordResult.Resolved).region
+
+        assertEquals("경기도", region.sido)
+        assertEquals("성남시 중원구", region.sigungu)
+        assertEquals(null, region.eupmyeondong)
+    }
+
+    @Test
     fun `시도 없는 동일 시군구 후보가 여러 개면 임의로 보완하지 않는다`() = runBlocking {
         val useCase = ResolveRegionFromKeywordUseCase(
             repository = FakeRegionRepository(
@@ -396,5 +446,9 @@ class ResolveRegionFromKeywordUseCaseTest {
                     )
                 }
         }
+
+        override suspend fun normalizeRegionForRegionalGuide(
+            region: Region
+        ): Region = region
     }
 }

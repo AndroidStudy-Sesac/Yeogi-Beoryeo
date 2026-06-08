@@ -28,6 +28,12 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             )
         }
 
+        filteredCandidates.selectSingleOverallCandidate(query.sigunguQuery)?.let { guide ->
+            return RegionalGuideLookupResult.Success(
+                guide = guide.withDisplayRegion(query.displayRegion)
+            )
+        }
+
         val selectedGuide = selectByTargetRegion(
             candidates = filteredCandidates,
             requestedRegion = query.displayRegion,
@@ -74,6 +80,25 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return null
+    }
+
+    private fun List<RegionalDisposalGuide>.selectSingleOverallCandidate(
+        sigunguQuery: String
+    ): RegionalDisposalGuide? {
+        val targetRegionNames = map { guide ->
+            guide.targetRegionName
+                ?.trim()
+                .orEmpty()
+        }.distinct()
+
+        return if (
+            targetRegionNames.size == 1 &&
+            targetRegionNames.single().isOverallTarget(sigunguQuery)
+        ) {
+            firstOrNull()
+        } else {
+            null
+        }
     }
 
     private fun List<RegionalDisposalGuide>.toCandidateResultOrNotFound(

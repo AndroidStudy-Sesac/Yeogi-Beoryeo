@@ -22,4 +22,8 @@ interface RegionOptionsRepository {
     suspend fun findRegionsBySigunguKeyword(
         keyword: String
     ): List<Region>
+
+    suspend fun normalizeRegionForRegionalGuide(
+        region: Region
+    ): Region
 }
