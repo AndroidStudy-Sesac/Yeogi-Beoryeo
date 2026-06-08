@@ -1,9 +1,7 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -40,51 +38,45 @@ fun MapSearchBar(
         onSearchClick()
     }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-    ) {
-        SearchBarField(
-            modifier = Modifier.fillMaxWidth(),
-            keyword = keyword,
-            onKeywordChange = onKeywordChanged,
-            onSearch = {
-                submitSearch()
-            },
-            placeholder = "동네 또는 주소를 검색해주세요.",
-            trailingContent = {
-                if (keyword.isNotBlank()) {
-                    IconButton(onClick = { onKeywordChanged("") }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "검색어 지우기",
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = {
-                        if (keyword.isNotBlank()) {
-                            submitSearch()
-                        }
-                    },
-                    enabled = keyword.isNotBlank(),
-                ) {
+    SearchBarField(
+        modifier = modifier.fillMaxWidth(),
+        keyword = keyword,
+        onKeywordChange = onKeywordChanged,
+        onSearch = {
+            submitSearch()
+        },
+        placeholder = "동네 또는 주소를 검색해주세요.",
+        trailingContent = {
+            if (keyword.isNotBlank()) {
+                IconButton(onClick = { onKeywordChanged("") }) {
                     Icon(
-                        painter = painterResource(id = CommonR.drawable.ic_action_search),
-                        contentDescription = stringResource(R.string.search_action),
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "검색어 지우기",
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            },
-            minHeight = 56.dp,
-            searchEnabled = { it.isNotBlank() },
-        )
-    }
+            }
+
+            IconButton(
+                onClick = {
+                    if (keyword.isNotBlank()) {
+                        submitSearch()
+                    }
+                },
+                enabled = keyword.isNotBlank(),
+            ) {
+                Icon(
+                    painter = painterResource(id = CommonR.drawable.ic_action_search),
+                    contentDescription = stringResource(R.string.search_action),
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        },
+        minHeight = 56.dp,
+        searchEnabled = { it.isNotBlank() },
+    )
 }
 
 @Preview(showBackground = true)
