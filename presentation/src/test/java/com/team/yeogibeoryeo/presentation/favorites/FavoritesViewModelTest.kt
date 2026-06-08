@@ -10,7 +10,11 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
-import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteItemUiModel
+import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteCollectionSpotUiMapper
+import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteItemGuideUiMapper
+import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteRegionalGuideUiMapper
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,13 +65,14 @@ class FavoritesViewModelTest {
 
             assertEquals(
                 listOf(
-                    FavoriteItemUiModel(
+                    FavoriteUiModel(
+                        type = FavoriteTargetType.ITEM_GUIDE,
                         targetId = "paper-pack",
                         title = "종이팩",
                         subtitle = "우유팩",
                     ),
                 ),
-                viewModel.uiState.value.favorites,
+                viewModel.uiState.value.itemGuideFavorites,
             )
         }
 
@@ -94,7 +99,25 @@ class FavoritesViewModelTest {
             }
             advanceUntilIdle()
 
-            assertEquals(emptyList<FavoriteItemUiModel>(), viewModel.uiState.value.favorites)
+            assertEquals(emptyList<FavoriteUiModel>(), viewModel.uiState.value.itemGuideFavorites)
+        }
+
+    @Test
+    fun `탭을 변경하면 선택된 탭 상태를 반영한다`() =
+        runTest {
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = FakeFavoriteRepository(),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+
+            viewModel.selectTab(FavoriteTab.COLLECTION_SPOT)
+            advanceUntilIdle()
+
+            assertEquals(FavoriteTab.COLLECTION_SPOT, viewModel.uiState.value.selectedTab)
         }
 
     private fun createViewModel(
@@ -103,7 +126,9 @@ class FavoritesViewModelTest {
     ): FavoritesViewModel =
         FavoritesViewModel(
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
-            getDisposalItemGuideUseCase = GetDisposalItemGuideUseCase(itemRepository),
+            itemGuideUiMapper = FavoriteItemGuideUiMapper(GetDisposalItemGuideUseCase(itemRepository)),
+            collectionSpotUiMapper = FavoriteCollectionSpotUiMapper(),
+            regionalGuideUiMapper = FavoriteRegionalGuideUiMapper(),
         )
 
     private fun sampleGuide(
