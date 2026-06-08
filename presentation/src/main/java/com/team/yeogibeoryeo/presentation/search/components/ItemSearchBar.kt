@@ -35,7 +35,12 @@ fun ItemSearchBar(
             }
         },
         placeholder = placeholder,
-        trailingContent = {
+        trailingContent = { isFocused ->
+            val searchIconColor = when {
+                keyword.isNotBlank() || isFocused -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
             if (keyword.isNotBlank()) {
                 IconButton(onClick = { onKeywordChange("") }) {
                     Icon(
@@ -53,13 +58,13 @@ fun ItemSearchBar(
                         onSearchClick()
                     }
                 },
-                enabled = keyword.isNotBlank(),
+                enabled = isFocused || keyword.isNotBlank(),
             ) {
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_search),
                     contentDescription = stringResource(R.string.search_action),
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = searchIconColor,
                 )
             }
         },

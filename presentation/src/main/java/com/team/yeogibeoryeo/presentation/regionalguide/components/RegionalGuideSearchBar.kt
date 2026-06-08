@@ -33,7 +33,12 @@ fun RegionalGuideSearchBar(
         onKeywordChange = onKeywordChange,
         onSearch = { onSearchClick(it) },
         placeholder = "지역명 또는 주소를 검색해주세요.",
-        trailingContent = {
+        trailingContent = { isFocused ->
+            val searchIconColor = when {
+                keyword.isNotBlank() || isFocused -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
             if (keyword.isNotBlank()) {
                 IconButton(onClick = { onKeywordChange("") }) {
                     Icon(
@@ -51,12 +56,12 @@ fun RegionalGuideSearchBar(
                         onSearchClick(keyword)
                     }
                 },
-                enabled = keyword.isNotBlank(),
+                enabled = isFocused || keyword.isNotBlank(),
             ) {
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_search),
                     contentDescription = stringResource(R.string.search_action),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = searchIconColor,
                     modifier = Modifier.size(20.dp),
                 )
             }

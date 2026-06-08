@@ -13,12 +13,16 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
@@ -33,12 +37,14 @@ fun SearchBarField(
     modifier: Modifier = Modifier,
     placeholder: String,
     leadingContent: (@Composable () -> Unit)? = null,
-    trailingContent: (@Composable () -> Unit)? = null,
+    trailingContent: (@Composable (Boolean) -> Unit)? = null,
     candidateContent: (@Composable ColumnScope.() -> Unit)? = null,
     minHeight: Dp = 56.dp,
     searchEnabled: (String) -> Boolean = { it.isNotBlank() },
 ) {
     val hasCandidates = candidateContent != null
+    val searchFieldInteractionSource = remember { MutableInteractionSource() }
+    val isSearchFieldFocused by searchFieldInteractionSource.collectIsFocusedAsState()
     val isSearchEnabled = searchEnabled(keyword)
     val collapsedShape = RoundedCornerShape(12.dp)
     val expandedShape = RoundedCornerShape(
@@ -85,17 +91,18 @@ fun SearchBarField(
                 { it() }
             },
             trailingIcon = trailingContent?.let {
-                { it() }
+                { it(isSearchFieldFocused) }
             },
+            interactionSource = searchFieldInteractionSource,
             shape = if (hasCandidates) {
                 expandedShape
             } else {
                 collapsedShape
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                focusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedContainerColor = MaterialTheme.colorScheme.background,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
             ),
             keyboardOptions = KeyboardOptions(
