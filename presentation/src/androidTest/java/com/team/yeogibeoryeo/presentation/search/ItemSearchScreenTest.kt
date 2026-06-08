@@ -24,7 +24,7 @@ class ItemSearchScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun 초기_상태에서는_퀵_카테고리를_보여준다() {
+    fun 초기_상태에서는_분리배출_분류를_보여준다() {
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchScreen(
@@ -37,9 +37,10 @@ class ItemSearchScreenTest {
             }
         }
 
+        composeTestRule.onNodeWithText("여기 버려").assertIsDisplayed()
+        composeTestRule.onNodeWithText("품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.").assertIsDisplayed()
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
-        composeTestRule.onNodeWithText("종이팩").assertIsDisplayed()
-        composeTestRule.onNodeWithText("기타").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("종이").assertIsDisplayed()
     }
 
     @Test
@@ -184,27 +185,6 @@ class ItemSearchScreenTest {
     }
 
     @Test
-    fun 퀵_카테고리를_누르면_카테고리_콜백을_호출한다() {
-        var clickedCategory: RepresentativeGuideCategory? = null
-
-        composeTestRule.setContent {
-            MaterialTheme {
-                ItemSearchScreen(
-                    uiState = ItemSearchUiState(),
-                    onQueryChange = {},
-                    onSearchClick = {},
-                    onGuideClick = {},
-                    onQuickCategoryClick = { clickedCategory = it },
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithText("비닐").performScrollTo().performClick()
-
-        assertEquals(RepresentativeGuideCategory.VINYL, clickedCategory)
-    }
-
-    @Test
     fun 로딩_상태에서는_로딩_인디케이터를_보여준다() {
         composeTestRule.setContent {
             MaterialTheme {
@@ -240,6 +220,29 @@ class ItemSearchScreenTest {
         composeTestRule.onNode(hasImeAction(ImeAction.Search)).performImeAction()
 
         assertEquals(1, searchClickCount)
+    }
+
+    @Test
+    fun quick_category를_누르면_카테고리_클릭_콜백을_호출한다() {
+        var clickedCategory: RepresentativeGuideCategory? = null
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = { clickedCategory = it },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("플라스틱")
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(RepresentativeGuideCategory.PLASTIC, clickedCategory)
     }
 
     private fun sampleGuide(name: String): DisposalItemGuide =

@@ -5,71 +5,78 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Recycling
-import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
+import com.team.yeogibeoryeo.common.R as CommonR
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
 import com.team.yeogibeoryeo.presentation.search.components.containerColor
-import com.team.yeogibeoryeo.presentation.search.components.icon
+import com.team.yeogibeoryeo.presentation.search.components.iconResId
 import com.team.yeogibeoryeo.presentation.search.components.iconTint
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
 fun ItemGuideDetailScreen(
     guide: DisposalItemGuide,
+    isFavorite: Boolean,
     onBackClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val backActionDescription = stringResource(R.string.back_action)
+    val favoriteActionDescription = if (isFavorite) "즐겨찾기 해제" else "즐겨찾기 추가"
+    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
+    val isRepresentativeGuide = matchedRepresentativeCategory != null
     val representativeCategory =
-        RepresentativeGuideCategory.fromGuideName(guide.name)
+        matchedRepresentativeCategory
             ?: RepresentativeGuideCategory.fromDisposalCategory(guide.category)
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = AppAccentColors.ScreenBackground,
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
+            .padding(
+                start = 24.dp,
+                top = 16.dp,
+                end = 24.dp,
+                bottom = 24.dp,
+            ),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBackClick) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    painter = painterResource(id = CommonR.drawable.ic_action_back),
                     contentDescription = backActionDescription,
                     modifier = Modifier.semantics {
                         contentDescription = backActionDescription
@@ -78,99 +85,116 @@ fun ItemGuideDetailScreen(
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(88.dp)
-                        .background(
-                            color = representativeCategory?.containerColor()
-                                ?: AppAccentColors.SoftCyan,
-                            shape = RoundedCornerShape(24.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = representativeCategory?.icon ?: Icons.Outlined.Recycling,
-                        contentDescription = null,
-                        modifier = Modifier.size(44.dp),
-                        tint = representativeCategory?.iconTint() ?: AppAccentColors.MainCyan
-                    )
-                }
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = guide.name,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 28.sp,
-                            color = AppAccentColors.DarkSlate
-                        )
-                    )
-
-                    DisposalGuideMetadataChips(guide = guide)
-                }
+            IconButton(onClick = onFavoriteClick) {
+                Icon(
+                    painter = painterResource(
+                        id = if (isFavorite) {
+                            CommonR.drawable.ic_favorite_filled
+                        } else {
+                            CommonR.drawable.ic_favorite
+                        },
+                    ),
+                    contentDescription = favoriteActionDescription,
+                    tint = if (isFavorite) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
             }
-
-            if (guide.detailSections.isNotEmpty()) {
-                guide.detailSections.forEach { section ->
-                    SectionCard(
-                        title = section.title,
-                        lines = section.lines,
-                        rows = section.rows,
-                    )
-                }
-            } else {
-                if (guide.steps.isNotEmpty()) {
-                    SectionCard(
-                        title = stringResource(R.string.disposal_steps_title),
-                        lines = guide.steps,
-                        numbered = true,
-                    )
-                }
-
-                if (guide.cautions.isNotEmpty()) {
-                    SectionCard(
-                        title = stringResource(R.string.cautions_title),
-                        lines = guide.cautions,
-                    )
-                }
-
-                if (guide.subGuides.isNotEmpty()) {
-                    SubGuideSection(
-                        title = stringResource(R.string.sub_guides_title),
-                        subGuides = guide.subGuides,
-                    )
-                }
-
-                if (guide.features.isNotEmpty()) {
-                    SectionCard(
-                        title = stringResource(R.string.features_title),
-                        lines = guide.features,
-                    )
-                }
-
-                guide.tip?.let {
-                    SectionCard(
-                        title = stringResource(R.string.tip_title),
-                        lines = listOf(it),
-                    )
-                }
-            }
-
-            SectionCard(
-                title = stringResource(R.string.local_disposal_notice_title),
-                lines = listOf(stringResource(R.string.local_disposal_notice)),
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .background(
+                        color = representativeCategory.containerColor(),
+                        shape = RoundedCornerShape(24.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = representativeCategory.iconResId),
+                    contentDescription = null,
+                    modifier = Modifier.size(44.dp),
+                    tint = representativeCategory.iconTint()
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = guide.name,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 28.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                DisposalGuideMetadataChips(
+                    guide = guide,
+                    showCategoryChip = !isRepresentativeGuide,
+                )
+            }
+        }
+
+        if (guide.detailSections.isNotEmpty()) {
+            guide.detailSections.forEach { section ->
+                SectionCard(
+                    title = section.title,
+                    lines = section.lines,
+                    rows = section.rows,
+                )
+            }
+        } else {
+            if (guide.steps.isNotEmpty()) {
+                SectionCard(
+                    title = stringResource(R.string.disposal_steps_title),
+                    lines = guide.steps,
+                    numbered = true,
+                )
+            }
+
+            if (guide.cautions.isNotEmpty()) {
+                SectionCard(
+                    title = stringResource(R.string.cautions_title),
+                    lines = guide.cautions,
+                )
+            }
+
+            if (guide.subGuides.isNotEmpty()) {
+                SubGuideSection(
+                    title = stringResource(R.string.sub_guides_title),
+                    subGuides = guide.subGuides,
+                )
+            }
+
+            if (guide.features.isNotEmpty()) {
+                SectionCard(
+                    title = stringResource(R.string.features_title),
+                    lines = guide.features,
+                )
+            }
+
+            guide.tip?.let {
+                SectionCard(
+                    title = stringResource(R.string.tip_title),
+                    lines = listOf(it),
+                )
+            }
+        }
+
+        SectionCard(
+            title = stringResource(R.string.local_disposal_notice_title),
+            lines = listOf(stringResource(R.string.local_disposal_notice)),
+        )
     }
 }
-

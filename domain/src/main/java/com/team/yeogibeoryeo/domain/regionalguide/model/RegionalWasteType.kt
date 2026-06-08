@@ -1,8 +1,5 @@
 package com.team.yeogibeoryeo.domain.regionalguide.model
 
-/**
- * 지역별 배출 폐기물의 종류를 정의하는 Enum
- */
 enum class RegionalWasteType(
     val description: String
 ) {

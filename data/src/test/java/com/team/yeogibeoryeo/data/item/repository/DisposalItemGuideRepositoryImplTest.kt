@@ -1,20 +1,10 @@
 package com.team.yeogibeoryeo.data.item.repository
 
-import com.team.yeogibeoryeo.data.core.key.AppKeyProvider
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
-import com.team.yeogibeoryeo.data.item.remote.ItemApiService
-import com.team.yeogibeoryeo.data.item.remote.datasource.ItemRemoteDataSource
-import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideBodyDto
-import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideDto
-import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideHeaderDto
-import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideItemsDto
-import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideResponseBodyDto
-import com.team.yeogibeoryeo.data.item.remote.dto.ItemGuideResponseDto
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
-import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -25,102 +15,87 @@ import org.junit.Test
 
 class DisposalItemGuideRepositoryImplTest {
     @Test
-    fun `searchItemGuides는 원격 호출 전에 동의어를 검색어로 치환한다`() =
+    fun `searchItemGuides는 원문 검색 결과가 없을 때 동의어로 다시 검색한다`() =
         runBlocking {
-            val capturedQueries = mutableListOf<String>()
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = recordingRemote(
-                        capturedQueries,
-                        results = listOf("음료캔" to "재활용폐기물")
-                    ),
                     localDataSource =
                         FakeLocalSource(
                             synonyms = mapOf("캔" to "음료캔"),
-                            categoryMap = mapOf("음료캔" to (DisposalCategory.METAL to DisposalSubCategory.ALUMINUM_CAN)),
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "음료캔",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류 금속캔")),
+                                        dischargeMethods = listOf("음료캔은 캔류로 배출합니다."),
+                                    ),
+                                ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("캔")
 
-            assertEquals(listOf("음료캔"), capturedQueries)
-            assertEquals(1, results.size)
-            assertEquals("음료캔", results.first().name)
+            assertEquals(listOf("음료캔"), results.map { it.name })
             assertEquals(DisposalCategory.METAL, results.first().category)
         }
 
     @Test
-    fun `searchItemGuides는 동의어가 없으면 원본 검색어를 사용한다`() =
+    fun `searchItemGuides는 원문 검색 결과가 있으면 동의어보다 우선한다`() =
         runBlocking {
-            val capturedQueries = mutableListOf<String>()
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = recordingRemote(
-                        capturedQueries,
-                        results = listOf("종이" to "재활용폐기물")
-                    ),
-                    localDataSource = FakeLocalSource(),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
-                )
-
-            repository.searchItemGuides("종이")
-
-            assertEquals(listOf("종이"), capturedQueries)
-        }
-
-    @Test
-    fun `searchItemGuides는 검색어 공백 제거 후 동의어 치환과 원격 호출을 수행한다`() =
-        runBlocking {
-            val capturedQueries = mutableListOf<String>()
-            val repository =
-                DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = recordingRemote(
-                        capturedQueries,
-                        results = listOf("핸드폰" to "재활용폐기물")
-                    ),
                     localDataSource =
                         FakeLocalSource(
-                            synonyms = mapOf("휴대폰" to "핸드폰"),
+                            synonyms = mapOf("캔" to "음료캔"),
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "캔",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류 금속캔")),
+                                        dischargeMethods = listOf("캔은 캔류로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "음료캔",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류 금속캔")),
+                                        dischargeMethods = listOf("음료캔은 캔류로 배출합니다."),
+                                    ),
+                                ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
-            repository.searchItemGuides("  휴대폰  ")
+            val results = repository.searchItemGuides("캔")
 
-            assertEquals(listOf("핸드폰"), capturedQueries)
+            assertEquals(listOf("캔"), results.map { it.name })
         }
 
     @Test
-    fun `searchItemGuides는 빈 검색어면 원격 호출 없이 빈 목록을 반환한다`() =
+    fun `searchItemGuides는 빈 검색어면 빈 목록을 반환한다`() =
         runBlocking {
-            val capturedQueries = mutableListOf<String>()
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = recordingRemote(
-                        capturedQueries,
-                        results = listOf("종이" to "재활용폐기물")
-                    ),
-                    localDataSource = FakeLocalSource(),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "종이",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "종이류")),
+                                        dischargeMethods = listOf("종이는 종이류로 배출합니다."),
+                                    ),
+                                ),
+                        ),
                 )
 
             val results = repository.searchItemGuides("   ")
 
             assertTrue(results.isEmpty())
-            assertTrue(capturedQueries.isEmpty())
         }
 
     @Test
-    fun `searchItemGuides는 품목사전 결과가 있으면 원격 API보다 우선 사용한다`() =
+    fun `searchItemGuides는 local 품목사전 결과를 반환한다`() =
         runBlocking {
-            val capturedQueries = mutableListOf<String>()
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = recordingRemote(
-                        capturedQueries,
-                        results = listOf("내열냄비" to "일반쓰레기")
-                    ),
                     localDataSource =
                         FakeLocalSource(
                             wasteDictionaryItems =
@@ -132,12 +107,10 @@ class DisposalItemGuideRepositoryImplTest {
                                     ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("내열냄비")
 
-            assertTrue(capturedQueries.isEmpty())
             assertEquals(1, results.size)
             assertEquals(
                 "내열냄비는 불연성 종량제봉투(마대)로 배출합니다.",
@@ -146,11 +119,33 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `searchItemGuides는 결과가 없으면 fallback 없이 빈 목록을 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "유리병",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "유리병")),
+                                        dischargeMethods = listOf("유리병은 유리병으로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("없는품목")
+
+            assertTrue(results.isEmpty())
+        }
+
+    @Test
     fun `searchItemGuides는 품목사전 유사 품목도 검색한다`() =
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
                             wasteDictionaryItems =
@@ -163,7 +158,6 @@ class DisposalItemGuideRepositoryImplTest {
                                     ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("박스")
@@ -176,7 +170,6 @@ class DisposalItemGuideRepositoryImplTest {
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
                             wasteDictionaryItems =
@@ -195,7 +188,6 @@ class DisposalItemGuideRepositoryImplTest {
                                     ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("우유")
@@ -208,7 +200,6 @@ class DisposalItemGuideRepositoryImplTest {
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
                             wasteDictionaryItems =
@@ -225,7 +216,6 @@ class DisposalItemGuideRepositoryImplTest {
                                     ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("유리")
@@ -238,7 +228,6 @@ class DisposalItemGuideRepositoryImplTest {
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
                             wasteDictionaryItems =
@@ -255,7 +244,6 @@ class DisposalItemGuideRepositoryImplTest {
                                     ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("아")
@@ -264,11 +252,38 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `searchItemGuides는 같은 매칭 등급이면 품목명 가나다순으로 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "전기히터",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("전기히터는 폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "전기다리미",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("전기다리미는 폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("전기")
+
+            assertEquals(listOf("전기다리미", "전기히터"), results.map { it.name })
+        }
+
+    @Test
     fun `searchItemGuides는 유사 품목 정확 일치를 유사 품목 부분 일치보다 우선한다`() =
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
                             wasteDictionaryItems =
@@ -287,7 +302,6 @@ class DisposalItemGuideRepositoryImplTest {
                                     ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.searchItemGuides("우유")
@@ -296,73 +310,12 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
-    fun `searchItemGuides는 원격 결과를 이름 기준으로 중복 제거한다`() =
-        runBlocking {
-            val repository =
-                DisposalItemGuideRepositoryImpl(
-                    remoteDataSource =
-                        fakeRemote(
-                            results =
-                                listOf(
-                                    "종이" to "재활용폐기물",
-                                    "종이" to "재활용폐기물",
-                                ),
-                        ),
-                    localDataSource = FakeLocalSource(),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
-                )
-
-            val results = repository.searchItemGuides("종이")
-
-            assertEquals(1, results.size)
-        }
-
-    @Test
-    fun `getCategoryGuides는 원격 API를 호출하지 않는다`() =
-        runBlocking {
-            val capturedQueries = mutableListOf<String>()
-            val repository =
-                DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = recordingRemote(capturedQueries, results = emptyList()),
-                    localDataSource =
-                        FakeLocalSource(
-                            categoryMap =
-                                mapOf(
-                                    "종이류" to (DisposalCategory.PAPER to null),
-                                ),
-                            guideDetails =
-                                mapOf(
-                                    "종이" to
-                                            ItemGuideDetail(
-                                                steps = emptyList(),
-                                                cautions = emptyList(),
-                                                tip = null,
-                                                relatedSpotTypes = emptyList(),
-                                                sourceCategory = "종이류",
-                                            ),
-                                ),
-                        ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
-                )
-
-            repository.getCategoryGuides(DisposalCategory.PAPER)
-
-            assertTrue("원격 API가 호출되면 안 됩니다", capturedQueries.isEmpty())
-        }
-
-    @Test
     fun `getCategoryGuides는 sourceCategory 기반 초기 가이드를 반환한다`() =
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
-                            categoryMap =
-                                mapOf(
-                                    "종이류" to (DisposalCategory.PAPER to null),
-                                    "유리병" to (DisposalCategory.GLASS to DisposalSubCategory.GLASS_BOTTLE),
-                                ),
                             guideDetails =
                                 mapOf(
                                     "종이" to
@@ -371,7 +324,7 @@ class DisposalItemGuideRepositoryImplTest {
                                                 cautions = emptyList(),
                                                 tip = null,
                                                 relatedSpotTypes = emptyList(),
-                                                sourceCategory = "종이류",
+                                                sourceCategory = "종이",
                                             ),
                                     "유리병" to
                                             ItemGuideDetail(
@@ -383,7 +336,6 @@ class DisposalItemGuideRepositoryImplTest {
                                             ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.PAPER)
@@ -394,14 +346,37 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `getCategoryGuides는 sourceCategory가 없으면 기타 카테고리로 분류한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            guideDetails =
+                                mapOf(
+                                    "분류없음" to
+                                            ItemGuideDetail(
+                                                steps = emptyList(),
+                                                cautions = emptyList(),
+                                                tip = null,
+                                                relatedSpotTypes = emptyList(),
+                                            ),
+                                ),
+                        ),
+                )
+
+            val results = repository.getCategoryGuides(DisposalCategory.OTHER)
+
+            assertEquals(listOf("분류없음"), results.map { it.name })
+        }
+
+    @Test
     fun `getCategoryGuides는 재활용 카테고리를 재활용 가능으로 표시한다`() =
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
-                            categoryMap = mapOf("종이류" to (DisposalCategory.PAPER to null)),
                             guideDetails =
                                 mapOf(
                                     "종이" to
@@ -410,11 +385,10 @@ class DisposalItemGuideRepositoryImplTest {
                                                 cautions = emptyList(),
                                                 tip = null,
                                                 relatedSpotTypes = emptyList(),
-                                                sourceCategory = "종이류",
+                                                sourceCategory = "종이",
                                             ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.PAPER)
@@ -427,10 +401,8 @@ class DisposalItemGuideRepositoryImplTest {
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
-                            categoryMap = mapOf("대형폐기물" to (DisposalCategory.LARGE_WASTE to null)),
                             guideDetails =
                                 mapOf(
                                     "대형폐기물" to
@@ -443,7 +415,6 @@ class DisposalItemGuideRepositoryImplTest {
                                             ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.LARGE_WASTE)
@@ -456,10 +427,8 @@ class DisposalItemGuideRepositoryImplTest {
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
-                            categoryMap = mapOf("종이류" to (DisposalCategory.PAPER to null)),
                             guideDetails =
                                 mapOf(
                                     "종이" to
@@ -469,16 +438,15 @@ class DisposalItemGuideRepositoryImplTest {
                                                 sections = listOf(
                                                     DisposalGuideSection(
                                                         "배출방법",
-                                                        listOf("물기 제거")
-                                                    )
+                                                        listOf("물기 제거"),
+                                                    ),
                                                 ),
                                                 tip = "상자는 펼쳐서",
                                                 relatedSpotTypes = listOf(RelatedSpotType.RECYCLING_BIN),
-                                                sourceCategory = "종이류",
+                                                sourceCategory = "종이",
                                             ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.PAPER)
@@ -487,48 +455,10 @@ class DisposalItemGuideRepositoryImplTest {
             assertEquals(listOf("기름 묻은 종이 제외"), results.first().cautions)
             assertEquals(
                 listOf(DisposalGuideSection("배출방법", listOf("물기 제거"))),
-                results.first().detailSections
+                results.first().detailSections,
             )
             assertEquals("상자는 펼쳐서", results.first().tip)
             assertEquals(listOf(RelatedSpotType.RECYCLING_BIN), results.first().relatedSpotTypes)
-        }
-
-    @Test
-    fun `getCategoryGuides는 상세 가이드가 없으면 관련 장소 맵을 사용한다`() =
-        runBlocking {
-            val repository =
-                DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
-                    localDataSource =
-                        FakeLocalSource(
-                            categoryMap = mapOf("전기전자제품" to (DisposalCategory.ELECTRONICS to null)),
-                            relatedSpots = mapOf(
-                                "전기전자제품" to listOf(
-                                    RelatedSpotType.FREE_PICKUP,
-                                    RelatedSpotType.E_WASTE_BIN
-                                )
-                            ),
-                            guideDetails =
-                                mapOf(
-                                    "전기전자제품" to
-                                            ItemGuideDetail(
-                                                steps = emptyList(),
-                                                cautions = emptyList(),
-                                                tip = null,
-                                                relatedSpotTypes = emptyList(),
-                                                sourceCategory = "전기전자제품",
-                                            ),
-                                ),
-                        ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
-                )
-
-            val results = repository.getCategoryGuides(DisposalCategory.ELECTRONICS)
-
-            assertEquals(
-                listOf(RelatedSpotType.FREE_PICKUP, RelatedSpotType.E_WASTE_BIN),
-                results.first().relatedSpotTypes,
-            )
         }
 
     @Test
@@ -536,10 +466,8 @@ class DisposalItemGuideRepositoryImplTest {
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
-                    remoteDataSource = fakeRemote(results = emptyList()),
                     localDataSource =
                         FakeLocalSource(
-                            categoryMap = mapOf("기타" to (DisposalCategory.OTHER to null)),
                             guideDetails =
                                 mapOf(
                                     "기타" to
@@ -552,7 +480,6 @@ class DisposalItemGuideRepositoryImplTest {
                                             ),
                                 ),
                         ),
-                    publicDataKeyProvider = fakePublicDataKeyProvider,
                 )
 
             val results = repository.getCategoryGuides(DisposalCategory.OTHER)
@@ -561,67 +488,67 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `getItemGuide는 대표 가이드 상세를 id로 직접 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            guideDetails =
+                                mapOf(
+                                    "플라스틱류" to
+                                            ItemGuideDetail(
+                                                steps = listOf("내용물을 비웁니다."),
+                                                cautions = emptyList(),
+                                                tip = null,
+                                                relatedSpotTypes = emptyList(),
+                                                sourceCategory = "플라스틱류",
+                                            ),
+                                ),
+                        ),
+                )
+
+            val result = repository.getItemGuide("플라스틱류")
+
+            assertEquals("플라스틱류", result?.name)
+            assertEquals(DisposalCategory.PLASTIC, result?.category)
+            assertNull(result?.subCategory)
+            assertEquals(listOf("내용물을 비웁니다."), result?.steps)
+        }
+
+    @Test
+    fun `getItemGuide는 대표 가이드 상세가 없으면 품목 사전 검색 결과를 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "유리병",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "유리병")),
+                                        dischargeMethods = listOf("유리병 수거함으로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val result = repository.getItemGuide("유리병")
+
+            assertEquals("유리병", result?.name)
+            assertEquals(DisposalCategory.GLASS, result?.category)
+            assertEquals("유리병 수거함으로 배출합니다.", result?.instructions?.first()?.method)
+        }
+
+    @Test
     fun `getCategories는 모든 도메인 카테고리를 반환한다`() {
         val repository =
             DisposalItemGuideRepositoryImpl(
-                remoteDataSource = fakeRemote(results = emptyList()),
                 localDataSource = FakeLocalSource(),
-                publicDataKeyProvider = fakePublicDataKeyProvider,
             )
 
         assertEquals(DisposalCategory.entries.toList(), repository.getCategories())
-    }
-
-    private fun fakeRemote(results: List<Pair<String, String>>): ItemRemoteDataSource =
-        ItemRemoteDataSource(
-            object : ItemApiService {
-                override suspend fun getItem(
-                    serviceKey: String,
-                    pageNo: Int,
-                    numOfRows: Int,
-                    itemNm: String,
-                ): ItemGuideResponseDto = buildResponse(results)
-            },
-        )
-
-    private fun recordingRemote(
-        captured: MutableList<String>,
-        results: List<Pair<String, String>>,
-    ): ItemRemoteDataSource =
-        ItemRemoteDataSource(
-            object : ItemApiService {
-                override suspend fun getItem(
-                    serviceKey: String,
-                    pageNo: Int,
-                    numOfRows: Int,
-                    itemNm: String,
-                ): ItemGuideResponseDto {
-                    captured += itemNm
-                    return buildResponse(results)
-                }
-            },
-        )
-
-    private fun buildResponse(results: List<Pair<String, String>>): ItemGuideResponseDto {
-        val items =
-            results.map { (name, method) -> ItemGuideDto(itemNm = name, dschgMthd = method) }
-        return ItemGuideResponseDto(
-            response =
-                ItemGuideResponseBodyDto(
-                    header =
-                        ItemGuideHeaderDto(
-                            resultCode = if (items.isEmpty()) "03" else "00",
-                            resultMsg = if (items.isEmpty()) "NODATA_ERROR" else "NORMAL SERVICE.",
-                        ),
-                    body =
-                        ItemGuideBodyDto(
-                            items = ItemGuideItemsDto(item = items),
-                            numOfRows = 100,
-                            pageNo = 1,
-                            totalCount = items.size,
-                        ),
-                ),
-        )
     }
 
     private fun sampleDictionaryItem(
@@ -639,29 +566,14 @@ class DisposalItemGuideRepositoryImplTest {
             notes = emptyList(),
         )
 
-    private val fakePublicDataKeyProvider =
-        object : AppKeyProvider {
-            override val publicDataServiceKey: String = "key"
-            override val naverClientId: String = "naver-client-id"
-        }
-
     private class FakeLocalSource(
-        private val categoryMap: Map<String, Pair<DisposalCategory, DisposalSubCategory?>> = emptyMap(),
         private val synonyms: Map<String, String> = emptyMap(),
-        private val relatedSpots: Map<String, List<RelatedSpotType>> = emptyMap(),
         private val guideDetails: Map<String, ItemGuideDetail> = emptyMap(),
-        private val guideDetailAliases: Map<String, String> = emptyMap(),
         private val wasteDictionaryItems: List<WasteDictionaryItem> = emptyList(),
     ) : ItemCategoryLocalSource {
-        override fun getCategoryMap() = categoryMap
-
         override fun getSynonyms() = synonyms
 
-        override fun getRelatedSpots() = relatedSpots
-
         override fun getGuideDetails() = guideDetails
-
-        override fun getGuideDetailAliases() = guideDetailAliases
 
         override fun getWasteDictionaryItems() = wasteDictionaryItems
     }

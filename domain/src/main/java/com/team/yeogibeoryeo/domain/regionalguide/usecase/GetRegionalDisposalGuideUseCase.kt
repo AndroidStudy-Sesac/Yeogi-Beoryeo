@@ -1,17 +1,39 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import javax.inject.Inject
 
-/**
- * 선택된 행정구역(Region)을 기반으로 지역별 배출 가이드를 가져오는 UseCase
- */
 class GetRegionalDisposalGuideUseCase @Inject constructor(
-    private val repository: RegionalDisposalGuideRepository
+    private val repository: RegionalDisposalGuideRepository,
+    private val normalizeRegionalGuideQueryUseCase: NormalizeRegionalGuideQueryUseCase,
+    private val selectRegionalGuideCandidateUseCase: SelectRegionalGuideCandidateUseCase
 ) {
-    suspend operator fun invoke(region: Region): RegionalDisposalGuide? {
-        return repository.getRegionalDisposalGuide(region)
+    suspend operator fun invoke(region: Region): RegionalGuideLookupResult {
+        val query = normalizeRegionalGuideQueryUseCase(region)
+            ?: return RegionalGuideLookupResult.NotFound
+
+        val candidates = repository.getRegionalDisposalGuideCandidates(query)
+            .getOrElse { throwable ->
+                return RegionalGuideLookupResult.Failure(
+                    reason = throwable.toFailureReason(),
+                    throwable = throwable
+                )
+            }
+
+        return selectRegionalGuideCandidateUseCase(
+            candidates = candidates,
+            query = query
+        )
+    }
+
+    private fun Throwable.toFailureReason(): RegionalGuideFailureReason {
+        return when (this) {
+            is RegionalGuideLookupException -> reason
+            else -> RegionalGuideFailureReason.UNKNOWN
+        }
     }
 }

@@ -1,16 +1,15 @@
-package com.team.yeogibeoryeo.data.regionalguide.repository
+﻿package com.team.yeogibeoryeo.data.regionalguide.repository
 
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideDataSource
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/**
- * 모킹 프레임워크를 대체하는 Fake 데이터 소스.
- */
 class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     var mockResult: Result<List<RegionalGuideItemDto>> = Result.success(emptyList())
     var calledSigunguName: String? = null
@@ -33,30 +32,84 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
-    fun `세종시 지역 객체 전달 시 시군구가 없어도 없음 키워드로 API를 호출한다`() = runBlocking {
-        val sejongRegion = Region(sido = "세종특별자치시", sigungu = "", eupmyeondong = "새롬동")
-        val mockData = listOf(RegionalGuideItemDto(sidoName = "세종특별자치시", sigunguName = "없음", dongName = "새롬동"))
-        fakeDataSource.mockResult = Result.success(mockData)
+    fun `조회 key로 원격 데이터를 호출하고 후보 목록을 반환한다`() = runBlocking {
+        fakeDataSource.mockResult = Result.success(
+            listOf(
+                RegionalGuideItemDto(
+                    sidoName = "서울특별시",
+                    sigunguName = "중구",
+                    dongName = "서울시 중구"
+                ),
+                RegionalGuideItemDto(
+                    sidoName = "대구광역시",
+                    sigunguName = "중구",
+                    dongName = "대봉2동"
+                )
+            )
+        )
 
-        val result = repository.getRegionalDisposalGuide(sejongRegion)
+        val result = repository.getRegionalDisposalGuideCandidates(
+            RegionalGuideQuery(
+                displayRegion = Region(sido = "서울특별시", sigungu = "중구"),
+                sigunguQuery = "중구"
+            )
+        )
 
-        assertEquals("없음", fakeDataSource.calledSigunguName)
-        assertEquals("새롬동", result?.region?.eupmyeondong)
+        val guides = result.getOrThrow()
+
+        assertEquals("중구", fakeDataSource.calledSigunguName)
+        assertEquals(2, guides.size)
+        assertEquals("서울특별시", guides[0].region.sido)
+        assertEquals("대구광역시", guides[1].region.sido)
     }
 
     @Test
-    fun `동일한 동명칭 포함 시 정확히 일치하는 데이터를 최우선으로 선택한다`() = runBlocking {
-        val region = Region(sido = "서울특별시", sigungu = "종로구", eupmyeondong = "인사동")
-        val mockData = listOf(
-            RegionalGuideItemDto(dongName = "인사동1가"),
-            RegionalGuideItemDto(dongName = "인사동"),
-            RegionalGuideItemDto(dongName = "인사동2가")
+    fun `repository는 후보를 선택하지 않고 전체 후보를 domain으로 변환한다`() = runBlocking {
+        fakeDataSource.mockResult = Result.success(
+            listOf(
+                RegionalGuideItemDto(
+                    sidoName = "인천광역시",
+                    sigunguName = "중구",
+                    dongName = "신흥동+율목동+영종동"
+                ),
+                RegionalGuideItemDto(
+                    sidoName = "인천광역시",
+                    sigunguName = "중구",
+                    dongName = "신포동+연안동+도원동"
+                )
+            )
         )
-        fakeDataSource.mockResult = Result.success(mockData)
 
-        val result = repository.getRegionalDisposalGuide(region)
+        val result = repository.getRegionalDisposalGuideCandidates(
+            RegionalGuideQuery(
+                displayRegion = Region(
+                    sido = "인천광역시",
+                    sigungu = "중구",
+                    eupmyeondong = "신흥동"
+                ),
+                sigunguQuery = "중구"
+            )
+        )
 
-        assertEquals("종로구", fakeDataSource.calledSigunguName)
-        assertEquals("인사동", result?.region?.eupmyeondong)
+        val guides = result.getOrThrow()
+
+        assertEquals(2, guides.size)
+        assertEquals("신흥동", guides[0].region.eupmyeondong)
+        assertEquals("신흥동+율목동+영종동", guides[0].targetRegionName)
+        assertEquals("신포동+연안동+도원동", guides[1].targetRegionName)
+    }
+
+    @Test
+    fun `원격 데이터 소스 실패는 Result failure로 유지한다`() = runBlocking {
+        fakeDataSource.mockResult = Result.failure(IllegalStateException("network error"))
+
+        val result = repository.getRegionalDisposalGuideCandidates(
+            RegionalGuideQuery(
+                displayRegion = Region(sido = "서울특별시", sigungu = "중구"),
+                sigunguQuery = "중구"
+            )
+        )
+
+        assertTrue(result.isFailure)
     }
 }

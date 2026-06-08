@@ -48,6 +48,25 @@ class ItemUseCasesTest {
         }
 
     @Test
+    fun `GetDisposalItemGuideUseCase는 id를 저장소에 전달한다`() =
+        runBlocking {
+            val captured = mutableListOf<String>()
+            val expected = sampleGuide("플라스틱류")
+            val repository =
+                FakeRepository(
+                    onItem = { guideId ->
+                        captured += guideId
+                        expected
+                    },
+                )
+
+            val result = GetDisposalItemGuideUseCase(repository).invoke("플라스틱류")
+
+            assertEquals(listOf("플라스틱류"), captured)
+            assertEquals(expected, result)
+        }
+
+    @Test
     fun `GetDisposalCategoriesUseCase는 저장소의 카테고리 목록을 반환한다`() {
         val expected = DisposalCategory.entries.toList()
         val repository = FakeRepository(onCategories = { expected })
@@ -74,11 +93,14 @@ class ItemUseCasesTest {
     private class FakeRepository(
         private val onSearch: suspend (String) -> List<DisposalItemGuide> = { emptyList() },
         private val onCategory: suspend (DisposalCategory) -> List<DisposalItemGuide> = { emptyList() },
+        private val onItem: suspend (String) -> DisposalItemGuide? = { null },
         private val onCategories: () -> List<DisposalCategory> = { emptyList() },
     ) : DisposalItemGuideRepository {
         override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> = onSearch(query)
 
         override suspend fun getCategoryGuides(category: DisposalCategory): List<DisposalItemGuide> = onCategory(category)
+
+        override suspend fun getItemGuide(guideId: String): DisposalItemGuide? = onItem(guideId)
 
         override fun getCategories(): List<DisposalCategory> = onCategories()
     }

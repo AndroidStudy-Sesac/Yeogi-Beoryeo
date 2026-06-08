@@ -22,11 +22,21 @@ fun SpotBottomList(
     selectedSpot: CollectionSpot?,
     onSpotClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(
+        start = 16.dp,
+        top = 12.dp,
+        end = 16.dp,
+        bottom = 96.dp,
+    ),
 ) {
     val listState = rememberLazyListState()
 
     LaunchedEffect(selectedSpot?.id, spots) {
         val selectedIndex = spots.indexOfFirst { spot ->
+            spot == selectedSpot
+        }.takeIf { index ->
+            index >= 0
+        } ?: spots.indexOfFirst { spot ->
             spot.id == selectedSpot?.id
         }
 
@@ -38,16 +48,16 @@ fun SpotBottomList(
     LazyColumn(
         state = listState,
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         itemsIndexed(
             items = spots,
-            key = { _, spot -> spot.id },
+            key = { index, spot -> "${spot.id}_$index" },
         ) { _, spot ->
             SpotBottomCard(
                 spot = spot,
-                isSelected = spot.id == selectedSpot?.id,
+                isSelected = spot == selectedSpot,
                 onClick = {
                     onSpotClick(spot)
                 },

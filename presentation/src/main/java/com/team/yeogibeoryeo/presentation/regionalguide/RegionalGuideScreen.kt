@@ -1,5 +1,7 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,6 +21,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -25,12 +31,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionSelectorSection
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideAmbiguousResult
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideCandidateResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideEmptyResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSearchBar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalWasteScheduleCard
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 @Composable
 fun RegionalGuideRoute(
@@ -41,6 +52,7 @@ fun RegionalGuideRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
+    val regionSelectorUiState by viewModel.regionSelectorUiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(initialKeyword, initialAddress) {
         when {
@@ -53,12 +65,21 @@ fun RegionalGuideRoute(
     }
 
     RegionalGuideScreen(
-        modifier = modifier,
         uiState = uiState,
         searchKeyword = searchKeyword,
+        regionSelectorUiState = regionSelectorUiState,
         onSearchKeywordChange = viewModel::onSearchKeywordChanged,
-        onSearchClick = viewModel::searchCurrentKeyword,
-        onRetryClick = viewModel::retryLastRequest
+        onSearchClick = viewModel::searchByKeyword,
+        onRetryClick = viewModel::retryLastRequest,
+        onSidoSelected = viewModel::onSidoSelected,
+        onSigunguSelected = viewModel::onSigunguSelected,
+        onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
+        onRegionSelectorDropdownExpanded = viewModel::onRegionSelectorDropdownExpanded,
+        onRegionSelectorDropdownDismissed = viewModel::onRegionSelectorDropdownDismissed,
+        onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
+        onCandidateClick = viewModel::onRegionCandidateSelected,
+        onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
+        modifier = modifier,
     )
 }
 
@@ -66,57 +87,166 @@ fun RegionalGuideRoute(
 fun RegionalGuideScreen(
     uiState: RegionalGuideUiState,
     searchKeyword: String,
+    regionSelectorUiState: RegionSelectorUiState,
     onSearchKeywordChange: (String) -> Unit,
-    onSearchClick: () -> Unit,
+    onSearchClick: (String) -> Unit,
     onRetryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onSidoSelected: (String) -> Unit,
+    onSigunguSelected: (String) -> Unit,
+    onEupmyeondongSelected: (String) -> Unit,
+    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
+    onRegionSelectorDropdownDismissed: () -> Unit = {},
+    onRegionSelectionSearchClick: () -> Unit,
+    onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
+    onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
+    val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous
+    val guideCandidatesState = uiState as? RegionalGuideUiState.GuideCandidates
+    val hasSearchCandidates = ambiguousState != null || guideCandidatesState != null
+    val compactRegionText = when (uiState) {
+        is RegionalGuideUiState.Success ->
+            regionSelectorUiState.selectedRegionText ?: uiState.query
+
+        else -> uiState.queryOrNull()
+    }
+    val isRegionSelectorCompact =
+        uiState !is RegionalGuideUiState.Idle &&
+            uiState !is RegionalGuideUiState.Ambiguous &&
+            uiState !is RegionalGuideUiState.GuideCandidates &&
+            !isRegionSelectorExpanded &&
+            compactRegionText != null
+
+    LaunchedEffect(uiState) {
+        if (uiState is RegionalGuideUiState.Loading) {
+            isRegionSelectorExpanded = false
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(20.dp)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = "지역별 배출 가이드",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(top = 20.dp)
+        ) {
+            Text(
+                text = "지역별 배출 가이드",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = "지역명을 입력하면 생활쓰레기, 음식물쓰레기, 재활용품 배출 정보를 확인할 수 있어요.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            Text(
+                text = "지역명을 입력하면 생활쓰레기, 음식물쓰레기, 재활용품 배출 정보를 확인할 수 있어요.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        RegionalGuideSearchBar(
-            keyword = searchKeyword,
-            onKeywordChange = onSearchKeywordChange,
-            onSearchClick = onSearchClick
-        )
+            RegionalGuideSearchBar(
+                keyword = searchKeyword,
+                onKeywordChange = onSearchKeywordChange,
+                onSearchClick = { submittedKeyword ->
+                    isRegionSelectorExpanded = false
+                    onRegionSelectorDropdownDismissed()
+                    onSearchClick(submittedKeyword)
+                },
+                candidateContent = if (hasSearchCandidates) {
+                    {
+                        if (ambiguousState != null) {
+                            RegionalGuideAmbiguousResult(
+                                candidates = ambiguousState.candidates,
+                                onCandidateClick = { candidate ->
+                                    isRegionSelectorExpanded = false
+                                    onRegionSelectorDropdownDismissed()
+                                    onCandidateClick(candidate)
+                                },
+                            )
+                        }
 
-        Spacer(modifier = Modifier.height(20.dp))
+                        if (guideCandidatesState != null) {
+                            RegionalGuideCandidateResult(
+                                candidates = guideCandidatesState.candidates,
+                                onCandidateClick = { candidate ->
+                                    isRegionSelectorExpanded = false
+                                    onRegionSelectorDropdownDismissed()
+                                    onGuideCandidateClick(candidate)
+                                },
+                            )
+                        }
+                    }
+                } else {
+                    null
+                },
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            RegionSelectorSection(
+                uiState = regionSelectorUiState,
+                compact = isRegionSelectorCompact,
+                compactRegionText = compactRegionText,
+                onSidoSelected = onSidoSelected,
+                onSigunguSelected = onSigunguSelected,
+                onEupmyeondongSelected = onEupmyeondongSelected,
+                onDropdownExpanded = onRegionSelectorDropdownExpanded,
+                onDropdownDismissed = onRegionSelectorDropdownDismissed,
+                onSearchClick = {
+                    isRegionSelectorExpanded = false
+                    onRegionSelectorDropdownDismissed()
+                    onRegionSelectionSearchClick()
+                },
+                onChangeClick = {
+                    isRegionSelectorExpanded = true
+                },
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+        }
 
         RegionalGuideContent(
             uiState = uiState,
             onRetryClick = onRetryClick,
-            modifier = Modifier.fillMaxSize()
+            onCandidateClick = onCandidateClick,
+            onGuideCandidateClick = onGuideCandidateClick,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 20.dp),
         )
     }
 }
+
+private fun RegionalGuideUiState.queryOrNull(): String? =
+    when (this) {
+        RegionalGuideUiState.Idle -> null
+        is RegionalGuideUiState.Loading -> query
+        is RegionalGuideUiState.Success -> query
+        is RegionalGuideUiState.Empty -> query
+        is RegionalGuideUiState.Ambiguous -> query
+        is RegionalGuideUiState.GuideCandidates -> query
+        is RegionalGuideUiState.Error -> query
+    }?.takeIf { query -> query.isNotBlank() }
 
 @Composable
 private fun RegionalGuideContent(
     uiState: RegionalGuideUiState,
     onRetryClick: () -> Unit,
+    onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
+    onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (uiState) {
         RegionalGuideUiState.Idle -> {
-            RegionalGuideIdleContent(modifier = modifier)
+            Spacer(modifier = modifier)
         }
 
         is RegionalGuideUiState.Loading -> {
@@ -140,40 +270,19 @@ private fun RegionalGuideContent(
             )
         }
 
+        is RegionalGuideUiState.Ambiguous -> {
+            Spacer(modifier = modifier)
+        }
+
+        is RegionalGuideUiState.GuideCandidates -> {
+            Spacer(modifier = modifier)
+        }
+
         is RegionalGuideUiState.Error -> {
             RegionalGuideErrorContent(
                 message = uiState.message,
                 onRetryClick = onRetryClick,
                 modifier = modifier
-            )
-        }
-    }
-}
-
-@Composable
-private fun RegionalGuideIdleContent(
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "지역을 검색해보세요",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = "선택한 지역의 쓰레기 배출 요일, 시간, 방법을 안내해드릴게요.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -240,9 +349,13 @@ private fun RegionalGuideErrorContent(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
@@ -272,6 +385,54 @@ private fun RegionalGuideErrorContent(
 
 @Preview(showBackground = true)
 @Composable
+private fun RegionalGuideScreenIdlePreview() {
+    MaterialTheme {
+        RegionalGuideScreen(
+            uiState = RegionalGuideUiState.Idle,
+            searchKeyword = "",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
+            ),
+            onSearchKeywordChange = {},
+            onSearchClick = {},
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalGuideScreenLoadingPreview() {
+    MaterialTheme {
+        RegionalGuideScreen(
+            uiState = RegionalGuideUiState.Loading(
+                query = "영등포구"
+            ),
+            searchKeyword = "영등포구",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
+            ),
+            onSearchKeywordChange = {},
+            onSearchClick = {},
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
 private fun RegionalGuideScreenSuccessPreview() {
     MaterialTheme {
         RegionalGuideScreen(
@@ -288,29 +449,43 @@ private fun RegionalGuideScreenSuccessPreview() {
                             wasteTypeName = "일반쓰레기",
                             disposalDays = "월, 수, 금",
                             disposalTime = "18:00 ~ 24:00",
-                            disposalMethod = "종량제 봉투에 담아 배출"
+                            disposalMethod = "종량제 봉투에 담아 배출",
                         ),
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "음식물쓰레기",
                             disposalDays = "화, 목, 일",
                             disposalTime = "18:00 ~ 24:00",
-                            disposalMethod = "음식물 전용 용기에 담아 배출"
+                            disposalMethod = "음식물 전용 용기에 담아 배출",
                         ),
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "재활용품",
                             disposalDays = "목",
                             disposalTime = "18:00 ~ 24:00",
-                            disposalMethod = "품목별로 분리하여 배출"
-                        )
+                            disposalMethod = "품목별로 분리하여 배출",
+                        ),
                     ),
                     uncollectedDays = "토요일",
-                    departmentInfo = "청소행정과 02-0000-0000"
-                )
+                    departmentInfo = "청소행정과 02-0000-0000",
+                ),
             ),
             searchKeyword = "영등포구",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
+                sigunguOptions = listOf("구로구", "영등포구", "종로구"),
+                selectedSido = "서울특별시",
+                selectedSigungu = "영등포구",
+                eupmyeondongOptions = listOf("문래동", "당산동", "여의동"),
+                selectedEupmyeondong = "문래동",
+            ),
             onSearchKeywordChange = {},
             onSearchClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
@@ -325,25 +500,102 @@ private fun RegionalGuideScreenEmptyPreview() {
                 message = "해당 지역의 배출 가이드 정보가 없습니다."
             ),
             searchKeyword = "없는 지역",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
+            ),
             onSearchKeywordChange = {},
             onSearchClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun RegionalGuideScreenLoadingPreview() {
+private fun RegionalGuideScreenAmbiguousPreview() {
     MaterialTheme {
         RegionalGuideScreen(
-            uiState = RegionalGuideUiState.Loading(
-                query = "영등포구"
+            uiState = RegionalGuideUiState.Ambiguous(
+                query = "신흥동",
+                message = "여러 지역이 검색됩니다. 원하는 지역을 선택해주세요.",
+                candidates = listOf(
+                    RegionSearchCandidateUiModel(
+                        sido = "인천광역시",
+                        sigungu = "중구",
+                        eupmyeondong = "신흥동",
+                    ),
+                    RegionSearchCandidateUiModel(
+                        sido = "대전광역시",
+                        sigungu = "동구",
+                        eupmyeondong = "신흥동",
+                    ),
+                )
             ),
-            searchKeyword = "영등포구",
+            searchKeyword = "신흥동",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
+            ),
             onSearchKeywordChange = {},
             onSearchClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalGuideScreenGuideCandidatesPreview() {
+    MaterialTheme {
+        RegionalGuideScreen(
+            uiState = RegionalGuideUiState.GuideCandidates(
+                query = "울주군",
+                message = "여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해주세요.",
+                candidates = listOf(
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "울산광역시 울주군",
+                            targetRegionName = "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"
+                        ),
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        eupmyeondong = null
+                    ),
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "울산광역시 울주군",
+                            targetRegionName = "두동, 두서, 삼동"
+                        ),
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        eupmyeondong = null
+                    ),
+                )
+            ),
+            searchKeyword = "울주군",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "울산광역시", "경기도"),
+            ),
+            onSearchKeywordChange = {},
+            onSearchClick = {},
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
@@ -358,9 +610,33 @@ private fun RegionalGuideScreenErrorPreview() {
                 message = "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
             ),
             searchKeyword = "영등포구",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("서울특별시", "경기도", "인천광역시"),
+            ),
             onSearchKeywordChange = {},
             onSearchClick = {},
-            onRetryClick = {}
+            onRetryClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
         )
     }
 }
+
+private fun previewRegionalGuide(
+    regionName: String,
+    targetRegionName: String
+): RegionalGuideUiModel =
+    RegionalGuideUiModel(
+        regionName = regionName,
+        managementZoneName = regionName,
+        targetRegionName = targetRegionName,
+        disposalPlaceType = "문전수거",
+        disposalPlaceDescription = "문전",
+        schedules = emptyList(),
+        uncollectedDays = "토, 일",
+        departmentInfo = "환경자원과"
+    )

@@ -1,99 +1,81 @@
 package com.team.yeogibeoryeo.presentation.search.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BatteryFull
-import androidx.compose.material.icons.outlined.Chair
-import androidx.compose.material.icons.outlined.Construction
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Diamond
-import androidx.compose.material.icons.outlined.DryCleaning
-import androidx.compose.material.icons.outlined.Fastfood
-import androidx.compose.material.icons.outlined.FreeBreakfast
-import androidx.compose.material.icons.outlined.Grass
-import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.Kitchen
-import androidx.compose.material.icons.outlined.Lightbulb
-import androidx.compose.material.icons.outlined.Liquor
-import androidx.compose.material.icons.outlined.LocalDrink
-import androidx.compose.material.icons.outlined.PropaneTank
-import androidx.compose.material.icons.outlined.ShoppingBag
-import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import com.team.yeogibeoryeo.presentation.common.design.AppAccentColors
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
-val RepresentativeGuideCategory.icon: ImageVector
+@get:DrawableRes
+val RepresentativeGuideCategory.iconResId: Int
     get() =
         when (this) {
-            RepresentativeGuideCategory.CONSTRUCTION_WASTE -> Icons.Outlined.Construction
-            RepresentativeGuideCategory.METAL -> Icons.Outlined.PropaneTank
-            RepresentativeGuideCategory.LARGE_WASTE -> Icons.Outlined.Chair
-            RepresentativeGuideCategory.COLORLESS_PET -> Icons.Outlined.LocalDrink
-            RepresentativeGuideCategory.STYROFOAM -> Icons.Outlined.Inventory2
-            RepresentativeGuideCategory.NON_COMBUSTIBLE -> Icons.Outlined.Diamond
-            RepresentativeGuideCategory.VINYL -> Icons.Outlined.ShoppingBag
-            RepresentativeGuideCategory.HAZARDOUS -> Icons.Outlined.WarningAmber
-            RepresentativeGuideCategory.GLASS -> Icons.Outlined.Liquor
-            RepresentativeGuideCategory.FOOD_WASTE -> Icons.Outlined.Fastfood
-            RepresentativeGuideCategory.CLOTHING -> Icons.Outlined.DryCleaning
-            RepresentativeGuideCategory.GENERAL -> Icons.Outlined.DeleteOutline
-            RepresentativeGuideCategory.ELECTRONICS -> Icons.Outlined.Kitchen
-            RepresentativeGuideCategory.BATTERY -> Icons.Outlined.BatteryFull
-            RepresentativeGuideCategory.LIGHTING -> Icons.Outlined.Lightbulb
-            RepresentativeGuideCategory.PAPER -> Icons.Outlined.Description
-            RepresentativeGuideCategory.PAPER_PACK -> Icons.Outlined.FreeBreakfast
-            RepresentativeGuideCategory.PLASTIC -> Icons.Outlined.Inventory2
-            RepresentativeGuideCategory.OTHER -> Icons.Outlined.Grass
+            RepresentativeGuideCategory.PAPER -> R.drawable.ic_disposal_category_paper
+            RepresentativeGuideCategory.PAPER_PACK -> R.drawable.ic_disposal_category_paper_pack
+            RepresentativeGuideCategory.COLORLESS_PET -> R.drawable.ic_disposal_category_colorless_pet
+            RepresentativeGuideCategory.PLASTIC -> R.drawable.ic_disposal_category_plastic
+            RepresentativeGuideCategory.VINYL -> R.drawable.ic_disposal_category_vinyl
+            RepresentativeGuideCategory.STYROFOAM -> R.drawable.ic_disposal_category_styrofoam
+            RepresentativeGuideCategory.GLASS -> R.drawable.ic_disposal_category_glass_bottle
+            RepresentativeGuideCategory.METAL -> R.drawable.ic_disposal_category_metal
+            RepresentativeGuideCategory.CLOTHING -> R.drawable.ic_disposal_category_clothing
+            RepresentativeGuideCategory.BATTERY -> R.drawable.ic_disposal_category_battery
+            RepresentativeGuideCategory.LIGHTING -> R.drawable.ic_disposal_category_lighting
+            RepresentativeGuideCategory.ELECTRONICS -> R.drawable.ic_disposal_category_electronics
+            RepresentativeGuideCategory.FOOD_WASTE -> R.drawable.ic_disposal_category_food_waste
+            RepresentativeGuideCategory.GENERAL -> R.drawable.ic_disposal_category_general_waste
+            RepresentativeGuideCategory.NON_COMBUSTIBLE -> R.drawable.ic_disposal_category_non_combustible
+            RepresentativeGuideCategory.LARGE_WASTE -> R.drawable.ic_disposal_category_large_waste
+            RepresentativeGuideCategory.CONSTRUCTION_WASTE -> R.drawable.ic_disposal_category_construction_waste
+            RepresentativeGuideCategory.HAZARDOUS -> R.drawable.ic_disposal_category_hazardous
+            RepresentativeGuideCategory.OTHER -> R.drawable.ic_disposal_category_other
         }
 
 @Composable
 fun RepresentativeGuideCategory.containerColor(): Color =
     when (this) {
-        RepresentativeGuideCategory.CONSTRUCTION_WASTE -> AppAccentColors.SoftBrick
-        RepresentativeGuideCategory.METAL -> AppAccentColors.SoftBlue
-        RepresentativeGuideCategory.LARGE_WASTE -> AppAccentColors.SoftBrown
-        RepresentativeGuideCategory.COLORLESS_PET -> AppAccentColors.SoftSky
-        RepresentativeGuideCategory.STYROFOAM -> AppAccentColors.SoftLime
-        RepresentativeGuideCategory.NON_COMBUSTIBLE -> AppAccentColors.SoftGrayStrong
-        RepresentativeGuideCategory.VINYL -> AppAccentColors.SoftMagenta
-        RepresentativeGuideCategory.HAZARDOUS -> AppAccentColors.SoftRed
-        RepresentativeGuideCategory.GLASS -> AppAccentColors.SoftCyan
-        RepresentativeGuideCategory.FOOD_WASTE -> AppAccentColors.SoftMint
-        RepresentativeGuideCategory.CLOTHING -> AppAccentColors.SoftRose
+        RepresentativeGuideCategory.CONSTRUCTION_WASTE -> MaterialTheme.colorScheme.errorContainer
+        RepresentativeGuideCategory.METAL -> MaterialTheme.colorScheme.primaryContainer
+        RepresentativeGuideCategory.LARGE_WASTE -> MaterialTheme.colorScheme.tertiaryContainer
+        RepresentativeGuideCategory.COLORLESS_PET -> MaterialTheme.colorScheme.primaryContainer
+        RepresentativeGuideCategory.STYROFOAM -> MaterialTheme.colorScheme.secondaryContainer
+        RepresentativeGuideCategory.NON_COMBUSTIBLE -> MaterialTheme.colorScheme.surfaceVariant
+        RepresentativeGuideCategory.VINYL -> MaterialTheme.colorScheme.tertiaryContainer
+        RepresentativeGuideCategory.HAZARDOUS -> MaterialTheme.colorScheme.errorContainer
+        RepresentativeGuideCategory.GLASS -> MaterialTheme.colorScheme.primaryContainer
+        RepresentativeGuideCategory.FOOD_WASTE -> MaterialTheme.colorScheme.secondaryContainer
+        RepresentativeGuideCategory.CLOTHING -> MaterialTheme.colorScheme.tertiaryContainer
         RepresentativeGuideCategory.GENERAL -> MaterialTheme.colorScheme.surfaceVariant
-        RepresentativeGuideCategory.ELECTRONICS -> AppAccentColors.SoftIndigo
-        RepresentativeGuideCategory.BATTERY -> AppAccentColors.SoftTeal
-        RepresentativeGuideCategory.LIGHTING -> AppAccentColors.SoftAmber
-        RepresentativeGuideCategory.PAPER -> AppAccentColors.SoftOrange
-        RepresentativeGuideCategory.PAPER_PACK -> AppAccentColors.SoftCoral
-        RepresentativeGuideCategory.PLASTIC -> AppAccentColors.SoftViolet
-        RepresentativeGuideCategory.OTHER -> AppAccentColors.SoftOlive
+        RepresentativeGuideCategory.ELECTRONICS -> MaterialTheme.colorScheme.primaryContainer
+        RepresentativeGuideCategory.BATTERY -> MaterialTheme.colorScheme.secondaryContainer
+        RepresentativeGuideCategory.LIGHTING -> MaterialTheme.colorScheme.tertiaryContainer
+        RepresentativeGuideCategory.PAPER -> MaterialTheme.colorScheme.secondaryContainer
+        RepresentativeGuideCategory.PAPER_PACK -> MaterialTheme.colorScheme.secondaryContainer
+        RepresentativeGuideCategory.PLASTIC -> MaterialTheme.colorScheme.primaryContainer
+        RepresentativeGuideCategory.OTHER -> MaterialTheme.colorScheme.surfaceVariant
     }
 
 @Composable
 fun RepresentativeGuideCategory.iconTint(): Color =
     when (this) {
-        RepresentativeGuideCategory.CONSTRUCTION_WASTE -> AppAccentColors.Brick
-        RepresentativeGuideCategory.METAL -> AppAccentColors.PointBlue
-        RepresentativeGuideCategory.LARGE_WASTE -> AppAccentColors.Brown
-        RepresentativeGuideCategory.COLORLESS_PET -> AppAccentColors.Sky
-        RepresentativeGuideCategory.STYROFOAM -> AppAccentColors.Lime
-        RepresentativeGuideCategory.NON_COMBUSTIBLE -> AppAccentColors.Gray
-        RepresentativeGuideCategory.VINYL -> AppAccentColors.Magenta
-        RepresentativeGuideCategory.HAZARDOUS -> AppAccentColors.Red
-        RepresentativeGuideCategory.GLASS -> AppAccentColors.MainCyan
-        RepresentativeGuideCategory.FOOD_WASTE -> AppAccentColors.Mint
-        RepresentativeGuideCategory.CLOTHING -> AppAccentColors.Rose
-        RepresentativeGuideCategory.GENERAL -> AppAccentColors.DarkSlate
-        RepresentativeGuideCategory.ELECTRONICS -> AppAccentColors.Indigo
-        RepresentativeGuideCategory.BATTERY -> AppAccentColors.Teal
-        RepresentativeGuideCategory.LIGHTING -> AppAccentColors.Amber
-        RepresentativeGuideCategory.PAPER -> AppAccentColors.Orange
-        RepresentativeGuideCategory.PAPER_PACK -> AppAccentColors.Coral
-        RepresentativeGuideCategory.PLASTIC -> AppAccentColors.Violet
-        RepresentativeGuideCategory.OTHER -> AppAccentColors.Olive
+        RepresentativeGuideCategory.CONSTRUCTION_WASTE -> MaterialTheme.colorScheme.onErrorContainer
+        RepresentativeGuideCategory.METAL -> MaterialTheme.colorScheme.onPrimaryContainer
+        RepresentativeGuideCategory.LARGE_WASTE -> MaterialTheme.colorScheme.onTertiaryContainer
+        RepresentativeGuideCategory.COLORLESS_PET -> MaterialTheme.colorScheme.onPrimaryContainer
+        RepresentativeGuideCategory.STYROFOAM -> MaterialTheme.colorScheme.onSecondaryContainer
+        RepresentativeGuideCategory.NON_COMBUSTIBLE -> MaterialTheme.colorScheme.onSurfaceVariant
+        RepresentativeGuideCategory.VINYL -> MaterialTheme.colorScheme.onTertiaryContainer
+        RepresentativeGuideCategory.HAZARDOUS -> MaterialTheme.colorScheme.onErrorContainer
+        RepresentativeGuideCategory.GLASS -> MaterialTheme.colorScheme.onPrimaryContainer
+        RepresentativeGuideCategory.FOOD_WASTE -> MaterialTheme.colorScheme.onSecondaryContainer
+        RepresentativeGuideCategory.CLOTHING -> MaterialTheme.colorScheme.onTertiaryContainer
+        RepresentativeGuideCategory.GENERAL -> MaterialTheme.colorScheme.onSurfaceVariant
+        RepresentativeGuideCategory.ELECTRONICS -> MaterialTheme.colorScheme.onPrimaryContainer
+        RepresentativeGuideCategory.BATTERY -> MaterialTheme.colorScheme.onSecondaryContainer
+        RepresentativeGuideCategory.LIGHTING -> MaterialTheme.colorScheme.onTertiaryContainer
+        RepresentativeGuideCategory.PAPER -> MaterialTheme.colorScheme.onSecondaryContainer
+        RepresentativeGuideCategory.PAPER_PACK -> MaterialTheme.colorScheme.onSecondaryContainer
+        RepresentativeGuideCategory.PLASTIC -> MaterialTheme.colorScheme.onPrimaryContainer
+        RepresentativeGuideCategory.OTHER -> MaterialTheme.colorScheme.onSurfaceVariant
     }

@@ -1,5 +1,9 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import com.team.yeogibeoryeo.domain.favorite.model.Favorite
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -9,7 +13,13 @@ import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -52,6 +62,20 @@ class ItemSearchViewModelTest {
             assertEquals(expected, viewModel.uiState.value.guides)
             assertFalse(viewModel.uiState.value.isLoading)
             assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 성공 시 검색 결과 버전을 증가시킨다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide(it)) })
+            val viewModel = createViewModel(repository)
+
+            viewModel.search("유리")
+            val firstVersion = viewModel.uiState.value.searchResultVersion
+            viewModel.search("비닐")
+
+            assertEquals(1, firstVersion)
+            assertEquals(2, viewModel.uiState.value.searchResultVersion)
         }
 
     @Test
@@ -172,17 +196,21 @@ class ItemSearchViewModelTest {
                     },
                 )
             val viewModel = createViewModel(repository)
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
 
             viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
             viewModel.openCategoryGuide(RepresentativeGuideCategory.PAPER)
             advanceUntilIdle()
 
             assertNull(viewModel.uiState.value.errorMessageResId)
-            assertEquals("종이", viewModel.uiState.value.selectedGuide?.name)
+            assertEquals(
+                "종이",
+                (event.await() as ItemSearchEvent.NavigateToGuide).guide.name,
+            )
         }
 
     @Test
-    fun `카테고리 선택 시 대표 가이드를 상세 상태로 저장한다`() =
+    fun `카테고리 선택 시 대표 가이드 이동 이벤트를 발행한다`() =
         runTest {
             val expected = listOf(
                 sampleGuide("비닐봉투"),
@@ -190,6 +218,7 @@ class ItemSearchViewModelTest {
             )
             val repository = FakeRepository(onCategory = { expected })
             val viewModel = createViewModel(repository)
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
 
             viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
             advanceUntilIdle()
@@ -197,7 +226,7 @@ class ItemSearchViewModelTest {
             assertEquals(listOf(DisposalCategory.VINYL), repository.requestedCategories)
             assertEquals(
                 RepresentativeGuideCategory.VINYL.representativeGuideName,
-                viewModel.uiState.value.selectedGuide?.name,
+                (event.await() as ItemSearchEvent.NavigateToGuide).guide.name,
             )
             assertEquals("", viewModel.uiState.value.query)
             assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
@@ -206,29 +235,18 @@ class ItemSearchViewModelTest {
         }
 
     @Test
-    fun `카테고리 대표 가이드가 없으면 첫 가이드를 상세 상태로 저장한다`() =
+    fun `카테고리 대표 가이드가 없으면 첫 가이드 이동 이벤트를 발행한다`() =
         runTest {
             val expected = sampleGuide("첫 번째 가이드")
             val repository =
                 FakeRepository(onCategory = { listOf(expected, sampleGuide("두 번째 가이드")) })
             val viewModel = createViewModel(repository)
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
 
             viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
             advanceUntilIdle()
 
-            assertEquals(expected, viewModel.uiState.value.selectedGuide)
-        }
-
-    @Test
-    fun `선택한 가이드를 초기화하면 검색 화면 상태로 돌아간다`() =
-        runTest {
-            val guide = sampleGuide("유리병")
-            val viewModel = createViewModel(FakeRepository())
-
-            viewModel.selectGuide(guide)
-            viewModel.clearSelectedGuide()
-
-            assertNull(viewModel.uiState.value.selectedGuide)
+            assertEquals(expected, (event.await() as ItemSearchEvent.NavigateToGuide).guide)
         }
 
     @Test
@@ -263,10 +281,34 @@ class ItemSearchViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
         }
 
-    private fun createViewModel(repository: FakeRepository) =
+    @Test
+    fun `즐겨찾기한 검색 결과 id를 상태에 반영한다`() =
+        runTest {
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.ITEM_GUIDE,
+                                targetId = "유리병",
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val viewModel = createViewModel(FakeRepository(), favoriteRepository)
+            advanceUntilIdle()
+
+            assertEquals(setOf("유리병"), viewModel.uiState.value.favoriteGuideIds)
+        }
+
+    private fun createViewModel(
+        repository: FakeRepository,
+        favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+    ) =
         ItemSearchViewModel(
             SearchDisposalItemGuidesUseCase(repository),
             GetDisposalCategoryGuidesUseCase(repository),
+            ObserveFavoritesUseCase(favoriteRepository),
         )
 
     private fun sampleGuide(name: String): DisposalItemGuide =
@@ -302,6 +344,54 @@ class ItemSearchViewModelTest {
             return onCategory(category)
         }
 
+        override suspend fun getItemGuide(guideId: String): DisposalItemGuide? = null
+
         override fun getCategories(): List<DisposalCategory> = emptyList()
+    }
+
+    private class FakeFavoriteRepository(
+        initialFavorites: List<Favorite> = emptyList(),
+    ) : FavoriteRepository {
+        private val favorites = MutableStateFlow(initialFavorites)
+
+        override fun observeFavorites(): Flow<List<Favorite>> = favorites
+
+        override fun observeFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ): Flow<Boolean> =
+            favorites.map { items ->
+                items.any { it.type == type && it.targetId == targetId }
+            }
+
+        override suspend fun isFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ): Boolean =
+            favorites.value.any { it.type == type && it.targetId == targetId }
+
+        override suspend fun toggleFavorite(favorite: Favorite): Boolean {
+            return if (isFavorite(favorite.type, favorite.targetId)) {
+                removeFavorite(favorite.type, favorite.targetId)
+                false
+            } else {
+                addFavorite(favorite)
+                true
+            }
+        }
+
+        override suspend fun addFavorite(favorite: Favorite) {
+            favorites.value =
+                favorites.value
+                    .filterNot { it.type == favorite.type && it.targetId == favorite.targetId } + favorite
+        }
+
+        override suspend fun removeFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ) {
+            favorites.value =
+                favorites.value.filterNot { it.type == type && it.targetId == targetId }
+        }
     }
 }
