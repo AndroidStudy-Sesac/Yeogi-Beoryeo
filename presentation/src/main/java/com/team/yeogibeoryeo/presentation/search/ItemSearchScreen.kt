@@ -6,24 +6,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,22 +25,19 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
-import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
+import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
@@ -139,74 +127,14 @@ fun ItemSearchScreen(
             )
         }
 
-        // 검색창 (더욱 강조된 검색바 디자인)
-        val searchActionDescription = stringResource(R.string.search_action)
-        OutlinedTextField(
-            value = uiState.query,
-            onValueChange = onQueryChange,
+        ItemSearchBar(
+            keyword = uiState.query,
+            onKeywordChange = onQueryChange,
+            onSearchClick = {
+                onSearchClick()
+            },
+            placeholder = stringResource(R.string.item_search_query_label),
             modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.item_search_query_label),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 16.sp
-                    )
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(id = CommonR.drawable.ic_symbol_recycle),
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint =
-                        if (uiState.query.isEmpty()) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        }
-                )
-            },
-            trailingIcon = {
-                Row(
-                    modifier = Modifier.padding(end = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (uiState.query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(
-                                painter = painterResource(id = CommonR.drawable.ic_action_close),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    IconButton(onClick = onSearchClick) {
-                        Icon(
-                            painter = painterResource(id = CommonR.drawable.ic_action_search),
-                            contentDescription = searchActionDescription,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .semantics {
-                                    contentDescription = searchActionDescription
-                                },
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { onSearchClick() }),
-            shape = RoundedCornerShape(28.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                cursorColor = MaterialTheme.colorScheme.primary,
-            )
         )
 
         // 검색 결과 또는 제안 섹션
