@@ -37,7 +37,7 @@ internal object RegionOptionsMapper {
         return administrativeRegions
             .filter { region ->
                 region.sidoName == sido &&
-                    region.toInfoSigunguOptionName() == sigungu
+                    region.toInfoSigunguOptionName().isSameGuideSigunguName(sigungu)
             }
             .map { region -> region.eupmyeondongName }
             .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
@@ -54,7 +54,7 @@ internal object RegionOptionsMapper {
         if (targetKeyword.isBlank()) return emptyList()
 
         val regionalGuideMatches = regionalGuideRegions
-            .findByRegionName(targetKeyword) { region -> region.toDisplaySigunguName() }
+            .findByGuideRegionName(targetKeyword)
 
         if (regionalGuideMatches.isNotEmpty()) {
             return regionalGuideMatches
@@ -92,7 +92,7 @@ internal object RegionOptionsMapper {
         val normalizedSigungu = RegionalGuideRegionKeyNormalizer.normalizeSigungu(sigungu)
         val regionalGuideRegion = regionalGuideRegions.firstOrNull { regionalGuideRegion ->
             regionalGuideRegion.sidoName == sido &&
-                regionalGuideRegion.sigunguName == normalizedSigungu
+                regionalGuideRegion.sigunguName.isSameGuideSigunguName(normalizedSigungu)
         } ?: return region.copy(sido = sido)
 
         return region.copy(
@@ -157,6 +157,42 @@ internal object RegionOptionsMapper {
         }
     }
 
+    private fun List<RegionalGuideRegionDto>.findByGuideRegionName(
+        targetKeyword: String
+    ): List<RegionalGuideRegionDto> {
+        val exactMatches = filter { region ->
+            region.toDisplaySigunguName().isSameGuideSigunguName(targetKeyword)
+        }
+
+        val normalizedKeyword = targetKeyword.toGuideSigunguCompareKey()
+        val prefixMatches = exactMatches.ifEmpty {
+            filter { region ->
+                region.toDisplaySigunguName()
+                    .toGuideSigunguCompareKey()
+                    .startsWith(normalizedKeyword)
+            }
+        }
+
+        return prefixMatches.ifEmpty {
+            filter { region ->
+                region.toDisplaySigunguName()
+                    .toGuideSigunguCompareKey()
+                    .contains(normalizedKeyword)
+            }
+        }
+    }
+
+    private fun String.isSameGuideSigunguName(
+        other: String
+    ): Boolean {
+        return this == other ||
+            toGuideSigunguCompareKey() == other.toGuideSigunguCompareKey()
+    }
+
+    private fun String.toGuideSigunguCompareKey(): String {
+        return trim().removeSuffix(CITY_SUFFIX)
+    }
+
     private fun List<Region>.distinctByRegion(): List<Region> {
         return distinctBy { region ->
             listOf(
@@ -174,4 +210,5 @@ internal object RegionOptionsMapper {
 
     private const val SEJONG_SIDO = "세종특별자치시"
     private const val NO_SIGUNGU_NAME = "없음"
+    private const val CITY_SUFFIX = "시"
 }

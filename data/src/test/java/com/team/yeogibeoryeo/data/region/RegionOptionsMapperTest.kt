@@ -230,6 +230,84 @@ class RegionOptionsMapperTest {
     }
 
     @Test
+    fun `normalize region maps official city name to info key without city suffix`() {
+        val region = RegionOptionsMapper.normalizeRegionForRegionalGuide(
+            region = Region(
+                sido = "경기도",
+                sigungu = "남양주시",
+                eupmyeondong = "다산동"
+            ),
+            regionalGuideRegions = listOf(
+                RegionalGuideRegionDto(
+                    sidoName = "경기도",
+                    sigunguName = "남양주"
+                )
+            )
+        )
+
+        assertEquals(
+            Region(
+                sido = "경기도",
+                sigungu = "남양주",
+                eupmyeondong = "다산동"
+            ),
+            region
+        )
+    }
+
+    @Test
+    fun `eupmyeondong options map official city name to info key without city suffix`() {
+        val options = RegionOptionsMapper.getEupmyeondongOptions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "경기도",
+                    sigunguName = "남양주시",
+                    eupmyeondongName = "다산동"
+                ),
+                administrativeRegion(
+                    sidoName = "경기도",
+                    sigunguName = "남양주시",
+                    eupmyeondongName = "별내동"
+                )
+            ),
+            sido = "경기도",
+            sigungu = "남양주"
+        )
+
+        assertEquals(listOf("다산동", "별내동"), options)
+    }
+
+    @Test
+    fun `sigungu keyword search maps official city keyword to info key without city suffix`() {
+        val regions = RegionOptionsMapper.findSigunguRegions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "경기도",
+                    sigunguName = "동두천시",
+                    eupmyeondongName = "생연동"
+                )
+            ),
+            regionalGuideRegions = listOf(
+                RegionalGuideRegionDto(
+                    sidoName = "경기도",
+                    sigunguName = "동두천"
+                )
+            ),
+            keyword = "동두천시"
+        )
+
+        assertEquals(
+            listOf(
+                Region(
+                    sido = "경기도",
+                    sigungu = "동두천"
+                )
+            ),
+            regions
+        )
+    }
+
+    @Test
     fun `normalize region keeps original sigungu when info provided region does not exist`() {
         val region = RegionOptionsMapper.normalizeRegionForRegionalGuide(
             region = Region(
