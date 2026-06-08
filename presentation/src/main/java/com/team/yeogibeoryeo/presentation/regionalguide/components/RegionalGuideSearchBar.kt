@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.presentation.regionalguide.components
+﻿package com.team.yeogibeoryeo.presentation.regionalguide.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -86,8 +86,7 @@ fun RegionalGuideSearchBar(
                 capitalization = KeyboardCapitalization.None,
                 autoCorrectEnabled = false,
                 // 지역명은 고유명사가 많아 IME 자동 보정이 오탐을 만들 수 있습니다.
-                // visualTransformation을 지정하지 않으므로 입력값은 검색창에 그대로 표시됩니다.
-                keyboardType = KeyboardType.Password,
+                keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Search
             ),
             keyboardActions = KeyboardActions(
