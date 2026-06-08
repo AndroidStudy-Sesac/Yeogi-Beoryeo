@@ -19,7 +19,11 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
-fun EmptyFavoritesCard(modifier: Modifier = Modifier) {
+fun EmptyFavoritesCard(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -39,12 +43,12 @@ fun EmptyFavoritesCard(modifier: Modifier = Modifier) {
                 tint = MaterialTheme.colorScheme.tertiary,
             )
             Text(
-                text = "아직 즐겨찾기한 품목이 없어요",
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "품목 가이드 상세 화면에서 별을 누르면 여기에 모아볼 수 있어요.",
+                text = description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

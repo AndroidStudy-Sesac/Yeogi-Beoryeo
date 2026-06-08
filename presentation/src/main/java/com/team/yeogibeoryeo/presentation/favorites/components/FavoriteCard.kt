@@ -23,12 +23,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteItemUiModel
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun FavoriteCard(
-    favorite: FavoriteItemUiModel,
+    favorite: FavoriteUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

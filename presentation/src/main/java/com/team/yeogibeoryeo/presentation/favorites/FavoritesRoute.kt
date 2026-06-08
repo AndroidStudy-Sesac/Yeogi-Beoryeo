@@ -16,7 +16,10 @@ fun FavoritesRoute(
 
     FavoritesScreen(
         uiState = uiState,
+        onTabClick = viewModel::selectTab,
         onItemGuideClick = onItemGuideClick,
+        onCollectionSpotClick = {},
+        onRegionalGuideClick = {},
         modifier = modifier,
     )
 }
