@@ -17,6 +17,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -46,8 +50,35 @@ fun ItemGuideDetailScreen(
     isFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val scrollState = rememberScrollState()
+    val onBottomBarVisibilityChangedState by rememberUpdatedState(onBottomBarVisibilityChanged)
+
+    LaunchedEffect(scrollState) {
+        var previousOffset = 0
+        onBottomBarVisibilityChangedState(true)
+
+        snapshotFlow { scrollState.value }
+            .collect { currentOffset ->
+                if (scrollState.maxValue > 0 && currentOffset >= scrollState.maxValue) {
+                    onBottomBarVisibilityChangedState(false)
+                    previousOffset = currentOffset
+                    return@collect
+                }
+
+                if (currentOffset == 0) {
+                    onBottomBarVisibilityChangedState(true)
+                } else if (currentOffset > previousOffset) {
+                    onBottomBarVisibilityChangedState(false)
+                } else if (currentOffset < previousOffset) {
+                    onBottomBarVisibilityChangedState(true)
+                }
+                previousOffset = currentOffset
+            }
+    }
+
     val backActionDescription = stringResource(R.string.back_action)
     val favoriteActionDescription = if (isFavorite) "즐겨찾기 해제" else "즐겨찾기 추가"
     val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
@@ -60,7 +91,7 @@ fun ItemGuideDetailScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(
                 start = 24.dp,
                 top = 16.dp,

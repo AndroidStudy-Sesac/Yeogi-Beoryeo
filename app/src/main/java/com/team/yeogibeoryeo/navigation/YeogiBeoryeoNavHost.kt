@@ -1,8 +1,23 @@
 package com.team.yeogibeoryeo.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -30,39 +45,64 @@ fun YeogiBeoryeoNavHost(
 ) {
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentDestination = currentBackStackEntry?.destination
+    val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
+    var isBottomBarVisible by remember { mutableStateOf(true) }
+
+    LaunchedEffect(currentBackStackEntry) {
+        isBottomBarVisible = true
+    }
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            AppBottomNavigationBar(
-                items =
-                    listOf(
-                        BottomNavigationItem(
-                            label = "품목",
-                            iconResId = CommonR.drawable.ic_symbol_recycle,
-                            selected = currentBackStackEntry.isItemSearchSelected(),
-                            onClick = { navController.navigateBottomTab(ItemSearchRoute()) },
+            val enterTransition =
+                if (isItemDetailScreen) {
+                    fadeIn() + expandVertically(expandFrom = Alignment.Bottom) + slideInVertically { it }
+                } else {
+                    EnterTransition.None
+                }
+            val exitTransition =
+                if (isItemDetailScreen) {
+                    fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom) + slideOutVertically { it }
+                } else {
+                    ExitTransition.None
+                }
+
+            AnimatedVisibility(
+                visible = !isItemDetailScreen || isBottomBarVisible,
+                enter = enterTransition,
+                exit = exitTransition,
+            ) {
+                AppBottomNavigationBar(
+                    items =
+                        listOf(
+                            BottomNavigationItem(
+                                label = "품목",
+                                iconResId = CommonR.drawable.ic_symbol_recycle,
+                                selected = currentBackStackEntry.isItemSearchSelected(),
+                                onClick = { navController.navigateBottomTab(ItemSearchRoute()) },
+                            ),
+                            BottomNavigationItem(
+                                label = "지도",
+                                iconResId = AppR.drawable.ic_navigation_map,
+                                selected = currentDestination?.hasRoute<MapRoute>() == true,
+                                onClick = { navController.navigateBottomTab(MapRoute) },
+                            ),
+                            BottomNavigationItem(
+                                label = "안내",
+                                iconResId = AppR.drawable.ic_navigation_guide,
+                                selected = currentDestination?.hasRoute<RegionalGuideRoute>() == true,
+                                onClick = { navController.navigateBottomTab(RegionalGuideRoute()) },
+                            ),
+                            BottomNavigationItem(
+                                label = "저장",
+                                iconResId = CommonR.drawable.ic_favorite,
+                                selected = currentBackStackEntry.isFavoritesSelected(),
+                                onClick = { navController.navigateBottomTab(FavoritesRoute) },
+                            ),
                         ),
-                        BottomNavigationItem(
-                            label = "지도",
-                            iconResId = AppR.drawable.ic_navigation_map,
-                            selected = currentDestination?.hasRoute<MapRoute>() == true,
-                            onClick = { navController.navigateBottomTab(MapRoute) },
-                        ),
-                        BottomNavigationItem(
-                            label = "안내",
-                            iconResId = AppR.drawable.ic_navigation_guide,
-                            selected = currentDestination?.hasRoute<RegionalGuideRoute>() == true,
-                            onClick = { navController.navigateBottomTab(RegionalGuideRoute()) },
-                        ),
-                        BottomNavigationItem(
-                            label = "저장",
-                            iconResId = CommonR.drawable.ic_favorite,
-                            selected = currentBackStackEntry.isFavoritesSelected(),
-                            onClick = { navController.navigateBottomTab(FavoritesRoute) },
-                        ),
-                    ),
-            )
+                )
+            }
         },
     ) { innerPadding ->
         NavHost(
@@ -115,6 +155,11 @@ fun YeogiBeoryeoNavHost(
                 ItemGuideDetailScreenRoute(
                     guideId = route.guideId,
                     onBackClick = navController::popBackStack,
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (isItemDetailScreen) {
+                            isBottomBarVisible = isVisible
+                        }
+                    },
                 )
             }
         }
