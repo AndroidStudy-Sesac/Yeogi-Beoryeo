@@ -7,26 +7,32 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun SpotBottomCard(
     spot: CollectionSpot,
     isSelected: Boolean,
     onClick: ((CollectionSpot) -> Unit)?,
+    onFavoriteClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val containerColor = if (isSelected) {
@@ -74,34 +80,69 @@ fun SpotBottomCard(
                 .fillMaxWidth()
                 .padding(16.dp),
         ) {
-            Row {
-                Text(
-                    text = spot.type.toDisplayName(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.tertiary
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Row {
+                        Text(
+                            text = spot.type.toDisplayName(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                        )
 
-                spot.distanceMeter?.let { distanceMeter ->
-                    Spacer(modifier = Modifier.width(8.dp))
+                        spot.distanceMeter?.let { distanceMeter ->
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = "${distanceMeter}m",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = supportingContentColor,
+                            )
+                        }
+                    }
 
                     Text(
-                        text = "${distanceMeter}m",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = supportingContentColor,
+                        text = spot.name,
+                        modifier = Modifier.padding(top = 6.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        onFavoriteClick(spot)
+                    },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            id = if (spot.isBookmarked) {
+                                CommonR.drawable.ic_favorite_filled
+                            } else {
+                                CommonR.drawable.ic_favorite
+                            },
+                        ),
+                        contentDescription = if (spot.isBookmarked) {
+                            "즐겨찾기 해제"
+                        } else {
+                            "즐겨찾기 추가"
+                        },
+                        tint = if (spot.isBookmarked) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                 }
             }
-
-            Text(
-                text = spot.name,
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
 
             Text(
                 text = spot.address,
@@ -142,6 +183,7 @@ private fun SpotBottomCardPreview() {
                 ),
                 isSelected = false,
                 onClick = {},
+                onFavoriteClick = {},
             )
         }
     }
@@ -167,6 +209,7 @@ private fun SpotBottomCardSelectedPreview() {
                 ),
                 isSelected = true,
                 onClick = {},
+                onFavoriteClick = {},
             )
         }
     }
@@ -192,6 +235,7 @@ private fun SpotBottomCardWithoutDetailPreview() {
                 ),
                 isSelected = false,
                 onClick = {},
+                onFavoriteClick = {},
             )
         }
     }

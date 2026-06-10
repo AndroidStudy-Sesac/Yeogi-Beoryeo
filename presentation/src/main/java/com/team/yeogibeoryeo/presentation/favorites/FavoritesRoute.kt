@@ -20,6 +20,7 @@ fun FavoritesRoute(
         onItemGuideClick = onItemGuideClick,
         onCollectionSpotClick = {},
         onRegionalGuideClick = {},
+        onCollectionSpotFavoriteRemoveClick = viewModel::removeCollectionSpotFavorite,
         modifier = modifier,
     )
 }

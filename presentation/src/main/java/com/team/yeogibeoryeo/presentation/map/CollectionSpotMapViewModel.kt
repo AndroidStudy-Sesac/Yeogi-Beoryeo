@@ -2,6 +2,9 @@ package com.team.yeogibeoryeo.presentation.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavoriteUseCase
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
@@ -32,6 +35,8 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val locationPermissionChecker: LocationPermissionChecker,
     private val getFreshRecentCurrentLocationSpotsUseCase: GetFreshRecentCurrentLocationSpotsUseCase,
     private val saveRecentCurrentLocationSpotsUseCase: SaveRecentCurrentLocationSpotsUseCase,
+    private val observeFavoritesUseCase: ObserveFavoritesUseCase,
+    private val toggleCollectionSpotFavoriteUseCase: ToggleCollectionSpotFavoriteUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
@@ -41,6 +46,11 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var spotSearchJob: Job? = null
     private var currentLocationRefreshJob: Job? = null
     private var hasRequestedInitialCurrentLocationSearch = false
+    private var favoriteSpotIds: Set<String> = emptySet()
+
+    init {
+        observeCollectionSpotFavorites()
+    }
 
     fun onSearchKeywordChanged(keyword: String) {
         currentLocationRefreshJob?.cancel()
@@ -208,6 +218,12 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
+    fun onSpotFavoriteClick(spot: CollectionSpot) {
+        viewModelScope.launch {
+            toggleCollectionSpotFavoriteUseCase(spot)
+        }
+    }
+
     fun onLocationPermissionDenied() {
         originalSpots = emptyList()
 
@@ -298,7 +314,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     private fun updateSpotResult(spots: List<CollectionSpot>) {
-        originalSpots = spots
+        originalSpots = spots.withFavoriteState()
 
         val filteredSpots = filterCollectionSpotsUseCase(
             spots = originalSpots,
@@ -382,7 +398,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     private fun showCachedCurrentLocationSpots(spots: List<CollectionSpot>) {
-        originalSpots = spots
+        originalSpots = spots.withFavoriteState()
 
         val filteredSpots = filterCollectionSpotsUseCase(
             spots = originalSpots,
@@ -427,6 +443,43 @@ class CollectionSpotMapViewModel @Inject constructor(
         return currentState.searchKeyword.isBlank() &&
             currentState.searchMode == MapSearchMode.CURRENT_LOCATION
     }
+
+    private fun observeCollectionSpotFavorites() {
+        viewModelScope.launch {
+            observeFavoritesUseCase(FavoriteTargetType.COLLECTION_SPOT)
+                .collect { favorites ->
+                    favoriteSpotIds = favorites.map { favorite -> favorite.targetId }.toSet()
+                    applyFavoriteStateToCurrentResults()
+                }
+        }
+    }
+
+    private fun applyFavoriteStateToCurrentResults() {
+        if (originalSpots.isEmpty() && uiState.value.selectedSpot == null) return
+
+        originalSpots = originalSpots.withFavoriteState()
+
+        val filteredSpots = filterCollectionSpotsUseCase(
+            spots = originalSpots,
+            selectedTypes = uiState.value.selectedTypes,
+        )
+        val updatedSelectedSpot = uiState.value.selectedSpot?.let { selectedSpot ->
+            originalSpots.firstOrNull { spot -> spot.id == selectedSpot.id }
+                ?: selectedSpot.copy(isBookmarked = selectedSpot.id in favoriteSpotIds)
+        }
+
+        _uiState.update {
+            it.copy(
+                spots = filteredSpots,
+                selectedSpot = updatedSelectedSpot,
+            )
+        }
+    }
+
+    private fun List<CollectionSpot>.withFavoriteState(): List<CollectionSpot> =
+        map { spot ->
+            spot.copy(isBookmarked = spot.id in favoriteSpotIds)
+        }
 
     private companion object {
         const val DEFAULT_RADIUS_METER = 500

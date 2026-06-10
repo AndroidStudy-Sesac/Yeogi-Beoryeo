@@ -21,6 +21,7 @@ fun SpotBottomList(
     spots: List<CollectionSpot>,
     selectedSpot: CollectionSpot?,
     onSpotClick: (CollectionSpot) -> Unit,
+    onSpotFavoriteClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(
         start = 16.dp,
@@ -61,6 +62,7 @@ fun SpotBottomList(
                 onClick = {
                     onSpotClick(spot)
                 },
+                onFavoriteClick = onSpotFavoriteClick,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -116,6 +118,7 @@ private fun SpotBottomListPreview() {
                     isBookmarked = false,
                 ),
                 onSpotClick = {},
+                onSpotFavoriteClick = {},
             )
         }
     }

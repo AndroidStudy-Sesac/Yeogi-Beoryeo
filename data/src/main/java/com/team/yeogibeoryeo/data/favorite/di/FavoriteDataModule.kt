@@ -2,9 +2,14 @@ package com.team.yeogibeoryeo.data.favorite.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.team.yeogibeoryeo.data.favorite.local.CollectionSpotFavoriteSnapshotDao
 import com.team.yeogibeoryeo.data.favorite.local.FavoriteDao
 import com.team.yeogibeoryeo.data.favorite.local.FavoriteDatabase
+import com.team.yeogibeoryeo.data.favorite.repository.CollectionSpotFavoriteSnapshotRepositoryImpl
 import com.team.yeogibeoryeo.data.favorite.repository.FavoriteRepositoryImpl
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
 import dagger.Binds
 import dagger.Module
@@ -26,11 +31,39 @@ object FavoriteDatabaseModule {
             context,
             FavoriteDatabase::class.java,
             "yeogi_beoryeo_favorites.db",
-        ).build()
+        )
+            .addMigrations(FAVORITE_DATABASE_MIGRATION_1_2)
+            .build()
 
     @Provides
     @Singleton
     fun provideFavoriteDao(database: FavoriteDatabase): FavoriteDao = database.favoriteDao()
+
+    @Provides
+    @Singleton
+    fun provideCollectionSpotFavoriteSnapshotDao(
+        database: FavoriteDatabase,
+    ): CollectionSpotFavoriteSnapshotDao = database.collectionSpotFavoriteSnapshotDao()
+
+    private val FAVORITE_DATABASE_MIGRATION_1_2 =
+        object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS collection_spot_favorite_snapshots (
+                        targetId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        spotType TEXT NOT NULL,
+                        address TEXT NOT NULL,
+                        detailLocation TEXT,
+                        latitude REAL,
+                        longitude REAL,
+                        PRIMARY KEY(targetId)
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
 }
 
 @Module
@@ -39,4 +72,10 @@ abstract class FavoriteBindModule {
     @Binds
     @Singleton
     abstract fun bindFavoriteRepository(repository: FavoriteRepositoryImpl): FavoriteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCollectionSpotFavoriteSnapshotRepository(
+        repository: CollectionSpotFavoriteSnapshotRepositoryImpl,
+    ): CollectionSpotFavoriteSnapshotRepository
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ fun FavoriteCard(
     favorite: FavoriteUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onRemoveClick: (() -> Unit)? = null,
 ) {
     Card(
         modifier = modifier
@@ -69,12 +71,23 @@ fun FavoriteCard(
                 }
             }
 
-            Icon(
-                painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.outlineVariant,
-            )
+            if (onRemoveClick != null) {
+                IconButton(onClick = onRemoveClick) {
+                    Icon(
+                        painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
+                        contentDescription = "즐겨찾기 해제",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
+            } else {
+                Icon(
+                    painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.outlineVariant,
+                )
+            }
         }
     }
 }
