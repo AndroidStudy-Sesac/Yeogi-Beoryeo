@@ -1003,6 +1003,74 @@ class CollectionSpotMapViewModelTest {
             assertEquals(false, viewModel.uiState.value.isFavoriteSpotNearbyLoading)
         }
 
+    @Test
+    fun `즐겨찾기 장소 주변 목록 조회 중 로딩 상태를 표시한다`() =
+        runTest {
+            val request = sampleFavoriteSpotMapMoveRequest()
+            val nearbySpot = sampleSpot("nearby", CollectionSpotType.RECYCLING_CENTER)
+            val locationSearchResult = CompletableDeferred<List<CollectionSpot>>()
+            val repository =
+                FakeCollectionSpotRepository(
+                    locationSearchResultProvider = { locationSearchResult.await() },
+                )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.showFavoriteSpot(request)
+            advanceUntilIdle()
+
+            assertEquals(request.targetId, viewModel.uiState.value.selectedSpot?.id)
+            assertEquals(true, viewModel.uiState.value.isFavoriteSpotNearbyLoading)
+
+            locationSearchResult.complete(listOf(nearbySpot))
+            advanceUntilIdle()
+
+            assertEquals(listOf(nearbySpot), viewModel.uiState.value.spots)
+            assertEquals(false, viewModel.uiState.value.isFavoriteSpotNearbyLoading)
+        }
+
+    @Test
+    fun `즐겨찾기 장소 주변 목록 조회 실패 시에도 selectedSpot을 유지한다`() =
+        runTest {
+            val request = sampleFavoriteSpotMapMoveRequest()
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(
+                    locationSearchThrowable = IllegalStateException("network error"),
+                ),
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.showFavoriteSpot(request)
+            advanceUntilIdle()
+
+            assertEquals(request.targetId, viewModel.uiState.value.selectedSpot?.id)
+            assertEquals(request.coordinate, viewModel.uiState.value.selectedSpot?.coordinate)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(false, viewModel.uiState.value.isFavoriteSpotNearbyLoading)
+        }
+
+    @Test
+    fun `같은 즐겨찾기 장소 이동 요청도 다시 처리할 수 있도록 sequence를 증가시킨다`() =
+        runTest {
+            val request = sampleFavoriteSpotMapMoveRequest()
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.showFavoriteSpot(request)
+            advanceUntilIdle()
+            val firstSequence = viewModel.uiState.value.favoriteSpotMoveRequestSequence
+
+            viewModel.showFavoriteSpot(request)
+            advanceUntilIdle()
+
+            assertEquals(request.targetId, viewModel.uiState.value.selectedSpot?.id)
+            assertEquals(firstSequence + 1, viewModel.uiState.value.favoriteSpotMoveRequestSequence)
+        }
+
     private fun createViewModel(
         repository: FakeCollectionSpotRepository,
         currentLocationResult: CurrentLocationResult,
@@ -1084,6 +1152,17 @@ class CollectionSpotMapViewModelTest {
         )
     }
 
+    private fun sampleFavoriteSpotMapMoveRequest(): FavoriteSpotMapMoveRequest {
+        return FavoriteSpotMapMoveRequest(
+            targetId = "favorite-spot",
+            name = "폐건전지 수거함",
+            type = CollectionSpotType.BATTERY_BIN,
+            address = "서울특별시 영등포구 문래동",
+            detailLocation = "주민센터 앞",
+            coordinate = Coordinate(latitude = 37.5, longitude = 126.9),
+        )
+    }
+
     private class FakeCurrentLocationProvider(
         private val resultProvider: suspend () -> CurrentLocationResult,
     ) : CurrentLocationProvider {
@@ -1136,6 +1215,7 @@ class CollectionSpotMapViewModelTest {
         private val locationSpots: List<CollectionSpot> = emptyList(),
         private val keywordSearchThrowable: Throwable? = null,
         private val locationSearchThrowable: Throwable? = null,
+        private val locationSearchResultProvider: (suspend () -> List<CollectionSpot>)? = null,
     ) : CollectionSpotRepository {
         val keywords = mutableListOf<String>()
         var locationSearchCallCount = 0
@@ -1160,6 +1240,7 @@ class CollectionSpotMapViewModelTest {
             lastLocationCoordinate = coordinate
             lastRadiusMeter = radiusMeter
             locationSearchThrowable?.let { throw it }
+            locationSearchResultProvider?.let { provider -> return provider() }
             return locationSpots
         }
 
