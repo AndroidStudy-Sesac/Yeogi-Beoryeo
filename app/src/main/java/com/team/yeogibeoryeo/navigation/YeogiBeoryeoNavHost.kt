@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -31,8 +32,12 @@ import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.common.navigation.BottomNavigationItem
 import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
+import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.R as AppR
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
@@ -86,7 +91,7 @@ fun YeogiBeoryeoNavHost(
                                 label = "지도",
                                 iconResId = AppR.drawable.ic_navigation_map,
                                 selected = currentDestination?.hasRoute<MapRoute>() == true,
-                                onClick = { navController.navigateBottomTab(MapRoute) },
+                                onClick = { navController.navigateBottomTab(MapRoute()) },
                             ),
                             BottomNavigationItem(
                                 label = "안내",
@@ -110,8 +115,11 @@ fun YeogiBeoryeoNavHost(
             startDestination = ItemSearchRoute(),
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<MapRoute> {
-                CollectionSpotMapScreen()
+            composable<MapRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<MapRoute>()
+                CollectionSpotMapScreen(
+                    favoriteSpotMoveRequest = route.toFavoriteSpotMapMoveRequest(),
+                )
             }
 
             composable<RegionalGuideRoute> { backStackEntry ->
@@ -131,6 +139,15 @@ fun YeogiBeoryeoNavHost(
                                 source = ItemGuideDetailSource.FAVORITES,
                             ),
                         )
+                    },
+                    onCollectionSpotClick = { request ->
+                        navController.navigate(request.toMapRoute()) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
                     },
                 )
             }
@@ -178,3 +195,39 @@ private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSo
     this != null &&
         destination.hasRoute<ItemGuideDetailRoute>() &&
         toRoute<ItemGuideDetailRoute>().source == source
+
+private fun FavoriteCollectionSpotMapMoveRequest.toMapRoute(): MapRoute =
+    MapRoute(
+        favoriteSpotTargetId = targetId,
+        favoriteSpotName = name,
+        favoriteSpotType = type.name,
+        favoriteSpotAddress = address,
+        favoriteSpotDetailLocation = detailLocation,
+        favoriteSpotLatitude = latitude,
+        favoriteSpotLongitude = longitude,
+    )
+
+private fun MapRoute.toFavoriteSpotMapMoveRequest(): FavoriteSpotMapMoveRequest? {
+    val targetId = favoriteSpotTargetId ?: return null
+    val name = favoriteSpotName ?: return null
+    val typeName = favoriteSpotType ?: return null
+    val address = favoriteSpotAddress ?: return null
+    val latitude = favoriteSpotLatitude ?: return null
+    val longitude = favoriteSpotLongitude ?: return null
+    val type =
+        runCatching {
+            CollectionSpotType.valueOf(typeName)
+        }.getOrNull() ?: return null
+
+    return FavoriteSpotMapMoveRequest(
+        targetId = targetId,
+        name = name,
+        type = type,
+        address = address,
+        detailLocation = favoriteSpotDetailLocation,
+        coordinate = Coordinate(
+            latitude = latitude,
+            longitude = longitude,
+        ),
+    )
+}

@@ -3,9 +3,11 @@ package com.team.yeogibeoryeo.presentation.map.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -149,6 +151,7 @@ private fun SpotBottomSheetLoading(
 @Composable
 fun SpotDetailBottomSheetContent(
     spot: CollectionSpot,
+    isNearbyLoading: Boolean = false,
     onFavoriteClick: (CollectionSpot) -> Unit,
     onCloseClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -167,15 +170,35 @@ fun SpotDetailBottomSheetContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Text(
-            text = "목록으로",
+        Row(
             modifier = Modifier
                 .align(Alignment.End)
-                .clickable(onClick = onCloseClick)
                 .padding(top = 12.dp, bottom = 8.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (isNearbyLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .size(16.dp),
+                    strokeWidth = 2.dp,
+                )
+                Text(
+                    text = "주변 목록 준비 중",
+                    modifier = Modifier.padding(end = 12.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Text(
+                text = "목록으로",
+                modifier = Modifier
+                    .clickable(onClick = onCloseClick),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 

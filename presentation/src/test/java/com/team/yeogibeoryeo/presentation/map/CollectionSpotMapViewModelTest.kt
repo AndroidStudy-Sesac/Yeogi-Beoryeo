@@ -24,6 +24,7 @@ import com.team.yeogibeoryeo.domain.time.TimeProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
+import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -906,6 +907,100 @@ class CollectionSpotMapViewModelTest {
             assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, spot.id))
             assertEquals(emptyList<CollectionSpotFavoriteSnapshot>(), snapshotRepository.snapshots.value)
             assertEquals(false, viewModel.uiState.value.spots.single().isBookmarked)
+        }
+
+    @Test
+    fun `즐겨찾기 장소 지도 이동 요청을 selectedSpot으로 반영한다`() =
+        runTest {
+            val request =
+                FavoriteSpotMapMoveRequest(
+                    targetId = "favorite-spot",
+                    name = "폐건전지 수거함",
+                    type = CollectionSpotType.BATTERY_BIN,
+                    address = "서울특별시 영등포구 문래동",
+                    detailLocation = "주민센터 앞",
+                    coordinate = Coordinate(latitude = 37.5, longitude = 126.9),
+                )
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                favoriteRepository = FakeFavoriteRepository(
+                    initialFavorites = listOf(collectionSpotFavorite(request.targetId)),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.showFavoriteSpot(request)
+
+            assertEquals(request.targetId, viewModel.uiState.value.selectedSpot?.id)
+            assertEquals(request.coordinate, viewModel.uiState.value.selectedSpot?.coordinate)
+            assertEquals(true, viewModel.uiState.value.selectedSpot?.isBookmarked)
+            assertEquals(request.targetId, viewModel.uiState.value.favoriteSpotMoveRequestId)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+        }
+
+    @Test
+    fun `현재 검색 결과에 같은 즐겨찾기 장소가 있으면 기존 장소 정보를 선택한다`() =
+        runTest {
+            val existingSpot = sampleSpot("favorite-spot", CollectionSpotType.RECYCLING_CENTER)
+            val request =
+                FavoriteSpotMapMoveRequest(
+                    targetId = existingSpot.id,
+                    name = "스냅샷 이름",
+                    type = CollectionSpotType.BATTERY_BIN,
+                    address = "스냅샷 주소",
+                    detailLocation = null,
+                    coordinate = Coordinate(latitude = 37.5, longitude = 126.9),
+                )
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(keywordSpots = listOf(existingSpot)),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                favoriteRepository = FakeFavoriteRepository(
+                    initialFavorites = listOf(collectionSpotFavorite(existingSpot.id)),
+                ),
+            )
+            advanceUntilIdle()
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.showFavoriteSpot(request)
+
+            assertEquals(existingSpot.name, viewModel.uiState.value.selectedSpot?.name)
+            assertEquals(existingSpot.type, viewModel.uiState.value.selectedSpot?.type)
+            assertEquals(true, viewModel.uiState.value.selectedSpot?.isBookmarked)
+        }
+
+    @Test
+    fun `즐겨찾기 장소 지도 이동 후 해당 좌표 기준 주변 수거 장소 목록을 갱신한다`() =
+        runTest {
+            val request =
+                FavoriteSpotMapMoveRequest(
+                    targetId = "favorite-spot",
+                    name = "폐건전지 수거함",
+                    type = CollectionSpotType.BATTERY_BIN,
+                    address = "서울특별시 성동구 용답동",
+                    detailLocation = "주민센터 앞",
+                    coordinate = Coordinate(latitude = 37.5, longitude = 126.9),
+                )
+            val nearbySpot = sampleSpot("nearby", CollectionSpotType.RECYCLING_CENTER)
+            val repository =
+                FakeCollectionSpotRepository(
+                    locationSpots = listOf(nearbySpot),
+                )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.showFavoriteSpot(request)
+            advanceUntilIdle()
+
+            assertEquals(request.coordinate, repository.lastLocationCoordinate)
+            assertEquals(listOf(nearbySpot), viewModel.uiState.value.spots)
+            assertEquals(request.targetId, viewModel.uiState.value.selectedSpot?.id)
+            assertEquals(true, viewModel.uiState.value.hasSearched)
+            assertEquals(false, viewModel.uiState.value.isFavoriteSpotNearbyLoading)
         }
 
     private fun createViewModel(

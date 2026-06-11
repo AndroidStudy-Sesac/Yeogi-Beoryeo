@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.usecase.GetCollectionSpotFavoriteSnapshotUseCase
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 import javax.inject.Inject
@@ -23,6 +24,7 @@ class FavoriteCollectionSpotUiMapper
                 targetId = favorite.targetId,
                 title = snapshot.name,
                 subtitle = snapshot.toSubtitle(),
+                collectionSpotMapMoveRequest = snapshot.toMapMoveRequest(),
             )
         }
 
@@ -32,7 +34,22 @@ class FavoriteCollectionSpotUiMapper
                 targetId = snapshot.targetId,
                 title = snapshot.name,
                 subtitle = snapshot.toSubtitle(),
+                collectionSpotMapMoveRequest = snapshot.toMapMoveRequest(),
             )
+
+        private fun CollectionSpotFavoriteSnapshot.toMapMoveRequest(): FavoriteCollectionSpotMapMoveRequest? {
+            val coordinate = coordinate ?: return null
+
+            return FavoriteCollectionSpotMapMoveRequest(
+                targetId = targetId,
+                name = name,
+                type = type,
+                address = address,
+                detailLocation = detailLocation,
+                latitude = coordinate.latitude,
+                longitude = coordinate.longitude,
+            )
+        }
 
         private fun CollectionSpotFavoriteSnapshot.toSubtitle(): String =
             listOf(

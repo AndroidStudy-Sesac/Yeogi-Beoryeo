@@ -22,6 +22,7 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteCollectionSpotUiMapper
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteItemGuideUiMapper
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteRegionalGuideUiMapper
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
@@ -154,9 +155,61 @@ class FavoritesViewModelTest {
                         targetId = "spot-1",
                         title = "폐건전지 수거함",
                         subtitle = "폐건전지 · 서울특별시 영등포구 문래동 · 주민센터 앞",
+                        collectionSpotMapMoveRequest =
+                            FavoriteCollectionSpotMapMoveRequest(
+                                targetId = "spot-1",
+                                name = "폐건전지 수거함",
+                                type = CollectionSpotType.BATTERY_BIN,
+                                address = "서울특별시 영등포구 문래동",
+                                detailLocation = "주민센터 앞",
+                                latitude = 37.5,
+                                longitude = 126.9,
+                            ),
                     ),
                 ),
                 viewModel.uiState.value.collectionSpotFavorites,
+            )
+        }
+
+    @Test
+    fun `좌표가 없는 수거 장소 즐겨찾기는 지도 이동 요청 없이 UI 모델로 변환한다`() =
+        runTest {
+            val snapshot =
+                CollectionSpotFavoriteSnapshot(
+                    targetId = "spot-without-coordinate",
+                    name = "좌표 없는 수거함",
+                    type = CollectionSpotType.OTHER,
+                    address = "서울특별시 영등포구",
+                    detailLocation = null,
+                    coordinate = null,
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.COLLECTION_SPOT,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    collectionSpotSnapshotRepository =
+                        FakeCollectionSpotFavoriteSnapshotRepository(
+                            snapshots = listOf(snapshot),
+                        ),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(
+                null,
+                viewModel.uiState.value.collectionSpotFavorites.single().collectionSpotMapMoveRequest,
             )
         }
 
