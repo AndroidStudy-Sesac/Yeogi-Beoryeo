@@ -3,8 +3,10 @@ package com.team.yeogibeoryeo.presentation.favorites
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.favorite.usecase.GetCollectionSpotFavoriteSnapshotUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
@@ -189,6 +191,62 @@ class FavoritesViewModelTest {
         }
 
     @Test
+    fun `수거 장소 즐겨찾기는 Favorite 저장 순서를 기준으로 표시한다`() =
+        runTest {
+            val olderSnapshot =
+                CollectionSpotFavoriteSnapshot(
+                    targetId = "spot-older",
+                    name = "오래된 수거함",
+                    type = CollectionSpotType.BATTERY_BIN,
+                    address = "서울특별시 영등포구",
+                    detailLocation = null,
+                    coordinate = null,
+                )
+            val newerSnapshot =
+                CollectionSpotFavoriteSnapshot(
+                    targetId = "spot-newer",
+                    name = "최근 수거함",
+                    type = CollectionSpotType.PHONE_DROP_OFF,
+                    address = "서울특별시 마포구",
+                    detailLocation = null,
+                    coordinate = null,
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.COLLECTION_SPOT,
+                                        targetId = newerSnapshot.targetId,
+                                        savedAtMillis = 2L,
+                                    ),
+                                    Favorite(
+                                        type = FavoriteTargetType.COLLECTION_SPOT,
+                                        targetId = olderSnapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    collectionSpotSnapshotRepository =
+                        FakeCollectionSpotFavoriteSnapshotRepository(
+                            snapshots = listOf(olderSnapshot, newerSnapshot),
+                        ),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("spot-newer", "spot-older"),
+                viewModel.uiState.value.collectionSpotFavorites.map { it.targetId },
+            )
+        }
+
+    @Test
     fun `장소 즐겨찾기 해제 시 공통 Favorite와 스냅샷을 삭제하고 UI 목록을 갱신한다`() =
         runTest {
             val snapshot =
@@ -268,8 +326,11 @@ class FavoritesViewModelTest {
                 ObserveCollectionSpotFavoriteSnapshotsUseCase(collectionSpotSnapshotRepository),
             removeCollectionSpotFavoriteUseCase =
                 RemoveCollectionSpotFavoriteUseCase(
-                    favoriteRepository = favoriteRepository,
-                    snapshotRepository = collectionSpotSnapshotRepository,
+                    collectionSpotFavoriteRepository =
+                        FakeCollectionSpotFavoriteRepository(
+                            favoriteRepository = favoriteRepository,
+                            snapshotRepository = collectionSpotSnapshotRepository,
+                        ),
                 ),
             itemGuideUiMapper = FavoriteItemGuideUiMapper(GetDisposalItemGuideUseCase(itemRepository)),
             collectionSpotUiMapper =
@@ -375,6 +436,18 @@ class FavoritesViewModelTest {
 
         override suspend fun deleteSnapshot(targetId: String) {
             snapshots.value = snapshots.value.filterNot { it.targetId == targetId }
+        }
+    }
+
+    private class FakeCollectionSpotFavoriteRepository(
+        private val favoriteRepository: FakeFavoriteRepository,
+        private val snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository,
+    ) : CollectionSpotFavoriteRepository {
+        override suspend fun toggleFavorite(spot: CollectionSpot): Boolean = false
+
+        override suspend fun removeFavorite(targetId: String) {
+            favoriteRepository.removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId)
+            snapshotRepository.deleteSnapshot(targetId)
         }
     }
 }

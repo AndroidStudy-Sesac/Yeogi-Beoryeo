@@ -8,7 +8,9 @@ import com.team.yeogibeoryeo.data.favorite.local.CollectionSpotFavoriteSnapshotD
 import com.team.yeogibeoryeo.data.favorite.local.FavoriteDao
 import com.team.yeogibeoryeo.data.favorite.local.FavoriteDatabase
 import com.team.yeogibeoryeo.data.favorite.repository.CollectionSpotFavoriteSnapshotRepositoryImpl
+import com.team.yeogibeoryeo.data.favorite.repository.CollectionSpotFavoriteRepositoryImpl
 import com.team.yeogibeoryeo.data.favorite.repository.FavoriteRepositoryImpl
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
 import dagger.Binds
@@ -78,4 +80,10 @@ abstract class FavoriteBindModule {
     abstract fun bindCollectionSpotFavoriteSnapshotRepository(
         repository: CollectionSpotFavoriteSnapshotRepositoryImpl,
     ): CollectionSpotFavoriteSnapshotRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCollectionSpotFavoriteRepository(
+        repository: CollectionSpotFavoriteRepositoryImpl,
+    ): CollectionSpotFavoriteRepository
 }

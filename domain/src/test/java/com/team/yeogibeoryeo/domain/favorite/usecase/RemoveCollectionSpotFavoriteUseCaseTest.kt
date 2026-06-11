@@ -1,15 +1,12 @@
 package com.team.yeogibeoryeo.domain.favorite.usecase
 
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
-import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
-import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -20,19 +17,9 @@ class RemoveCollectionSpotFavoriteUseCaseTest {
     fun `targetId로 공통 Favorite와 수거 장소 스냅샷을 함께 삭제한다`() =
         runBlocking {
             val targetId = "spot-1"
-            val favoriteRepository =
-                FakeFavoriteRepository(
-                    initialFavorites =
-                        listOf(
-                            Favorite(
-                                type = FavoriteTargetType.COLLECTION_SPOT,
-                                targetId = targetId,
-                                savedAtMillis = 1L,
-                            ),
-                        ),
-                )
-            val snapshotRepository =
-                FakeCollectionSpotFavoriteSnapshotRepository(
+            val collectionSpotFavoriteRepository =
+                FakeCollectionSpotFavoriteRepository(
+                    favoriteTargetIds = setOf(targetId),
                     initialSnapshots =
                         listOf(
                             CollectionSpotFavoriteSnapshot(
@@ -47,79 +34,32 @@ class RemoveCollectionSpotFavoriteUseCaseTest {
                 )
             val useCase =
                 RemoveCollectionSpotFavoriteUseCase(
-                    favoriteRepository = favoriteRepository,
-                    snapshotRepository = snapshotRepository,
+                    collectionSpotFavoriteRepository = collectionSpotFavoriteRepository,
                 )
 
             useCase(targetId)
 
-            assertFalse(favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId))
-            assertEquals(emptyList<CollectionSpotFavoriteSnapshot>(), snapshotRepository.snapshots.value)
+            assertFalse(collectionSpotFavoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId))
+            assertEquals(emptyList<CollectionSpotFavoriteSnapshot>(), collectionSpotFavoriteRepository.snapshots.value)
         }
 
-    private class FakeFavoriteRepository(
-        initialFavorites: List<Favorite> = emptyList(),
-    ) : FavoriteRepository {
-        private val favorites = MutableStateFlow(initialFavorites)
-
-        override fun observeFavorites(): Flow<List<Favorite>> = favorites
-
-        override fun observeFavorite(
-            type: FavoriteTargetType,
-            targetId: String,
-        ): Flow<Boolean> =
-            favorites.map { items ->
-                items.any { favorite -> favorite.type == type && favorite.targetId == targetId }
-            }
-
-        override suspend fun isFavorite(
-            type: FavoriteTargetType,
-            targetId: String,
-        ): Boolean =
-            favorites.value.any { favorite -> favorite.type == type && favorite.targetId == targetId }
-
-        override suspend fun toggleFavorite(favorite: Favorite): Boolean {
-            return if (isFavorite(favorite.type, favorite.targetId)) {
-                removeFavorite(favorite.type, favorite.targetId)
-                false
-            } else {
-                addFavorite(favorite)
-                true
-            }
-        }
-
-        override suspend fun addFavorite(favorite: Favorite) {
-            favorites.value =
-                favorites.value
-                    .filterNot { it.type == favorite.type && it.targetId == favorite.targetId } + favorite
-        }
-
-        override suspend fun removeFavorite(
-            type: FavoriteTargetType,
-            targetId: String,
-        ) {
-            favorites.value = favorites.value.filterNot { it.type == type && it.targetId == targetId }
-        }
-    }
-
-    private class FakeCollectionSpotFavoriteSnapshotRepository(
+    private class FakeCollectionSpotFavoriteRepository(
+        favoriteTargetIds: Set<String> = emptySet(),
         initialSnapshots: List<CollectionSpotFavoriteSnapshot> = emptyList(),
-    ) : CollectionSpotFavoriteSnapshotRepository {
+    ) : CollectionSpotFavoriteRepository {
+        private val favoriteIds = MutableStateFlow(favoriteTargetIds)
         val snapshots = MutableStateFlow(initialSnapshots)
 
-        override fun observeSnapshots(): Flow<List<CollectionSpotFavoriteSnapshot>> = snapshots
+        override suspend fun toggleFavorite(spot: CollectionSpot): Boolean = false
 
-        override suspend fun getSnapshot(targetId: String): CollectionSpotFavoriteSnapshot? =
-            snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
-
-        override suspend fun upsertSnapshot(snapshot: CollectionSpotFavoriteSnapshot) {
-            snapshots.value =
-                snapshots.value
-                    .filterNot { it.targetId == snapshot.targetId } + snapshot
-        }
-
-        override suspend fun deleteSnapshot(targetId: String) {
+        override suspend fun removeFavorite(targetId: String) {
+            favoriteIds.value = favoriteIds.value - targetId
             snapshots.value = snapshots.value.filterNot { it.targetId == targetId }
         }
+
+        fun isFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ): Boolean = type == FavoriteTargetType.COLLECTION_SPOT && targetId in favoriteIds.value
     }
 }

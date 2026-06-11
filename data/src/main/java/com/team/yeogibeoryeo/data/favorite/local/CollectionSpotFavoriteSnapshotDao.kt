@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CollectionSpotFavoriteSnapshotDao {
-    @Query("SELECT * FROM collection_spot_favorite_snapshots ORDER BY targetId ASC")
+    @Query("SELECT * FROM collection_spot_favorite_snapshots")
     fun observeSnapshots(): Flow<List<CollectionSpotFavoriteSnapshotEntity>>
 
     @Query("SELECT * FROM collection_spot_favorite_snapshots WHERE targetId = :targetId")

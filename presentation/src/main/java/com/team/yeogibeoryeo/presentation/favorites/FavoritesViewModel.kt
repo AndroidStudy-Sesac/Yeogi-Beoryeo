@@ -45,12 +45,14 @@ class FavoritesViewModel
                 val collectionSpotFavoriteIds =
                     favorites
                         .filter { it.type == FavoriteTargetType.COLLECTION_SPOT }
-                        .map { favorite -> favorite.targetId }
-                        .toSet()
+                val collectionSpotSnapshotsById =
+                    collectionSpotSnapshots.associateBy { snapshot -> snapshot.targetId }
                 val collectionSpotFavorites =
-                    collectionSpotSnapshots
-                        .filter { snapshot -> snapshot.targetId in collectionSpotFavoriteIds }
-                        .map { snapshot -> collectionSpotUiMapper.map(snapshot) }
+                    collectionSpotFavoriteIds
+                        .mapNotNull { favorite ->
+                            collectionSpotSnapshotsById[favorite.targetId]
+                                ?.let { snapshot -> collectionSpotUiMapper.map(snapshot) }
+                        }
                 val regionalGuideFavorites =
                     favorites
                         .filter { it.type == FavoriteTargetType.REGIONAL_GUIDE }

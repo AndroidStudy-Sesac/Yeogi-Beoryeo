@@ -3,6 +3,8 @@ package com.team.yeogibeoryeo.presentation.map
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
@@ -955,8 +957,11 @@ class CollectionSpotMapViewModelTest {
             ),
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
             toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
-                favoriteRepository = favoriteRepository,
-                snapshotRepository = snapshotRepository,
+                collectionSpotFavoriteRepository =
+                    FakeCollectionSpotFavoriteRepository(
+                        favoriteRepository = favoriteRepository,
+                        snapshotRepository = snapshotRepository,
+                    ),
             ),
         )
     }
@@ -1137,6 +1142,35 @@ class CollectionSpotMapViewModelTest {
 
         override suspend fun deleteSnapshot(targetId: String) {
             snapshots.value = snapshots.value.filterNot { it.targetId == targetId }
+        }
+    }
+
+    private class FakeCollectionSpotFavoriteRepository(
+        private val favoriteRepository: FakeFavoriteRepository,
+        private val snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository,
+    ) : CollectionSpotFavoriteRepository {
+        override suspend fun toggleFavorite(spot: CollectionSpot): Boolean {
+            val isFavorite =
+                favoriteRepository.toggleFavorite(
+                    Favorite(
+                        type = FavoriteTargetType.COLLECTION_SPOT,
+                        targetId = spot.id,
+                        savedAtMillis = TEST_NOW_MILLIS,
+                    ),
+                )
+
+            if (isFavorite) {
+                snapshotRepository.upsertSnapshot(spot.toFavoriteSnapshot())
+            } else {
+                snapshotRepository.deleteSnapshot(spot.id)
+            }
+
+            return isFavorite
+        }
+
+        override suspend fun removeFavorite(targetId: String) {
+            favoriteRepository.removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId)
+            snapshotRepository.deleteSnapshot(targetId)
         }
     }
 
