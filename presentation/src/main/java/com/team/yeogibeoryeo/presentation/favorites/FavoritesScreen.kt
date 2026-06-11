@@ -30,6 +30,7 @@ fun FavoritesScreen(
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (String) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
+    onCollectionSpotFavoriteRemoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -92,6 +93,14 @@ fun FavoritesScreen(
                                 FavoriteTargetType.COLLECTION_SPOT -> onCollectionSpotClick(favorite.targetId)
                                 FavoriteTargetType.REGIONAL_GUIDE -> onRegionalGuideClick(favorite.targetId)
                             }
+                        },
+                        onRemoveClick = when (favorite.type) {
+                            FavoriteTargetType.COLLECTION_SPOT -> {
+                                { onCollectionSpotFavoriteRemoveClick(favorite.targetId) }
+                            }
+
+                            FavoriteTargetType.ITEM_GUIDE,
+                            FavoriteTargetType.REGIONAL_GUIDE -> null
                         },
                     )
                 }

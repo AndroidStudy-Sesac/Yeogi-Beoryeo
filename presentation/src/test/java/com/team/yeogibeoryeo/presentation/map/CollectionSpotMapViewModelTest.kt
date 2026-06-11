@@ -1,5 +1,14 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.model.Favorite
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavoriteUseCase
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
@@ -18,6 +27,9 @@ import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -782,6 +794,120 @@ class CollectionSpotMapViewModelTest {
             assertNull(cache.entry)
         }
 
+    @Test
+    fun `키워드 검색 결과에 즐겨찾기 저장소 기준 상태를 반영한다`() =
+        runTest {
+            val favoriteSpot = sampleSpot("favorite", CollectionSpotType.BATTERY_BIN)
+            val normalSpot = sampleSpot("normal", CollectionSpotType.RECYCLING_CENTER)
+            val favoriteRepository = FakeFavoriteRepository(
+                initialFavorites = listOf(collectionSpotFavorite(favoriteSpot.id)),
+            )
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(
+                    keywordSpots = listOf(favoriteSpot, normalSpot),
+                ),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                favoriteRepository = favoriteRepository,
+            )
+            advanceUntilIdle()
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(true, false),
+                viewModel.uiState.value.spots.map { spot -> spot.isBookmarked },
+            )
+        }
+
+    @Test
+    fun `캐시 결과에 즐겨찾기 저장소 기준 상태를 반영한다`() =
+        runTest {
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+                hasFineLocationPermission = true,
+                recentCurrentLocationSpotCacheRepository = FakeRecentCurrentLocationSpotCacheRepository(
+                    entry = freshCacheEntry(listOf(cachedSpot.copy(isBookmarked = false))),
+                ),
+                favoriteRepository = FakeFavoriteRepository(
+                    initialFavorites = listOf(collectionSpotFavorite(cachedSpot.id)),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            advanceUntilIdle()
+
+            assertEquals(true, viewModel.uiState.value.spots.single().isBookmarked)
+        }
+
+    @Test
+    fun `즐겨찾기 토글 시 공통 Favorite와 스냅샷을 함께 저장한다`() =
+        runTest {
+            val spot = sampleSpot("spot", CollectionSpotType.BATTERY_BIN)
+            val favoriteRepository = FakeFavoriteRepository()
+            val snapshotRepository = FakeCollectionSpotFavoriteSnapshotRepository()
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(keywordSpots = listOf(spot)),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                favoriteRepository = favoriteRepository,
+                snapshotRepository = snapshotRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+            viewModel.onSpotFavoriteClick(spot)
+            advanceUntilIdle()
+
+            assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, spot.id))
+            assertEquals(spot.id, snapshotRepository.snapshots.value.single().targetId)
+            assertEquals(true, viewModel.uiState.value.spots.single().isBookmarked)
+        }
+
+    @Test
+    fun `즐겨찾기 해제 시 공통 Favorite와 스냅샷을 함께 삭제한다`() =
+        runTest {
+            val spot = sampleSpot("spot", CollectionSpotType.BATTERY_BIN)
+            val favoriteRepository = FakeFavoriteRepository(
+                initialFavorites = listOf(collectionSpotFavorite(spot.id)),
+            )
+            val snapshotRepository = FakeCollectionSpotFavoriteSnapshotRepository(
+                initialSnapshots = listOf(
+                    CollectionSpotFavoriteSnapshot(
+                        targetId = spot.id,
+                        name = spot.name,
+                        type = spot.type,
+                        address = spot.address,
+                        detailLocation = spot.detailLocation,
+                        coordinate = spot.coordinate,
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(keywordSpots = listOf(spot)),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                favoriteRepository = favoriteRepository,
+                snapshotRepository = snapshotRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+            viewModel.onSpotFavoriteClick(viewModel.uiState.value.spots.single())
+            advanceUntilIdle()
+
+            assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, spot.id))
+            assertEquals(emptyList<CollectionSpotFavoriteSnapshot>(), snapshotRepository.snapshots.value)
+            assertEquals(false, viewModel.uiState.value.spots.single().isBookmarked)
+        }
+
     private fun createViewModel(
         repository: FakeCollectionSpotRepository,
         currentLocationResult: CurrentLocationResult,
@@ -789,6 +915,9 @@ class CollectionSpotMapViewModelTest {
         recentCurrentLocationSpotCacheRepository: RecentCurrentLocationSpotCacheRepository =
             FakeRecentCurrentLocationSpotCacheRepository(),
         timeProvider: TimeProvider = FakeTimeProvider(),
+        favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+        snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
+            FakeCollectionSpotFavoriteSnapshotRepository(),
     ): CollectionSpotMapViewModel {
         return createViewModel(
             repository = repository,
@@ -796,6 +925,8 @@ class CollectionSpotMapViewModelTest {
             hasFineLocationPermission = hasFineLocationPermission,
             recentCurrentLocationSpotCacheRepository = recentCurrentLocationSpotCacheRepository,
             timeProvider = timeProvider,
+            favoriteRepository = favoriteRepository,
+            snapshotRepository = snapshotRepository,
         )
     }
 
@@ -806,6 +937,9 @@ class CollectionSpotMapViewModelTest {
         recentCurrentLocationSpotCacheRepository: RecentCurrentLocationSpotCacheRepository =
             FakeRecentCurrentLocationSpotCacheRepository(),
         timeProvider: TimeProvider = FakeTimeProvider(),
+        favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+        snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
+            FakeCollectionSpotFavoriteSnapshotRepository(),
     ): CollectionSpotMapViewModel {
         return CollectionSpotMapViewModel(
             searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(repository),
@@ -820,6 +954,14 @@ class CollectionSpotMapViewModelTest {
             saveRecentCurrentLocationSpotsUseCase = SaveRecentCurrentLocationSpotsUseCase(
                 repository = recentCurrentLocationSpotCacheRepository,
                 timeProvider = timeProvider,
+            ),
+            observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
+            toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
+                collectionSpotFavoriteRepository =
+                    FakeCollectionSpotFavoriteRepository(
+                        favoriteRepository = favoriteRepository,
+                        snapshotRepository = snapshotRepository,
+                    ),
             ),
         )
     }
@@ -927,6 +1069,109 @@ class CollectionSpotMapViewModelTest {
         }
 
         override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot = spot
+    }
+
+    private fun collectionSpotFavorite(targetId: String): Favorite =
+        Favorite(
+            type = FavoriteTargetType.COLLECTION_SPOT,
+            targetId = targetId,
+            savedAtMillis = 1L,
+        )
+
+    private class FakeFavoriteRepository(
+        initialFavorites: List<Favorite> = emptyList(),
+    ) : FavoriteRepository {
+        private val favorites = MutableStateFlow(initialFavorites)
+
+        override fun observeFavorites(): Flow<List<Favorite>> = favorites
+
+        override fun observeFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ): Flow<Boolean> =
+            favorites.map { items ->
+                items.any { favorite -> favorite.type == type && favorite.targetId == targetId }
+            }
+
+        override suspend fun isFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ): Boolean =
+            favorites.value.any { favorite -> favorite.type == type && favorite.targetId == targetId }
+
+        override suspend fun toggleFavorite(favorite: Favorite): Boolean {
+            return if (isFavorite(favorite.type, favorite.targetId)) {
+                removeFavorite(favorite.type, favorite.targetId)
+                false
+            } else {
+                addFavorite(favorite)
+                true
+            }
+        }
+
+        override suspend fun addFavorite(favorite: Favorite) {
+            favorites.value =
+                favorites.value
+                    .filterNot { it.type == favorite.type && it.targetId == favorite.targetId } + favorite
+        }
+
+        override suspend fun removeFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ) {
+            favorites.value =
+                favorites.value.filterNot { it.type == type && it.targetId == targetId }
+        }
+    }
+
+    private class FakeCollectionSpotFavoriteSnapshotRepository(
+        initialSnapshots: List<CollectionSpotFavoriteSnapshot> = emptyList(),
+    ) : CollectionSpotFavoriteSnapshotRepository {
+        val snapshots = MutableStateFlow(initialSnapshots)
+
+        override fun observeSnapshots(): Flow<List<CollectionSpotFavoriteSnapshot>> = snapshots
+
+        override suspend fun getSnapshot(targetId: String): CollectionSpotFavoriteSnapshot? =
+            snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+
+        override suspend fun upsertSnapshot(snapshot: CollectionSpotFavoriteSnapshot) {
+            snapshots.value =
+                snapshots.value
+                    .filterNot { it.targetId == snapshot.targetId } + snapshot
+        }
+
+        override suspend fun deleteSnapshot(targetId: String) {
+            snapshots.value = snapshots.value.filterNot { it.targetId == targetId }
+        }
+    }
+
+    private class FakeCollectionSpotFavoriteRepository(
+        private val favoriteRepository: FakeFavoriteRepository,
+        private val snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository,
+    ) : CollectionSpotFavoriteRepository {
+        override suspend fun toggleFavorite(spot: CollectionSpot): Boolean {
+            val isFavorite =
+                favoriteRepository.toggleFavorite(
+                    Favorite(
+                        type = FavoriteTargetType.COLLECTION_SPOT,
+                        targetId = spot.id,
+                        savedAtMillis = TEST_NOW_MILLIS,
+                    ),
+                )
+
+            if (isFavorite) {
+                snapshotRepository.upsertSnapshot(spot.toFavoriteSnapshot())
+            } else {
+                snapshotRepository.deleteSnapshot(spot.id)
+            }
+
+            return isFavorite
+        }
+
+        override suspend fun removeFavorite(targetId: String) {
+            favoriteRepository.removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId)
+            snapshotRepository.deleteSnapshot(targetId)
+        }
     }
 
     private companion object {

@@ -34,6 +34,7 @@ fun SpotBottomSheetContent(
     onTypeClick: (CollectionSpotType) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
+    onSpotFavoriteClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val hasNoticeOrError = locationNotice != null ||
@@ -95,6 +96,7 @@ fun SpotBottomSheetContent(
                     spots = spots,
                     selectedSpot = selectedSpot,
                     onSpotClick = onSpotClick,
+                    onSpotFavoriteClick = onSpotFavoriteClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = SpotBottomSheetListMaxHeight),
@@ -147,6 +149,7 @@ private fun SpotBottomSheetLoading(
 @Composable
 fun SpotDetailBottomSheetContent(
     spot: CollectionSpot,
+    onFavoriteClick: (CollectionSpot) -> Unit,
     onCloseClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -160,6 +163,7 @@ fun SpotDetailBottomSheetContent(
             spot = spot,
             isSelected = true,
             onClick = null,
+            onFavoriteClick = onFavoriteClick,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -192,6 +196,7 @@ private fun SpotBottomSheetContentPreview() {
                 onTypeClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
+                onSpotFavoriteClick = {},
             )
         }
     }
@@ -214,6 +219,7 @@ private fun SpotBottomSheetContentLoadingPreview() {
                 onTypeClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
+                onSpotFavoriteClick = {},
             )
         }
     }
@@ -236,6 +242,7 @@ private fun SpotBottomSheetContentEmptyPreview() {
                 onTypeClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
+                onSpotFavoriteClick = {},
             )
         }
     }
@@ -248,6 +255,7 @@ private fun SpotDetailBottomSheetContentPreview() {
         Surface {
             SpotDetailBottomSheetContent(
                 spot = sampleSpotBottomSheetSpots()[0],
+                onFavoriteClick = {},
                 onCloseClick = {},
             )
         }

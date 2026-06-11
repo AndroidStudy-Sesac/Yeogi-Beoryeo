@@ -101,6 +101,7 @@ fun CollectionSpotMapScreen(
         },
         onTypeClick = viewModel::onSpotTypeClick,
         onSpotClick = viewModel::onSpotClick,
+        onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
         modifier = modifier,
     )
 }
@@ -118,6 +119,7 @@ private fun CollectionSpotMapContent(
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onTypeClick: (CollectionSpotType) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
+    onSpotFavoriteClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isCurrentLocationSearching = uiState.isLoading &&
@@ -277,6 +279,7 @@ private fun CollectionSpotMapContent(
                     mapUiMode == MapUiMode.SpotDetail && selectedSpot != null -> {
                         SpotDetailBottomSheetContent(
                             spot = selectedSpot,
+                            onFavoriteClick = onSpotFavoriteClick,
                             onCloseClick = {
                                 mapUiMode = MapUiMode.ResultList
                                 sheetLevel = MapSheetLevel.Peek
@@ -296,6 +299,7 @@ private fun CollectionSpotMapContent(
                             errorMessage = uiState.errorMessage,
                             onTypeClick = onTypeClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,
+                            onSpotFavoriteClick = onSpotFavoriteClick,
                             onSpotClick = { spot ->
                                 onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                                 mapUiMode = MapUiMode.SpotDetail
@@ -359,6 +363,7 @@ private fun CollectionSpotMapContentPreview() {
                 onLocationNoticeActionClick = {},
                 onTypeClick = {},
                 onSpotClick = {},
+                onSpotFavoriteClick = {},
             )
         }
     }
