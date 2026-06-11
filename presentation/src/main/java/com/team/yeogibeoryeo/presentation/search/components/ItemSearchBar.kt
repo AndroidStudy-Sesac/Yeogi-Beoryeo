@@ -2,8 +2,6 @@ package com.team.yeogibeoryeo.presentation.search.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,24 +39,13 @@ fun ItemSearchBar(
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
 
-            if (keyword.isNotBlank()) {
-                IconButton(onClick = { onKeywordChange("") }) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "검색어 지우기",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
             IconButton(
                 onClick = {
                     if (keyword.isNotBlank()) {
                         onSearchClick()
                     }
                 },
-                enabled = isFocused || keyword.isNotBlank(),
+                enabled = keyword.isNotBlank(),
             ) {
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_search),
