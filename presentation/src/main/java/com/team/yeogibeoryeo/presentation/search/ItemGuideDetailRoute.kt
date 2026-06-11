@@ -29,6 +29,7 @@ import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteSnackbar
 fun ItemGuideDetailRoute(
     guideId: String,
     onBackClick: () -> Unit,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ItemGuideDetailViewModel = hiltViewModel(),
 ) {
@@ -73,6 +74,7 @@ fun ItemGuideDetailRoute(
                     isFavorite = state.isFavorite,
                     onBackClick = onBackClick,
                     onFavoriteClick = viewModel::toggleFavorite,
+                    onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
                     modifier = Modifier.padding(innerPadding),
                 )
             }
