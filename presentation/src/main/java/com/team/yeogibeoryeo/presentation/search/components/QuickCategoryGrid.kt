@@ -18,9 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.sizeIn
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
@@ -82,6 +85,7 @@ private fun QuickCategoryItem(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
+    val clickActionLabel = stringResource(R.string.quick_category_click_action)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -92,7 +96,11 @@ private fun QuickCategoryItem(
                 minHeight = size.minTouchTarget,
             )
             .width(size.categoryCell)
-            .clickable(onClick = onClick)
+            .clickable(
+                onClickLabel = clickActionLabel,
+                role = Role.Button,
+                onClick = onClick,
+            )
     ) {
         Box(
             modifier = Modifier
@@ -105,6 +113,7 @@ private fun QuickCategoryItem(
         ) {
             Icon(
                 painter = painterResource(id = category.iconResId),
+                // 항목의 Text와 click action이 의미를 제공하므로 아이콘은 중복 읽기를 피합니다.
                 contentDescription = null,
                 modifier = Modifier.size(size.iconLarge),
                 tint = category.iconTint()

@@ -21,12 +21,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.common.R as CommonR
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
@@ -36,22 +39,29 @@ fun DisposalItemCard(
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
 ) {
-    val spacing = ItemSearchLayoutDefaults.spacing
     val stroke = ItemSearchLayoutDefaults.stroke
     val elevation = ItemSearchLayoutDefaults.elevation
+    val favoriteStateDescription =
+        stringResource(
+            if (isFavorite) {
+                R.string.item_card_favorite_saved_state
+            } else {
+                R.string.item_card_favorite_not_saved_state
+            },
+        )
+    val openActionLabel = stringResource(R.string.item_card_open_action_label)
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .semantics {
-                stateDescription =
-                    if (isFavorite) {
-                        "즐겨찾기됨"
-                    } else {
-                        "즐겨찾기 안 됨"
-                    }
+                stateDescription = favoriteStateDescription
             }
-            .clickable(onClick = onClick),
+            .clickable(
+                onClickLabel = openActionLabel,
+                role = Role.Button,
+                onClick = onClick,
+            ),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -116,6 +126,7 @@ private fun BoxScope.FavoriteIndicator() {
 
     Icon(
         painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
+        // 카드 stateDescription이 즐겨찾기 상태를 제공하므로 아이콘은 중복 읽기를 피합니다.
         contentDescription = null,
         modifier = Modifier
             .align(Alignment.TopEnd)
@@ -156,6 +167,7 @@ private fun ChevronIndicator() {
 
     Icon(
         painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
+        // 카드의 click action label이 상세 이동을 제공하므로 아이콘은 중복 읽기를 피합니다.
         contentDescription = null,
         modifier = Modifier.size(size.iconSmall),
         tint = MaterialTheme.colorScheme.outlineVariant,
