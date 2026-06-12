@@ -24,8 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
@@ -79,7 +77,14 @@ fun ItemGuideDetailScreen(
     }
 
     val backActionDescription = stringResource(R.string.back_action)
-    val favoriteActionDescription = if (isFavorite) "즐겨찾기 해제" else "즐겨찾기 추가"
+    val favoriteActionDescription =
+        stringResource(
+            if (isFavorite) {
+                R.string.favorite_remove_action
+            } else {
+                R.string.favorite_add_action
+            },
+        )
     val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
     val isRepresentativeGuide = matchedRepresentativeCategory != null
     val representativeCategory =
@@ -108,9 +113,6 @@ fun ItemGuideDetailScreen(
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_back),
                     contentDescription = backActionDescription,
-                    modifier = Modifier.semantics {
-                        contentDescription = backActionDescription
-                    },
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -150,6 +152,7 @@ fun ItemGuideDetailScreen(
             ) {
                 Icon(
                     painter = painterResource(id = representativeCategory.iconResId),
+                    // 옆의 품목명과 metadata chip이 의미를 제공하므로 아이콘은 중복 읽기를 피합니다.
                     contentDescription = null,
                     modifier = Modifier.size(size.iconProminent),
                     tint = representativeCategory.iconTint()

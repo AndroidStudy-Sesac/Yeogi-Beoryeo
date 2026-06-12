@@ -121,16 +121,13 @@ fun YeogiBeoryeoNavHost(
                                 iconResId = CommonR.drawable.ic_favorite,
                                 selected = currentBackStackEntry.isFavoritesSelected(),
                                 onClick = {
-                                    if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
-                                        navController.navigate(FavoritesRoute) {
-                                            popUpTo<FavoritesRoute> {
-                                                inclusive = false
-                                            }
-                                            launchSingleTop = true
-                                        }
-                                    } else {
-                                        navController.navigateBottomTab(FavoritesRoute)
-                                    }
+                                  if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
+                                      navController.popBackStack<FavoritesRoute>(inclusive = false)
+                                  } else {
+                                      navController.navigateFavoritesRoot(
+                                          currentBackStackEntry = currentBackStackEntry,
+                                      )
+                                  }
                                 },
                             ),
                         ),
@@ -258,6 +255,26 @@ private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSo
     this != null &&
         destination.hasRoute<ItemGuideDetailRoute>() &&
         toRoute<ItemGuideDetailRoute>().source == source
+
+private fun NavHostController.navigateFavoritesRoot(
+    currentBackStackEntry: NavBackStackEntry?,
+) {
+    when {
+        currentBackStackEntry?.destination?.hasRoute<FavoritesRoute>() == true -> return
+        currentBackStackEntry.isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES) -> {
+            popBackStack<FavoritesRoute>(inclusive = false)
+        }
+        else -> {
+            navigate(FavoritesRoute) {
+                popUpTo(graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = false
+            }
+        }
+    }
+}
 
 private fun FavoriteCollectionSpotMapMoveRequest.toMapRoute(): MapRoute =
     MapRoute(
