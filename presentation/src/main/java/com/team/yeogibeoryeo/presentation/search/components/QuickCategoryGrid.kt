@@ -20,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.sizeIn
@@ -87,7 +85,7 @@ private fun QuickCategoryItem(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
-    val actionDescription = stringResource(R.string.quick_category_action_description, name)
+    val clickActionLabel = stringResource(R.string.quick_category_click_action)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -98,11 +96,8 @@ private fun QuickCategoryItem(
                 minHeight = size.minTouchTarget,
             )
             .width(size.categoryCell)
-            .semantics(mergeDescendants = true) {
-                contentDescription = actionDescription
-            }
             .clickable(
-                onClickLabel = actionDescription,
+                onClickLabel = clickActionLabel,
                 role = Role.Button,
                 onClick = onClick,
             )
@@ -118,7 +113,7 @@ private fun QuickCategoryItem(
         ) {
             Icon(
                 painter = painterResource(id = category.iconResId),
-                // 부모 항목이 TalkBack 설명과 동작을 제공하므로 아이콘은 중복 읽기를 피합니다.
+                // 항목의 Text와 click action이 의미를 제공하므로 아이콘은 중복 읽기를 피합니다.
                 contentDescription = null,
                 modifier = Modifier.size(size.iconLarge),
                 tint = category.iconTint()
