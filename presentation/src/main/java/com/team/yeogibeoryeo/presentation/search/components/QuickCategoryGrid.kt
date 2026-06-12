@@ -18,9 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.sizeIn
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
@@ -82,6 +87,7 @@ private fun QuickCategoryItem(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
+    val actionDescription = stringResource(R.string.quick_category_action_description, name)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -92,7 +98,14 @@ private fun QuickCategoryItem(
                 minHeight = size.minTouchTarget,
             )
             .width(size.categoryCell)
-            .clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) {
+                contentDescription = actionDescription
+            }
+            .clickable(
+                onClickLabel = actionDescription,
+                role = Role.Button,
+                onClick = onClick,
+            )
     ) {
         Box(
             modifier = Modifier

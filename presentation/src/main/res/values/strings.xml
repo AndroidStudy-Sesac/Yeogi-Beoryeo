@@ -26,4 +26,10 @@
     <string name="item_guide_detail_favorite_added_message">즐겨찾기에 추가되었습니다</string>
     <string name="item_guide_detail_favorite_removed_message">즐겨찾기에서 제외되었습니다</string>
     <string name="back_action">뒤로가기</string>
+    <string name="favorite_add_action">즐겨찾기 추가</string>
+    <string name="favorite_remove_action">즐겨찾기 해제</string>
+    <string name="item_card_open_action_label">상세 보기</string>
+    <string name="item_card_favorite_saved_state">즐겨찾기됨</string>
+    <string name="item_card_favorite_not_saved_state">즐겨찾기 안 됨</string>
+    <string name="quick_category_action_description">%1$s 배출 방법 보기</string>
 </resources>
