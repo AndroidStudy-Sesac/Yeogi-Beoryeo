@@ -107,7 +107,7 @@ fun YeogiBeoryeoNavHost(
                                 label = "저장",
                                 iconResId = CommonR.drawable.ic_favorite,
                                 selected = currentBackStackEntry.isFavoritesSelected(),
-                                onClick = { navController.navigateBottomTab(FavoritesRoute) },
+                                onClick = { navController.navigateFavoritesRoot() },
                             ),
                         ),
                 )
@@ -204,6 +204,16 @@ private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSo
     this != null &&
         destination.hasRoute<ItemGuideDetailRoute>() &&
         toRoute<ItemGuideDetailRoute>().source == source
+
+private fun NavHostController.navigateFavoritesRoot() {
+    navigate(FavoritesRoute) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = false
+    }
+}
 
 private fun FavoriteCollectionSpotMapMoveRequest.toMapRoute(): MapRoute =
     MapRoute(
