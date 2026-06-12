@@ -162,10 +162,54 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationRefreshJob?.cancel()
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
+            val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
+
+            if (cachedEntry != null) {
+                showCachedCurrentLocationSpots(cachedEntry.spots)
+                refreshCurrentLocationSilently()
+                return@launch
+            }
+
             searchByCurrentLocationInternal(
                 showLoading = true,
                 preservePreviousResultOnFailure = false,
             )
+        }
+    }
+
+    fun searchByMapCenter(coordinate: Coordinate) {
+        currentLocationRefreshJob?.cancel()
+        spotSearchJob?.cancel()
+        spotSearchJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    hasSearched = true,
+                    searchKeyword = "",
+                    errorMessage = null,
+                    locationNotice = null,
+                    locationNoticeMessage = null,
+                    selectedSpot = null,
+                    isFavoriteSpotNearbyLoading = false,
+                    searchMode = MapSearchMode.MAP_CENTER,
+                )
+            }
+
+            runCatching {
+                searchCollectionSpotsByLocationUseCase(
+                    coordinate = coordinate,
+                    radiusMeter = DEFAULT_RADIUS_METER,
+                    types = emptySet(),
+                )
+            }.onSuccess { spots ->
+                updateSpotResult(spots)
+            }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
+
+                updateSpotFailure(
+                    message = MapLocationNotices.SpotSearchFailureMessage,
+                )
+            }
         }
     }
 

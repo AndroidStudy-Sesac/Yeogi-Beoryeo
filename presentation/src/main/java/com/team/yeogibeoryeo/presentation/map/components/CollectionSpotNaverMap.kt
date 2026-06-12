@@ -2,9 +2,16 @@ package com.team.yeogibeoryeo.presentation.map.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.MaterialTheme
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
@@ -15,7 +22,9 @@ import com.naver.maps.map.compose.MarkerState
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.map.location.rememberMapLocationSource
+import kotlinx.coroutines.flow.drop
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
@@ -26,6 +35,8 @@ fun CollectionSpotNaverMap(
     locationTrackingMode: LocationTrackingMode,
     onSpotClick: (CollectionSpot) -> Unit,
     onMapClick: () -> Unit,
+    onCameraCenterChanged: (Coordinate) -> Unit,
+    onUserCameraMove: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val defaultMarkerColor = MaterialTheme.colorScheme.primary
@@ -49,23 +60,53 @@ fun CollectionSpotNaverMap(
             DEFAULT_ZOOM,
         )
     }
+    var isProgrammaticCameraMove by remember { mutableStateOf(false) }
+    suspend fun moveCamera(update: CameraUpdate) {
+        isProgrammaticCameraMove = true
+        cameraPositionState.move(update)
+        withFrameNanos { }
+        isProgrammaticCameraMove = false
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { cameraPositionState.position.target }
+            .drop(1)
+            .collect { target ->
+                onCameraCenterChanged(target.toCoordinate())
+                if (!isProgrammaticCameraMove) {
+                    onUserCameraMove()
+                }
+            }
+    }
 
     LaunchedEffect(spots) {
         if (selectedSpot != null) return@LaunchedEffect
 
-        val firstSpot = spots.firstOrNull { spot -> spot.coordinate != null }
-        val coordinate = firstSpot?.coordinate
+        val coordinates = spots.mapNotNull { spot -> spot.coordinate }
 
-        if (coordinate != null) {
-            cameraPositionState.move(
-                CameraUpdate.scrollAndZoomTo(
-                    LatLng(
-                        coordinate.latitude,
-                        coordinate.longitude,
+        when (coordinates.size) {
+            0 -> Unit
+            1 -> {
+                val coordinate = coordinates.single()
+                moveCamera(
+                    CameraUpdate.scrollAndZoomTo(
+                        LatLng(
+                            coordinate.latitude,
+                            coordinate.longitude,
+                        ),
+                        SEARCH_RESULT_ZOOM,
                     ),
-                    SEARCH_RESULT_ZOOM,
-                ),
-            )
+                )
+            }
+
+            else -> {
+                moveCamera(
+                    CameraUpdate.fitBounds(
+                        coordinates.toLatLngBounds(),
+                        SEARCH_RESULT_BOUNDS_PADDING,
+                    ),
+                )
+            }
         }
     }
 
@@ -73,7 +114,7 @@ fun CollectionSpotNaverMap(
         val coordinate = selectedSpot?.coordinate
 
         if (coordinate != null) {
-            cameraPositionState.move(
+            moveCamera(
                 CameraUpdate.scrollAndZoomTo(
                     LatLng(
                         coordinate.latitude,
@@ -135,6 +176,28 @@ private val DEFAULT_LOCATION = LatLng(
 private const val DEFAULT_ZOOM = 12.0
 private const val SEARCH_RESULT_ZOOM = 15.0
 private const val SELECTED_SPOT_ZOOM = 16.0
+private const val SEARCH_RESULT_BOUNDS_PADDING = 120
 
 private const val DEFAULT_MARKER_Z_INDEX = 0
 private const val SELECTED_MARKER_Z_INDEX = 10
+
+private fun LatLng.toCoordinate(): Coordinate =
+    Coordinate(
+        latitude = latitude,
+        longitude = longitude,
+    )
+
+private fun List<Coordinate>.toLatLngBounds(): LatLngBounds {
+    val builder = LatLngBounds.Builder()
+
+    forEach { coordinate ->
+        builder.include(
+            LatLng(
+                coordinate.latitude,
+                coordinate.longitude,
+            ),
+        )
+    }
+
+    return builder.build()
+}

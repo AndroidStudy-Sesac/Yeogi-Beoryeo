@@ -33,7 +33,7 @@ fun MyLocationButton(
     ) {
         Icon(
             painter = painterResource(id = CommonR.drawable.ic_action_current_location),
-            contentDescription = "내 위치로 이동",
+            contentDescription = "현 위치 기준 검색",
         )
     }
 }

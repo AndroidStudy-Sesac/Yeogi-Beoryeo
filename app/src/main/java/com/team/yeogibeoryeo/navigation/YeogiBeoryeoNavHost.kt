@@ -75,7 +75,7 @@ fun YeogiBeoryeoNavHost(
                 }
 
             AnimatedVisibility(
-                visible = !isItemDetailScreen || isBottomBarVisible,
+                visible = isBottomBarVisible,
                 enter = enterTransition,
                 exit = exitTransition,
             ) {
@@ -92,7 +92,10 @@ fun YeogiBeoryeoNavHost(
                                 label = "지도",
                                 iconResId = AppR.drawable.ic_navigation_map,
                                 selected = currentDestination?.hasRoute<MapRoute>() == true,
-                                onClick = { navController.navigateBottomTab(MapRoute()) },
+                                onClick = {
+                                    isBottomBarVisible = true
+                                    navController.navigateBottomTab(MapRoute())
+                                },
                             ),
                             BottomNavigationItem(
                                 label = "안내",
@@ -120,6 +123,11 @@ fun YeogiBeoryeoNavHost(
                 val route = backStackEntry.toRoute<MapRoute>()
                 CollectionSpotMapScreen(
                     favoriteSpotMoveRequest = route.toFavoriteSpotMapMoveRequest(),
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (currentDestination?.hasRoute<MapRoute>() == true) {
+                            isBottomBarVisible = isVisible
+                        }
+                    },
                 )
             }
 

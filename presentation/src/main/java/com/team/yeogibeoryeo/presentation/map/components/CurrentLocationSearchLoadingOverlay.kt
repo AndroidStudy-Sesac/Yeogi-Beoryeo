@@ -18,7 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun CurrentLocationSearchLoadingOverlay(
+fun MapSearchLoadingOverlay(
+    description: String,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -49,7 +50,7 @@ fun CurrentLocationSearchLoadingOverlay(
                     strokeWidth = 4.dp,
                 )
                 Text(
-                    text = "현재 위치 주변을 찾고 있어요",
+                    text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -62,6 +63,8 @@ fun CurrentLocationSearchLoadingOverlay(
 @Composable
 private fun CurrentLocationSearchLoadingOverlayPreview() {
     MaterialTheme {
-        CurrentLocationSearchLoadingOverlay()
+        MapSearchLoadingOverlay(
+            description = "현재 위치 주변을 찾고 있어요",
+        )
     }
 }

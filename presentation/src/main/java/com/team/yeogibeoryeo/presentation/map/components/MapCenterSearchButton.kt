@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
-fun CurrentLocationButton(
+fun MapCenterSearchButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -22,12 +22,11 @@ fun CurrentLocationButton(
         modifier = modifier,
     ) {
         Icon(
-            painter = painterResource(id = CommonR.drawable.ic_action_current_location),
+            painter = painterResource(id = CommonR.drawable.ic_action_search),
             contentDescription = null,
         )
-
         Text(
-            text = "내 주변 검색",
+            text = "현 지도에서 검색",
             modifier = Modifier.padding(start = 6.dp),
         )
     }
@@ -35,9 +34,9 @@ fun CurrentLocationButton(
 
 @Preview(showBackground = true)
 @Composable
-private fun CurrentLocationButtonPreview() {
+private fun MapCenterSearchButtonPreview() {
     MaterialTheme {
-        CurrentLocationButton(
+        MapCenterSearchButton(
             onClick = {},
             modifier = Modifier.padding(16.dp),
         )
