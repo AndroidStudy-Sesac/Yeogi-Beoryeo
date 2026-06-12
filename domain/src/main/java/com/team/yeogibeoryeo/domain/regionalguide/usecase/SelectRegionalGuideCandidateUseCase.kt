@@ -10,7 +10,8 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
     operator fun invoke(
         candidates: List<RegionalDisposalGuide>,
-        query: RegionalGuideQuery
+        query: RegionalGuideQuery,
+        preferredTargetRegionName: String? = null,
     ): RegionalGuideLookupResult {
         if (candidates.isEmpty()) return RegionalGuideLookupResult.NotFound
 
@@ -27,6 +28,23 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 guide = filteredCandidates.first().withDisplayRegion(query.displayRegion)
             )
         }
+
+        preferredTargetRegionName
+            ?.trim()
+            ?.takeIf { targetRegionName -> targetRegionName.isNotBlank() }
+            ?.let { targetRegionName ->
+                val preferredGuide = filteredCandidates.firstOrNull { guide ->
+                    guide.targetRegionName?.trim() == targetRegionName
+                }
+
+                return if (preferredGuide != null) {
+                    RegionalGuideLookupResult.Success(
+                        guide = preferredGuide.withDisplayRegion(query.displayRegion)
+                    )
+                } else {
+                    RegionalGuideLookupResult.CandidateNotFound
+                }
+            }
 
         filteredCandidates.selectSingleOverallCandidate(query.sigunguQuery)?.let { guide ->
             return RegionalGuideLookupResult.Success(

@@ -86,7 +86,12 @@ fun YeogiBeoryeoNavHost(
                                 label = "품목",
                                 iconResId = CommonR.drawable.ic_symbol_recycle,
                                 selected = currentBackStackEntry.isItemSearchSelected(),
-                                onClick = { navController.navigateBottomTab(ItemSearchRoute()) },
+                                onClick = {
+                                    navController.navigateBottomTabClearingFavoriteReentry(
+                                        currentBackStackEntry = currentBackStackEntry,
+                                        route = ItemSearchRoute(),
+                                    )
+                                },
                             ),
                             BottomNavigationItem(
                                 label = "지도",
@@ -94,23 +99,35 @@ fun YeogiBeoryeoNavHost(
                                 selected = currentDestination?.hasRoute<MapRoute>() == true,
                                 onClick = {
                                     isBottomBarVisible = true
-                                    navController.navigateBottomTab(MapRoute())
+                                    navController.navigateBottomTabClearingFavoriteReentry(
+                                        currentBackStackEntry = currentBackStackEntry,
+                                        route = MapRoute(),
+                                    )
                                 },
                             ),
                             BottomNavigationItem(
                                 label = "안내",
                                 iconResId = AppR.drawable.ic_navigation_guide,
-                                selected = currentDestination?.hasRoute<RegionalGuideRoute>() == true,
-                                onClick = { navController.navigateBottomTab(RegionalGuideRoute()) },
+                                selected = currentBackStackEntry.isRegionalGuideSelected(),
+                                onClick = {
+                                    navController.navigateBottomTabClearingFavoriteReentry(
+                                        currentBackStackEntry = currentBackStackEntry,
+                                        route = RegionalGuideRoute(),
+                                    )
+                                },
                             ),
                             BottomNavigationItem(
                                 label = "저장",
                                 iconResId = CommonR.drawable.ic_favorite,
                                 selected = currentBackStackEntry.isFavoritesSelected(),
                                 onClick = {
-                                    navController.navigateFavoritesRoot(
-                                        currentBackStackEntry = currentBackStackEntry,
-                                    )
+                                  if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
+                                      navController.popBackStack<FavoritesRoute>(inclusive = false)
+                                  } else {
+                                      navController.navigateFavoritesRoot(
+                                          currentBackStackEntry = currentBackStackEntry,
+                                      )
+                                  }
                                 },
                             ),
                         ),
@@ -140,6 +157,7 @@ fun YeogiBeoryeoNavHost(
                 RegionalGuideScreenRoute(
                     initialKeyword = route.initialKeyword,
                     initialAddress = route.initialAddress,
+                    initialFavoriteTargetId = route.initialFavoriteTargetId,
                 )
             }
 
@@ -161,6 +179,11 @@ fun YeogiBeoryeoNavHost(
                             launchSingleTop = true
                             restoreState = false
                         }
+                    },
+                    onRegionalGuideClick = { targetId ->
+                        navController.navigate(
+                            RegionalGuideRoute(initialFavoriteTargetId = targetId),
+                        )
                     },
                 )
             }
@@ -202,7 +225,31 @@ private fun NavBackStackEntry?.isItemSearchSelected(): Boolean =
 
 private fun NavBackStackEntry?.isFavoritesSelected(): Boolean =
     this?.destination?.hasRoute<FavoritesRoute>() == true ||
-        isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES)
+        isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES) ||
+        isFavoriteRegionalGuideSelected()
+
+private fun NavBackStackEntry?.isRegionalGuideSelected(): Boolean =
+    this?.destination?.hasRoute<RegionalGuideRoute>() == true &&
+        !isFavoriteRegionalGuideSelected()
+
+private fun NavBackStackEntry?.isFavoriteRegionalGuideSelected(): Boolean =
+    this != null &&
+        destination.hasRoute<RegionalGuideRoute>() &&
+        toRoute<RegionalGuideRoute>().isFavoriteReentryRoute()
+
+internal fun RegionalGuideRoute.isFavoriteReentryRoute(): Boolean =
+    !initialFavoriteTargetId.isNullOrBlank()
+
+private inline fun <reified T : Any> NavHostController.navigateBottomTabClearingFavoriteReentry(
+    currentBackStackEntry: NavBackStackEntry?,
+    route: T,
+) {
+    if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
+        popBackStack<FavoritesRoute>(inclusive = false)
+    }
+
+    navigateBottomTab(route)
+}
 
 private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSource): Boolean =
     this != null &&
