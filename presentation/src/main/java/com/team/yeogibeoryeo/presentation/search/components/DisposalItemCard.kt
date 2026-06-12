@@ -39,7 +39,6 @@ fun DisposalItemCard(
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
 ) {
-    val spacing = ItemSearchLayoutDefaults.spacing
     val stroke = ItemSearchLayoutDefaults.stroke
     val elevation = ItemSearchLayoutDefaults.elevation
     val favoriteStateDescription =
@@ -127,6 +126,7 @@ private fun BoxScope.FavoriteIndicator() {
 
     Icon(
         painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
+        // 카드 stateDescription이 즐겨찾기 상태를 제공하므로 아이콘은 중복 읽기를 피합니다.
         contentDescription = null,
         modifier = Modifier
             .align(Alignment.TopEnd)
@@ -167,6 +167,7 @@ private fun ChevronIndicator() {
 
     Icon(
         painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
+        // 카드의 click action label이 상세 이동을 제공하므로 아이콘은 중복 읽기를 피합니다.
         contentDescription = null,
         modifier = Modifier.size(size.iconSmall),
         tint = MaterialTheme.colorScheme.outlineVariant,

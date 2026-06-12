@@ -152,6 +152,7 @@ fun ItemGuideDetailScreen(
             ) {
                 Icon(
                     painter = painterResource(id = representativeCategory.iconResId),
+                    // 옆의 품목명과 metadata chip이 의미를 제공하므로 아이콘은 중복 읽기를 피합니다.
                     contentDescription = null,
                     modifier = Modifier.size(size.iconProminent),
                     tint = representativeCategory.iconTint()

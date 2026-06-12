@@ -118,6 +118,7 @@ private fun QuickCategoryItem(
         ) {
             Icon(
                 painter = painterResource(id = category.iconResId),
+                // 부모 항목이 TalkBack 설명과 동작을 제공하므로 아이콘은 중복 읽기를 피합니다.
                 contentDescription = null,
                 modifier = Modifier.size(size.iconLarge),
                 tint = category.iconTint()
