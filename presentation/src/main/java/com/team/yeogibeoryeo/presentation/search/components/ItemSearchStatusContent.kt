@@ -17,9 +17,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.common.design.theme.YeogiBeoryeoTheme
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
 fun ItemSearchStatusContent(
@@ -28,8 +28,8 @@ fun ItemSearchStatusContent(
     description: (@Composable ColumnScope.() -> Unit)? = null,
     contentPadding: PaddingValues =
         PaddingValues(
-            horizontal = ItemSearchStatusHorizontalPadding,
-            vertical = ItemSearchStatusVerticalPadding,
+            horizontal = ItemSearchLayoutDefaults.spacing.xl,
+            vertical = ItemSearchLayoutDefaults.spacing.xxl,
         ),
     action: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
@@ -39,7 +39,7 @@ fun ItemSearchStatusContent(
             .padding(contentPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(
-            space = ItemSearchStatusContentSpacing,
+            space = ItemSearchLayoutDefaults.spacing.xs,
             alignment = Alignment.CenterVertically,
         ),
     ) {
@@ -124,7 +124,3 @@ private fun ItemSearchStatusContentActionPreview() {
         }
     }
 }
-
-private val ItemSearchStatusHorizontalPadding = 24.dp
-private val ItemSearchStatusVerticalPadding = 28.dp
-private val ItemSearchStatusContentSpacing = 8.dp

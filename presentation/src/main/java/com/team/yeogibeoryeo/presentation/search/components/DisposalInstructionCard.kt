@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -14,11 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 /**
  * '버리는 방법'을 강조하여 보여주는 카드 컴포넌트입니다.
@@ -29,32 +27,32 @@ fun DisposalInstructionCard(
     instructions: List<DisposalInstruction>,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
         )
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(spacing.sm),
         ) {
             Text(
                 text = stringResource(R.string.disposal_method_title),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
                 ),
             )
             instructions.forEach { instruction ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                     Text(
                         text = instruction.method.withKoreanLineBreakOpportunities(),
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.Medium,
-                            lineHeight = 24.sp,
                             lineBreak = koreanBodyLineBreak,
                         ),
                     )
@@ -63,7 +61,6 @@ fun DisposalInstructionCard(
                             text = it.withKoreanLineBreakOpportunities(),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.84f),
-                                lineHeight = 20.sp,
                                 lineBreak = koreanBodyLineBreak,
                             ),
                         )

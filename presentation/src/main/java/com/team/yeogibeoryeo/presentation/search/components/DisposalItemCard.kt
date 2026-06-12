@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -23,10 +22,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.common.R as CommonR
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
 fun DisposalItemCard(
@@ -35,6 +33,11 @@ fun DisposalItemCard(
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val size = ItemSearchLayoutDefaults.size
+    val stroke = ItemSearchLayoutDefaults.stroke
+    val elevation = ItemSearchLayoutDefaults.elevation
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -47,16 +50,16 @@ fun DisposalItemCard(
                     }
             }
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        border = BorderStroke(stroke.outline, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation.none)
     ) {
         Box(
             modifier = Modifier
-                .padding(20.dp)
+                .padding(spacing.lg)
                 .fillMaxWidth(),
         ) {
             if (isFavorite) {
@@ -65,7 +68,7 @@ fun DisposalItemCard(
                     contentDescription = null,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .size(20.dp),
+                        .size(size.iconSmall),
                     tint = MaterialTheme.colorScheme.tertiary,
                 )
             }
@@ -73,18 +76,17 @@ fun DisposalItemCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm)
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(spacing.xs),
                 ) {
                     Text(
                         text = guide.name,
                         modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         ),
                         maxLines = 2,
@@ -99,8 +101,6 @@ fun DisposalItemCard(
                             text = firstInstruction,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 14.sp,
-                                lineHeight = 22.sp
                             ),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
@@ -111,7 +111,7 @@ fun DisposalItemCard(
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(size.iconSmall),
                     tint = MaterialTheme.colorScheme.outlineVariant
                 )
             }
