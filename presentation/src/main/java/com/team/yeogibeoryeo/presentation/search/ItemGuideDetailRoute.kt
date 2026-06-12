@@ -13,9 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -36,17 +38,20 @@ fun ItemGuideDetailRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val currentContext by rememberUpdatedState(LocalContext.current)
 
     LaunchedEffect(guideId) {
         viewModel.loadGuide(guideId)
     }
 
-    val favoriteMessageResId = (uiState as? ItemGuideDetailUiState.Success)?.favoriteMessageResId
-    val favoriteMessage = favoriteMessageResId?.let { stringResource(it) }
-    LaunchedEffect(favoriteMessage) {
-        val message = favoriteMessage ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message)
-        viewModel.clearFavoriteMessage()
+    LaunchedEffect(viewModel.events) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is ItemGuideDetailEvent.ShowFavoriteMessage -> {
+                    snackbarHostState.showSnackbar(currentContext.getString(event.messageResId))
+                }
+            }
+        }
     }
 
     Scaffold(
