@@ -14,6 +14,9 @@ data class CollectionSpotMapUiState(
     val hasSearched: Boolean = false,
     val locationNotice: MapLocationNotice? = null,
     val locationNoticeMessage: String? = null,
+    val favoriteSpotMoveRequestId: String? = null,
+    val favoriteSpotMoveRequestSequence: Int = 0,
+    val isFavoriteSpotNearbyLoading: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() = hasSearched && !isLoading && spots.isEmpty() && errorMessage == null

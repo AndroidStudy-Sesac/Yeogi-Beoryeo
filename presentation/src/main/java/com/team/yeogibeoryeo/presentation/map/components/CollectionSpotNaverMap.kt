@@ -30,9 +30,10 @@ fun CollectionSpotNaverMap(
 ) {
     val defaultMarkerColor = MaterialTheme.colorScheme.primary
     val selectedMarkerColor = MaterialTheme.colorScheme.tertiary
-    val markerSpots = spots.filter { spot ->
-        spot.coordinate != null
-    }
+    val markerSpots =
+        (spots + listOfNotNull(selectedSpot))
+            .distinctBy { spot -> spot.id }
+            .filter { spot -> spot.coordinate != null }
     val locationSource = rememberMapLocationSource()
     val mapProperties = MapProperties(
         locationTrackingMode = if (isLocationPermissionGranted) {
@@ -49,8 +50,10 @@ fun CollectionSpotNaverMap(
         )
     }
 
-    LaunchedEffect(markerSpots) {
-        val firstSpot = markerSpots.firstOrNull()
+    LaunchedEffect(spots) {
+        if (selectedSpot != null) return@LaunchedEffect
+
+        val firstSpot = spots.firstOrNull { spot -> spot.coordinate != null }
         val coordinate = firstSpot?.coordinate
 
         if (coordinate != null) {

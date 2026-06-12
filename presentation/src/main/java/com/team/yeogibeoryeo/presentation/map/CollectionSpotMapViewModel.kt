@@ -16,6 +16,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocation
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
+import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -47,6 +48,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var currentLocationRefreshJob: Job? = null
     private var hasRequestedInitialCurrentLocationSearch = false
     private var favoriteSpotIds: Set<String> = emptySet()
+    private val consumedFavoriteSpotMoveRequestIds = mutableSetOf<String>()
 
     init {
         observeCollectionSpotFavorites()
@@ -58,8 +60,9 @@ class CollectionSpotMapViewModel @Inject constructor(
         val shouldCancelCurrentLocationSearch =
             uiState.value.isLoading &&
                 uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION
+        val shouldCancelFavoriteSpotNearbySearch = uiState.value.isFavoriteSpotNearbyLoading
 
-        if (shouldCancelCurrentLocationSearch) {
+        if (shouldCancelCurrentLocationSearch || shouldCancelFavoriteSpotNearbySearch) {
             spotSearchJob?.cancel()
         }
 
@@ -89,6 +92,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = if (shouldCancelCurrentLocationSearch) {
                     MapSearchMode.KEYWORD
                 } else {
@@ -115,6 +119,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     errorMessage = "검색어를 입력해주세요.",
                     locationNotice = null,
                     locationNoticeMessage = null,
+                    isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
                 )
             }
@@ -131,6 +136,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     locationNotice = null,
                     locationNoticeMessage = null,
                     selectedSpot = null,
+                    isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
                 )
             }
@@ -218,6 +224,35 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
+    fun showFavoriteSpot(request: FavoriteSpotMapMoveRequest) {
+        if (!consumedFavoriteSpotMoveRequestIds.add(request.requestId)) return
+
+        currentLocationRefreshJob?.cancel()
+        spotSearchJob?.cancel()
+
+        val selectedSpot =
+            originalSpots.firstOrNull { spot -> spot.id == request.targetId }
+                ?: uiState.value.spots.firstOrNull { spot -> spot.id == request.targetId }
+                ?: request.toCollectionSpot()
+
+        _uiState.update {
+            it.copy(
+                selectedSpot = selectedSpot.copy(
+                    isBookmarked = request.targetId in favoriteSpotIds,
+                ),
+                isLoading = false,
+                errorMessage = null,
+                locationNotice = null,
+                locationNoticeMessage = null,
+                favoriteSpotMoveRequestId = request.targetId,
+                favoriteSpotMoveRequestSequence = it.favoriteSpotMoveRequestSequence + 1,
+                isFavoriteSpotNearbyLoading = true,
+            )
+        }
+
+        searchNearbySpotsForFavoriteSpot(request)
+    }
+
     fun onSpotFavoriteClick(spot: CollectionSpot) {
         viewModelScope.launch {
             toggleCollectionSpotFavoriteUseCase(spot)
@@ -236,6 +271,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = MapLocationNotices.PermissionDenied,
                 locationNoticeMessage = MapLocationNotices.PermissionDenied.message,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -285,6 +321,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = MapLocationNotices.CurrentLocationUnavailable,
                 locationNoticeMessage = MapLocationNotices.CurrentLocationUnavailable.message,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -302,6 +339,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = MapLocationNotices.LocationServiceDisabled,
                 locationNoticeMessage = MapLocationNotices.LocationServiceDisabled.message,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -330,7 +368,54 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
             )
+        }
+    }
+
+    private fun searchNearbySpotsForFavoriteSpot(request: FavoriteSpotMapMoveRequest) {
+        spotSearchJob = viewModelScope.launch {
+            runCatching {
+                searchCollectionSpotsByLocationUseCase(
+                    coordinate = request.coordinate,
+                    radiusMeter = DEFAULT_RADIUS_METER,
+                    types = emptySet(),
+                )
+            }.onSuccess { spots ->
+                val selectedSpotId = uiState.value.selectedSpot?.id
+                originalSpots = spots.withFavoriteState()
+
+                val filteredSpots =
+                    filterCollectionSpotsUseCase(
+                        spots = originalSpots,
+                        selectedTypes = uiState.value.selectedTypes,
+                    )
+                val updatedSelectedSpot =
+                    selectedSpotId?.let { id ->
+                        originalSpots.firstOrNull { spot -> spot.id == id }
+                            ?: uiState.value.selectedSpot
+                    }
+
+                _uiState.update {
+                    it.copy(
+                        spots = filteredSpots,
+                        selectedSpot = updatedSelectedSpot,
+                        isLoading = false,
+                        isFavoriteSpotNearbyLoading = false,
+                        hasSearched = true,
+                        errorMessage = null,
+                        locationNotice = null,
+                        locationNoticeMessage = null,
+                        searchMode = MapSearchMode.CURRENT_LOCATION,
+                    )
+                }
+            }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
+
+                _uiState.update {
+                    it.copy(isFavoriteSpotNearbyLoading = false)
+                }
+            }
         }
     }
 
@@ -346,6 +431,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = message,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
             )
         }
     }
@@ -364,6 +450,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     locationNotice = null,
                     locationNoticeMessage = null,
                     selectedSpot = null,
+                    isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.CURRENT_LOCATION,
                 )
             }
@@ -414,6 +501,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
             )
         }
@@ -480,6 +568,18 @@ class CollectionSpotMapViewModel @Inject constructor(
         map { spot ->
             spot.copy(isBookmarked = spot.id in favoriteSpotIds)
         }
+
+    private fun FavoriteSpotMapMoveRequest.toCollectionSpot(): CollectionSpot =
+        CollectionSpot(
+            id = targetId,
+            name = name,
+            type = type,
+            address = address,
+            detailLocation = detailLocation,
+            coordinate = coordinate,
+            distanceMeter = null,
+            isBookmarked = targetId in favoriteSpotIds,
+        )
 
     private companion object {
         const val DEFAULT_RADIUS_METER = 500

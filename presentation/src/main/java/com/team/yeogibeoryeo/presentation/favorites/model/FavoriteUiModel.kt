@@ -7,4 +7,5 @@ data class FavoriteUiModel(
     val targetId: String,
     val title: String,
     val subtitle: String?,
+    val collectionSpotMapMoveRequest: FavoriteCollectionSpotMapMoveRequest? = null,
 )

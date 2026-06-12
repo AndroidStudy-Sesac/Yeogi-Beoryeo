@@ -37,9 +37,11 @@ import com.team.yeogibeoryeo.presentation.map.components.SpotDetailBottomSheetCo
 import com.team.yeogibeoryeo.presentation.map.components.ThreeStepMapBottomSheet
 import com.team.yeogibeoryeo.presentation.map.location.rememberFineLocationPermissionGranted
 import com.team.yeogibeoryeo.presentation.map.location.rememberCurrentLocationSearchRequester
+import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 
 @Composable
 fun CollectionSpotMapScreen(
+    favoriteSpotMoveRequest: FavoriteSpotMapMoveRequest? = null,
     modifier: Modifier = Modifier,
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
@@ -77,8 +79,14 @@ fun CollectionSpotMapScreen(
         onDenied = viewModel::onLocationPermissionDenied,
     )
 
-    LaunchedEffect(Unit) {
-        viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+    LaunchedEffect(favoriteSpotMoveRequest) {
+        val request = favoriteSpotMoveRequest
+        if (request == null) {
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+        } else {
+            locationTrackingMode = LocationTrackingMode.NoFollow
+            viewModel.showFavoriteSpot(request)
+        }
     }
 
     CollectionSpotMapContent(
@@ -129,6 +137,7 @@ private fun CollectionSpotMapContent(
     var sheetLevel by remember { mutableStateOf(MapSheetLevel.Hidden) }
     var sheetRevealRequest by remember { mutableStateOf(0) }
     val selectedSpot = uiState.selectedSpot
+    val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
     val hasNoticeOrError = uiState.locationNotice != null ||
         uiState.locationNoticeMessage != null ||
         uiState.errorMessage != null
@@ -183,6 +192,14 @@ private fun CollectionSpotMapContent(
                 sheetLevel = MapSheetLevel.Hidden
                 MapUiMode.Browsing
             }
+        }
+    }
+
+    LaunchedEffect(selectedSpotMoveRequestSequence) {
+        if (selectedSpotMoveRequestSequence > 0 && selectedSpot != null) {
+            mapUiMode = MapUiMode.SpotDetail
+            sheetLevel = MapSheetLevel.Medium
+            sheetRevealRequest += 1
         }
     }
 
@@ -279,6 +296,7 @@ private fun CollectionSpotMapContent(
                     mapUiMode == MapUiMode.SpotDetail && selectedSpot != null -> {
                         SpotDetailBottomSheetContent(
                             spot = selectedSpot,
+                            isNearbyLoading = uiState.isFavoriteSpotNearbyLoading,
                             onFavoriteClick = onSpotFavoriteClick,
                             onCloseClick = {
                                 mapUiMode = MapUiMode.ResultList
@@ -291,7 +309,7 @@ private fun CollectionSpotMapContent(
                         SpotBottomSheetContent(
                             spots = uiState.spots,
                             selectedSpot = selectedSpot,
-                            isLoading = uiState.isLoading,
+                            isLoading = uiState.isLoading || uiState.isFavoriteSpotNearbyLoading,
                             hasSearched = uiState.hasSearched,
                             selectedTypes = uiState.selectedTypes,
                             locationNotice = uiState.locationNotice,
@@ -321,7 +339,8 @@ private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
         locationNoticeMessage != null ||
         errorMessage != null ||
         hasSearched ||
-        spots.isNotEmpty()
+        spots.isNotEmpty() ||
+        selectedSpot != null
 
 private enum class MapUiMode {
     Browsing,
@@ -367,6 +386,7 @@ private fun CollectionSpotMapContentPreview() {
             )
         }
     }
+
 }
 
 private val MyLocationButtonHorizontalPadding = 16.dp

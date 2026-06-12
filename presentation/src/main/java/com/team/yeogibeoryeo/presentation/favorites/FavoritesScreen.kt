@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.favorites.components.EmptyFavoritesCard
 import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteCard
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 
 @Composable
@@ -28,7 +29,7 @@ fun FavoritesScreen(
     uiState: FavoritesUiState,
     onTabClick: (FavoriteTab) -> Unit,
     onItemGuideClick: (String) -> Unit,
-    onCollectionSpotClick: (String) -> Unit,
+    onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
     onCollectionSpotFavoriteRemoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -85,12 +86,19 @@ fun FavoritesScreen(
                     items = uiState.selectedFavorites,
                     key = { "${it.type.name}:${it.targetId}" },
                 ) { favorite ->
+                    val isCardClickEnabled =
+                        favorite.type != FavoriteTargetType.COLLECTION_SPOT ||
+                            favorite.collectionSpotMapMoveRequest != null
+
                     FavoriteCard(
                         favorite = favorite,
+                        enabled = isCardClickEnabled,
                         onClick = {
                             when (favorite.type) {
                                 FavoriteTargetType.ITEM_GUIDE -> onItemGuideClick(favorite.targetId)
-                                FavoriteTargetType.COLLECTION_SPOT -> onCollectionSpotClick(favorite.targetId)
+                                FavoriteTargetType.COLLECTION_SPOT -> {
+                                    favorite.collectionSpotMapMoveRequest?.let(onCollectionSpotClick)
+                                }
                                 FavoriteTargetType.REGIONAL_GUIDE -> onRegionalGuideClick(favorite.targetId)
                             }
                         },
