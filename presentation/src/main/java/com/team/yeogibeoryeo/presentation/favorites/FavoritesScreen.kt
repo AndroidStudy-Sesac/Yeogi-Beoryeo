@@ -86,8 +86,13 @@ fun FavoritesScreen(
                     items = uiState.selectedFavorites,
                     key = { "${it.type.name}:${it.targetId}" },
                 ) { favorite ->
+                    val isCardClickEnabled =
+                        favorite.type != FavoriteTargetType.COLLECTION_SPOT ||
+                            favorite.collectionSpotMapMoveRequest != null
+
                     FavoriteCard(
                         favorite = favorite,
+                        enabled = isCardClickEnabled,
                         onClick = {
                             when (favorite.type) {
                                 FavoriteTargetType.ITEM_GUIDE -> onItemGuideClick(favorite.targetId)

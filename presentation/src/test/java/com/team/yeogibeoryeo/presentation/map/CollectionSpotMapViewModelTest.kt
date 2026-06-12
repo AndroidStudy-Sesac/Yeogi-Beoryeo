@@ -914,6 +914,7 @@ class CollectionSpotMapViewModelTest {
         runTest {
             val request =
                 FavoriteSpotMapMoveRequest(
+                    requestId = "request-1",
                     targetId = "favorite-spot",
                     name = "폐건전지 수거함",
                     type = CollectionSpotType.BATTERY_BIN,
@@ -945,6 +946,7 @@ class CollectionSpotMapViewModelTest {
             val existingSpot = sampleSpot("favorite-spot", CollectionSpotType.RECYCLING_CENTER)
             val request =
                 FavoriteSpotMapMoveRequest(
+                    requestId = "request-1",
                     targetId = existingSpot.id,
                     name = "스냅샷 이름",
                     type = CollectionSpotType.BATTERY_BIN,
@@ -976,6 +978,7 @@ class CollectionSpotMapViewModelTest {
         runTest {
             val request =
                 FavoriteSpotMapMoveRequest(
+                    requestId = "request-1",
                     targetId = "favorite-spot",
                     name = "폐건전지 수거함",
                     type = CollectionSpotType.BATTERY_BIN,
@@ -1054,7 +1057,27 @@ class CollectionSpotMapViewModelTest {
     @Test
     fun `같은 즐겨찾기 장소 이동 요청도 다시 처리할 수 있도록 sequence를 증가시킨다`() =
         runTest {
-            val request = sampleFavoriteSpotMapMoveRequest()
+            val request = sampleFavoriteSpotMapMoveRequest(requestId = "request-1")
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.showFavoriteSpot(request)
+            advanceUntilIdle()
+            val firstSequence = viewModel.uiState.value.favoriteSpotMoveRequestSequence
+
+            viewModel.showFavoriteSpot(request.copy(requestId = "request-2"))
+            advanceUntilIdle()
+
+            assertEquals(request.targetId, viewModel.uiState.value.selectedSpot?.id)
+            assertEquals(firstSequence + 1, viewModel.uiState.value.favoriteSpotMoveRequestSequence)
+        }
+
+    @Test
+    fun `이미 소비한 즐겨찾기 장소 이동 요청은 다시 처리하지 않는다`() =
+        runTest {
+            val request = sampleFavoriteSpotMapMoveRequest(requestId = "request-1")
             val viewModel = createViewModel(
                 repository = FakeCollectionSpotRepository(),
                 currentLocationResult = CurrentLocationResult.NotFound,
@@ -1067,8 +1090,36 @@ class CollectionSpotMapViewModelTest {
             viewModel.showFavoriteSpot(request)
             advanceUntilIdle()
 
-            assertEquals(request.targetId, viewModel.uiState.value.selectedSpot?.id)
-            assertEquals(firstSequence + 1, viewModel.uiState.value.favoriteSpotMoveRequestSequence)
+            assertEquals(firstSequence, viewModel.uiState.value.favoriteSpotMoveRequestSequence)
+        }
+
+    @Test
+    fun `즐겨찾기 장소 주변 목록 조회 중 키워드 검색을 시작하면 로딩 상태를 정리한다`() =
+        runTest {
+            val request = sampleFavoriteSpotMapMoveRequest()
+            val locationSearchResult = CompletableDeferred<List<CollectionSpot>>()
+            val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
+            val repository =
+                FakeCollectionSpotRepository(
+                    keywordSpots = listOf(keywordSpot),
+                    locationSearchResultProvider = { locationSearchResult.await() },
+                )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.showFavoriteSpot(request)
+            advanceUntilIdle()
+            assertEquals(true, viewModel.uiState.value.isFavoriteSpotNearbyLoading)
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.uiState.value.isFavoriteSpotNearbyLoading)
+            assertEquals(listOf(keywordSpot), viewModel.uiState.value.spots)
+            assertEquals(null, viewModel.uiState.value.selectedSpot)
         }
 
     private fun createViewModel(
@@ -1152,8 +1203,11 @@ class CollectionSpotMapViewModelTest {
         )
     }
 
-    private fun sampleFavoriteSpotMapMoveRequest(): FavoriteSpotMapMoveRequest {
+    private fun sampleFavoriteSpotMapMoveRequest(
+        requestId: String = "request-1",
+    ): FavoriteSpotMapMoveRequest {
         return FavoriteSpotMapMoveRequest(
+            requestId = requestId,
             targetId = "favorite-spot",
             name = "폐건전지 수거함",
             type = CollectionSpotType.BATTERY_BIN,

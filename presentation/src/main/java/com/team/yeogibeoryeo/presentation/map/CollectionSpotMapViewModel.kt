@@ -48,6 +48,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var currentLocationRefreshJob: Job? = null
     private var hasRequestedInitialCurrentLocationSearch = false
     private var favoriteSpotIds: Set<String> = emptySet()
+    private val consumedFavoriteSpotMoveRequestIds = mutableSetOf<String>()
 
     init {
         observeCollectionSpotFavorites()
@@ -59,8 +60,9 @@ class CollectionSpotMapViewModel @Inject constructor(
         val shouldCancelCurrentLocationSearch =
             uiState.value.isLoading &&
                 uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION
+        val shouldCancelFavoriteSpotNearbySearch = uiState.value.isFavoriteSpotNearbyLoading
 
-        if (shouldCancelCurrentLocationSearch) {
+        if (shouldCancelCurrentLocationSearch || shouldCancelFavoriteSpotNearbySearch) {
             spotSearchJob?.cancel()
         }
 
@@ -90,6 +92,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = if (shouldCancelCurrentLocationSearch) {
                     MapSearchMode.KEYWORD
                 } else {
@@ -116,6 +119,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     errorMessage = "검색어를 입력해주세요.",
                     locationNotice = null,
                     locationNoticeMessage = null,
+                    isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
                 )
             }
@@ -132,6 +136,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     locationNotice = null,
                     locationNoticeMessage = null,
                     selectedSpot = null,
+                    isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
                 )
             }
@@ -220,6 +225,8 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun showFavoriteSpot(request: FavoriteSpotMapMoveRequest) {
+        if (!consumedFavoriteSpotMoveRequestIds.add(request.requestId)) return
+
         currentLocationRefreshJob?.cancel()
         spotSearchJob?.cancel()
 
@@ -264,6 +271,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = MapLocationNotices.PermissionDenied,
                 locationNoticeMessage = MapLocationNotices.PermissionDenied.message,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -313,6 +321,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = MapLocationNotices.CurrentLocationUnavailable,
                 locationNoticeMessage = MapLocationNotices.CurrentLocationUnavailable.message,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -330,6 +339,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = MapLocationNotices.LocationServiceDisabled,
                 locationNoticeMessage = MapLocationNotices.LocationServiceDisabled.message,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
@@ -358,6 +368,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
             )
         }
     }
@@ -420,6 +431,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = message,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
             )
         }
     }
@@ -438,6 +450,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     locationNotice = null,
                     locationNoticeMessage = null,
                     selectedSpot = null,
+                    isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.CURRENT_LOCATION,
                 )
             }
@@ -488,6 +501,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessage = null,
                 locationNotice = null,
                 locationNoticeMessage = null,
+                isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
             )
         }

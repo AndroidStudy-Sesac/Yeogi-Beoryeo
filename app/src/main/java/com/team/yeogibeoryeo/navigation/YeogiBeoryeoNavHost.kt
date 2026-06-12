@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import java.util.UUID
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.common.navigation.BottomNavigationItem
 import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
@@ -198,6 +199,7 @@ private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSo
 
 private fun FavoriteCollectionSpotMapMoveRequest.toMapRoute(): MapRoute =
     MapRoute(
+        favoriteSpotRequestId = UUID.randomUUID().toString(),
         favoriteSpotTargetId = targetId,
         favoriteSpotName = name,
         favoriteSpotType = type.name,
@@ -220,6 +222,7 @@ private fun MapRoute.toFavoriteSpotMapMoveRequest(): FavoriteSpotMapMoveRequest?
         }.getOrNull() ?: return null
 
     return FavoriteSpotMapMoveRequest(
+        requestId = favoriteSpotRequestId ?: targetId,
         targetId = targetId,
         name = name,
         type = type,
