@@ -12,9 +12,12 @@ import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
 import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -59,7 +62,7 @@ class ItemGuideDetailViewModelTest {
         }
 
     @Test
-    fun `즐겨찾기를 추가하면 최종 상태 기준 메시지를 저장한다`() =
+    fun `즐겨찾기를 추가하면 추가 메시지 이벤트를 보낸다`() =
         runTest {
             val guide = sampleGuide("유리병")
             val viewModel =
@@ -70,16 +73,20 @@ class ItemGuideDetailViewModelTest {
 
             viewModel.loadGuide(guide.id)
             advanceUntilIdle()
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
             viewModel.toggleFavorite()
             advanceUntilIdle()
 
             val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
             assertTrue(state.isFavorite)
-            assertEquals(R.string.item_guide_detail_favorite_added_message, state.favoriteMessageResId)
+            assertEquals(
+                R.string.item_guide_detail_favorite_added_message,
+                (event.await() as ItemGuideDetailEvent.ShowFavoriteMessage).messageResId,
+            )
         }
 
     @Test
-    fun `즐겨찾기를 해제하면 최종 상태 기준 메시지를 저장한다`() =
+    fun `즐겨찾기를 해제하면 해제 메시지 이벤트를 보낸다`() =
         runTest {
             val guide = sampleGuide("유리병")
             val favoriteRepository =
@@ -101,12 +108,16 @@ class ItemGuideDetailViewModelTest {
 
             viewModel.loadGuide(guide.id)
             advanceUntilIdle()
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
             viewModel.toggleFavorite()
             advanceUntilIdle()
 
             val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
             assertFalse(state.isFavorite)
-            assertEquals(R.string.item_guide_detail_favorite_removed_message, state.favoriteMessageResId)
+            assertEquals(
+                R.string.item_guide_detail_favorite_removed_message,
+                (event.await() as ItemGuideDetailEvent.ShowFavoriteMessage).messageResId,
+            )
         }
 
     @Test
