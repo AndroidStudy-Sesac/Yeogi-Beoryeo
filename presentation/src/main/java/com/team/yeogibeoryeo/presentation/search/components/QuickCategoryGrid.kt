@@ -28,6 +28,16 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 fun QuickCategoryGrid(
     categories: List<RepresentativeGuideCategory> = quickCategoryOrder,
     onCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    itemContent: @Composable (
+        category: RepresentativeGuideCategory,
+        onClick: () -> Unit,
+    ) -> Unit = { category, onClick ->
+        QuickCategoryItem(
+            category = category,
+            name = category.displayName,
+            onClick = onClick,
+        )
+    },
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val spacing = ItemSearchLayoutDefaults.spacing
@@ -50,10 +60,9 @@ fun QuickCategoryGrid(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     rowCategories.forEach { category ->
-                        QuickCategoryItem(
-                            category = category,
-                            name = category.displayName,
-                            onClick = { onCategoryClick(category) }
+                        itemContent(
+                            category,
+                            { onCategoryClick(category) },
                         )
                     }
                     repeat(columnCount - rowCategories.size) {

@@ -4,12 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -33,78 +29,86 @@ fun SectionCard(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
-    val stroke = ItemSearchLayoutDefaults.stroke
-    val elevation = ItemSearchLayoutDefaults.elevation
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-        border = BorderStroke(stroke.outline, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation.none)
+    ItemGuideSectionCard(
+        title = title,
+        modifier = modifier,
     ) {
-        Column(
-            modifier = Modifier.padding(spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(spacing.sm),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                ),
+        if (lines.isNotEmpty()) {
+            SectionLines(
+                lines = lines,
+                numbered = numbered,
             )
-            if (lines.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-                    lines.forEachIndexed { index, line ->
-                        Text(
-                            text =
-                                (if (numbered) "${index + 1}. $line" else line)
-                                    .withKoreanLineBreakOpportunities(),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-                                lineBreak = koreanBodyLineBreak,
-                            ),
-                        )
-                    }
-                }
-            }
+        }
 
-            if (rows.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                    rows.forEach { row ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
-                        ) {
-                            Text(
-                                text = row.label,
-                                modifier = Modifier.widthIn(
-                                    min = size.infoLabelMinWidth,
-                                    max = size.infoLabelMaxWidth,
-                                ),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.SemiBold,
-                                    lineBreak = koreanBodyLineBreak,
-                                ),
-                            )
-                            Text(
-                                text = row.value,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-                                    lineBreak = koreanBodyLineBreak,
-                                ),
-                            )
-                        }
-                    }
+        if (rows.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                rows.forEach { row ->
+                    SectionRow(
+                        label = row.label,
+                        value = row.value,
+                        labelModifier = Modifier.widthIn(
+                            min = size.infoLabelMinWidth,
+                            max = size.infoLabelMaxWidth,
+                        ),
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SectionLines(
+    lines: List<String>,
+    numbered: Boolean,
+) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+        lines.forEachIndexed { index, line ->
+            Text(
+                text =
+                    (if (numbered) "${index + 1}. $line" else line)
+                        .withKoreanLineBreakOpportunities(),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineBreak = koreanBodyLineBreak,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionRow(
+    label: String,
+    value: String,
+    labelModifier: Modifier = Modifier,
+) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+    ) {
+        Text(
+            text = label,
+            modifier = labelModifier,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+                lineBreak = koreanBodyLineBreak,
+            ),
+        )
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineBreak = koreanBodyLineBreak,
+            ),
+        )
     }
 }
 
