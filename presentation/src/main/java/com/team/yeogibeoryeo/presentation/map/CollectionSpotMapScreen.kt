@@ -77,6 +77,7 @@ fun CollectionSpotMapScreen(
     val requestCurrentLocationSearch = rememberCurrentLocationSearchRequester(
         onGranted = {
             hasGrantedLocationPermissionInSession = true
+            previousFineLocationPermission = true
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.searchByCurrentLocation()
         },

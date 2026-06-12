@@ -208,10 +208,42 @@ class CollectionSpotMapViewModelTest {
             assertEquals(mapCenterCoordinate, repository.lastLocationCoordinate)
             assertEquals(500, repository.lastRadiusMeter)
             assertEquals(expectedSpots, viewModel.uiState.value.spots)
-            assertEquals("", viewModel.uiState.value.searchKeyword)
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
             assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
             assertNull(viewModel.uiState.value.selectedSpot)
             assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `지도 중심 검색 중 검색어를 입력하면 진행 중인 지도 중심 검색을 취소한다`() =
+        runTest {
+            val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)
+            val mapCenterSearchResult = CompletableDeferred<List<CollectionSpot>>()
+            val repository = FakeCollectionSpotRepository(
+                locationSearchResultProvider = { mapCenterSearchResult.await() },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.searchByMapCenter(mapCenterCoordinate)
+            advanceUntilIdle()
+
+            assertEquals(true, viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
+
+            viewModel.onSearchKeywordChanged("문래동")
+            mapCenterSearchResult.complete(
+                listOf(sampleSpot("map-center", CollectionSpotType.RECYCLING_CENTER)),
+            )
+            advanceUntilIdle()
+
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+            assertEquals(false, viewModel.uiState.value.hasSearched)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
         }
 
     @Test
@@ -423,7 +455,7 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
-    fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 비우고 현재 위치 결과를 반영한다`() =
+    fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 유지하고 현재 위치 결과를 반영한다`() =
         runTest {
             val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
             val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
@@ -444,7 +476,7 @@ class CollectionSpotMapViewModelTest {
             viewModel.searchByCurrentLocation()
             advanceUntilIdle()
 
-            assertEquals("", viewModel.uiState.value.searchKeyword)
+            assertEquals("용답동", viewModel.uiState.value.searchKeyword)
             assertEquals(listOf(locationSpot), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)

@@ -57,34 +57,41 @@ class CollectionSpotMapViewModel @Inject constructor(
     fun onSearchKeywordChanged(keyword: String) {
         currentLocationRefreshJob?.cancel()
 
-        val shouldCancelCurrentLocationSearch =
+        val shouldCancelSpotSearch =
             uiState.value.isLoading &&
-                uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION
+                uiState.value.searchMode in setOf(
+                    MapSearchMode.KEYWORD,
+                    MapSearchMode.CURRENT_LOCATION,
+                    MapSearchMode.MAP_CENTER,
+                )
         val shouldCancelFavoriteSpotNearbySearch = uiState.value.isFavoriteSpotNearbyLoading
 
-        if (shouldCancelCurrentLocationSearch || shouldCancelFavoriteSpotNearbySearch) {
+        if (shouldCancelSpotSearch || shouldCancelFavoriteSpotNearbySearch) {
             spotSearchJob?.cancel()
+        }
+        if (shouldCancelSpotSearch) {
+            originalSpots = emptyList()
         }
 
         _uiState.update {
             it.copy(
                 searchKeyword = keyword,
-                spots = if (shouldCancelCurrentLocationSearch) {
+                spots = if (shouldCancelSpotSearch) {
                     emptyList()
                 } else {
                     it.spots
                 },
-                selectedSpot = if (shouldCancelCurrentLocationSearch) {
+                selectedSpot = if (shouldCancelSpotSearch) {
                     null
                 } else {
                     it.selectedSpot
                 },
-                isLoading = if (shouldCancelCurrentLocationSearch) {
+                isLoading = if (shouldCancelSpotSearch) {
                     false
                 } else {
                     it.isLoading
                 },
-                hasSearched = if (shouldCancelCurrentLocationSearch) {
+                hasSearched = if (shouldCancelSpotSearch) {
                     false
                 } else {
                     it.hasSearched
@@ -93,7 +100,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 locationNotice = null,
                 locationNoticeMessage = null,
                 isFavoriteSpotNearbyLoading = false,
-                searchMode = if (shouldCancelCurrentLocationSearch) {
+                searchMode = if (shouldCancelSpotSearch) {
                     MapSearchMode.KEYWORD
                 } else {
                     it.searchMode
@@ -185,7 +192,6 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
-                    searchKeyword = "",
                     errorMessage = null,
                     locationNotice = null,
                     locationNoticeMessage = null,
@@ -489,7 +495,6 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
-                    searchKeyword = "",
                     errorMessage = null,
                     locationNotice = null,
                     locationNoticeMessage = null,
@@ -572,8 +577,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private fun canApplyCurrentLocationResult(): Boolean {
         val currentState = uiState.value
 
-        return currentState.searchKeyword.isBlank() &&
-            currentState.searchMode == MapSearchMode.CURRENT_LOCATION
+        return currentState.searchMode == MapSearchMode.CURRENT_LOCATION
     }
 
     private fun observeCollectionSpotFavorites() {

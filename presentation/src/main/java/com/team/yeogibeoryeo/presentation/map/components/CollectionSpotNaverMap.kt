@@ -64,15 +64,17 @@ fun CollectionSpotNaverMap(
     suspend fun moveCamera(update: CameraUpdate) {
         isProgrammaticCameraMove = true
         cameraPositionState.move(update)
-        withFrameNanos { }
+        repeat(PROGRAMMATIC_CAMERA_MOVE_GUARD_FRAMES) {
+            withFrameNanos { }
+        }
         isProgrammaticCameraMove = false
     }
 
     LaunchedEffect(Unit) {
-        snapshotFlow { cameraPositionState.position.target }
+        snapshotFlow { cameraPositionState.position.toCameraSnapshot() }
             .drop(1)
-            .collect { target ->
-                onCameraCenterChanged(target.toCoordinate())
+            .collect { cameraSnapshot ->
+                onCameraCenterChanged(cameraSnapshot.toCoordinate())
                 if (!isProgrammaticCameraMove) {
                     onUserCameraMove()
                 }
@@ -177,11 +179,25 @@ private const val DEFAULT_ZOOM = 12.0
 private const val SEARCH_RESULT_ZOOM = 15.0
 private const val SELECTED_SPOT_ZOOM = 16.0
 private const val SEARCH_RESULT_BOUNDS_PADDING = 120
+private const val PROGRAMMATIC_CAMERA_MOVE_GUARD_FRAMES = 3
 
 private const val DEFAULT_MARKER_Z_INDEX = 0
 private const val SELECTED_MARKER_Z_INDEX = 10
 
-private fun LatLng.toCoordinate(): Coordinate =
+private data class CameraSnapshot(
+    val latitude: Double,
+    val longitude: Double,
+    val zoom: Double,
+)
+
+private fun CameraPosition.toCameraSnapshot(): CameraSnapshot =
+    CameraSnapshot(
+        latitude = target.latitude,
+        longitude = target.longitude,
+        zoom = zoom,
+    )
+
+private fun CameraSnapshot.toCoordinate(): Coordinate =
     Coordinate(
         latitude = latitude,
         longitude = longitude,
