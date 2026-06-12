@@ -1,5 +1,15 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
+import com.team.yeogibeoryeo.domain.favorite.model.Favorite
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSnapshotRepository
+import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSnapshotUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.region.repository.RegionRepository
@@ -19,6 +29,9 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandid
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -723,10 +736,104 @@ class RegionalGuideViewModelTest {
         }
     }
 
+    @Test
+    fun `favorite click stores regional guide favorite and observes state`() = runTest {
+        val guide =
+            RegionalDisposalGuide(
+                region = Region(sido = "Sido", sigungu = "Sigungu"),
+                targetRegionName = "Zone A",
+                managementZoneName = "Management A",
+                schedules = emptyList(),
+            )
+        val favoriteRepository = FakeFavoriteRepository()
+        val snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository()
+        val viewModel =
+            createViewModel(
+                regionRepository = FakeRegionRepository(resolvedRegion = guide.region),
+                regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide)),
+                favoriteRepository = favoriteRepository,
+                regionalGuideSnapshotRepository = snapshotRepository,
+                regionalGuideFavoriteRepository =
+                    FakeRegionalGuideFavoriteRepository(
+                        favoriteRepository = favoriteRepository,
+                        snapshotRepository = snapshotRepository,
+                    ),
+            )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("Sigungu")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        assertEquals(false, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
+
+        viewModel.onFavoriteClick()
+        advanceUntilIdle()
+
+        val snapshot = guide.toFavoriteSnapshot()
+        assertEquals(true, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
+        assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
+        assertEquals(snapshot, snapshotRepository.getSnapshot(snapshot.targetId))
+    }
+
+    @Test
+    fun `favorite target id restores saved regional guide candidate`() = runTest {
+        val region = Region(sido = "Sido", sigungu = "Sigungu")
+        val firstGuide =
+            RegionalDisposalGuide(
+                region = region,
+                targetRegionName = "Zone A",
+                schedules = emptyList(),
+            )
+        val savedGuide =
+            RegionalDisposalGuide(
+                region = region,
+                targetRegionName = "Zone B",
+                managementZoneName = "Management B",
+                schedules = emptyList(),
+            )
+        val snapshot = savedGuide.toFavoriteSnapshot()
+        val favoriteRepository =
+            FakeFavoriteRepository(
+                initialFavorites =
+                    listOf(
+                        Favorite(
+                            type = FavoriteTargetType.REGIONAL_GUIDE,
+                            targetId = snapshot.targetId,
+                            savedAtMillis = 1L,
+                        ),
+                    ),
+            )
+        val viewModel =
+            createViewModel(
+                regionalGuideRepository =
+                    FakeRegionalDisposalGuideRepository(candidates = listOf(firstGuide, savedGuide)),
+                favoriteRepository = favoriteRepository,
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(snapshot.targetId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+        assertEquals("Zone B", state.guide.targetRegionName)
+        assertEquals(true, state.isFavorite)
+    }
+
     private fun createViewModel(
         regionRepository: RegionRepository = FakeRegionRepository(),
         regionOptionsRepository: RegionOptionsRepository = FakeRegionOptionsRepository(),
-        regionalGuideRepository: RegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository()
+        regionalGuideRepository: RegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
+        favoriteRepository: FavoriteRepository = FakeFavoriteRepository(),
+        regionalGuideSnapshotRepository: RegionalGuideFavoriteSnapshotRepository =
+            FakeRegionalGuideFavoriteSnapshotRepository(),
+        regionalGuideFavoriteRepository: RegionalGuideFavoriteRepository =
+            FakeRegionalGuideFavoriteRepository(
+                favoriteRepository = favoriteRepository,
+                snapshotRepository = regionalGuideSnapshotRepository,
+            ),
     ): RegionalGuideViewModel {
         return RegionalGuideViewModel(
             resolveRegionFromKeywordUseCase = ResolveRegionFromKeywordUseCase(
@@ -744,7 +851,11 @@ class RegionalGuideViewModelTest {
             getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
             normalizeRegionForRegionalGuideUseCase = NormalizeRegionForRegionalGuideUseCase(
                 regionOptionsRepository
-            )
+            ),
+            observeFavoriteUseCase = ObserveFavoriteUseCase(favoriteRepository),
+            toggleRegionalGuideFavoriteUseCase = ToggleRegionalGuideFavoriteUseCase(regionalGuideFavoriteRepository),
+            getRegionalGuideFavoriteSnapshotUseCase =
+                GetRegionalGuideFavoriteSnapshotUseCase(regionalGuideSnapshotRepository),
         )
     }
 
@@ -865,6 +976,104 @@ class RegionalGuideViewModelTest {
         ): Result<List<RegionalDisposalGuide>> {
             queries += query
             return Result.success(candidates)
+        }
+    }
+
+    private class FakeFavoriteRepository(
+        initialFavorites: List<Favorite> = emptyList(),
+    ) : FavoriteRepository {
+        private val favorites = MutableStateFlow(initialFavorites)
+
+        override fun observeFavorites(): Flow<List<Favorite>> = favorites
+
+        override fun observeFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ): Flow<Boolean> =
+            favorites.map { items ->
+                items.any { favorite -> favorite.type == type && favorite.targetId == targetId }
+            }
+
+        override suspend fun isFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ): Boolean =
+            favorites.value.any { favorite -> favorite.type == type && favorite.targetId == targetId }
+
+        override suspend fun toggleFavorite(favorite: Favorite): Boolean {
+            return if (isFavorite(favorite.type, favorite.targetId)) {
+                removeFavorite(favorite.type, favorite.targetId)
+                false
+            } else {
+                addFavorite(favorite)
+                true
+            }
+        }
+
+        override suspend fun addFavorite(favorite: Favorite) {
+            favorites.value =
+                favorites.value
+                    .filterNot { it.type == favorite.type && it.targetId == favorite.targetId } + favorite
+        }
+
+        override suspend fun removeFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+        ) {
+            favorites.value =
+                favorites.value.filterNot { favorite ->
+                    favorite.type == type && favorite.targetId == targetId
+                }
+        }
+    }
+
+    private class FakeRegionalGuideFavoriteSnapshotRepository(
+        snapshots: List<RegionalGuideFavoriteSnapshot> = emptyList(),
+    ) : RegionalGuideFavoriteSnapshotRepository {
+        private val snapshots = MutableStateFlow(snapshots)
+
+        override fun observeSnapshots(): Flow<List<RegionalGuideFavoriteSnapshot>> = snapshots
+
+        override suspend fun getSnapshot(targetId: String): RegionalGuideFavoriteSnapshot? =
+            snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+
+        override suspend fun upsertSnapshot(snapshot: RegionalGuideFavoriteSnapshot) {
+            snapshots.value =
+                snapshots.value
+                    .filterNot { it.targetId == snapshot.targetId } + snapshot
+        }
+
+        override suspend fun deleteSnapshot(targetId: String) {
+            snapshots.value = snapshots.value.filterNot { snapshot -> snapshot.targetId == targetId }
+        }
+    }
+
+    private class FakeRegionalGuideFavoriteRepository(
+        private val favoriteRepository: FavoriteRepository,
+        private val snapshotRepository: RegionalGuideFavoriteSnapshotRepository,
+    ) : RegionalGuideFavoriteRepository {
+        override suspend fun toggleFavorite(snapshot: RegionalGuideFavoriteSnapshot): Boolean {
+            val favorite =
+                Favorite(
+                    type = FavoriteTargetType.REGIONAL_GUIDE,
+                    targetId = snapshot.targetId,
+                    savedAtMillis = 1L,
+                )
+
+            return if (favoriteRepository.isFavorite(favorite.type, favorite.targetId)) {
+                favoriteRepository.removeFavorite(favorite.type, favorite.targetId)
+                snapshotRepository.deleteSnapshot(snapshot.targetId)
+                false
+            } else {
+                favoriteRepository.addFavorite(favorite)
+                snapshotRepository.upsertSnapshot(snapshot)
+                true
+            }
+        }
+
+        override suspend fun removeFavorite(targetId: String) {
+            favoriteRepository.removeFavorite(FavoriteTargetType.REGIONAL_GUIDE, targetId)
+            snapshotRepository.deleteSnapshot(targetId)
         }
     }
 }

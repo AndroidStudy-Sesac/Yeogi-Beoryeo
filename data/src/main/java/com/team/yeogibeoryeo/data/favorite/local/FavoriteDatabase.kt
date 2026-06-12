@@ -7,12 +7,15 @@ import androidx.room.RoomDatabase
     entities = [
         FavoriteEntity::class,
         CollectionSpotFavoriteSnapshotEntity::class,
+        RegionalGuideFavoriteSnapshotEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class FavoriteDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
 
     abstract fun collectionSpotFavoriteSnapshotDao(): CollectionSpotFavoriteSnapshotDao
+
+    abstract fun regionalGuideFavoriteSnapshotDao(): RegionalGuideFavoriteSnapshotDao
 }

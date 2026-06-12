@@ -11,6 +11,7 @@ import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpot
 fun FavoritesRoute(
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
+    onRegionalGuideClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FavoritesViewModel = hiltViewModel(),
 ) {
@@ -21,8 +22,9 @@ fun FavoritesRoute(
         onTabClick = viewModel::selectTab,
         onItemGuideClick = onItemGuideClick,
         onCollectionSpotClick = onCollectionSpotClick,
-        onRegionalGuideClick = {},
+        onRegionalGuideClick = onRegionalGuideClick,
         onCollectionSpotFavoriteRemoveClick = viewModel::removeCollectionSpotFavorite,
+        onRegionalGuideFavoriteRemoveClick = viewModel::removeRegionalGuideFavorite,
         modifier = modifier,
     )
 }

@@ -7,12 +7,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.team.yeogibeoryeo.data.favorite.local.CollectionSpotFavoriteSnapshotDao
 import com.team.yeogibeoryeo.data.favorite.local.FavoriteDao
 import com.team.yeogibeoryeo.data.favorite.local.FavoriteDatabase
+import com.team.yeogibeoryeo.data.favorite.local.RegionalGuideFavoriteSnapshotDao
 import com.team.yeogibeoryeo.data.favorite.repository.CollectionSpotFavoriteSnapshotRepositoryImpl
 import com.team.yeogibeoryeo.data.favorite.repository.CollectionSpotFavoriteRepositoryImpl
 import com.team.yeogibeoryeo.data.favorite.repository.FavoriteRepositoryImpl
+import com.team.yeogibeoryeo.data.favorite.repository.RegionalGuideFavoriteRepositoryImpl
+import com.team.yeogibeoryeo.data.favorite.repository.RegionalGuideFavoriteSnapshotRepositoryImpl
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSnapshotRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -35,6 +40,7 @@ object FavoriteDatabaseModule {
             "yeogi_beoryeo_favorites.db",
         )
             .addMigrations(FAVORITE_DATABASE_MIGRATION_1_2)
+            .addMigrations(FAVORITE_DATABASE_MIGRATION_2_3)
             .build()
 
     @Provides
@@ -46,6 +52,12 @@ object FavoriteDatabaseModule {
     fun provideCollectionSpotFavoriteSnapshotDao(
         database: FavoriteDatabase,
     ): CollectionSpotFavoriteSnapshotDao = database.collectionSpotFavoriteSnapshotDao()
+
+    @Provides
+    @Singleton
+    fun provideRegionalGuideFavoriteSnapshotDao(
+        database: FavoriteDatabase,
+    ): RegionalGuideFavoriteSnapshotDao = database.regionalGuideFavoriteSnapshotDao()
 
     private val FAVORITE_DATABASE_MIGRATION_1_2 =
         object : Migration(1, 2) {
@@ -60,6 +72,25 @@ object FavoriteDatabaseModule {
                         detailLocation TEXT,
                         latitude REAL,
                         longitude REAL,
+                        PRIMARY KEY(targetId)
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
+
+    private val FAVORITE_DATABASE_MIGRATION_2_3 =
+        object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS regional_guide_favorite_snapshots (
+                        targetId TEXT NOT NULL,
+                        sido TEXT,
+                        sigungu TEXT,
+                        eupmyeondong TEXT,
+                        targetRegionName TEXT,
+                        managementZoneName TEXT,
                         PRIMARY KEY(targetId)
                     )
                     """.trimIndent(),
@@ -86,4 +117,16 @@ abstract class FavoriteBindModule {
     abstract fun bindCollectionSpotFavoriteRepository(
         repository: CollectionSpotFavoriteRepositoryImpl,
     ): CollectionSpotFavoriteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRegionalGuideFavoriteSnapshotRepository(
+        repository: RegionalGuideFavoriteSnapshotRepositoryImpl,
+    ): RegionalGuideFavoriteSnapshotRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRegionalGuideFavoriteRepository(
+        repository: RegionalGuideFavoriteRepositoryImpl,
+    ): RegionalGuideFavoriteRepository
 }

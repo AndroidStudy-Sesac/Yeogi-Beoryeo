@@ -13,7 +13,8 @@ sealed interface RegionalGuideUiState {
 
     data class Success(
         val query: String,
-        val guide: RegionalGuideUiModel
+        val guide: RegionalGuideUiModel,
+        val isFavorite: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Empty(

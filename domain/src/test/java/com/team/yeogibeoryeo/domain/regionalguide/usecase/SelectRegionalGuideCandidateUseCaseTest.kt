@@ -297,6 +297,42 @@ class SelectRegionalGuideCandidateUseCaseTest {
         assertEquals("신흥동+율목동", guide.targetRegionName)
     }
 
+    @Test
+    fun `preferred 대상지역이 있으면 해당 후보를 우선 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동"),
+                guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신포동+연안동")
+            ),
+            query = query(
+                displayRegion = Region(sido = "인천광역시", sigungu = "중구"),
+                sigunguQuery = "중구"
+            ),
+            preferredTargetRegionName = "신포동+연안동"
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("신포동+연안동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `preferred 대상지역이 후보에 없으면 임의 후보를 선택하지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동"),
+                guide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신포동+연안동")
+            ),
+            query = query(
+                displayRegion = Region(sido = "인천광역시", sigungu = "중구"),
+                sigunguQuery = "중구"
+            ),
+            preferredTargetRegionName = "사라진 권역"
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
     private fun query(
         displayRegion: Region,
         sigunguQuery: String

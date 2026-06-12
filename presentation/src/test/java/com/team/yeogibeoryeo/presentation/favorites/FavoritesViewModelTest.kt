@@ -1,22 +1,28 @@
 package com.team.yeogibeoryeo.presentation.favorites
 
-import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
-import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.usecase.GetCollectionSpotFavoriteSnapshotUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveCollectionSpotFavoriteUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
+import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteCollectionSpotUiMapper
@@ -367,22 +373,137 @@ class FavoritesViewModelTest {
             assertEquals(FavoriteTab.COLLECTION_SPOT, viewModel.uiState.value.selectedTab)
         }
 
+    @Test
+    fun `regional guide favorites are mapped from snapshots in favorite order`() =
+        runTest {
+            val olderSnapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-v1|4:서울시2:중구-1:4:권역A",
+                    region = Region(sido = "서울시", sigungu = "중구"),
+                    targetRegionName = "권역A",
+                    managementZoneName = "관리구역A",
+                )
+            val newerSnapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-v1|4:서울시2:중구-1:4:권역B",
+                    region = Region(sido = "서울시", sigungu = "중구"),
+                    targetRegionName = "권역B",
+                    managementZoneName = "관리구역B",
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = newerSnapshot.targetId,
+                                        savedAtMillis = 2L,
+                                    ),
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = olderSnapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            snapshots = listOf(olderSnapshot, newerSnapshot),
+                        ),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.selectTab(FavoriteTab.REGIONAL_GUIDE)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(newerSnapshot.targetId, olderSnapshot.targetId),
+                viewModel.uiState.value.selectedFavorites.map { it.targetId },
+            )
+            assertEquals("서울시 > 중구", viewModel.uiState.value.selectedFavorites.first().title)
+            assertEquals("권역B · 관리구역B", viewModel.uiState.value.selectedFavorites.first().subtitle)
+        }
+
+    @Test
+    fun `regional guide favorite remove deletes favorite and snapshot`() =
+        runTest {
+            val snapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-v1|4:서울시2:중구-1:4:권역A",
+                    region = Region(sido = "서울시", sigungu = "중구"),
+                    targetRegionName = "권역A",
+                    managementZoneName = "관리구역A",
+                )
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val snapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot))
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository = snapshotRepository,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.selectTab(FavoriteTab.REGIONAL_GUIDE)
+            advanceUntilIdle()
+            assertEquals(1, viewModel.uiState.value.selectedFavorites.size)
+
+            viewModel.removeRegionalGuideFavorite(snapshot.targetId)
+            advanceUntilIdle()
+
+            assertEquals(emptyList<FavoriteUiModel>(), viewModel.uiState.value.selectedFavorites)
+            assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
+            assertEquals(emptyList<RegionalGuideFavoriteSnapshot>(), snapshotRepository.snapshots.value)
+        }
+
     private fun createViewModel(
         favoriteRepository: FakeFavoriteRepository,
         itemRepository: FakeItemRepository,
         collectionSpotSnapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
             FakeCollectionSpotFavoriteSnapshotRepository(),
+        regionalGuideSnapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
+            FakeRegionalGuideFavoriteSnapshotRepository(),
     ): FavoritesViewModel =
         FavoritesViewModel(
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
             observeCollectionSpotFavoriteSnapshotsUseCase =
                 ObserveCollectionSpotFavoriteSnapshotsUseCase(collectionSpotSnapshotRepository),
+            observeRegionalGuideFavoriteSnapshotsUseCase =
+                ObserveRegionalGuideFavoriteSnapshotsUseCase(regionalGuideSnapshotRepository),
             removeCollectionSpotFavoriteUseCase =
                 RemoveCollectionSpotFavoriteUseCase(
                     collectionSpotFavoriteRepository =
                         FakeCollectionSpotFavoriteRepository(
                             favoriteRepository = favoriteRepository,
                             snapshotRepository = collectionSpotSnapshotRepository,
+                        ),
+                ),
+            removeRegionalGuideFavoriteUseCase =
+                RemoveRegionalGuideFavoriteUseCase(
+                    repository =
+                        FakeRegionalGuideFavoriteRepository(
+                            favoriteRepository = favoriteRepository,
+                            snapshotRepository = regionalGuideSnapshotRepository,
                         ),
                 ),
             itemGuideUiMapper = FavoriteItemGuideUiMapper(GetDisposalItemGuideUseCase(itemRepository)),
@@ -500,6 +621,39 @@ class FavoritesViewModelTest {
 
         override suspend fun removeFavorite(targetId: String) {
             favoriteRepository.removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId)
+            snapshotRepository.deleteSnapshot(targetId)
+        }
+    }
+
+    private class FakeRegionalGuideFavoriteSnapshotRepository(
+        snapshots: List<RegionalGuideFavoriteSnapshot> = emptyList(),
+    ) : RegionalGuideFavoriteSnapshotRepository {
+        val snapshots = MutableStateFlow(snapshots)
+
+        override fun observeSnapshots(): Flow<List<RegionalGuideFavoriteSnapshot>> = snapshots
+
+        override suspend fun getSnapshot(targetId: String): RegionalGuideFavoriteSnapshot? =
+            snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+
+        override suspend fun upsertSnapshot(snapshot: RegionalGuideFavoriteSnapshot) {
+            snapshots.value =
+                snapshots.value
+                    .filterNot { it.targetId == snapshot.targetId } + snapshot
+        }
+
+        override suspend fun deleteSnapshot(targetId: String) {
+            snapshots.value = snapshots.value.filterNot { it.targetId == targetId }
+        }
+    }
+
+    private class FakeRegionalGuideFavoriteRepository(
+        private val favoriteRepository: FakeFavoriteRepository,
+        private val snapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository,
+    ) : RegionalGuideFavoriteRepository {
+        override suspend fun toggleFavorite(snapshot: RegionalGuideFavoriteSnapshot): Boolean = false
+
+        override suspend fun removeFavorite(targetId: String) {
+            favoriteRepository.removeFavorite(FavoriteTargetType.REGIONAL_GUIDE, targetId)
             snapshotRepository.deleteSnapshot(targetId)
         }
     }

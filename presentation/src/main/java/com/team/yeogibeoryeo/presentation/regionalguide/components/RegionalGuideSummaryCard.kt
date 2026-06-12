@@ -3,24 +3,33 @@ package com.team.yeogibeoryeo.presentation.regionalguide.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun RegionalGuideSummaryCard(
     guide: RegionalGuideUiModel,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -37,11 +46,37 @@ fun RegionalGuideSummaryCard(
             modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = guide.regionName,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = guide.regionName,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                IconButton(onClick = onFavoriteClick) {
+                    Icon(
+                        painter = painterResource(
+                            id = if (isFavorite) {
+                                CommonR.drawable.ic_favorite_filled
+                            } else {
+                                CommonR.drawable.ic_favorite
+                            },
+                        ),
+                        contentDescription = if (isFavorite) {
+                            "즐겨찾기 해제"
+                        } else {
+                            "즐겨찾기 추가"
+                        },
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
+            }
 
             guide.managementZoneName?.let { managementZoneName ->
                 RegionalGuideInfoRow(

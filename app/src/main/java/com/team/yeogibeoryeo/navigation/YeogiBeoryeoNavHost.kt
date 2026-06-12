@@ -128,6 +128,7 @@ fun YeogiBeoryeoNavHost(
                 RegionalGuideScreenRoute(
                     initialKeyword = route.initialKeyword,
                     initialAddress = route.initialAddress,
+                    initialFavoriteTargetId = route.initialFavoriteTargetId,
                 )
             }
 
@@ -149,6 +150,11 @@ fun YeogiBeoryeoNavHost(
                             launchSingleTop = true
                             restoreState = false
                         }
+                    },
+                    onRegionalGuideClick = { targetId ->
+                        navController.navigate(
+                            RegionalGuideRoute(initialFavoriteTargetId = targetId),
+                        )
                     },
                 )
             }

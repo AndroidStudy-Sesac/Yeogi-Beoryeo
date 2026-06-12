@@ -18,6 +18,7 @@ data class MapRoute(
 data class RegionalGuideRoute(
     val initialKeyword: String? = null,
     val initialAddress: String? = null,
+    val initialFavoriteTargetId: String? = null,
 )
 
 @Serializable
