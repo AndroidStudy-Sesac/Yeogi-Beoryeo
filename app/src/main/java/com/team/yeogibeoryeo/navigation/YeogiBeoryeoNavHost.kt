@@ -75,7 +75,7 @@ fun YeogiBeoryeoNavHost(
                 }
 
             AnimatedVisibility(
-                visible = !isItemDetailScreen || isBottomBarVisible,
+                visible = isBottomBarVisible,
                 enter = enterTransition,
                 exit = exitTransition,
             ) {
@@ -98,6 +98,7 @@ fun YeogiBeoryeoNavHost(
                                 iconResId = AppR.drawable.ic_navigation_map,
                                 selected = currentDestination?.hasRoute<MapRoute>() == true,
                                 onClick = {
+                                    isBottomBarVisible = true
                                     navController.navigateBottomTabClearingFavoriteReentry(
                                         currentBackStackEntry = currentBackStackEntry,
                                         route = MapRoute(),
@@ -146,6 +147,11 @@ fun YeogiBeoryeoNavHost(
                 val route = backStackEntry.toRoute<MapRoute>()
                 CollectionSpotMapScreen(
                     favoriteSpotMoveRequest = route.toFavoriteSpotMapMoveRequest(),
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (currentDestination?.hasRoute<MapRoute>() == true) {
+                            isBottomBarVisible = isVisible
+                        }
+                    },
                 )
             }
 

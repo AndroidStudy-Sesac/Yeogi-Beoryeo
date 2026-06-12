@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -18,11 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -31,10 +30,12 @@ fun DisposalGuideMetadataChips(
     modifier: Modifier = Modifier,
     showCategoryChip: Boolean = true,
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
     FlowRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         DisposalRouteChip(guide = guide)
         if (showCategoryChip) {
@@ -49,6 +50,8 @@ fun DisposalRouteChip(
     guide: DisposalItemGuide,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val size = ItemSearchLayoutDefaults.size
     val route = DisposalRouteStatus.from(guide) ?: return
     if (route.iconResId == null) {
         MetadataChip(
@@ -66,15 +69,15 @@ fun DisposalRouteChip(
                 .semantics { contentDescription = route.label }
                 .background(
                     color = route.containerColor(),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                 )
-                .padding(8.dp),
+                .padding(spacing.xs),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(id = route.iconResId),
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(size.iconSmall),
             tint = route.contentColor(),
         )
     }

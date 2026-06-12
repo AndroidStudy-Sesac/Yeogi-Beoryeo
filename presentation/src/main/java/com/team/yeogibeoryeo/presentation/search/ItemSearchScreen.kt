@@ -29,8 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -105,23 +103,25 @@ fun ItemSearchScreen(
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp)
-            .padding(top = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+            .padding(horizontal = spacing.xl)
+            .padding(top = spacing.xl),
+        verticalArrangement = Arrangement.spacedBy(spacing.xl),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
             Text(
-                text = "여기 버려",
+                text = stringResource(R.string.item_search_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.",
+                text = stringResource(R.string.item_search_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -140,7 +140,7 @@ fun ItemSearchScreen(
         // 검색 결과 또는 제안 섹션
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(spacing.md)
         ) {
             when {
                 uiState.isLoading -> {
@@ -169,15 +169,14 @@ fun ItemSearchScreen(
                     LazyColumn(
                         state = categoryListState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = spacing.xl),
+                        verticalArrangement = Arrangement.spacedBy(spacing.md),
                     ) {
                         item {
                             Text(
                                 text = stringResource(R.string.quick_categories),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 ),
                             )
@@ -203,14 +202,13 @@ fun ItemSearchScreen(
                         ),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         ),
                     )
                     LazyColumn(
                         state = searchResultListState,
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = spacing.xl),
+                        verticalArrangement = Arrangement.spacedBy(spacing.sm),
                     ) {
                         items(uiState.guides, key = { it.id }) { guide ->
                             DisposalItemCard(

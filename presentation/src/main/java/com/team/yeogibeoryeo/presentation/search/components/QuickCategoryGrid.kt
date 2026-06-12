@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -21,8 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.sizeIn
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
@@ -31,8 +30,10 @@ fun QuickCategoryGrid(
     onCategoryClick: (RepresentativeGuideCategory) -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val itemWidth = 72.dp
-        val horizontalSpace = 16.dp
+        val spacing = ItemSearchLayoutDefaults.spacing
+        val size = ItemSearchLayoutDefaults.size
+        val itemWidth = size.categoryCell
+        val horizontalSpace = spacing.md
         val columnCount =
             ((maxWidth + horizontalSpace) / (itemWidth + horizontalSpace))
                 .toInt()
@@ -40,7 +41,7 @@ fun QuickCategoryGrid(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing.md),
             horizontalAlignment = Alignment.Start,
         ) {
             categories.chunked(columnCount).forEach { rowCategories ->
@@ -70,26 +71,33 @@ private fun QuickCategoryItem(
     name: String,
     onClick: () -> Unit
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val size = ItemSearchLayoutDefaults.size
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(spacing.xs),
         modifier = Modifier
-            .width(72.dp)
+            .sizeIn(
+                minWidth = size.minTouchTarget,
+                minHeight = size.minTouchTarget,
+            )
+            .width(size.categoryCell)
             .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(size.categoryTile)
                 .background(
                     color = category.containerColor(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = MaterialTheme.shapes.large
                 ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 painter = painterResource(id = category.iconResId),
                 contentDescription = null,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(size.iconLarge),
                 tint = category.iconTint()
             )
         }
@@ -98,7 +106,6 @@ private fun QuickCategoryItem(
             style = MaterialTheme.typography.labelMedium.copy(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 13.sp
             ),
             minLines = 2,
             textAlign = TextAlign.Center,

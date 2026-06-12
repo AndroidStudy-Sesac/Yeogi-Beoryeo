@@ -10,10 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.SearchBarField
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
 fun ItemSearchBar(
@@ -23,6 +23,8 @@ fun ItemSearchBar(
     modifier: Modifier = Modifier,
     placeholder: String,
 ) {
+    val size = ItemSearchLayoutDefaults.size
+
     SearchBarField(
         modifier = modifier.fillMaxWidth(),
         keyword = keyword,
@@ -50,12 +52,12 @@ fun ItemSearchBar(
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_search),
                     contentDescription = stringResource(R.string.search_action),
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(size.iconSmall),
                     tint = searchIconColor,
                 )
             }
         },
-        minHeight = 56.dp,
+        minHeight = size.searchFieldHeight,
         searchEnabled = { it.isNotBlank() },
     )
 }

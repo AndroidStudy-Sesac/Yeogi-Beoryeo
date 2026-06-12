@@ -150,6 +150,128 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
+    fun `현재 위치 검색은 신선한 캐시가 있으면 캐시를 먼저 표시하고 조용히 갱신한다`() =
+        runTest {
+            val currentLocationResult = CompletableDeferred<CurrentLocationResult>()
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val refreshedSpot = sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(refreshedSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    currentLocationResult.await()
+                },
+                recentCurrentLocationSpotCacheRepository =
+                    FakeRecentCurrentLocationSpotCacheRepository(
+                        entry = freshCacheEntry(listOf(cachedSpot)),
+                    ),
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(0, repository.locationSearchCallCount)
+
+            currentLocationResult.complete(
+                CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals(listOf(refreshedSpot), viewModel.uiState.value.spots)
+            assertEquals(1, repository.locationSearchCallCount)
+        }
+
+    @Test
+    fun `지도 중심 검색은 전달된 카메라 중심 좌표로 수거 장소를 검색한다`() =
+        runTest {
+            val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)
+            val expectedSpots = listOf(sampleSpot("map-center", CollectionSpotType.RECYCLING_CENTER))
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = expectedSpots,
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByMapCenter(mapCenterCoordinate)
+            advanceUntilIdle()
+
+            assertEquals(mapCenterCoordinate, repository.lastLocationCoordinate)
+            assertEquals(500, repository.lastRadiusMeter)
+            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+            assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
+            assertNull(viewModel.uiState.value.selectedSpot)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `지도 중심 검색 중 검색어를 입력하면 진행 중인 지도 중심 검색을 취소한다`() =
+        runTest {
+            val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)
+            val mapCenterSearchResult = CompletableDeferred<List<CollectionSpot>>()
+            val repository = FakeCollectionSpotRepository(
+                locationSearchResultProvider = { mapCenterSearchResult.await() },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.searchByMapCenter(mapCenterCoordinate)
+            advanceUntilIdle()
+
+            assertEquals(true, viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
+
+            viewModel.onSearchKeywordChanged("문래동")
+            mapCenterSearchResult.complete(
+                listOf(sampleSpot("map-center", CollectionSpotType.RECYCLING_CENTER)),
+            )
+            advanceUntilIdle()
+
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+            assertEquals(false, viewModel.uiState.value.hasSearched)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `현재 위치 기준 검색과 지도 중심 기준 검색은 서로 다른 좌표를 사용한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+            assertEquals(currentCoordinate, repository.lastLocationCoordinate)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+
+            viewModel.searchByMapCenter(mapCenterCoordinate)
+            advanceUntilIdle()
+
+            assertEquals(mapCenterCoordinate, repository.lastLocationCoordinate)
+            assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
     fun `현재 위치 주변 수거 장소 검색 실패 시 errorMessage를 표시하고 notice는 설정하지 않는다`() =
         runTest {
             val repository = FakeCollectionSpotRepository(
@@ -333,7 +455,7 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
-    fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 비우고 현재 위치 결과를 반영한다`() =
+    fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 유지하고 현재 위치 결과를 반영한다`() =
         runTest {
             val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
             val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
@@ -354,7 +476,7 @@ class CollectionSpotMapViewModelTest {
             viewModel.searchByCurrentLocation()
             advanceUntilIdle()
 
-            assertEquals("", viewModel.uiState.value.searchKeyword)
+            assertEquals("용답동", viewModel.uiState.value.searchKeyword)
             assertEquals(listOf(locationSpot), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)

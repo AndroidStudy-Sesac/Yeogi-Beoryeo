@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
@@ -8,12 +9,16 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleFavoriteUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
+import com.team.yeogibeoryeo.presentation.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,6 +33,8 @@ constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ItemGuideDetailUiState>(ItemGuideDetailUiState.Loading)
     val uiState: StateFlow<ItemGuideDetailUiState> = _uiState.asStateFlow()
+    private val _events = MutableSharedFlow<ItemGuideDetailEvent>()
+    val events: SharedFlow<ItemGuideDetailEvent> = _events.asSharedFlow()
     private var loadGuideJob: Job? = null
     private var favoriteJob: Job? = null
 
@@ -45,12 +52,18 @@ constructor(
                         _uiState.value = ItemGuideDetailUiState.Success(guide = guide)
                         observeFavorite(guide)
                     } else {
-                        _uiState.value = ItemGuideDetailUiState.Error("다시 검색해서 품목을 선택해주세요.")
+                        _uiState.value =
+                            ItemGuideDetailUiState.Error(
+                                R.string.item_guide_detail_select_again_message,
+                            )
                     }
                 } catch (exception: CancellationException) {
                     throw exception
                 } catch (exception: Throwable) {
-                    _uiState.value = ItemGuideDetailUiState.Error("품목 정보를 불러오는 중 오류가 발생했습니다.")
+                    _uiState.value =
+                        ItemGuideDetailUiState.Error(
+                            R.string.item_guide_detail_load_failed_message,
+                        )
                 }
             }
     }
@@ -68,29 +81,15 @@ constructor(
                         savedAtMillis = System.currentTimeMillis(),
                     ),
                 )
-            _uiState.update { state ->
-                if (state is ItemGuideDetailUiState.Success && state.guide.id == guide.id) {
-                    state.copy(
-                        favoriteMessage =
-                            if (isFavorite) {
-                                "즐겨찾기에 추가되었습니다"
-                            } else {
-                                "즐겨찾기에서 제외되었습니다"
-                            },
-                    )
+            val messageResId =
+                if (isFavorite) {
+                    R.string.item_guide_detail_favorite_added_message
                 } else {
-                    state
+                    R.string.item_guide_detail_favorite_removed_message
                 }
-            }
-        }
-    }
-
-    fun clearFavoriteMessage() {
-        _uiState.update { state ->
-            if (state is ItemGuideDetailUiState.Success) {
-                state.copy(favoriteMessage = null)
-            } else {
-                state
+            val latestState = uiState.value
+            if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
+                _events.emit(ItemGuideDetailEvent.ShowFavoriteMessage(messageResId))
             }
         }
     }
@@ -118,10 +117,15 @@ sealed interface ItemGuideDetailUiState {
     data class Success(
         val guide: DisposalItemGuide,
         val isFavorite: Boolean = false,
-        val favoriteMessage: String? = null,
     ) : ItemGuideDetailUiState
 
     data class Error(
-        val message: String,
+        @param:StringRes val messageResId: Int,
     ) : ItemGuideDetailUiState
+}
+
+sealed interface ItemGuideDetailEvent {
+    data class ShowFavoriteMessage(
+        @param:StringRes val messageResId: Int,
+    ) : ItemGuideDetailEvent
 }
