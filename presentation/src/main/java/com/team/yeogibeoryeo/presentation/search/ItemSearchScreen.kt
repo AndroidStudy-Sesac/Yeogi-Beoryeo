@@ -109,19 +109,19 @@ fun ItemSearchScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp)
-            .padding(top = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+            .padding(horizontal = ItemSearchScreenHorizontalPadding)
+            .padding(top = ItemSearchScreenTopPadding),
+        verticalArrangement = Arrangement.spacedBy(ItemSearchScreenContentSpacing),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ItemSearchScreenHeaderSpacing)) {
             Text(
-                text = "여기 버려",
+                text = stringResource(R.string.item_search_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.",
+                text = stringResource(R.string.item_search_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -140,7 +140,7 @@ fun ItemSearchScreen(
         // 검색 결과 또는 제안 섹션
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(ItemSearchScreenSectionSpacing),
         ) {
             when {
                 uiState.isLoading -> {
@@ -169,15 +169,15 @@ fun ItemSearchScreen(
                     LazyColumn(
                         state = categoryListState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = ItemSearchScreenListBottomPadding),
+                        verticalArrangement = Arrangement.spacedBy(ItemSearchScreenSectionSpacing),
                     ) {
                         item {
                             Text(
                                 text = stringResource(R.string.quick_categories),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
+                                    fontSize = ItemSearchScreenSectionTitleFontSize,
                                     color = MaterialTheme.colorScheme.onSurface
                                 ),
                             )
@@ -203,14 +203,14 @@ fun ItemSearchScreen(
                         ),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
+                            fontSize = ItemSearchScreenResultCountFontSize,
                             color = MaterialTheme.colorScheme.onSurface
                         ),
                     )
                     LazyColumn(
                         state = searchResultListState,
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = ItemSearchScreenListBottomPadding),
+                        verticalArrangement = Arrangement.spacedBy(ItemSearchScreenResultItemSpacing),
                     ) {
                         items(uiState.guides, key = { it.id }) { guide ->
                             DisposalItemCard(
@@ -225,3 +225,13 @@ fun ItemSearchScreen(
         }
     }
 }
+
+private val ItemSearchScreenHorizontalPadding = 24.dp
+private val ItemSearchScreenTopPadding = 24.dp
+private val ItemSearchScreenContentSpacing = 24.dp
+private val ItemSearchScreenHeaderSpacing = 8.dp
+private val ItemSearchScreenSectionSpacing = 16.dp
+private val ItemSearchScreenResultItemSpacing = 12.dp
+private val ItemSearchScreenListBottomPadding = 24.dp
+private val ItemSearchScreenSectionTitleFontSize = 18.sp
+private val ItemSearchScreenResultCountFontSize = 16.sp

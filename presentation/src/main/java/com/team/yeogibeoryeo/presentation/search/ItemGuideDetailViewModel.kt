@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
@@ -8,6 +9,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleFavoriteUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
+import com.team.yeogibeoryeo.presentation.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -45,12 +47,18 @@ constructor(
                         _uiState.value = ItemGuideDetailUiState.Success(guide = guide)
                         observeFavorite(guide)
                     } else {
-                        _uiState.value = ItemGuideDetailUiState.Error("다시 검색해서 품목을 선택해주세요.")
+                        _uiState.value =
+                            ItemGuideDetailUiState.Error(
+                                R.string.item_guide_detail_select_again_message,
+                            )
                     }
                 } catch (exception: CancellationException) {
                     throw exception
                 } catch (exception: Throwable) {
-                    _uiState.value = ItemGuideDetailUiState.Error("품목 정보를 불러오는 중 오류가 발생했습니다.")
+                    _uiState.value =
+                        ItemGuideDetailUiState.Error(
+                            R.string.item_guide_detail_load_failed_message,
+                        )
                 }
             }
     }
@@ -71,11 +79,11 @@ constructor(
             _uiState.update { state ->
                 if (state is ItemGuideDetailUiState.Success && state.guide.id == guide.id) {
                     state.copy(
-                        favoriteMessage =
+                        favoriteMessageResId =
                             if (isFavorite) {
-                                "즐겨찾기에 추가되었습니다"
+                                R.string.item_guide_detail_favorite_added_message
                             } else {
-                                "즐겨찾기에서 제외되었습니다"
+                                R.string.item_guide_detail_favorite_removed_message
                             },
                     )
                 } else {
@@ -88,7 +96,7 @@ constructor(
     fun clearFavoriteMessage() {
         _uiState.update { state ->
             if (state is ItemGuideDetailUiState.Success) {
-                state.copy(favoriteMessage = null)
+                state.copy(favoriteMessageResId = null)
             } else {
                 state
             }
@@ -118,10 +126,10 @@ sealed interface ItemGuideDetailUiState {
     data class Success(
         val guide: DisposalItemGuide,
         val isFavorite: Boolean = false,
-        val favoriteMessage: String? = null,
+        @param:StringRes val favoriteMessageResId: Int? = null,
     ) : ItemGuideDetailUiState
 
     data class Error(
-        val message: String,
+        @param:StringRes val messageResId: Int,
     ) : ItemGuideDetailUiState
 }

@@ -10,6 +10,7 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
+import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -74,7 +75,7 @@ class ItemGuideDetailViewModelTest {
 
             val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
             assertTrue(state.isFavorite)
-            assertEquals("즐겨찾기에 추가되었습니다", state.favoriteMessage)
+            assertEquals(R.string.item_guide_detail_favorite_added_message, state.favoriteMessageResId)
         }
 
     @Test
@@ -105,7 +106,7 @@ class ItemGuideDetailViewModelTest {
 
             val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
             assertFalse(state.isFavorite)
-            assertEquals("즐겨찾기에서 제외되었습니다", state.favoriteMessage)
+            assertEquals(R.string.item_guide_detail_favorite_removed_message, state.favoriteMessageResId)
         }
 
     @Test
