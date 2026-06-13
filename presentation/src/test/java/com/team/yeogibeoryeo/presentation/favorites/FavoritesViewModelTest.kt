@@ -9,8 +9,7 @@ import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSn
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSnapshotRepository
-import com.team.yeogibeoryeo.domain.favorite.usecase.GetCollectionSpotFavoriteSnapshotUseCase
-import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavoriteSnapshotsUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveCollectionSpotFavoriteUseCase
@@ -486,8 +485,11 @@ class FavoritesViewModelTest {
     ): FavoritesViewModel =
         FavoritesViewModel(
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
-            observeCollectionSpotFavoriteSnapshotsUseCase =
-                ObserveCollectionSpotFavoriteSnapshotsUseCase(collectionSpotSnapshotRepository),
+            observeCollectionSpotFavoritesUseCase =
+                ObserveCollectionSpotFavoritesUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = collectionSpotSnapshotRepository,
+                ),
             observeRegionalGuideFavoriteSnapshotsUseCase =
                 ObserveRegionalGuideFavoriteSnapshotsUseCase(regionalGuideSnapshotRepository),
             removeCollectionSpotFavoriteUseCase =
@@ -507,10 +509,7 @@ class FavoritesViewModelTest {
                         ),
                 ),
             itemGuideUiMapper = FavoriteItemGuideUiMapper(GetDisposalItemGuideUseCase(itemRepository)),
-            collectionSpotUiMapper =
-                FavoriteCollectionSpotUiMapper(
-                    GetCollectionSpotFavoriteSnapshotUseCase(collectionSpotSnapshotRepository),
-                ),
+            collectionSpotUiMapper = FavoriteCollectionSpotUiMapper(),
             regionalGuideUiMapper = FavoriteRegionalGuideUiMapper(),
         )
 

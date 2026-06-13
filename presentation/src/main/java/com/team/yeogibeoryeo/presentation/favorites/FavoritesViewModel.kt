@@ -3,7 +3,7 @@ package com.team.yeogibeoryeo.presentation.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavoriteSnapshotsUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveCollectionSpotFavoriteUseCase
@@ -26,7 +26,7 @@ class FavoritesViewModel
     @Inject
     constructor(
         observeFavoritesUseCase: ObserveFavoritesUseCase,
-        observeCollectionSpotFavoriteSnapshotsUseCase: ObserveCollectionSpotFavoriteSnapshotsUseCase,
+        observeCollectionSpotFavoritesUseCase: ObserveCollectionSpotFavoritesUseCase,
         observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
         private val removeCollectionSpotFavoriteUseCase: RemoveCollectionSpotFavoriteUseCase,
         private val removeRegionalGuideFavoriteUseCase: RemoveRegionalGuideFavoriteUseCase,
@@ -40,24 +40,15 @@ class FavoritesViewModel
             combine(
                 selectedTab,
                 observeFavoritesUseCase(),
-                observeCollectionSpotFavoriteSnapshotsUseCase(),
+                observeCollectionSpotFavoritesUseCase(),
                 observeRegionalGuideFavoriteSnapshotsUseCase(),
-            ) { selectedTab, favorites, collectionSpotSnapshots, regionalGuideSnapshots ->
+            ) { selectedTab, favorites, collectionSpotFavorites, regionalGuideSnapshots ->
                 val itemGuideFavorites =
                     favorites
                         .filter { it.type == FavoriteTargetType.ITEM_GUIDE }
                         .mapNotNull { favorite -> itemGuideUiMapper.map(favorite) }
-                val collectionSpotFavoriteIds =
-                    favorites
-                        .filter { it.type == FavoriteTargetType.COLLECTION_SPOT }
-                val collectionSpotSnapshotsById =
-                    collectionSpotSnapshots.associateBy { snapshot -> snapshot.targetId }
-                val collectionSpotFavorites =
-                    collectionSpotFavoriteIds
-                        .mapNotNull { favorite ->
-                            collectionSpotSnapshotsById[favorite.targetId]
-                                ?.let { snapshot -> collectionSpotUiMapper.map(snapshot) }
-                        }
+                val collectionSpotFavoriteUiModels =
+                    collectionSpotFavorites.map { favorite -> collectionSpotUiMapper.map(favorite) }
                 val regionalGuideSnapshotsById =
                     regionalGuideSnapshots.associateBy { snapshot -> snapshot.targetId }
                 val regionalGuideFavorites =
@@ -71,7 +62,7 @@ class FavoritesViewModel
                     FavoritesUiState(
                         selectedTab = selectedTab,
                         itemGuideFavorites = itemGuideFavorites,
-                        collectionSpotFavorites = collectionSpotFavorites,
+                        collectionSpotFavorites = collectionSpotFavoriteUiModels,
                         regionalGuideFavorites = regionalGuideFavorites,
                     )
                 }
