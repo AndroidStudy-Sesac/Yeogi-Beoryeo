@@ -69,7 +69,7 @@ fun ItemSearchInitialContent(
                     Text(
                         text = stringResource(R.string.quick_categories)
                             .withKoreanLineBreakOpportunities(),
-                        style = MaterialTheme.typography.titleMedium.copy(
+                        style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         ),
@@ -96,7 +96,7 @@ fun ItemSearchHeader(
     ) {
         Text(
             text = stringResource(R.string.item_search_title),
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
