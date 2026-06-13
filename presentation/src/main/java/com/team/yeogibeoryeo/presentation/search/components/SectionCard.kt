@@ -10,9 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineBreak
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.koreanTextLineBreak
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 /**
@@ -68,12 +67,10 @@ private fun SectionLines(
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         lines.forEachIndexed { index, line ->
             Text(
-                text =
-                    (if (numbered) "${index + 1}. $line" else line)
-                        .withKoreanLineBreakOpportunities(),
+                text = if (numbered) "${index + 1}. $line" else line,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineBreak = koreanBodyLineBreak,
+                    lineBreak = koreanTextLineBreak,
                 ),
             )
         }
@@ -98,7 +95,7 @@ private fun SectionRow(
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
-                lineBreak = koreanBodyLineBreak,
+                lineBreak = koreanTextLineBreak,
             ),
         )
         Text(
@@ -106,15 +103,8 @@ private fun SectionRow(
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineBreak = koreanBodyLineBreak,
+                lineBreak = koreanTextLineBreak,
             ),
         )
     }
 }
-
-private val koreanBodyLineBreak =
-    LineBreak(
-        strategy = LineBreak.Strategy.Simple,
-        strictness = LineBreak.Strictness.Loose,
-        wordBreak = LineBreak.WordBreak.Unspecified,
-    )

@@ -12,10 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineBreak
-import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
+import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.koreanTextLineBreak
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 /**
@@ -50,18 +49,18 @@ fun DisposalInstructionCard(
             instructions.forEach { instruction ->
                 Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                     Text(
-                        text = instruction.method.withKoreanLineBreakOpportunities(),
+                        text = instruction.method,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.Medium,
-                            lineBreak = koreanBodyLineBreak,
+                            lineBreak = koreanTextLineBreak,
                         ),
                     )
                     instruction.tip?.let {
                         Text(
-                            text = it.withKoreanLineBreakOpportunities(),
+                            text = it,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.84f),
-                                lineBreak = koreanBodyLineBreak,
+                                lineBreak = koreanTextLineBreak,
                             ),
                         )
                     }
@@ -70,10 +69,3 @@ fun DisposalInstructionCard(
         }
     }
 }
-
-private val koreanBodyLineBreak =
-    LineBreak(
-        strategy = LineBreak.Strategy.Simple,
-        strictness = LineBreak.Strictness.Loose,
-        wordBreak = LineBreak.WordBreak.Unspecified,
-    )

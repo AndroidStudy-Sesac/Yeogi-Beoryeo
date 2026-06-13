@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,40 +32,48 @@ fun ItemSearchInitialContent(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
 
-    LazyColumn(
-        state = listState,
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = spacing.xl)
-            .padding(top = spacing.xl),
-        contentPadding = PaddingValues(bottom = spacing.xl),
-        verticalArrangement = Arrangement.spacedBy(spacing.xl),
+            .background(MaterialTheme.colorScheme.background),
     ) {
-        item {
-            ItemSearchHeader()
-        }
+        val metrics = itemSearchScreenMetrics(maxWidth = maxWidth)
 
-        item {
-            ItemSearchBar(
-                keyword = query,
-                onKeywordChange = onQueryChange,
-                onSearchClick = onSearchClick,
-                placeholder = stringResource(R.string.item_search_query_label),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = metrics.horizontalPadding)
+                .padding(top = metrics.topPadding),
+            contentPadding = PaddingValues(bottom = metrics.listBottomPadding),
+            verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
+        ) {
+            item {
+                ItemSearchHeader()
+            }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-                Text(
-                    text = stringResource(R.string.quick_categories),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
+            item {
+                ItemSearchBar(
+                    keyword = query,
+                    onKeywordChange = onQueryChange,
+                    onSearchClick = onSearchClick,
+                    placeholder = stringResource(R.string.item_search_query_label),
+                    modifier = Modifier.fillMaxWidth(),
+                    iconSize = metrics.searchIconSize,
                 )
-                QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
+            }
+
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
+                    Text(
+                        text = stringResource(R.string.quick_categories),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                    )
+                    QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
+                }
             }
         }
     }
@@ -82,13 +91,13 @@ fun ItemSearchHeader(
     ) {
         Text(
             text = stringResource(R.string.item_search_title),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.item_search_description),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

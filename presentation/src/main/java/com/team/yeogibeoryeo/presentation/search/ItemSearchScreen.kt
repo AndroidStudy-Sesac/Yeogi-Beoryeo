@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.search
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -98,8 +101,6 @@ fun ItemSearchScreen(
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
-    val spacing = ItemSearchLayoutDefaults.spacing
-
     if (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null) {
         ItemSearchInitialContent(
             query = uiState.query,
@@ -112,75 +113,115 @@ fun ItemSearchScreen(
         return
     }
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = spacing.xl)
-            .padding(top = spacing.xl),
-        verticalArrangement = Arrangement.spacedBy(spacing.xl),
+            .background(MaterialTheme.colorScheme.background),
     ) {
-        ItemSearchHeader()
-
-        ItemSearchBar(
-            keyword = uiState.query,
-            onKeywordChange = onQueryChange,
-            onSearchClick = {
-                onSearchClick()
-            },
-            placeholder = stringResource(R.string.item_search_query_label),
-            modifier = Modifier.fillMaxWidth(),
-        )
+        val spacing = ItemSearchLayoutDefaults.spacing
+        val metrics = itemSearchScreenMetrics(maxWidth = maxWidth)
 
         Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(spacing.md)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = metrics.horizontalPadding)
+                .padding(top = metrics.topPadding),
+            verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
         ) {
-            when {
-                uiState.isLoading -> {
-                    ItemSearchLoadingContent(modifier = Modifier.fillMaxSize())
-                }
+            ItemSearchHeader()
 
-                uiState.errorMessageResId != null -> {
-                    EmptySearchResult(
-                        title = stringResource(uiState.errorMessageResId),
-                        description = stringResource(R.string.retry_later_message),
-                    )
-                }
+            ItemSearchBar(
+                keyword = uiState.query,
+                onKeywordChange = onQueryChange,
+                onSearchClick = {
+                    onSearchClick()
+                },
+                placeholder = stringResource(R.string.item_search_query_label),
+                modifier = Modifier.fillMaxWidth(),
+                iconSize = metrics.searchIconSize,
+            )
 
-                uiState.guides.isEmpty() -> {
-                    EmptySearchResult(
-                        title = stringResource(R.string.no_search_results_title),
-                        description = stringResource(R.string.no_search_results_description),
-                    )
-                }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        ItemSearchLoadingContent(modifier = Modifier.fillMaxSize())
+                    }
 
-                else -> {
-                    Text(
-                        text = stringResource(
-                            R.string.search_results_count,
-                            uiState.guides.size
-                        ),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                    )
-                    LazyColumn(
-                        state = searchResultListState,
-                        contentPadding = PaddingValues(bottom = spacing.xl),
-                        verticalArrangement = Arrangement.spacedBy(spacing.sm),
-                    ) {
-                        items(uiState.guides, key = { it.id }) { guide ->
-                            DisposalItemCard(
-                                guide = guide,
-                                onClick = { onGuideClick(guide) },
-                                isFavorite = guide.id in uiState.favoriteGuideIds,
-                            )
+                    uiState.errorMessageResId != null -> {
+                        EmptySearchResult(
+                            title = stringResource(uiState.errorMessageResId),
+                            description = stringResource(R.string.retry_later_message),
+                        )
+                    }
+
+                    uiState.guides.isEmpty() -> {
+                        EmptySearchResult(
+                            title = stringResource(R.string.no_search_results_title),
+                            description = stringResource(R.string.no_search_results_description),
+                        )
+                    }
+
+                    else -> {
+                        Text(
+                            text = stringResource(
+                                R.string.search_results_count,
+                                uiState.guides.size
+                            ),
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                        )
+                        LazyColumn(
+                            state = searchResultListState,
+                            contentPadding = PaddingValues(bottom = metrics.listBottomPadding),
+                            verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                        ) {
+                            items(uiState.guides, key = { it.id }) { guide ->
+                                DisposalItemCard(
+                                    guide = guide,
+                                    onClick = { onGuideClick(guide) },
+                                    isFavorite = guide.id in uiState.favoriteGuideIds,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+internal fun itemSearchScreenMetrics(
+    maxWidth: Dp,
+): ItemSearchScreenMetrics {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val size = ItemSearchLayoutDefaults.size
+    val isNarrowPhone = maxWidth < ItemSearchScreenBreakpoints.NarrowPhoneWidth
+
+    return ItemSearchScreenMetrics(
+        horizontalPadding = if (isNarrowPhone) spacing.md else spacing.xl,
+        topPadding = if (isNarrowPhone) spacing.lg else spacing.xl,
+        screenVerticalSpace = if (isNarrowPhone) spacing.lg else spacing.xl,
+        sectionVerticalSpace = spacing.md,
+        listBottomPadding = spacing.xl,
+        searchIconSize = if (isNarrowPhone) size.iconStandard else size.iconSmall,
+    )
+}
+
+internal data class ItemSearchScreenMetrics(
+    val horizontalPadding: Dp,
+    val topPadding: Dp,
+    val screenVerticalSpace: Dp,
+    val sectionVerticalSpace: Dp,
+    val listBottomPadding: Dp,
+    val searchIconSize: Dp,
+)
+
+private object ItemSearchScreenBreakpoints {
+    val NarrowPhoneWidth = 360.dp
 }
