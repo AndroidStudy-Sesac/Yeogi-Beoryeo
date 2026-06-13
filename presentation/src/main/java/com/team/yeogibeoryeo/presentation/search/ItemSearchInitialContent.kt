@@ -96,7 +96,7 @@ fun ItemSearchHeader(
     ) {
         Text(
             text = stringResource(R.string.item_search_title),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
