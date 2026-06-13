@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -153,6 +154,7 @@ fun SpotDetailBottomSheetContent(
     spot: CollectionSpot,
     isNearbyLoading: Boolean = false,
     onFavoriteClick: (CollectionSpot) -> Unit,
+    onRegionalGuideClick: (String) -> Unit = {},
     onCloseClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -169,6 +171,17 @@ fun SpotDetailBottomSheetContent(
             onFavoriteClick = onFavoriteClick,
             modifier = Modifier.fillMaxWidth(),
         )
+
+        if (spot.address.isNotBlank()) {
+            FilledTonalButton(
+                onClick = { onRegionalGuideClick(spot.address) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+            ) {
+                Text(text = "이 지역 배출 정보 보기")
+            }
+        }
 
         Row(
             modifier = Modifier

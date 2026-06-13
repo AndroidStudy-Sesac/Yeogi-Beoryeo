@@ -45,6 +45,7 @@ import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 fun CollectionSpotMapScreen(
     favoriteSpotMoveRequest: FavoriteSpotMapMoveRequest? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    onRegionalGuideClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
@@ -113,6 +114,7 @@ fun CollectionSpotMapScreen(
         onSpotClick = viewModel::onSpotClick,
         onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+        onRegionalGuideClick = onRegionalGuideClick,
         modifier = modifier,
     )
 }
@@ -132,6 +134,7 @@ private fun CollectionSpotMapContent(
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
     onBottomBarVisibilityChanged: (Boolean) -> Unit,
+    onRegionalGuideClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isSpotSearchLoading = uiState.isLoading &&
@@ -342,6 +345,7 @@ private fun CollectionSpotMapContent(
                             spot = selectedSpot,
                             isNearbyLoading = uiState.isFavoriteSpotNearbyLoading,
                             onFavoriteClick = onSpotFavoriteClick,
+                            onRegionalGuideClick = onRegionalGuideClick,
                             onCloseClick = {
                                 mapUiMode = MapUiMode.ResultList
                                 sheetLevel = MapSheetLevel.Peek
@@ -428,6 +432,7 @@ private fun CollectionSpotMapContentPreview() {
                 onSpotClick = {},
                 onSpotFavoriteClick = {},
                 onBottomBarVisibilityChanged = {},
+                onRegionalGuideClick = {},
             )
         }
     }
