@@ -26,7 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.text.koreanTextLineBreak
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
@@ -171,7 +170,6 @@ private fun QuickCategoryItem(
             style = metrics.labelTextStyle.copy(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground,
-                lineBreak = koreanTextLineBreak,
             ),
             minLines = 2,
             textAlign = TextAlign.Center,

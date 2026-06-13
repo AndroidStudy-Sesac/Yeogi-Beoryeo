@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
-import com.team.yeogibeoryeo.presentation.common.text.koreanTextLineBreak
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
@@ -74,7 +73,6 @@ private fun SectionLines(
                 text = text.withKoreanSyllableBreakOpportunities(),
                 style = textStyles.body.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineBreak = koreanTextLineBreak,
                 ),
             )
         }
@@ -100,7 +98,6 @@ private fun SectionRow(
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
-                lineBreak = koreanTextLineBreak,
             ),
         )
         Text(
@@ -108,7 +105,6 @@ private fun SectionRow(
             modifier = Modifier.weight(1f),
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineBreak = koreanTextLineBreak,
             ),
         )
     }

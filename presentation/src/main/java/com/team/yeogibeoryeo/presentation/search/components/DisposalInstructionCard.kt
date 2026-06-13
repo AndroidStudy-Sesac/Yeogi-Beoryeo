@@ -14,7 +14,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.text.koreanTextLineBreak
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
@@ -55,7 +54,6 @@ fun DisposalInstructionCard(
                         text = instruction.method.withKoreanSyllableBreakOpportunities(),
                         style = textStyles.emphasizedBody.copy(
                             fontWeight = FontWeight.Medium,
-                            lineBreak = koreanTextLineBreak,
                         ),
                     )
                     instruction.tip?.let {
@@ -63,7 +61,6 @@ fun DisposalInstructionCard(
                             text = it.withKoreanSyllableBreakOpportunities(),
                             style = textStyles.supportingBody.copy(
                                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.84f),
-                                lineBreak = koreanTextLineBreak,
                             ),
                         )
                     }
