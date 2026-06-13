@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
@@ -44,14 +44,14 @@ private fun SubGuideItem(
 
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         Text(
-            text = name.withKoreanSyllableBreakOpportunities(),
+            text = name.withKoreanLineBreakOpportunities(),
             style = textStyles.subGuideTitle.copy(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             ),
         )
         Text(
-            text = summary.withKoreanSyllableBreakOpportunities(),
+            text = summary.withKoreanLineBreakOpportunities(),
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             ),

@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
@@ -165,7 +165,7 @@ private fun QuickCategoryItem(
             )
         }
         Text(
-            text = name.withKoreanSyllableBreakOpportunities(),
+            text = name.withKoreanLineBreakOpportunities(),
             modifier = Modifier.width(metrics.cellSize),
             style = metrics.labelTextStyle.copy(
                 fontWeight = FontWeight.Medium,

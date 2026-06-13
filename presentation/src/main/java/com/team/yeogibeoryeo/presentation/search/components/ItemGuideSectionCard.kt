@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
@@ -57,7 +57,7 @@ internal fun ItemGuideSectionTitle(
     val textStyles = itemGuideDetailTextStyles()
 
     Text(
-        text = text.withKoreanSyllableBreakOpportunities(),
+        text = text.withKoreanLineBreakOpportunities(),
         modifier = modifier,
         style = textStyles.sectionTitle.copy(
             fontWeight = FontWeight.Bold,

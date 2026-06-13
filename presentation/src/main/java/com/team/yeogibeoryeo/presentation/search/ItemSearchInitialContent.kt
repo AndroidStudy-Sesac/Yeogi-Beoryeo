@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
@@ -68,7 +68,7 @@ fun ItemSearchInitialContent(
                 Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
                     Text(
                         text = stringResource(R.string.quick_categories)
-                            .withKoreanSyllableBreakOpportunities(),
+                            .withKoreanLineBreakOpportunities(),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -96,14 +96,14 @@ fun ItemSearchHeader(
     ) {
         Text(
             text = stringResource(R.string.item_search_title)
-                .withKoreanSyllableBreakOpportunities(),
+                .withKoreanLineBreakOpportunities(),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.item_search_description)
-                .withKoreanSyllableBreakOpportunities(),
+                .withKoreanLineBreakOpportunities(),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
