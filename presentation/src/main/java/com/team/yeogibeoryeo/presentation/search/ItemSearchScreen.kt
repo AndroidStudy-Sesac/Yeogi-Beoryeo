@@ -32,7 +32,6 @@ import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
-import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
@@ -102,43 +101,14 @@ fun ItemSearchScreen(
     val spacing = ItemSearchLayoutDefaults.spacing
 
     if (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null) {
-        LazyColumn(
-            state = categoryListState,
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = spacing.xl)
-                .padding(top = spacing.xl),
-            contentPadding = PaddingValues(bottom = spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(spacing.xl),
-        ) {
-            item {
-                ItemSearchHeader()
-            }
-
-            item {
-                ItemSearchBar(
-                    keyword = uiState.query,
-                    onKeywordChange = onQueryChange,
-                    onSearchClick = onSearchClick,
-                    placeholder = stringResource(R.string.item_search_query_label),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-                    Text(
-                        text = stringResource(R.string.quick_categories),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                    )
-                    QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
-                }
-            }
-        }
+        ItemSearchInitialContent(
+            query = uiState.query,
+            onQueryChange = onQueryChange,
+            onSearchClick = onSearchClick,
+            onQuickCategoryClick = onQuickCategoryClick,
+            listState = categoryListState,
+            modifier = modifier,
+        )
         return
     }
 
@@ -162,7 +132,6 @@ fun ItemSearchScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // 검색 결과 또는 제안 섹션
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(spacing.md)
@@ -213,29 +182,5 @@ fun ItemSearchScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ItemSearchHeader(
-    modifier: Modifier = Modifier,
-) {
-    val spacing = ItemSearchLayoutDefaults.spacing
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(spacing.xs),
-    ) {
-        Text(
-            text = stringResource(R.string.item_search_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(R.string.item_search_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
