@@ -95,16 +95,14 @@ fun ItemSearchHeader(
         verticalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         Text(
-            text = stringResource(R.string.item_search_title)
-                .withKoreanLineBreakOpportunities(),
-            style = MaterialTheme.typography.headlineMedium,
+            text = stringResource(R.string.item_search_title),
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = stringResource(R.string.item_search_description)
-                .withKoreanLineBreakOpportunities(),
-            style = MaterialTheme.typography.bodyLarge,
+            text = stringResource(R.string.item_search_description),
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
