@@ -25,8 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -194,35 +192,4 @@ fun ItemSearchScreen(
             }
         }
     }
-}
-
-@Composable
-internal fun itemSearchScreenMetrics(
-    maxWidth: Dp,
-): ItemSearchScreenMetrics {
-    val spacing = ItemSearchLayoutDefaults.spacing
-    val size = ItemSearchLayoutDefaults.size
-    val isNarrowPhone = maxWidth <= ItemSearchScreenBreakpoints.NarrowPhoneWidth
-
-    return ItemSearchScreenMetrics(
-        horizontalPadding = if (isNarrowPhone) spacing.md else spacing.xl,
-        topPadding = if (isNarrowPhone) spacing.lg else spacing.xl,
-        screenVerticalSpace = if (isNarrowPhone) spacing.lg else spacing.xl,
-        sectionVerticalSpace = spacing.md,
-        listBottomPadding = spacing.xl,
-        searchIconSize = if (isNarrowPhone) size.iconStandard else size.iconSmall,
-    )
-}
-
-internal data class ItemSearchScreenMetrics(
-    val horizontalPadding: Dp,
-    val topPadding: Dp,
-    val screenVerticalSpace: Dp,
-    val sectionVerticalSpace: Dp,
-    val listBottomPadding: Dp,
-    val searchIconSize: Dp,
-)
-
-private object ItemSearchScreenBreakpoints {
-    val NarrowPhoneWidth = 384.dp
 }
