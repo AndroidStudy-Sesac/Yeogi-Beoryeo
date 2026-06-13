@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteSnackbar
+import com.team.yeogibeoryeo.presentation.common.components.FavoriteSnackbar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchStatusDescription
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchStatusContent
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
