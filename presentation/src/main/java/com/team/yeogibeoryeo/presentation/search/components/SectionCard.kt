@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
 import com.team.yeogibeoryeo.presentation.common.text.koreanTextLineBreak
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
+import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
 /**
  * 부가적인 정보를 담는 카드 컴포넌트입니다.
@@ -63,12 +65,14 @@ private fun SectionLines(
     numbered: Boolean,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
+    val textStyles = itemGuideDetailTextStyles()
 
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         lines.forEachIndexed { index, line ->
+            val text = if (numbered) "${index + 1}. $line" else line
             Text(
-                text = if (numbered) "${index + 1}. $line" else line,
-                style = MaterialTheme.typography.bodyMedium.copy(
+                text = text.withKoreanSyllableBreakOpportunities(),
+                style = textStyles.body.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineBreak = koreanTextLineBreak,
                 ),
@@ -84,24 +88,25 @@ private fun SectionRow(
     labelModifier: Modifier = Modifier,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
+    val textStyles = itemGuideDetailTextStyles()
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Text(
-            text = label,
+            text = label.withKoreanSyllableBreakOpportunities(),
             modifier = labelModifier,
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
                 lineBreak = koreanTextLineBreak,
             ),
         )
         Text(
-            text = value,
+            text = value.withKoreanSyllableBreakOpportunities(),
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineBreak = koreanTextLineBreak,
             ),

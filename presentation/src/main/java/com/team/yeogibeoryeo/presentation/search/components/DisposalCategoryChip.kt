@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
@@ -42,7 +43,7 @@ internal fun MetadataChip(
                 .padding(horizontal = spacing.sm, vertical = spacing.xs),
     ) {
         Text(
-            text = text,
+            text = text.withKoreanSyllableBreakOpportunities(),
             style = MaterialTheme.typography.labelLarge,
             color = contentColor,
         )

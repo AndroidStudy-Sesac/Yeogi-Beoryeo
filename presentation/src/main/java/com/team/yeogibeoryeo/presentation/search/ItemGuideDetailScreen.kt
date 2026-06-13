@@ -31,6 +31,7 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
@@ -50,6 +51,7 @@ fun ItemGuideDetailScreen(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
+    val textStyles = itemGuideDetailTextStyles()
     val scrollState = rememberScrollState()
     val onBottomBarVisibilityChangedState by rememberUpdatedState(onBottomBarVisibilityChanged)
 
@@ -164,8 +166,8 @@ fun ItemGuideDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
                 Text(
-                    text = guide.name,
-                    style = MaterialTheme.typography.headlineMedium.copy(
+                    text = guide.name.withKoreanSyllableBreakOpportunities(),
+                    style = textStyles.title.copy(
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )

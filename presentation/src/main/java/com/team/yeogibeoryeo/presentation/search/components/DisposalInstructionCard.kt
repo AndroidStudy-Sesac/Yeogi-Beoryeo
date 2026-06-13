@@ -15,7 +15,9 @@ import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.koreanTextLineBreak
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
+import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
 /**
  * '버리는 방법'을 강조하여 보여주는 카드 컴포넌트입니다.
@@ -27,6 +29,7 @@ fun DisposalInstructionCard(
     modifier: Modifier = Modifier,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
+    val textStyles = itemGuideDetailTextStyles()
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -42,23 +45,23 @@ fun DisposalInstructionCard(
         ) {
             Text(
                 text = stringResource(R.string.disposal_method_title),
-                style = MaterialTheme.typography.titleLarge.copy(
+                style = textStyles.sectionTitle.copy(
                     fontWeight = FontWeight.Bold,
                 ),
             )
             instructions.forEach { instruction ->
                 Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                     Text(
-                        text = instruction.method,
-                        style = MaterialTheme.typography.bodyLarge.copy(
+                        text = instruction.method.withKoreanSyllableBreakOpportunities(),
+                        style = textStyles.emphasizedBody.copy(
                             fontWeight = FontWeight.Medium,
                             lineBreak = koreanTextLineBreak,
                         ),
                     )
                     instruction.tip?.let {
                         Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodyMedium.copy(
+                            text = it.withKoreanSyllableBreakOpportunities(),
+                            style = textStyles.supportingBody.copy(
                                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.84f),
                                 lineBreak = koreanTextLineBreak,
                             ),

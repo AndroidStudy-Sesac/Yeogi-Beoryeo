@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.team.yeogibeoryeo.common.design.theme.YeogiBeoryeoTheme
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
@@ -62,7 +63,7 @@ fun ItemSearchStatusTitle(
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = text,
+        text = text.withKoreanSyllableBreakOpportunities(),
         modifier = modifier,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
@@ -77,7 +78,7 @@ fun ItemSearchStatusDescription(
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = text,
+        text = text.withKoreanSyllableBreakOpportunities(),
         modifier = modifier,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

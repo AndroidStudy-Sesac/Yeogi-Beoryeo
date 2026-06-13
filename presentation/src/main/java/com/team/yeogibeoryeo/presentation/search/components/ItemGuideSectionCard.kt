@@ -14,7 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
+import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
 @Composable
 internal fun ItemGuideSectionCard(
@@ -52,10 +54,12 @@ internal fun ItemGuideSectionTitle(
     text: String,
     modifier: Modifier = Modifier,
 ) {
+    val textStyles = itemGuideDetailTextStyles()
+
     Text(
-        text = text,
+        text = text.withKoreanSyllableBreakOpportunities(),
         modifier = modifier,
-        style = MaterialTheme.typography.titleMedium.copy(
+        style = textStyles.sectionTitle.copy(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         ),

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.withKoreanSyllableBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
@@ -138,7 +139,7 @@ private fun BoxScope.FavoriteIndicator() {
 @Composable
 private fun ColumnScope.DisposalItemTitle(text: String) {
     Text(
-        text = text,
+        text = text.withKoreanSyllableBreakOpportunities(),
         modifier = Modifier.fillMaxWidth(),
         style = MaterialTheme.typography.titleMedium.copy(
             fontWeight = FontWeight.Bold,
@@ -152,7 +153,7 @@ private fun ColumnScope.DisposalItemTitle(text: String) {
 @Composable
 private fun ColumnScope.DisposalItemDescription(text: String) {
     Text(
-        text = text,
+        text = text.withKoreanSyllableBreakOpportunities(),
         style = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
