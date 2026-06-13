@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.presentation.favorites.components
+package com.team.yeogibeoryeo.presentation.common.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
