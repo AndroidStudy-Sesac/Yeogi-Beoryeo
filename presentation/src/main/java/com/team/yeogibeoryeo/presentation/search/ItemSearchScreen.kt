@@ -101,6 +101,47 @@ fun ItemSearchScreen(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
 
+    if (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null) {
+        LazyColumn(
+            state = categoryListState,
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = spacing.xl)
+                .padding(top = spacing.xl),
+            contentPadding = PaddingValues(bottom = spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(spacing.xl),
+        ) {
+            item {
+                ItemSearchHeader()
+            }
+
+            item {
+                ItemSearchBar(
+                    keyword = uiState.query,
+                    onKeywordChange = onQueryChange,
+                    onSearchClick = onSearchClick,
+                    placeholder = stringResource(R.string.item_search_query_label),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                    Text(
+                        text = stringResource(R.string.quick_categories),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                    )
+                    QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
+                }
+            }
+        }
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -109,19 +150,7 @@ fun ItemSearchScreen(
             .padding(top = spacing.xl),
         verticalArrangement = Arrangement.spacedBy(spacing.xl),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-            Text(
-                text = stringResource(R.string.item_search_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(R.string.item_search_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        ItemSearchHeader()
 
         ItemSearchBar(
             keyword = uiState.query,
@@ -148,28 +177,6 @@ fun ItemSearchScreen(
                         title = stringResource(uiState.errorMessageResId),
                         description = stringResource(R.string.retry_later_message),
                     )
-                }
-
-                !uiState.hasSearched -> {
-                    LazyColumn(
-                        state = categoryListState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = spacing.xl),
-                        verticalArrangement = Arrangement.spacedBy(spacing.md),
-                    ) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.quick_categories),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                ),
-                            )
-                        }
-                        item {
-                            QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
-                        }
-                    }
                 }
 
                 uiState.guides.isEmpty() -> {
@@ -206,5 +213,29 @@ fun ItemSearchScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ItemSearchHeader(
+    modifier: Modifier = Modifier,
+) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(spacing.xs),
+    ) {
+        Text(
+            text = stringResource(R.string.item_search_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = stringResource(R.string.item_search_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
