@@ -21,6 +21,11 @@ data class RegionalGuideRoute(
     val initialFavoriteTargetId: String? = null,
 )
 
+internal fun String.toRegionalGuideAddressRouteOrNull(): RegionalGuideRoute? =
+    trim()
+        .takeIf { address -> address.isNotBlank() }
+        ?.let { address -> RegionalGuideRoute(initialAddress = address) }
+
 @Serializable
 data object FavoritesRoute
 

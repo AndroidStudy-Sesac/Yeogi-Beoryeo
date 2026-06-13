@@ -22,7 +22,7 @@ internal fun NavHostController.createBottomNavigationItems(
             iconResId = CommonR.drawable.ic_symbol_recycle,
             selected = currentBackStackEntry.isItemSearchSelected(),
             onClick = {
-                navigateBottomTabClearingFavoriteReentry(
+                navigateBottomTabClearingRegionalGuideReentry(
                     currentBackStackEntry = currentBackStackEntry,
                     route = ItemSearchRoute(),
                 )
@@ -34,9 +34,8 @@ internal fun NavHostController.createBottomNavigationItems(
             selected = currentDestination?.hasRoute<MapRoute>() == true,
             onClick = {
                 onMapTabSelected()
-                navigateBottomTabClearingFavoriteReentry(
+                navigateMapRoot(
                     currentBackStackEntry = currentBackStackEntry,
-                    route = MapRoute(),
                 )
             },
         ),
@@ -45,7 +44,7 @@ internal fun NavHostController.createBottomNavigationItems(
             iconResId = AppR.drawable.ic_navigation_guide,
             selected = currentBackStackEntry.isRegionalGuideSelected(),
             onClick = {
-                navigateBottomTabClearingFavoriteReentry(
+                navigateBottomTabClearingRegionalGuideReentry(
                     currentBackStackEntry = currentBackStackEntry,
                     route = RegionalGuideRoute(),
                 )
@@ -56,13 +55,9 @@ internal fun NavHostController.createBottomNavigationItems(
             iconResId = CommonR.drawable.ic_favorite,
             selected = currentBackStackEntry.isFavoritesSelected(),
             onClick = {
-                if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
-                    popBackStack<FavoritesRoute>(inclusive = false)
-                } else {
-                    navigateFavoritesRoot(
-                        currentBackStackEntry = currentBackStackEntry,
-                    )
-                }
+                navigateFavoritesRootClearingRegionalGuideReentry(
+                    currentBackStackEntry = currentBackStackEntry,
+                )
             },
         ),
     )
@@ -73,28 +68,33 @@ private fun NavBackStackEntry?.isItemSearchSelected(): Boolean =
 
 private fun NavBackStackEntry?.isFavoritesSelected(): Boolean =
     this?.destination?.hasRoute<FavoritesRoute>() == true ||
-        isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES) ||
-        isFavoriteRegionalGuideSelected()
+        isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES)
 
 private fun NavBackStackEntry?.isRegionalGuideSelected(): Boolean =
-    this?.destination?.hasRoute<RegionalGuideRoute>() == true &&
-        !isFavoriteRegionalGuideSelected()
+    this?.destination?.hasRoute<RegionalGuideRoute>() == true
 
 private fun NavBackStackEntry?.isFavoriteRegionalGuideSelected(): Boolean =
     this != null &&
         destination.hasRoute<RegionalGuideRoute>() &&
         toRoute<RegionalGuideRoute>().isFavoriteReentryRoute()
 
+private fun NavBackStackEntry?.isMapRegionalGuideSelected(): Boolean =
+    this != null &&
+        destination.hasRoute<RegionalGuideRoute>() &&
+        toRoute<RegionalGuideRoute>().isMapReentryRoute()
+
 internal fun RegionalGuideRoute.isFavoriteReentryRoute(): Boolean =
     !initialFavoriteTargetId.isNullOrBlank()
 
-private inline fun <reified T : Any> NavHostController.navigateBottomTabClearingFavoriteReentry(
+internal fun RegionalGuideRoute.isMapReentryRoute(): Boolean =
+    initialFavoriteTargetId.isNullOrBlank() &&
+        !initialAddress.isNullOrBlank()
+
+private inline fun <reified T : Any> NavHostController.navigateBottomTabClearingRegionalGuideReentry(
     currentBackStackEntry: NavBackStackEntry?,
     route: T,
 ) {
-    if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
-        popBackStack<FavoritesRoute>(inclusive = false)
-    }
+    popRegionalGuideReentryToSourceRoot(currentBackStackEntry)
 
     navigateBottomTab(route)
 }
@@ -120,6 +120,47 @@ private fun NavHostController.navigateFavoritesRoot(
                 launchSingleTop = true
                 restoreState = false
             }
+        }
+    }
+}
+
+private fun NavHostController.navigateMapRoot(
+    currentBackStackEntry: NavBackStackEntry?,
+) {
+    if (currentBackStackEntry.isMapRegionalGuideSelected()) {
+        popBackStack<MapRoute>(inclusive = false)
+        return
+    }
+
+    navigateBottomTabClearingRegionalGuideReentry(
+        currentBackStackEntry = currentBackStackEntry,
+        route = MapRoute(),
+    )
+}
+
+private fun NavHostController.navigateFavoritesRootClearingRegionalGuideReentry(
+    currentBackStackEntry: NavBackStackEntry?,
+) {
+    if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
+        popBackStack<FavoritesRoute>(inclusive = false)
+        return
+    }
+
+    popRegionalGuideReentryToSourceRoot(currentBackStackEntry)
+    navigateFavoritesRoot(
+        currentBackStackEntry = currentBackStackEntry,
+    )
+}
+
+private fun NavHostController.popRegionalGuideReentryToSourceRoot(
+    currentBackStackEntry: NavBackStackEntry?,
+) {
+    when {
+        currentBackStackEntry.isFavoriteRegionalGuideSelected() -> {
+            popBackStack<FavoritesRoute>(inclusive = false)
+        }
+        currentBackStackEntry.isMapRegionalGuideSelected() -> {
+            popBackStack<MapRoute>(inclusive = false)
         }
     }
 }
