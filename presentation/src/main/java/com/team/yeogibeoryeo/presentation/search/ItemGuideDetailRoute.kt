@@ -1,11 +1,9 @@
 package com.team.yeogibeoryeo.presentation.search
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -16,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -26,6 +23,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteSnackbar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchStatusDescription
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchStatusContent
+import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchStatusTitle
 
 @Composable
@@ -65,14 +63,11 @@ fun ItemGuideDetailRoute(
     ) { innerPadding ->
         when (val state = uiState) {
             ItemGuideDetailUiState.Loading -> {
-                Box(
+                ItemSearchLoadingContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                )
             }
 
             is ItemGuideDetailUiState.Success -> {
