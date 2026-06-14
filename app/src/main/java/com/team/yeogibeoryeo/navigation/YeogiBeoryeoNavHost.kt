@@ -93,6 +93,14 @@ fun YeogiBeoryeoNavHost(
                             isBottomBarVisible = isVisible
                         }
                     },
+                    onRegionalGuideClick = { address ->
+                        address.toRegionalGuideAddressRouteOrNull()
+                            ?.let { route ->
+                                navController.navigate(route) {
+                                    launchSingleTop = true
+                                }
+                            }
+                    },
                 )
             }
 
