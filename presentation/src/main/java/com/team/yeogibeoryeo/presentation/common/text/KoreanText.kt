@@ -34,7 +34,7 @@ fun String.toTalkBackReadableText(): String =
         materialAbbreviationReadings.getValue(match.value.uppercase())
     }
 
-fun Modifier.koreanLineBreakSemantics(text: String): Modifier =
+fun Modifier.koreanLineBreakSemantics(originalText: String): Modifier =
     semantics {
-        this.text = AnnotatedString(text.toTalkBackReadableText())
+        text = AnnotatedString(originalText.toTalkBackReadableText())
     }
