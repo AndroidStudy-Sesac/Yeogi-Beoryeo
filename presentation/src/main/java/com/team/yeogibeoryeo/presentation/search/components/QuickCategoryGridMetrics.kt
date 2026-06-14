@@ -13,9 +13,32 @@ import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 internal fun quickCategoryGridMetrics(
     maxWidth: Dp,
 ): QuickCategoryGridMetrics {
+    val fontScale = LocalDensity.current.fontScale
+    val spec = quickCategoryGridMetricsSpec(
+        maxWidth = maxWidth,
+        fontScale = fontScale,
+    )
+
+    return QuickCategoryGridMetrics(
+        columnCount = spec.columnCount,
+        cellSize = spec.cellSize,
+        tileSize = spec.tileSize,
+        iconSize = spec.iconSize,
+        verticalSpace = spec.verticalSpace,
+        labelSpacing = spec.labelSpacing,
+        labelTextStyle = when (spec.labelTextStyleType) {
+            QuickCategoryGridLabelTextStyleType.BodyLarge -> MaterialTheme.typography.bodyLarge
+            QuickCategoryGridLabelTextStyleType.LabelLarge -> MaterialTheme.typography.labelLarge
+        },
+    )
+}
+
+internal fun quickCategoryGridMetricsSpec(
+    maxWidth: Dp,
+    fontScale: Float,
+): QuickCategoryGridMetricsSpec {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
-    val fontScale = LocalDensity.current.fontScale
     val useLargeFontLayout = fontScale >= QuickCategoryGridBreakpoints.LargeFontScale
     val useFourColumnCompactVisuals =
         !useLargeFontLayout &&
@@ -27,24 +50,24 @@ internal fun quickCategoryGridMetrics(
     val useExpandedWidePhoneVisuals =
         !useLargeFontLayout &&
             maxWidth >= QuickCategoryGridBreakpoints.ExpandedWidePhoneContentWidth
-    val useRoomyPhoneVisuals =
+    val useLargePhoneVisuals =
         !useLargeFontLayout &&
-            maxWidth >= QuickCategoryGridBreakpoints.RoomyPhoneContentWidth
+            maxWidth >= QuickCategoryGridBreakpoints.LargePhoneContentWidth
     val useNarrowVisuals = maxWidth < QuickCategoryGridBreakpoints.NarrowContentWidth
     val useNarrowLargeFontLayout =
         useLargeFontLayout &&
             maxWidth < QuickCategoryGridBreakpoints.NarrowContentWidth
-    val useRoomyLargeFontLayout =
+    val useWideLargeFontLayout =
         useLargeFontLayout &&
-            maxWidth >= QuickCategoryGridBreakpoints.RoomyLargeFontContentWidth
+            maxWidth >= QuickCategoryGridBreakpoints.WideLargeFontContentWidth
 
     val cellSize =
         when {
             useNarrowLargeFontLayout -> QuickCategoryGridDefaults.NarrowLargeFontCellSize
-            useRoomyLargeFontLayout -> QuickCategoryGridDefaults.RoomyLargeFontCellSize
+            useWideLargeFontLayout -> QuickCategoryGridDefaults.WideLargeFontCellSize
             useLargeFontLayout -> QuickCategoryGridDefaults.LargeFontCellSize
             useExpandedWidePhoneVisuals -> QuickCategoryGridDefaults.ExpandedWidePhoneCellSize
-            useRoomyPhoneVisuals -> QuickCategoryGridDefaults.RoomyPhoneCellSize
+            useLargePhoneVisuals -> QuickCategoryGridDefaults.LargePhoneCellSize
             useWidePhoneVisuals -> QuickCategoryGridDefaults.WidePhoneCellSize
             useFourColumnCompactVisuals -> QuickCategoryGridDefaults.CompactCellSize
             useNarrowVisuals -> QuickCategoryGridDefaults.NarrowCellSize
@@ -54,7 +77,7 @@ internal fun quickCategoryGridMetrics(
         when {
             useLargeFontLayout -> QuickCategoryGridDefaults.LargeFontTileSize
             useExpandedWidePhoneVisuals -> QuickCategoryGridDefaults.WidePhoneTileSize
-            useRoomyPhoneVisuals -> QuickCategoryGridDefaults.WidePhoneTileSize
+            useLargePhoneVisuals -> QuickCategoryGridDefaults.WidePhoneTileSize
             useWidePhoneVisuals -> QuickCategoryGridDefaults.WidePhoneTileSize
             useFourColumnCompactVisuals -> QuickCategoryGridDefaults.CompactTileSize
             useNarrowVisuals -> QuickCategoryGridDefaults.NarrowTileSize
@@ -64,7 +87,7 @@ internal fun quickCategoryGridMetrics(
         when {
             useLargeFontLayout -> QuickCategoryGridDefaults.LargeFontIconSize
             useExpandedWidePhoneVisuals -> QuickCategoryGridDefaults.WidePhoneIconSize
-            useRoomyPhoneVisuals -> QuickCategoryGridDefaults.WidePhoneIconSize
+            useLargePhoneVisuals -> QuickCategoryGridDefaults.WidePhoneIconSize
             useWidePhoneVisuals -> QuickCategoryGridDefaults.WidePhoneIconSize
             useFourColumnCompactVisuals -> QuickCategoryGridDefaults.CompactIconSize
             useNarrowVisuals -> QuickCategoryGridDefaults.NarrowIconSize
@@ -93,20 +116,16 @@ internal fun quickCategoryGridMetrics(
             .toInt()
             .coerceIn(1, maxColumnCount)
 
-    return QuickCategoryGridMetrics(
+    return QuickCategoryGridMetricsSpec(
         columnCount = columnCount,
         cellSize = cellSize,
         tileSize = tileSize,
         iconSize = iconSize,
         verticalSpace = verticalSpace,
         labelSpacing = labelSpacing,
-        labelTextStyle = when {
-            useLargeFontLayout -> MaterialTheme.typography.bodyLarge
-            useExpandedWidePhoneVisuals -> MaterialTheme.typography.bodyLarge
-            useRoomyPhoneVisuals -> MaterialTheme.typography.bodyLarge
-            useWidePhoneVisuals -> MaterialTheme.typography.bodyLarge
-            useFourColumnCompactVisuals -> MaterialTheme.typography.labelLarge
-            else -> MaterialTheme.typography.bodyLarge
+        labelTextStyleType = when {
+            useFourColumnCompactVisuals -> QuickCategoryGridLabelTextStyleType.LabelLarge
+            else -> QuickCategoryGridLabelTextStyleType.BodyLarge
         },
     )
 }
@@ -121,6 +140,21 @@ internal data class QuickCategoryGridMetrics(
     val labelTextStyle: TextStyle,
 )
 
+internal data class QuickCategoryGridMetricsSpec(
+    val columnCount: Int,
+    val cellSize: Dp,
+    val tileSize: Dp,
+    val iconSize: Dp,
+    val verticalSpace: Dp,
+    val labelSpacing: Dp,
+    val labelTextStyleType: QuickCategoryGridLabelTextStyleType,
+)
+
+internal enum class QuickCategoryGridLabelTextStyleType {
+    BodyLarge,
+    LabelLarge,
+}
+
 internal val LocalQuickCategoryGridMetrics = compositionLocalOf<QuickCategoryGridMetrics> {
     error("QuickCategoryGridMetrics is not provided.")
 }
@@ -130,7 +164,7 @@ private object QuickCategoryGridDefaults {
     const val NarrowLargeFontMaxColumnCount = 2
     const val LargeFontMaxColumnCount = 3
     val NarrowLargeFontCellSize = 128.dp
-    val RoomyLargeFontCellSize = 112.dp
+    val WideLargeFontCellSize = 112.dp
     val NarrowCellSize = 80.dp
     val NarrowTileSize = 72.dp
     val NarrowIconSize = 36.dp
@@ -138,7 +172,7 @@ private object QuickCategoryGridDefaults {
     val CompactTileSize = 56.dp
     val CompactIconSize = 28.dp
     val WidePhoneCellSize = 84.dp
-    val RoomyPhoneCellSize = 88.dp
+    val LargePhoneCellSize = 88.dp
     val ExpandedWidePhoneCellSize = 90.dp
     val WidePhoneTileSize = 64.dp
     val WidePhoneIconSize = 32.dp
@@ -151,8 +185,8 @@ private object QuickCategoryGridBreakpoints {
     val NarrowContentWidth = 300.dp
     val FourColumnContentWidth = 336.dp
     val WidePhoneContentWidth = 336.dp
-    val RoomyPhoneContentWidth = 352.dp
+    val LargePhoneContentWidth = 352.dp
     val ExpandedWidePhoneContentWidth = 360.dp
-    val RoomyLargeFontContentWidth = 352.dp
+    val WideLargeFontContentWidth = 352.dp
     const val LargeFontScale = 1.3f
 }

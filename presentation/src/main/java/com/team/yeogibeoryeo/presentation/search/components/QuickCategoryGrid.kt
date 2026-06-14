@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -122,10 +123,11 @@ private fun QuickCategoryRow(
 }
 
 @Composable
-private fun QuickCategoryItem(
+internal fun QuickCategoryItem(
     category: RepresentativeGuideCategory,
     name: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLabelTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
@@ -172,6 +174,7 @@ private fun QuickCategoryItem(
                 color = MaterialTheme.colorScheme.onBackground,
             ),
             minLines = 2,
+            onTextLayout = onLabelTextLayout,
             textAlign = TextAlign.Center,
         )
     }
