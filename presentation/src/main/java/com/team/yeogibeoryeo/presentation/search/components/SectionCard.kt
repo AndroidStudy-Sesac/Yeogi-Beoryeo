@@ -10,10 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineBreak
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
+import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
 /**
  * 부가적인 정보를 담는 카드 컴포넌트입니다.
@@ -64,16 +64,15 @@ private fun SectionLines(
     numbered: Boolean,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
+    val textStyles = itemGuideDetailTextStyles()
 
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         lines.forEachIndexed { index, line ->
+            val text = if (numbered) "${index + 1}. $line" else line
             Text(
-                text =
-                    (if (numbered) "${index + 1}. $line" else line)
-                        .withKoreanLineBreakOpportunities(),
-                style = MaterialTheme.typography.bodyMedium.copy(
+                text = text.withKoreanLineBreakOpportunities(),
+                style = textStyles.body.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineBreak = koreanBodyLineBreak,
                 ),
             )
         }
@@ -87,34 +86,26 @@ private fun SectionRow(
     labelModifier: Modifier = Modifier,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
+    val textStyles = itemGuideDetailTextStyles()
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Text(
-            text = label,
+            text = label.withKoreanLineBreakOpportunities(),
             modifier = labelModifier,
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
-                lineBreak = koreanBodyLineBreak,
             ),
         )
         Text(
-            text = value,
+            text = value.withKoreanLineBreakOpportunities(),
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineBreak = koreanBodyLineBreak,
             ),
         )
     }
 }
-
-private val koreanBodyLineBreak =
-    LineBreak(
-        strategy = LineBreak.Strategy.Simple,
-        strictness = LineBreak.Strictness.Loose,
-        wordBreak = LineBreak.WordBreak.Unspecified,
-    )

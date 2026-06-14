@@ -6,17 +6,18 @@ import org.junit.Test
 class KoreanTextTest {
     @Test
     fun `한글 음절 뒤에 줄바꿈 기회를 추가한다`() {
+        val result = "공사장 생활폐기물".withKoreanLineBreakOpportunities()
+
         assertEquals(
-            "특\u200B수\u200B규\u200B격\u200B마\u200B대\u200B",
-            "특수규격마대".withKoreanLineBreakOpportunities(),
+            "공\u200B사\u200B장\u200B 생\u200B활\u200B폐\u200B기\u200B물\u200B",
+            result,
         )
     }
 
     @Test
-    fun `영문 숫자 공백은 그대로 둔다`() {
-        assertEquals(
-            "PET 500ml",
-            "PET 500ml".withKoreanLineBreakOpportunities(),
-        )
+    fun `한글이 아닌 문자는 그대로 둔다`() {
+        val result = "PET 500ml".withKoreanLineBreakOpportunities()
+
+        assertEquals("PET 500ml", result)
     }
 }
