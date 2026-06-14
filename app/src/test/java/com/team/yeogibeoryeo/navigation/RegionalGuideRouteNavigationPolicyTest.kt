@@ -30,11 +30,11 @@ class RegionalGuideRouteNavigationPolicyTest {
 
     @Test
     fun `spot address creates regional guide address route`() {
-        val address = " Seoul Yeongdeungpo-gu Mullae-dong (Mullae) "
+        val address = "  서울특별시 중구 남대문로 63 (남대문로2가, 한진빌딩)  "
 
         val route = address.toRegionalGuideAddressRouteOrNull()
 
-        assertEquals("Seoul Yeongdeungpo-gu Mullae-dong (Mullae)", route?.initialAddress)
+        assertEquals("서울특별시 중구 남대문로 63 (남대문로2가, 한진빌딩)", route?.initialAddress)
         assertFalse(route!!.isFavoriteReentryRoute())
         assertTrue(route.isMapReentryRoute())
     }
@@ -47,7 +47,7 @@ class RegionalGuideRouteNavigationPolicyTest {
     @Test
     fun `regional guide route with address and favorite target remains favorites reentry route`() {
         val route = RegionalGuideRoute(
-            initialAddress = "Seoul Yeongdeungpo-gu Mullae-dong",
+            initialAddress = "서울특별시 중구 남대문로 63 (남대문로2가, 한진빌딩)",
             initialFavoriteTargetId = "regional-guide-v1|4:Sido",
         )
 
