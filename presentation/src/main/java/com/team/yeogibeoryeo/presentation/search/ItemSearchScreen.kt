@@ -29,6 +29,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
@@ -164,11 +165,13 @@ fun ItemSearchScreen(
                     }
 
                     else -> {
+                        val searchResultCountText = stringResource(
+                            R.string.search_results_count,
+                            uiState.guides.size
+                        )
                         Text(
-                            text = stringResource(
-                                R.string.search_results_count,
-                                uiState.guides.size
-                            ).withKoreanLineBreakOpportunities(),
+                            text = searchResultCountText.withKoreanLineBreakOpportunities(),
+                            modifier = Modifier.koreanLineBreakSemantics(searchResultCountText),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface

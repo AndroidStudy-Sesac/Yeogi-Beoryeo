@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
+import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
@@ -71,6 +72,7 @@ private fun SectionLines(
             val text = if (numbered) "${index + 1}. $line" else line
             Text(
                 text = text.withKoreanLineBreakOpportunities(),
+                modifier = Modifier.koreanLineBreakSemantics(text),
                 style = textStyles.body.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
@@ -94,7 +96,7 @@ private fun SectionRow(
     ) {
         Text(
             text = label.withKoreanLineBreakOpportunities(),
-            modifier = labelModifier,
+            modifier = labelModifier.koreanLineBreakSemantics(label),
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
@@ -102,7 +104,9 @@ private fun SectionRow(
         )
         Text(
             text = value.withKoreanLineBreakOpportunities(),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .koreanLineBreakSemantics(value),
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             ),

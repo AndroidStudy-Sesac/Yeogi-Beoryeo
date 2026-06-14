@@ -31,6 +31,7 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
@@ -167,6 +168,7 @@ fun ItemGuideDetailScreen(
             ) {
                 Text(
                     text = guide.name.withKoreanLineBreakOpportunities(),
+                    modifier = Modifier.koreanLineBreakSemantics(guide.name),
                     style = textStyles.title.copy(
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
