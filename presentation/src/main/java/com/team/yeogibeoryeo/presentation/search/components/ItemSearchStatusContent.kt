@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.team.yeogibeoryeo.common.design.theme.YeogiBeoryeoTheme
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
@@ -64,7 +65,7 @@ fun ItemSearchStatusTitle(
 ) {
     Text(
         text = text.withKoreanLineBreakOpportunities(),
-        modifier = modifier,
+        modifier = modifier.koreanLineBreakSemantics(text),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurface,
@@ -79,7 +80,7 @@ fun ItemSearchStatusDescription(
 ) {
     Text(
         text = text.withKoreanLineBreakOpportunities(),
-        modifier = modifier,
+        modifier = modifier.koreanLineBreakSemantics(text),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,

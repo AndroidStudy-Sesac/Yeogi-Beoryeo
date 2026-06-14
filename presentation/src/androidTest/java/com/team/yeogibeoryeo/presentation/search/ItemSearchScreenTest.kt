@@ -1,9 +1,11 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -84,32 +86,30 @@ class ItemSearchScreenTest {
     }
 
     @Test
-    fun 결과_카드는_모든_배출방법을_보여준다() {
+    fun 결과_카드는_대표_배출방법만_보여준다() {
+        val primaryInstruction = DisposalInstruction(method = "재활용폐기물")
+        val secondaryInstruction = DisposalInstruction(method = "대형폐기물")
+        val guide =
+            DisposalItemGuide(
+                id = "cast-iron-pot",
+                name = "무쇠 주물냄비",
+                category = DisposalCategory.METAL,
+                subCategory = null,
+                instructions = listOf(primaryInstruction, secondaryInstruction),
+                steps = emptyList(),
+                cautions = emptyList(),
+                tip = null,
+                isRecyclable = true,
+                relatedSpotTypes = emptyList(),
+            )
+
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchScreen(
                     uiState =
                         ItemSearchUiState(
                             hasSearched = true,
-                            guides =
-                                listOf(
-                                    DisposalItemGuide(
-                                        id = "cast-iron-pot",
-                                        name = "무쇠 주물냄비",
-                                        category = DisposalCategory.METAL,
-                                        subCategory = null,
-                                        instructions =
-                                            listOf(
-                                                DisposalInstruction(method = "재활용폐기물"),
-                                                DisposalInstruction(method = "대형폐기물"),
-                                            ),
-                                        steps = emptyList(),
-                                        cautions = emptyList(),
-                                        tip = null,
-                                        isRecyclable = true,
-                                        relatedSpotTypes = emptyList(),
-                                    ),
-                                ),
+                            guides = listOf(guide),
                         ),
                     onQueryChange = {},
                     onSearchClick = {},
@@ -119,8 +119,8 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("재활용폐기물").assertIsDisplayed()
-        composeTestRule.onNodeWithText("대형폐기물").assertIsDisplayed()
+        composeTestRule.onNodeWithText(primaryInstruction.method).assertIsDisplayed()
+        composeTestRule.onAllNodesWithText(secondaryInstruction.method).assertCountEquals(0)
     }
 
     @Test
@@ -238,7 +238,7 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("플라스틱")
+        composeTestRule.onNodeWithText(RepresentativeGuideCategory.PLASTIC.displayName)
             .performScrollTo()
             .performClick()
 

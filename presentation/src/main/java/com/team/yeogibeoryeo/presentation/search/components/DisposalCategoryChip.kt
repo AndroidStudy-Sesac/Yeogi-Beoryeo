@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
+import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
@@ -44,6 +45,7 @@ internal fun MetadataChip(
     ) {
         Text(
             text = text.withKoreanLineBreakOpportunities(),
+            modifier = Modifier.koreanLineBreakSemantics(text),
             style = MaterialTheme.typography.labelLarge,
             color = contentColor,
         )

@@ -130,8 +130,9 @@ class SearchComponentsTest {
             }
         }
 
-        composeTestRule.onNodeWithText("1. 비\u200B웁\u200B니\u200B다\u200B.").assertIsDisplayed()
-        composeTestRule.onNodeWithText("2. 헹\u200B굽\u200B니\u200B다\u200B.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("1. 비웁니다.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2. 헹굽니다.").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("1. 비\u200B웁\u200B니\u200B다\u200B.").assertCountEquals(0)
     }
 
     @Test
@@ -196,9 +197,26 @@ class SearchComponentsTest {
         }
 
         composeTestRule.onNodeWithText("종이").assertIsDisplayed()
-        composeTestRule.onNodeWithText("비닐").performClick()
+        composeTestRule.onNodeWithText("비닐류").performClick()
 
         assertEquals(RepresentativeGuideCategory.VINYL, clickedCategory)
+    }
+
+    @Test
+    fun 퀵_카테고리_라벨은_접근성_텍스트로_zero_width_space_없는_원문을_제공한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                QuickCategoryGrid(
+                    categories = listOf(RepresentativeGuideCategory.NON_COMBUSTIBLE),
+                    onCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("불연성종량제 폐기물").assertIsDisplayed()
+        composeTestRule
+            .onAllNodesWithText("불\u200B연\u200B성\u200B종\u200B량\u200B제\u200B 폐\u200B기\u200B물\u200B")
+            .assertCountEquals(0)
     }
 
     private fun sampleGuide(
