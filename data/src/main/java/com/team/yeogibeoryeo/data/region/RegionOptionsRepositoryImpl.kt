@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.RegionOptionsLocalDataSource
+import com.team.yeogibeoryeo.data.region.local.LegalAdminDongMappingLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.RegionalGuideRegionOptionsLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
@@ -9,6 +10,7 @@ import javax.inject.Inject
 
 class RegionOptionsRepositoryImpl @Inject constructor(
     private val localDataSource: RegionOptionsLocalDataSource,
+    private val legalAdminDongMappingLocalDataSource: LegalAdminDongMappingLocalDataSource,
     private val regionalGuideRegionOptionsLocalDataSource: RegionalGuideRegionOptionsLocalDataSource
 ) : RegionOptionsRepository {
 
@@ -76,6 +78,15 @@ class RegionOptionsRepositoryImpl @Inject constructor(
         return RegionOptionsMapper.normalizeRegionForRegionalGuide(
             region = region,
             regionalGuideRegions = regionalGuideRegionOptionsLocalDataSource.getRegions()
+        )
+    }
+
+    override suspend fun findAdminDongCandidatesForLegalDong(
+        region: Region
+    ): List<Region> {
+        return RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+            mappings = legalAdminDongMappingLocalDataSource.getMappings(),
+            region = region
         )
     }
 

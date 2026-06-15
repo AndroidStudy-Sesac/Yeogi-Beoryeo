@@ -39,6 +39,6 @@ class RegionOptionsLocalDataSource @Inject constructor(
 
     companion object {
         private const val REGION_ASSET_PATH =
-            "region/administrative_regions.20260102.json"
+            "region/administrative_regions.20260325.json"
     }
 }
