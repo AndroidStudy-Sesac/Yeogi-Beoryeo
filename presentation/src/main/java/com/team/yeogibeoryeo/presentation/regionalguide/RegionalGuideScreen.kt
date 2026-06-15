@@ -25,7 +25,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -86,6 +89,7 @@ fun RegionalGuideRoute(
     )
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun RegionalGuideScreen(
     uiState: RegionalGuideUiState,
@@ -106,6 +110,8 @@ fun RegionalGuideScreen(
     modifier: Modifier = Modifier,
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous
     val guideCandidatesState = uiState as? RegionalGuideUiState.GuideCandidates
     val hasSearchCandidates = ambiguousState != null || guideCandidatesState != null
@@ -126,6 +132,11 @@ fun RegionalGuideScreen(
         if (uiState is RegionalGuideUiState.Loading) {
             isRegionSelectorExpanded = false
         }
+    }
+
+    fun clearSearchFocus() {
+        focusManager.clearFocus()
+        keyboardController?.hide()
     }
 
     Column(
@@ -160,6 +171,7 @@ fun RegionalGuideScreen(
                 keyword = searchKeyword,
                 onKeywordChange = onSearchKeywordChange,
                 onSearchClick = { submittedKeyword ->
+                    clearSearchFocus()
                     isRegionSelectorExpanded = false
                     onRegionSelectorDropdownDismissed()
                     onSearchClick(submittedKeyword)
@@ -170,6 +182,7 @@ fun RegionalGuideScreen(
                             RegionalGuideAmbiguousResult(
                                 candidates = ambiguousState.candidates,
                                 onCandidateClick = { candidate ->
+                                    clearSearchFocus()
                                     isRegionSelectorExpanded = false
                                     onRegionSelectorDropdownDismissed()
                                     onCandidateClick(candidate)
@@ -181,6 +194,7 @@ fun RegionalGuideScreen(
                             RegionalGuideCandidateResult(
                                 candidates = guideCandidatesState.candidates,
                                 onCandidateClick = { candidate ->
+                                    clearSearchFocus()
                                     isRegionSelectorExpanded = false
                                     onRegionSelectorDropdownDismissed()
                                     onGuideCandidateClick(candidate)
