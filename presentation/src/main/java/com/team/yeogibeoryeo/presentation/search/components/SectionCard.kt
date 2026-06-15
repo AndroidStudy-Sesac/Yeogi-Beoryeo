@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
-import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
@@ -70,9 +68,8 @@ private fun SectionLines(
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         lines.forEachIndexed { index, line ->
             val text = if (numbered) "${index + 1}. $line" else line
-            Text(
-                text = text.withKoreanLineBreakOpportunities(),
-                modifier = Modifier.koreanLineBreakSemantics(text),
+            KoreanLineBreakText(
+                text = text,
                 style = textStyles.body.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
@@ -94,19 +91,18 @@ private fun SectionRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
-        Text(
-            text = label.withKoreanLineBreakOpportunities(),
-            modifier = labelModifier.koreanLineBreakSemantics(label),
+        KoreanLineBreakText(
+            text = label,
+            modifier = labelModifier,
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
             ),
         )
-        Text(
-            text = value.withKoreanLineBreakOpportunities(),
+        KoreanLineBreakText(
+            text = value,
             modifier = Modifier
-                .weight(1f)
-                .koreanLineBreakSemantics(value),
+                .weight(1f),
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
