@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -222,7 +223,7 @@ class RegionalGuideViewModel @Inject constructor(
 
         val snapshot = candidate.toFavoriteSnapshot()
         currentRegionalGuideFavoriteSnapshot = snapshot
-        observeRegionalGuideFavoriteState(snapshot.targetId)
+        observeRegionalGuideFavoriteState(snapshot)
 
         _uiState.value = RegionalGuideUiState.Success(
             query = query,
@@ -375,7 +376,8 @@ class RegionalGuideViewModel @Inject constructor(
                 loadRegionalGuide(
                     query = snapshot.displayText(),
                     region = regionalGuideRegion,
-                    preferredTargetRegionName = snapshot.targetRegionName
+                    preferredTargetRegionName = snapshot.targetRegionName,
+                    preferredManagementZoneName = snapshot.managementZoneName,
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -517,17 +519,29 @@ class RegionalGuideViewModel @Inject constructor(
         }
     }
 
-    private fun observeRegionalGuideFavoriteState(targetId: String) {
+    private fun observeRegionalGuideFavoriteState(snapshot: RegionalGuideFavoriteSnapshot) {
         favoriteStateJob?.cancel()
         favoriteStateJob = viewModelScope.launch {
-            observeFavoriteUseCase(
-                type = FavoriteTargetType.REGIONAL_GUIDE,
-                targetId = targetId,
-            ).collect { isFavorite ->
+            val favoriteStateFlows = snapshot.compatibleTargetIds.map { targetId ->
+                observeFavoriteUseCase(
+                    type = FavoriteTargetType.REGIONAL_GUIDE,
+                    targetId = targetId,
+                )
+            }
+            val favoriteStateFlow =
+                when (favoriteStateFlows.size) {
+                    0 -> return@launch
+                    1 -> favoriteStateFlows.single()
+                    else -> combine(favoriteStateFlows) { favoriteStates ->
+                        favoriteStates.any { isFavorite -> isFavorite }
+                    }
+                }
+
+            favoriteStateFlow.collect { isFavorite ->
                 _uiState.update { state ->
                     if (
                         state is RegionalGuideUiState.Success &&
-                        currentRegionalGuideFavoriteSnapshot?.targetId == targetId
+                        currentRegionalGuideFavoriteSnapshot?.targetId == snapshot.targetId
                     ) {
                         state.copy(isFavorite = isFavorite)
                     } else {
@@ -591,11 +605,13 @@ class RegionalGuideViewModel @Inject constructor(
     private suspend fun loadRegionalGuide(
         query: String,
         region: Region,
-        preferredTargetRegionName: String? = null
+        preferredTargetRegionName: String? = null,
+        preferredManagementZoneName: String? = null,
     ) {
         val result = getRegionalDisposalGuideUseCase(
             region = region,
-            preferredTargetRegionName = preferredTargetRegionName
+            preferredTargetRegionName = preferredTargetRegionName,
+            preferredManagementZoneName = preferredManagementZoneName,
         )
 
         _uiState.value = result.toUiState(query)
@@ -608,7 +624,7 @@ class RegionalGuideViewModel @Inject constructor(
             is RegionalGuideLookupResult.Success -> {
                 val snapshot = guide.toFavoriteSnapshot()
                 currentRegionalGuideFavoriteSnapshot = snapshot
-                observeRegionalGuideFavoriteState(snapshot.targetId)
+                observeRegionalGuideFavoriteState(snapshot)
 
                 RegionalGuideUiState.Success(
                     query = query,
@@ -689,6 +705,7 @@ class RegionalGuideViewModel @Inject constructor(
                 sigungu = region.sigungu,
                 eupmyeondong = region.eupmyeondong,
                 targetRegionName = guide.targetRegionName,
+                managementZoneName = guide.managementZoneName,
             ).encode(),
             region = region,
             targetRegionName = guide.targetRegionName,

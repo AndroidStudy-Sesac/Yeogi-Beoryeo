@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.data.favorite.local.FavoriteDatabase
 import com.team.yeogibeoryeo.data.favorite.mapper.toEntity
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteRepository
 import javax.inject.Inject
@@ -24,10 +25,17 @@ class RegionalGuideFavoriteRepositoryImpl
                         targetId = snapshot.targetId,
                         savedAtMillis = System.currentTimeMillis(),
                     )
+                val compatibleTargetIds = snapshot.compatibleTargetIds
 
-                if (favoriteDao.isFavorite(favorite.type.name, favorite.targetId)) {
-                    favoriteDao.deleteFavorite(favorite.type.name, favorite.targetId)
-                    snapshotDao.deleteSnapshot(snapshot.targetId)
+                if (
+                    compatibleTargetIds.any { targetId ->
+                        favoriteDao.isFavorite(favorite.type.name, targetId)
+                    }
+                ) {
+                    compatibleTargetIds.forEach { targetId ->
+                        favoriteDao.deleteFavorite(favorite.type.name, targetId)
+                        snapshotDao.deleteSnapshot(targetId)
+                    }
                     false
                 } else {
                     favoriteDao.upsertFavorite(favorite.toEntity())
@@ -38,11 +46,19 @@ class RegionalGuideFavoriteRepositoryImpl
 
         override suspend fun removeFavorite(targetId: String) {
             database.withTransaction {
-                database.favoriteDao().deleteFavorite(
-                    type = FavoriteTargetType.REGIONAL_GUIDE.name,
-                    targetId = targetId,
-                )
-                database.regionalGuideFavoriteSnapshotDao().deleteSnapshot(targetId)
+                compatibleTargetIdsOf(targetId).forEach { compatibleTargetId ->
+                    database.favoriteDao().deleteFavorite(
+                        type = FavoriteTargetType.REGIONAL_GUIDE.name,
+                        targetId = compatibleTargetId,
+                    )
+                    database.regionalGuideFavoriteSnapshotDao().deleteSnapshot(compatibleTargetId)
+                }
             }
+        }
+
+        private fun compatibleTargetIdsOf(targetId: String): List<String> {
+            val key = RegionalGuideFavoriteKey.decodeOrNull(targetId) ?: return listOf(targetId)
+
+            return listOf(targetId, key.copy(managementZoneName = null).encodeLegacy()).distinct()
         }
     }

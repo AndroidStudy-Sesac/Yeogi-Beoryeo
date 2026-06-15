@@ -12,55 +12,45 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         candidates: List<RegionalDisposalGuide>,
         query: RegionalGuideQuery,
         preferredTargetRegionName: String? = null,
+        preferredManagementZoneName: String? = null,
     ): RegionalGuideLookupResult {
         if (candidates.isEmpty()) return RegionalGuideLookupResult.NotFound
 
         val filteredCandidates = candidates
             .filterBySido(query.displayRegion.sido)
             .filterBySigungu(query.sigunguQuery)
+            .mergeDuplicateCandidateRows()
 
         if (filteredCandidates.isEmpty()) {
             return RegionalGuideLookupResult.CandidateNotFound
         }
 
+        if (!preferredTargetRegionName.isNullOrBlank() || !preferredManagementZoneName.isNullOrBlank()) {
+            return filteredCandidates
+                .filterByPreferredCandidate(
+                    preferredTargetRegionName = preferredTargetRegionName,
+                    preferredManagementZoneName = preferredManagementZoneName
+                )
+                .toSingleSuccessOrCandidates(query.displayRegion)
+                ?: RegionalGuideLookupResult.CandidateNotFound
+        }
+
         if (filteredCandidates.size == 1) {
-            return RegionalGuideLookupResult.Success(
-                guide = filteredCandidates.first().withDisplayRegion(query.displayRegion)
-            )
+            return filteredCandidates.toSingleSuccessOrCandidates(query.displayRegion)
+                ?: RegionalGuideLookupResult.CandidateNotFound
         }
 
-        preferredTargetRegionName
-            ?.trim()
-            ?.takeIf { targetRegionName -> targetRegionName.isNotBlank() }
-            ?.let { targetRegionName ->
-                val preferredGuide = filteredCandidates.firstOrNull { guide ->
-                    guide.targetRegionName?.trim() == targetRegionName
-                }
+        filteredCandidates.selectOverallCandidates(query.sigunguQuery)
+            .toSingleSuccessOrCandidates(query.displayRegion)
+            ?.let { result -> return result }
 
-                return if (preferredGuide != null) {
-                    RegionalGuideLookupResult.Success(
-                        guide = preferredGuide.withDisplayRegion(query.displayRegion)
-                    )
-                } else {
-                    RegionalGuideLookupResult.CandidateNotFound
-                }
-            }
-
-        filteredCandidates.selectSingleOverallCandidate(query.sigunguQuery)?.let { guide ->
-            return RegionalGuideLookupResult.Success(
-                guide = guide.withDisplayRegion(query.displayRegion)
-            )
-        }
-
-        val selectedGuide = selectByTargetRegion(
+        selectByTargetRegion(
             candidates = filteredCandidates,
             requestedRegion = query.displayRegion,
             sigunguQuery = query.sigunguQuery
-        ) ?: return filteredCandidates.toCandidateResultOrNotFound(query.displayRegion)
+        )?.let { result -> return result }
 
-        return RegionalGuideLookupResult.Success(
-            guide = selectedGuide.withDisplayRegion(query.displayRegion)
-        )
+        return filteredCandidates.toCandidateResultOrNotFound(query.displayRegion)
     }
 
     private fun List<RegionalDisposalGuide>.filterBySido(
@@ -83,26 +73,48 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         candidates: List<RegionalDisposalGuide>,
         requestedRegion: Region,
         sigunguQuery: String
-    ): RegionalDisposalGuide? {
+    ): RegionalGuideLookupResult? {
         val eupmyeondong = requestedRegion.eupmyeondong?.trim()
 
         if (!eupmyeondong.isNullOrBlank()) {
-            return candidates.firstOrNull { guide ->
-                guide.targetRegionName.matchesEupmyeondong(eupmyeondong)
-            } ?: candidates.firstOrNull { guide ->
-                guide.targetRegionName.isSejongDongArea() &&
-                    eupmyeondong in SEJONG_DONG_AREA_NAMES
-            } ?: candidates.firstOrNull { guide ->
-                guide.targetRegionName.isOverallTarget(sigunguQuery)
-            }
+            candidates
+                .filterByRequestedEupmyeondong(eupmyeondong)
+                .toSingleSuccessOrCandidates(requestedRegion)
+                ?.let { result -> return result }
+
+            candidates
+                .filter { guide ->
+                    guide.targetRegionName.isSejongDongArea() &&
+                        eupmyeondong in SEJONG_DONG_AREA_NAMES
+                }
+                .toSingleSuccessOrCandidates(requestedRegion)
+                ?.let { result -> return result }
+
+            return candidates
+                .selectOverallCandidates(sigunguQuery)
+                .toSingleSuccessOrCandidates(requestedRegion)
         }
 
         return null
     }
 
-    private fun List<RegionalDisposalGuide>.selectSingleOverallCandidate(
+    private fun List<RegionalDisposalGuide>.filterByRequestedEupmyeondong(
+        eupmyeondong: String
+    ): List<RegionalDisposalGuide> {
+        val targetRegionMatches = filter { guide ->
+            guide.targetRegionName.matchesEupmyeondong(eupmyeondong)
+        }
+        val managementZoneMatches = filter { guide ->
+            guide.managementZoneName.isExactRegionName(eupmyeondong)
+        }
+
+        return (targetRegionMatches + managementZoneMatches)
+            .mergeDuplicateCandidateRows()
+    }
+
+    private fun List<RegionalDisposalGuide>.selectOverallCandidates(
         sigunguQuery: String
-    ): RegionalDisposalGuide? {
+    ): List<RegionalDisposalGuide> {
         val targetRegionNames = map { guide ->
             guide.targetRegionName
                 ?.trim()
@@ -113,9 +125,9 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             targetRegionNames.size == 1 &&
             targetRegionNames.single().isOverallTarget(sigunguQuery)
         ) {
-            firstOrNull()
+            this
         } else {
-            null
+            emptyList()
         }
     }
 
@@ -130,6 +142,62 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             guides = map { guide -> guide.withDisplayRegion(displayRegion) }
         )
     }
+
+    private fun List<RegionalDisposalGuide>.toSingleSuccessOrCandidates(
+        displayRegion: Region
+    ): RegionalGuideLookupResult? {
+        return when (size) {
+            0 -> null
+            1 -> RegionalGuideLookupResult.Success(
+                guide = first().withDisplayRegion(displayRegion)
+            )
+            else -> RegionalGuideLookupResult.Candidates(
+                guides = map { guide -> guide.withDisplayRegion(displayRegion) }
+            )
+        }
+    }
+
+    private fun List<RegionalDisposalGuide>.filterByPreferredCandidate(
+        preferredTargetRegionName: String?,
+        preferredManagementZoneName: String?
+    ): List<RegionalDisposalGuide> {
+        val targetRegionName = preferredTargetRegionName.normalizeRegionName()
+        val managementZoneName = preferredManagementZoneName.normalizeRegionName()
+
+        return filter { guide ->
+            val targetMatches = targetRegionName == null ||
+                guide.targetRegionName.normalizeRegionName() == targetRegionName
+            val managementMatches = managementZoneName == null ||
+                guide.managementZoneName.normalizeRegionName() == managementZoneName
+
+            targetMatches && managementMatches
+        }
+    }
+
+    private fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRows(): List<RegionalDisposalGuide> =
+        groupBy { guide -> guide.toCandidateKey() }
+            .values
+            .map { guides ->
+                val firstGuide = guides.first()
+                firstGuide.copy(
+                    schedules = guides
+                        .flatMap { guide -> guide.schedules }
+                        .distinct()
+                )
+            }
+
+    private fun RegionalDisposalGuide.toCandidateKey(): CandidateKey =
+        CandidateKey(
+            sido = region.sido.normalizeRegionName(),
+            sigungu = region.sigungu.normalizeRegionName(),
+            managementZoneName = managementZoneName.normalizeRegionName(),
+            targetRegionName = targetRegionName.normalizeRegionName(),
+            disposalPlaceType = disposalPlaceType.normalizeRegionName(),
+            disposalPlaceDescription = disposalPlaceDescription.normalizeRegionName(),
+            uncollectedDays = uncollectedDays.normalizeRegionName(),
+            departmentName = departmentName.normalizeRegionName(),
+            departmentPhoneNumber = departmentPhoneNumber.normalizeRegionName(),
+        )
 
     private fun String?.matchesEupmyeondong(
         eupmyeondong: String
@@ -148,6 +216,16 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             .map { token -> token.trim().removeAdministrativeSuffix() }
             .any { token -> token == normalizedEupmyeondong }
     }
+
+    private fun String?.isExactRegionName(
+        regionName: String
+    ): Boolean =
+        normalizeRegionName() == regionName.normalizeRegionName()
+
+    private fun String?.normalizeRegionName(): String? =
+        this
+            ?.trim()
+            ?.takeIf { value -> value.isNotBlank() }
 
     private fun String.removeAdministrativeSuffix(): String =
         removeSuffix(EUP)
@@ -182,6 +260,18 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
     private fun String?.isSejongDongArea(): Boolean =
         this?.trim() == SEJONG_DONG_AREA
+
+    private data class CandidateKey(
+        val sido: String?,
+        val sigungu: String?,
+        val managementZoneName: String?,
+        val targetRegionName: String?,
+        val disposalPlaceType: String?,
+        val disposalPlaceDescription: String?,
+        val uncollectedDays: String?,
+        val departmentName: String?,
+        val departmentPhoneNumber: String?,
+    )
 
     private companion object {
         const val SEJONG_SIGUNGU_QUERY = "없음"
