@@ -17,8 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
@@ -68,9 +67,8 @@ fun ItemSearchInitialContent(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
                     val quickCategoriesTitle = stringResource(R.string.quick_categories)
-                    Text(
-                        text = quickCategoriesTitle.withKoreanLineBreakOpportunities(),
-                        modifier = Modifier.koreanLineBreakSemantics(quickCategoriesTitle),
+                    KoreanLineBreakText(
+                        text = quickCategoriesTitle,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface

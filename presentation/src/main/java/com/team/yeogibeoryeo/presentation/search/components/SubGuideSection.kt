@@ -3,13 +3,11 @@ package com.team.yeogibeoryeo.presentation.search.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
-import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
-import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
+import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
@@ -44,17 +42,15 @@ private fun SubGuideItem(
     val textStyles = itemGuideDetailTextStyles()
 
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-        Text(
-            text = name.withKoreanLineBreakOpportunities(),
-            modifier = Modifier.koreanLineBreakSemantics(name),
+        KoreanLineBreakText(
+            text = name,
             style = textStyles.subGuideTitle.copy(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             ),
         )
-        Text(
-            text = summary.withKoreanLineBreakOpportunities(),
-            modifier = Modifier.koreanLineBreakSemantics(summary),
+        KoreanLineBreakText(
+            text = summary,
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             ),

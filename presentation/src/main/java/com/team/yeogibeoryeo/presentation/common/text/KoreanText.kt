@@ -1,9 +1,16 @@
 package com.team.yeogibeoryeo.presentation.common.text
 
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 
 private const val ZERO_WIDTH_SPACE = "\u200B"
 private val koreanSyllable = Regex("([가-힣])")
@@ -38,3 +45,26 @@ fun Modifier.koreanLineBreakSemantics(originalText: String): Modifier =
     semantics {
         text = AnnotatedString(originalText.toTalkBackReadableText())
     }
+
+@Composable
+fun KoreanLineBreakText(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    style: TextStyle = TextStyle.Default,
+    fontWeight: FontWeight? = null,
+    textAlign: TextAlign? = null,
+    overflow: TextOverflow = TextOverflow.Clip,
+    maxLines: Int = Int.MAX_VALUE,
+) {
+    Text(
+        text = text.withKoreanLineBreakOpportunities(),
+        modifier = modifier.koreanLineBreakSemantics(text),
+        color = color,
+        style = style,
+        fontWeight = fontWeight,
+        textAlign = textAlign,
+        overflow = overflow,
+        maxLines = maxLines,
+    )
+}
