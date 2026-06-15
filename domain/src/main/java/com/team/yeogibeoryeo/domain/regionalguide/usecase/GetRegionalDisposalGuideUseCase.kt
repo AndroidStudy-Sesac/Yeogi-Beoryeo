@@ -14,7 +14,8 @@ class GetRegionalDisposalGuideUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         region: Region,
-        preferredTargetRegionName: String? = null
+        preferredTargetRegionName: String? = null,
+        preferredManagementZoneName: String? = null,
     ): RegionalGuideLookupResult {
         val query = normalizeRegionalGuideQueryUseCase(region)
             ?: return RegionalGuideLookupResult.NotFound
@@ -30,7 +31,8 @@ class GetRegionalDisposalGuideUseCase @Inject constructor(
         return selectRegionalGuideCandidateUseCase(
             candidates = candidates,
             query = query,
-            preferredTargetRegionName = preferredTargetRegionName
+            preferredTargetRegionName = preferredTargetRegionName,
+            preferredManagementZoneName = preferredManagementZoneName,
         )
     }
 

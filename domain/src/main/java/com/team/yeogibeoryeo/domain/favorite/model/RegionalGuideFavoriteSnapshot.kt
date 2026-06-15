@@ -11,6 +11,14 @@ data class RegionalGuideFavoriteSnapshot(
 ) {
     val key: RegionalGuideFavoriteKey?
         get() = RegionalGuideFavoriteKey.decodeOrNull(targetId)
+
+    val legacyTargetId: String?
+        get() = key
+            ?.copy(managementZoneName = null)
+            ?.encodeLegacy()
+
+    val compatibleTargetIds: List<String>
+        get() = listOfNotNull(targetId, legacyTargetId).distinct()
 }
 
 fun RegionalDisposalGuide.toFavoriteSnapshot(): RegionalGuideFavoriteSnapshot {
@@ -20,6 +28,7 @@ fun RegionalDisposalGuide.toFavoriteSnapshot(): RegionalGuideFavoriteSnapshot {
             sigungu = region.sigungu,
             eupmyeondong = region.eupmyeondong,
             targetRegionName = targetRegionName,
+            managementZoneName = managementZoneName,
         )
 
     return RegionalGuideFavoriteSnapshot(
