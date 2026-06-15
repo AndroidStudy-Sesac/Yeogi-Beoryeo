@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
+import com.team.yeogibeoryeo.presentation.common.text.koreanLineBreakSemantics
 import com.team.yeogibeoryeo.presentation.common.text.withKoreanLineBreakOpportunities
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
@@ -45,6 +46,7 @@ private fun SubGuideItem(
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         Text(
             text = name.withKoreanLineBreakOpportunities(),
+            modifier = Modifier.koreanLineBreakSemantics(name),
             style = textStyles.subGuideTitle.copy(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -52,6 +54,7 @@ private fun SubGuideItem(
         )
         Text(
             text = summary.withKoreanLineBreakOpportunities(),
+            modifier = Modifier.koreanLineBreakSemantics(summary),
             style = textStyles.body.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
