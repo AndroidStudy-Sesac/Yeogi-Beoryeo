@@ -19,7 +19,13 @@ data class RegionalGuideRoute(
     val initialKeyword: String? = null,
     val initialAddress: String? = null,
     val initialFavoriteTargetId: String? = null,
+    val entrySource: RegionalGuideEntrySource? = null,
 )
+
+@Serializable
+enum class RegionalGuideEntrySource {
+    FAVORITES,
+}
 
 internal fun String.toRegionalGuideAddressRouteOrNull(): RegionalGuideRoute? =
     trim()

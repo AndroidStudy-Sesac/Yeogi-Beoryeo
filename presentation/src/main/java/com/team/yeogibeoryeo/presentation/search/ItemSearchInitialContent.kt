@@ -19,7 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
+import com.team.yeogibeoryeo.presentation.search.components.HomeRegionalGuideSummaryBanner
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
+import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
@@ -27,6 +29,9 @@ fun ItemSearchInitialContent(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
+    regionalGuideSummaryState: HomeRegionalGuideSummaryUiState,
+    onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
@@ -61,6 +66,14 @@ fun ItemSearchInitialContent(
                     placeholder = stringResource(R.string.item_search_query_label),
                     modifier = Modifier.fillMaxWidth(),
                     iconSize = metrics.searchIconSize,
+                )
+            }
+
+            item {
+                HomeRegionalGuideSummaryBanner(
+                    state = regionalGuideSummaryState,
+                    onClick = onRegionalGuideSummaryClick,
+                    onRetryClick = onRegionalGuideSummaryRetryClick,
                 )
             }
 
