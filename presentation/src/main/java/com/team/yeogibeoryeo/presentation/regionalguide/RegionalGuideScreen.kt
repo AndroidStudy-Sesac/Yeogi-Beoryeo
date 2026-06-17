@@ -25,7 +25,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,14 +51,16 @@ fun RegionalGuideRoute(
     modifier: Modifier = Modifier,
     initialKeyword: String? = null,
     initialAddress: String? = null,
+    initialFavoriteTargetId: String? = null,
     viewModel: RegionalGuideViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val regionSelectorUiState by viewModel.regionSelectorUiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(initialKeyword, initialAddress) {
+    LaunchedEffect(initialKeyword, initialAddress, initialFavoriteTargetId) {
         when {
+            !initialFavoriteTargetId.isNullOrBlank() -> viewModel.loadByFavoriteTargetId(initialFavoriteTargetId)
             !initialAddress.isNullOrBlank() -> viewModel.loadByAddress(initialAddress)
             !initialKeyword.isNullOrBlank() -> {
                 viewModel.onSearchKeywordChanged(initialKeyword)
@@ -79,10 +84,12 @@ fun RegionalGuideRoute(
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
+        onFavoriteClick = viewModel::onFavoriteClick,
         modifier = modifier,
     )
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun RegionalGuideScreen(
     uiState: RegionalGuideUiState,
@@ -99,9 +106,12 @@ fun RegionalGuideScreen(
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    onFavoriteClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous
     val guideCandidatesState = uiState as? RegionalGuideUiState.GuideCandidates
     val hasSearchCandidates = ambiguousState != null || guideCandidatesState != null
@@ -122,6 +132,11 @@ fun RegionalGuideScreen(
         if (uiState is RegionalGuideUiState.Loading) {
             isRegionSelectorExpanded = false
         }
+    }
+
+    fun clearSearchFocus() {
+        focusManager.clearFocus()
+        keyboardController?.hide()
     }
 
     Column(
@@ -156,6 +171,7 @@ fun RegionalGuideScreen(
                 keyword = searchKeyword,
                 onKeywordChange = onSearchKeywordChange,
                 onSearchClick = { submittedKeyword ->
+                    clearSearchFocus()
                     isRegionSelectorExpanded = false
                     onRegionSelectorDropdownDismissed()
                     onSearchClick(submittedKeyword)
@@ -166,6 +182,7 @@ fun RegionalGuideScreen(
                             RegionalGuideAmbiguousResult(
                                 candidates = ambiguousState.candidates,
                                 onCandidateClick = { candidate ->
+                                    clearSearchFocus()
                                     isRegionSelectorExpanded = false
                                     onRegionSelectorDropdownDismissed()
                                     onCandidateClick(candidate)
@@ -177,6 +194,7 @@ fun RegionalGuideScreen(
                             RegionalGuideCandidateResult(
                                 candidates = guideCandidatesState.candidates,
                                 onCandidateClick = { candidate ->
+                                    clearSearchFocus()
                                     isRegionSelectorExpanded = false
                                     onRegionSelectorDropdownDismissed()
                                     onGuideCandidateClick(candidate)
@@ -218,6 +236,7 @@ fun RegionalGuideScreen(
             onRetryClick = onRetryClick,
             onCandidateClick = onCandidateClick,
             onGuideCandidateClick = onGuideCandidateClick,
+            onFavoriteClick = onFavoriteClick,
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 20.dp),
@@ -242,6 +261,7 @@ private fun RegionalGuideContent(
     onRetryClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (uiState) {
@@ -259,6 +279,8 @@ private fun RegionalGuideContent(
         is RegionalGuideUiState.Success -> {
             RegionalGuideSuccessContent(
                 guide = uiState.guide,
+                isFavorite = uiState.isFavorite,
+                onFavoriteClick = onFavoriteClick,
                 modifier = modifier
             )
         }
@@ -313,6 +335,8 @@ private fun RegionalGuideLoadingContent(
 @Composable
 private fun RegionalGuideSuccessContent(
     guide: RegionalGuideUiModel,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -320,7 +344,11 @@ private fun RegionalGuideSuccessContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            RegionalGuideSummaryCard(guide = guide)
+            RegionalGuideSummaryCard(
+                guide = guide,
+                isFavorite = isFavorite,
+                onFavoriteClick = onFavoriteClick,
+            )
         }
 
         item {

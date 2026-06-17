@@ -7,6 +7,8 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -79,8 +81,8 @@ constructor(
                                 ?.map { subGuide ->
                                     val subGuideObject = subGuide.jsonObject
                                     DisposalSubGuide(
-                                        name = subGuideObject["name"]!!.jsonPrimitive.content,
-                                        summary = subGuideObject["summary"]!!.jsonPrimitive.content,
+                                        name = subGuideObject.requiredString("name"),
+                                        summary = subGuideObject.requiredString("summary"),
                                     )
                                 }.orEmpty(),
                         sections =
@@ -89,7 +91,7 @@ constructor(
                                 ?.map { section ->
                                     val sectionObject = section.jsonObject
                                     DisposalGuideSection(
-                                        title = sectionObject["title"]!!.jsonPrimitive.content,
+                                        title = sectionObject.requiredString("title"),
                                         lines = sectionObject.stringList("lines"),
                                         rows =
                                             sectionObject["rows"]
@@ -97,8 +99,8 @@ constructor(
                                                 ?.map { row ->
                                                     val rowObject = row.jsonObject
                                                     DisposalGuideSectionRow(
-                                                        label = rowObject["label"]!!.jsonPrimitive.content,
-                                                        value = rowObject["value"]!!.jsonPrimitive.content,
+                                                        label = rowObject.requiredString("label"),
+                                                        value = rowObject.requiredString("value"),
                                                     )
                                                 }.orEmpty(),
                                     )
@@ -115,10 +117,9 @@ constructor(
         array.map { element ->
             val obj = element.jsonObject
             WasteDictionaryItem(
-                name = obj["name"]!!.jsonPrimitive.content,
+                name = obj.requiredString("name"),
                 categoryPaths =
-                    obj["categoryPaths"]!!
-                        .jsonArray
+                    obj.requiredArray("categoryPaths")
                         .map { path ->
                             path.jsonArray.map { it.jsonPrimitive.content }
                         },
@@ -130,7 +131,16 @@ constructor(
         }
     }
 
-    private fun kotlinx.serialization.json.JsonObject.stringList(key: String): List<String> =
+    private fun JsonObject.requiredString(key: String): String =
+        requireNotNull(this[key]) { "필수 JSON key가 누락되었습니다: $key" }
+            .jsonPrimitive
+            .content
+
+    private fun JsonObject.requiredArray(key: String): JsonArray =
+        requireNotNull(this[key]) { "필수 JSON key가 누락되었습니다: $key" }
+            .jsonArray
+
+    private fun JsonObject.stringList(key: String): List<String> =
         this[key]
             ?.jsonArray
             ?.map { it.jsonPrimitive.content }

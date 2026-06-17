@@ -25,8 +25,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.map.components.CollectionSpotNaverMap
-import com.team.yeogibeoryeo.presentation.map.components.CurrentLocationSearchLoadingOverlay
+import com.team.yeogibeoryeo.presentation.map.components.MapSearchLoadingOverlay
+import com.team.yeogibeoryeo.presentation.map.components.MapCenterSearchButton
 import com.team.yeogibeoryeo.presentation.map.components.MapOverlayControls
 import com.team.yeogibeoryeo.presentation.map.components.MapResultBottomSheetPeekHeight
 import com.team.yeogibeoryeo.presentation.map.components.MapSheetLevel
@@ -37,9 +39,13 @@ import com.team.yeogibeoryeo.presentation.map.components.SpotDetailBottomSheetCo
 import com.team.yeogibeoryeo.presentation.map.components.ThreeStepMapBottomSheet
 import com.team.yeogibeoryeo.presentation.map.location.rememberFineLocationPermissionGranted
 import com.team.yeogibeoryeo.presentation.map.location.rememberCurrentLocationSearchRequester
+import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 
 @Composable
 fun CollectionSpotMapScreen(
+    favoriteSpotMoveRequest: FavoriteSpotMapMoveRequest? = null,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    onRegionalGuideClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
@@ -48,6 +54,9 @@ fun CollectionSpotMapScreen(
     val hasFineLocationPermission = rememberFineLocationPermissionGranted()
     var hasGrantedLocationPermissionInSession by rememberSaveable {
         mutableStateOf(false)
+    }
+    var previousFineLocationPermission by rememberSaveable {
+        mutableStateOf(hasFineLocationPermission)
     }
     val isLocationPermissionGranted =
         hasFineLocationPermission || hasGrantedLocationPermissionInSession
@@ -58,27 +67,31 @@ fun CollectionSpotMapScreen(
     LaunchedEffect(hasFineLocationPermission) {
         if (!hasFineLocationPermission) {
             hasGrantedLocationPermissionInSession = false
+        } else if (!previousFineLocationPermission) {
+            hasGrantedLocationPermissionInSession = true
+            locationTrackingMode = LocationTrackingMode.NoFollow
+            viewModel.searchByCurrentLocation()
         }
+        previousFineLocationPermission = hasFineLocationPermission
     }
 
     val requestCurrentLocationSearch = rememberCurrentLocationSearchRequester(
         onGranted = {
             hasGrantedLocationPermissionInSession = true
+            previousFineLocationPermission = true
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.searchByCurrentLocation()
         },
         onDenied = viewModel::onLocationPermissionDenied,
     )
-    val requestMyLocationTracking = rememberCurrentLocationSearchRequester(
-        onGranted = {
-            hasGrantedLocationPermissionInSession = true
-            locationTrackingMode = LocationTrackingMode.Follow
-        },
-        onDenied = viewModel::onLocationPermissionDenied,
-    )
-
-    LaunchedEffect(Unit) {
-        viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+    LaunchedEffect(favoriteSpotMoveRequest) {
+        val request = favoriteSpotMoveRequest
+        if (request == null) {
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+        } else {
+            locationTrackingMode = LocationTrackingMode.NoFollow
+            viewModel.showFavoriteSpot(request)
+        }
     }
 
     CollectionSpotMapContent(
@@ -93,14 +106,15 @@ fun CollectionSpotMapScreen(
         onCurrentLocationClick = {
             requestCurrentLocationSearch()
         },
-        onMyLocationPermissionRequest = {
-            requestMyLocationTracking()
-        },
+        onMapCenterSearchClick = viewModel::searchByMapCenter,
         onLocationNoticeActionClick = { action ->
             context.startActivity(action.toIntent(context.packageName))
         },
         onTypeClick = viewModel::onSpotTypeClick,
         onSpotClick = viewModel::onSpotClick,
+        onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
+        onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+        onRegionalGuideClick = onRegionalGuideClick,
         modifier = modifier,
     )
 }
@@ -114,19 +128,29 @@ private fun CollectionSpotMapContent(
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
     onCurrentLocationClick: () -> Unit,
-    onMyLocationPermissionRequest: () -> Unit,
+    onMapCenterSearchClick: (Coordinate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onTypeClick: (CollectionSpotType) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
+    onSpotFavoriteClick: (CollectionSpot) -> Unit,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit,
+    onRegionalGuideClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isCurrentLocationSearching = uiState.isLoading &&
-        uiState.searchMode == MapSearchMode.CURRENT_LOCATION
-    val shouldShowBottomSheet = uiState.shouldShowBottomSheet && !isCurrentLocationSearching
+    val isSpotSearchLoading = uiState.isLoading &&
+        uiState.searchMode in setOf(
+            MapSearchMode.KEYWORD,
+            MapSearchMode.CURRENT_LOCATION,
+            MapSearchMode.MAP_CENTER,
+        )
+    val shouldShowBottomSheet = uiState.shouldShowBottomSheet && !isSpotSearchLoading
     var mapUiMode by remember { mutableStateOf(MapUiMode.Browsing) }
     var sheetLevel by remember { mutableStateOf(MapSheetLevel.Hidden) }
     var sheetRevealRequest by remember { mutableStateOf(0) }
+    var mapCenterCoordinate by remember { mutableStateOf<Coordinate?>(null) }
+    var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
     val selectedSpot = uiState.selectedSpot
+    val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
     val hasNoticeOrError = uiState.locationNotice != null ||
         uiState.locationNoticeMessage != null ||
         uiState.errorMessage != null
@@ -151,7 +175,7 @@ private fun CollectionSpotMapContent(
         uiState.locationNoticeMessage,
     ) {
         when {
-            isCurrentLocationSearching -> {
+            isSpotSearchLoading -> {
                 mapUiMode = MapUiMode.Browsing
                 sheetLevel = MapSheetLevel.Hidden
             }
@@ -184,6 +208,23 @@ private fun CollectionSpotMapContent(
         }
     }
 
+    LaunchedEffect(selectedSpotMoveRequestSequence) {
+        if (selectedSpotMoveRequestSequence > 0 && selectedSpot != null) {
+            mapUiMode = MapUiMode.SpotDetail
+            sheetLevel = MapSheetLevel.Medium
+            sheetRevealRequest += 1
+        }
+    }
+
+    LaunchedEffect(shouldShowBottomSheet, sheetLevel, mapUiMode) {
+        val shouldHideBottomBar =
+            shouldShowBottomSheet &&
+                sheetLevel != MapSheetLevel.Hidden &&
+                mapUiMode != MapUiMode.Browsing
+
+        onBottomBarVisibilityChanged(!shouldHideBottomBar)
+    }
+
     BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
     ) {
@@ -207,6 +248,16 @@ private fun CollectionSpotMapContent(
                 } else {
                     mapUiMode = MapUiMode.Browsing
                     sheetLevel = MapSheetLevel.Hidden
+                    onBottomBarVisibilityChanged(true)
+                }
+            },
+            onCameraCenterChanged = { coordinate ->
+                mapCenterCoordinate = coordinate
+            },
+            onUserCameraMove = {
+                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                if (!uiState.isLoading && mapUiMode != MapUiMode.SpotDetail) {
+                    shouldShowMapCenterSearchButton = true
                 }
             },
             modifier = Modifier
@@ -216,25 +267,34 @@ private fun CollectionSpotMapContent(
         if (mapUiMode != MapUiMode.SpotDetail) {
             MapOverlayControls(
                 keyword = uiState.searchKeyword,
-                selectedTypes = uiState.selectedTypes,
                 onKeywordChanged = onKeywordChanged,
                 onSearchClick = {
                     onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                    shouldShowMapCenterSearchButton = false
                     mapUiMode = MapUiMode.ResultList
                     sheetLevel = MapSheetLevel.Peek
                     onSearchClick()
                 },
-                onTypeClick = { type ->
-                    mapUiMode = MapUiMode.ResultList
-                    sheetLevel = MapSheetLevel.Peek
-                    onTypeClick(type)
-                },
-                onCurrentLocationClick = {
+            )
+        }
+
+        if (
+            shouldShowMapCenterSearchButton &&
+            mapUiMode != MapUiMode.SpotDetail &&
+            !uiState.isLoading
+        ) {
+            MapCenterSearchButton(
+                onClick = {
+                    val coordinate = mapCenterCoordinate ?: return@MapCenterSearchButton
+                    shouldShowMapCenterSearchButton = false
                     onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                     mapUiMode = MapUiMode.ResultList
                     sheetLevel = MapSheetLevel.Peek
-                    onCurrentLocationClick()
+                    onMapCenterSearchClick(coordinate)
                 },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = MapCenterSearchButtonTopPadding),
             )
         }
 
@@ -243,9 +303,13 @@ private fun CollectionSpotMapContent(
                 isTracking = mapLocationTrackingMode == LocationTrackingMode.Follow,
                 onClick = {
                     if (isLocationPermissionGranted) {
-                        onLocationTrackingModeChange(LocationTrackingMode.Follow)
+                        onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                        shouldShowMapCenterSearchButton = false
+                        mapUiMode = MapUiMode.ResultList
+                        sheetLevel = MapSheetLevel.Peek
+                        onCurrentLocationClick()
                     } else {
-                        onMyLocationPermissionRequest()
+                        onCurrentLocationClick()
                     }
                 },
                 modifier = Modifier
@@ -260,8 +324,10 @@ private fun CollectionSpotMapContent(
             )
         }
 
-        if (isCurrentLocationSearching) {
-            CurrentLocationSearchLoadingOverlay()
+        if (isSpotSearchLoading) {
+            MapSearchLoadingOverlay(
+                description = uiState.searchMode.toLoadingDescription(),
+            )
         }
 
         if (shouldShowBottomSheet) {
@@ -277,6 +343,9 @@ private fun CollectionSpotMapContent(
                     mapUiMode == MapUiMode.SpotDetail && selectedSpot != null -> {
                         SpotDetailBottomSheetContent(
                             spot = selectedSpot,
+                            isNearbyLoading = uiState.isFavoriteSpotNearbyLoading,
+                            onFavoriteClick = onSpotFavoriteClick,
+                            onRegionalGuideClick = onRegionalGuideClick,
                             onCloseClick = {
                                 mapUiMode = MapUiMode.ResultList
                                 sheetLevel = MapSheetLevel.Peek
@@ -288,7 +357,7 @@ private fun CollectionSpotMapContent(
                         SpotBottomSheetContent(
                             spots = uiState.spots,
                             selectedSpot = selectedSpot,
-                            isLoading = uiState.isLoading,
+                            isLoading = uiState.isLoading || uiState.isFavoriteSpotNearbyLoading,
                             hasSearched = uiState.hasSearched,
                             selectedTypes = uiState.selectedTypes,
                             locationNotice = uiState.locationNotice,
@@ -296,6 +365,7 @@ private fun CollectionSpotMapContent(
                             errorMessage = uiState.errorMessage,
                             onTypeClick = onTypeClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,
+                            onSpotFavoriteClick = onSpotFavoriteClick,
                             onSpotClick = { spot ->
                                 onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                                 mapUiMode = MapUiMode.SpotDetail
@@ -317,7 +387,8 @@ private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
         locationNoticeMessage != null ||
         errorMessage != null ||
         hasSearched ||
-        spots.isNotEmpty()
+        spots.isNotEmpty() ||
+        selectedSpot != null
 
 private enum class MapUiMode {
     Browsing,
@@ -355,17 +426,30 @@ private fun CollectionSpotMapContentPreview() {
                 onKeywordChanged = {},
                 onSearchClick = {},
                 onCurrentLocationClick = {},
-                onMyLocationPermissionRequest = {},
+                onMapCenterSearchClick = {},
                 onLocationNoticeActionClick = {},
                 onTypeClick = {},
                 onSpotClick = {},
+                onSpotFavoriteClick = {},
+                onBottomBarVisibilityChanged = {},
+                onRegionalGuideClick = {},
             )
         }
+    }
+
+}
+
+private fun MapSearchMode.toLoadingDescription(): String {
+    return when (this) {
+        MapSearchMode.KEYWORD -> "입력한 동네 주변을 찾고 있어요"
+        MapSearchMode.CURRENT_LOCATION -> "현재 위치 주변을 찾고 있어요"
+        MapSearchMode.MAP_CENTER -> "현 지도 주변을 찾고 있어요"
     }
 }
 
 private val MyLocationButtonHorizontalPadding = 16.dp
 private val MyLocationButtonBottomPadding = 16.dp
+private val MapCenterSearchButtonTopPadding = 112.dp
 
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
     return when (this) {

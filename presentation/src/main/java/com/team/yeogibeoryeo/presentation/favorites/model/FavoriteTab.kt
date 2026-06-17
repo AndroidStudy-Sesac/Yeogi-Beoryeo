@@ -17,8 +17,8 @@ enum class FavoriteTab(
     COLLECTION_SPOT(
         targetType = FavoriteTargetType.COLLECTION_SPOT,
         label = "장소",
-        emptyTitle = "아직 즐겨찾기한 장소가 없어요",
-        emptyDescription = "수거 장소 즐겨찾기 연결 후 이곳에서 모아볼 수 있어요.",
+        emptyTitle = "즐겨찾기한 수거 장소가 없어요",
+        emptyDescription = "지도에서 자주 확인하는 수거 장소를 즐겨찾기에 추가해 보세요.",
     ),
     REGIONAL_GUIDE(
         targetType = FavoriteTargetType.REGIONAL_GUIDE,

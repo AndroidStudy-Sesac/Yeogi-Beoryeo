@@ -3,14 +3,13 @@ package com.team.yeogibeoryeo.presentation.search.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
+import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
 fun DisposalCategoryChip(
@@ -31,16 +30,18 @@ internal fun MetadataChip(
     containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
     contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
     Box(
         modifier =
             modifier
                 .background(
                     color = containerColor,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                 )
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = spacing.sm, vertical = spacing.xs),
     ) {
-        Text(
+        KoreanLineBreakText(
             text = text,
             style = MaterialTheme.typography.labelLarge,
             color = contentColor,

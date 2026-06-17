@@ -1,21 +1,15 @@
 package com.team.yeogibeoryeo.presentation.search.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubGuide
+import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
+import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
 @Composable
 fun SubGuideSection(
@@ -23,48 +17,43 @@ fun SubGuideSection(
     subGuides: List<DisposalSubGuide>,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                ),
-            )
+    val spacing = ItemSearchLayoutDefaults.spacing
 
-            subGuides.forEach { subGuide ->
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = subGuide.name,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        ),
-                    )
-                    Text(
-                        text = subGuide.summary,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-                            lineHeight = 22.sp,
-                            fontSize = 15.sp,
-                        ),
-                    )
-                }
-            }
+    ItemGuideSectionCard(
+        title = title,
+        modifier = modifier,
+        contentSpacing = spacing.md,
+    ) {
+        subGuides.forEach { subGuide ->
+            SubGuideItem(
+                name = subGuide.name,
+                summary = subGuide.summary,
+            )
         }
+    }
+}
+
+@Composable
+private fun SubGuideItem(
+    name: String,
+    summary: String,
+) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val textStyles = itemGuideDetailTextStyles()
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+        KoreanLineBreakText(
+            text = name,
+            style = textStyles.subGuideTitle.copy(
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            ),
+        )
+        KoreanLineBreakText(
+            text = summary,
+            style = textStyles.body.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        )
     }
 }

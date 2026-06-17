@@ -1,14 +1,48 @@
 package com.team.yeogibeoryeo.presentation.favorites.mapper
 
-import com.team.yeogibeoryeo.domain.favorite.model.Favorite
+import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavorite
+import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
+import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 import javax.inject.Inject
 
 class FavoriteCollectionSpotUiMapper
     @Inject
     constructor() {
-    suspend fun map(favorite: Favorite): FavoriteUiModel? {
-        // TODO: Resolve collection spot source data when COLLECTION_SPOT favorites are connected.
-        return null
+        fun map(favorite: CollectionSpotFavorite): FavoriteUiModel =
+            map(favorite.snapshot)
+
+        fun map(snapshot: CollectionSpotFavoriteSnapshot): FavoriteUiModel =
+            FavoriteUiModel(
+                type = FavoriteTargetType.COLLECTION_SPOT,
+                targetId = snapshot.targetId,
+                title = snapshot.name,
+                subtitle = snapshot.toSubtitle(),
+                collectionSpotMapMoveRequest = snapshot.toMapMoveRequest(),
+            )
+
+        private fun CollectionSpotFavoriteSnapshot.toMapMoveRequest(): FavoriteCollectionSpotMapMoveRequest? {
+            val coordinate = coordinate ?: return null
+
+            return FavoriteCollectionSpotMapMoveRequest(
+                targetId = targetId,
+                name = name,
+                type = type,
+                address = address,
+                detailLocation = detailLocation,
+                latitude = coordinate.latitude,
+                longitude = coordinate.longitude,
+            )
+        }
+
+        private fun CollectionSpotFavoriteSnapshot.toSubtitle(): String =
+            listOf(
+                type.toDisplayName(),
+                address,
+                detailLocation,
+            )
+                .filterNot { it.isNullOrBlank() }
+                .joinToString(" · ")
     }
-}

@@ -3,27 +3,17 @@ package com.team.yeogibeoryeo.presentation.search
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,25 +22,18 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
-import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
-import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
+import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
+import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
@@ -117,179 +100,93 @@ fun ItemSearchScreen(
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
-    Column(
+    if (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null) {
+        ItemSearchInitialContent(
+            query = uiState.query,
+            onQueryChange = onQueryChange,
+            onSearchClick = onSearchClick,
+            onQuickCategoryClick = onQuickCategoryClick,
+            listState = categoryListState,
+            modifier = modifier,
+        )
+        return
+    }
+
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp)
-            .padding(top = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+            .background(MaterialTheme.colorScheme.background),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "여기 버려",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        val spacing = ItemSearchLayoutDefaults.spacing
+        val metrics = itemSearchScreenMetrics(maxWidth = maxWidth)
 
-        // 검색창 (더욱 강조된 검색바 디자인)
-        val searchActionDescription = stringResource(R.string.search_action)
-        OutlinedTextField(
-            value = uiState.query,
-            onValueChange = onQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.item_search_query_label),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 16.sp
-                    )
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(id = CommonR.drawable.ic_symbol_recycle),
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint =
-                        if (uiState.query.isEmpty()) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        }
-                )
-            },
-            trailingIcon = {
-                Row(
-                    modifier = Modifier.padding(end = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (uiState.query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(
-                                painter = painterResource(id = CommonR.drawable.ic_action_close),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    IconButton(onClick = onSearchClick) {
-                        Icon(
-                            painter = painterResource(id = CommonR.drawable.ic_action_search),
-                            contentDescription = searchActionDescription,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .semantics {
-                                    contentDescription = searchActionDescription
-                                },
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { onSearchClick() }),
-            shape = RoundedCornerShape(28.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                cursorColor = MaterialTheme.colorScheme.primary,
-            )
-        )
-
-        // 검색 결과 또는 제안 섹션
         Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = metrics.horizontalPadding)
+                .padding(top = metrics.topPadding),
+            verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
         ) {
-            when {
-                uiState.isLoading -> {
-                    val loadingContentDescription = stringResource(R.string.loading_action)
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.semantics {
-                                contentDescription = loadingContentDescription
-                            },
-                            color = MaterialTheme.colorScheme.primary,
+            ItemSearchHeader()
+
+            ItemSearchBar(
+                keyword = uiState.query,
+                onKeywordChange = onQueryChange,
+                onSearchClick = {
+                    onSearchClick()
+                },
+                placeholder = stringResource(R.string.item_search_query_label),
+                modifier = Modifier.fillMaxWidth(),
+                iconSize = metrics.searchIconSize,
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        ItemSearchLoadingContent(modifier = Modifier.fillMaxSize())
+                    }
+
+                    uiState.errorMessageResId != null -> {
+                        EmptySearchResult(
+                            title = stringResource(uiState.errorMessageResId),
+                            description = stringResource(R.string.retry_later_message),
                         )
                     }
-                }
 
-                uiState.errorMessageResId != null -> {
-                    EmptySearchResult(
-                        title = stringResource(uiState.errorMessageResId),
-                        description = stringResource(R.string.retry_later_message),
-                    )
-                }
-
-                !uiState.hasSearched -> {
-                    LazyColumn(
-                        state = categoryListState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.quick_categories),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                ),
-                            )
-                        }
-                        item {
-                            QuickCategoryGrid(onCategoryClick = onQuickCategoryClick)
-                        }
+                    uiState.guides.isEmpty() -> {
+                        EmptySearchResult(
+                            title = stringResource(R.string.no_search_results_title),
+                            description = stringResource(R.string.no_search_results_description),
+                        )
                     }
-                }
 
-                uiState.guides.isEmpty() -> {
-                    EmptySearchResult(
-                        title = stringResource(R.string.no_search_results_title),
-                        description = stringResource(R.string.no_search_results_description),
-                    )
-                }
-
-                else -> {
-                    Text(
-                        text = stringResource(
+                    else -> {
+                        val searchResultCountText = stringResource(
                             R.string.search_results_count,
                             uiState.guides.size
-                        ),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                    )
-                    LazyColumn(
-                        state = searchResultListState,
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(uiState.guides, key = { it.id }) { guide ->
-                            DisposalItemCard(
-                                guide = guide,
-                                onClick = { onGuideClick(guide) },
-                                isFavorite = guide.id in uiState.favoriteGuideIds,
-                            )
+                        )
+                        KoreanLineBreakText(
+                            text = searchResultCountText,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                        )
+                        LazyColumn(
+                            state = searchResultListState,
+                            contentPadding = PaddingValues(bottom = metrics.listBottomPadding),
+                            verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                        ) {
+                            items(uiState.guides, key = { it.id }) { guide ->
+                                DisposalItemCard(
+                                    guide = guide,
+                                    onClick = { onGuideClick(guide) },
+                                    isFavorite = guide.id in uiState.favoriteGuideIds,
+                                )
+                            }
                         }
                     }
                 }

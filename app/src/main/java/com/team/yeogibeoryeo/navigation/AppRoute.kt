@@ -3,13 +3,28 @@ package com.team.yeogibeoryeo.navigation
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object MapRoute
+data class MapRoute(
+    val favoriteSpotRequestId: String? = null,
+    val favoriteSpotTargetId: String? = null,
+    val favoriteSpotName: String? = null,
+    val favoriteSpotType: String? = null,
+    val favoriteSpotAddress: String? = null,
+    val favoriteSpotDetailLocation: String? = null,
+    val favoriteSpotLatitude: Double? = null,
+    val favoriteSpotLongitude: Double? = null,
+)
 
 @Serializable
 data class RegionalGuideRoute(
     val initialKeyword: String? = null,
     val initialAddress: String? = null,
+    val initialFavoriteTargetId: String? = null,
 )
+
+internal fun String.toRegionalGuideAddressRouteOrNull(): RegionalGuideRoute? =
+    trim()
+        .takeIf { address -> address.isNotBlank() }
+        ?.let { address -> RegionalGuideRoute(initialAddress = address) }
 
 @Serializable
 data object FavoritesRoute

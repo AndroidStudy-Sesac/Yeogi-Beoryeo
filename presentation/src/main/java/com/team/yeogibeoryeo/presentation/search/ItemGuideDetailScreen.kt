@@ -10,28 +10,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
@@ -46,10 +45,47 @@ fun ItemGuideDetailScreen(
     isFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val size = ItemSearchLayoutDefaults.size
+    val textStyles = itemGuideDetailTextStyles()
+    val scrollState = rememberScrollState()
+    val onBottomBarVisibilityChangedState by rememberUpdatedState(onBottomBarVisibilityChanged)
+
+    LaunchedEffect(scrollState) {
+        var previousOffset = 0
+        onBottomBarVisibilityChangedState(true)
+
+        snapshotFlow { scrollState.value }
+            .collect { currentOffset ->
+                if (scrollState.maxValue > 0 && currentOffset >= scrollState.maxValue) {
+                    onBottomBarVisibilityChangedState(false)
+                    previousOffset = currentOffset
+                    return@collect
+                }
+
+                if (currentOffset == 0) {
+                    onBottomBarVisibilityChangedState(true)
+                } else if (currentOffset > previousOffset) {
+                    onBottomBarVisibilityChangedState(false)
+                } else if (currentOffset < previousOffset) {
+                    onBottomBarVisibilityChangedState(true)
+                }
+                previousOffset = currentOffset
+            }
+    }
+
     val backActionDescription = stringResource(R.string.back_action)
-    val favoriteActionDescription = if (isFavorite) "즐겨찾기 해제" else "즐겨찾기 추가"
+    val favoriteActionDescription =
+        stringResource(
+            if (isFavorite) {
+                R.string.favorite_remove_action
+            } else {
+                R.string.favorite_add_action
+            },
+        )
     val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
     val isRepresentativeGuide = matchedRepresentativeCategory != null
     val representativeCategory =
@@ -60,14 +96,14 @@ fun ItemGuideDetailScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(
-                start = 24.dp,
-                top = 16.dp,
-                end = 24.dp,
-                bottom = 24.dp,
+                start = spacing.xl,
+                top = spacing.md,
+                end = spacing.xl,
+                bottom = spacing.xl,
             ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -78,9 +114,6 @@ fun ItemGuideDetailScreen(
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_back),
                     contentDescription = backActionDescription,
-                    modifier = Modifier.semantics {
-                        contentDescription = backActionDescription
-                    },
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -106,35 +139,35 @@ fun ItemGuideDetailScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(88.dp)
+                    .size(size.detailIconContainer)
                     .background(
                         color = representativeCategory.containerColor(),
-                        shape = RoundedCornerShape(24.dp)
+                        shape = MaterialTheme.shapes.extraLarge
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(id = representativeCategory.iconResId),
+                    // 옆의 품목명과 metadata chip이 의미를 제공하므로 아이콘은 중복 읽기를 피합니다.
                     contentDescription = null,
-                    modifier = Modifier.size(44.dp),
+                    modifier = Modifier.size(size.iconProminent),
                     tint = representativeCategory.iconTint()
                 )
             }
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
-                Text(
+                KoreanLineBreakText(
                     text = guide.name,
-                    style = MaterialTheme.typography.headlineMedium.copy(
+                    style = textStyles.title.copy(
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 28.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 )
