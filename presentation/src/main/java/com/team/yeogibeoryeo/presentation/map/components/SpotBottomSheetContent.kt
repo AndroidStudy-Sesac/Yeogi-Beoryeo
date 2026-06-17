@@ -54,6 +54,7 @@ fun SpotBottomSheetContent(
 
         if (hasSearched && !isLoading && !hasNoticeOrError) {
             SpotFilterChipRow(
+                types = MapSpotFilterChipPolicy.visibleTypes,
                 selectedTypes = selectedTypes,
                 onTypeClick = onTypeClick,
                 modifier = Modifier.padding(top = 4.dp),
