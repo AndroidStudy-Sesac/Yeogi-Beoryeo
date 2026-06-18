@@ -18,6 +18,7 @@ import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 
 @Composable
 fun SpotFilterChipRow(
+    types: List<CollectionSpotType>,
     selectedTypes: Set<CollectionSpotType>,
     onTypeClick: (CollectionSpotType) -> Unit,
     modifier: Modifier = Modifier,
@@ -28,7 +29,7 @@ fun SpotFilterChipRow(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        CollectionSpotType.entries.forEach { type ->
+        types.forEach { type ->
             FilterChip(
                 selected = type in selectedTypes,
                 onClick = {
@@ -48,6 +49,7 @@ private fun SpotFilterChipRowPreview() {
     MaterialTheme {
         Surface {
             SpotFilterChipRow(
+                types = MapSpotFilterChipPolicy.visibleTypes,
                 selectedTypes = emptySet(),
                 onTypeClick = {},
             )
@@ -61,6 +63,7 @@ private fun SpotFilterChipRowSelectedPreview() {
     MaterialTheme {
         Surface {
             SpotFilterChipRow(
+                types = MapSpotFilterChipPolicy.visibleTypes,
                 selectedTypes = setOf(
                     CollectionSpotType.BATTERY_BIN,
                     CollectionSpotType.RECYCLING_CENTER,
