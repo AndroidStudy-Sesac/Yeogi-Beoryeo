@@ -503,6 +503,30 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
+    fun `초기 타입으로 지도 진입 시 해당 타입을 선택하고 현재 위치 검색 결과를 필터링한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val medicineSpot = sampleSpot("medicine", CollectionSpotType.MEDICINE_DROP_BOX)
+            val batterySpot = sampleSpot("battery", CollectionSpotType.BATTERY_BIN)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(medicineSpot, batterySpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(CollectionSpotType.MEDICINE_DROP_BOX)
+
+            assertEquals(setOf(CollectionSpotType.MEDICINE_DROP_BOX), viewModel.uiState.value.selectedTypes)
+            assertEquals(listOf(medicineSpot), viewModel.uiState.value.spots)
+            assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(currentCoordinate, repository.lastLocationCoordinate)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
     fun `지도 진입 시 위치 권한이 없으면 자동 현재 위치 검색을 실행하지 않는다`() =
         runTest {
             val repository = FakeCollectionSpotRepository()
@@ -518,6 +542,28 @@ class CollectionSpotMapViewModelTest {
 
             assertEquals(0, repository.locationSearchCallCount)
             assertFalse(viewModel.uiState.value.hasSearched)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
+            assertNull(viewModel.uiState.value.errorMessage)
+        }
+
+    @Test
+    fun `초기 타입으로 지도 진입 시 위치 권한이 없으면 타입만 선택하고 자동 권한 요청 상태를 만들지 않는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = false,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(CollectionSpotType.FLUORESCENT_LAMP_BIN)
+
+            assertEquals(setOf(CollectionSpotType.FLUORESCENT_LAMP_BIN), viewModel.uiState.value.selectedTypes)
+            assertEquals(0, repository.locationSearchCallCount)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertNull(viewModel.uiState.value.locationNotice)
             assertNull(viewModel.uiState.value.locationNoticeMessage)
             assertNull(viewModel.uiState.value.errorMessage)
         }
@@ -539,6 +585,27 @@ class CollectionSpotMapViewModelTest {
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
 
+            assertEquals(1, repository.locationSearchCallCount)
+        }
+
+    @Test
+    fun `초기 타입 지도 진입 자동 검색은 여러 번 호출되어도 한 번만 실행된다`() =
+        runTest {
+            val medicineSpot = sampleSpot("medicine", CollectionSpotType.MEDICINE_DROP_BOX)
+            val repository = FakeCollectionSpotRepository(locationSpots = listOf(medicineSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(CollectionSpotType.MEDICINE_DROP_BOX)
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(CollectionSpotType.BATTERY_BIN)
+
+            assertEquals(setOf(CollectionSpotType.MEDICINE_DROP_BOX), viewModel.uiState.value.selectedTypes)
+            assertEquals(listOf(medicineSpot), viewModel.uiState.value.spots)
             assertEquals(1, repository.locationSearchCallCount)
         }
 

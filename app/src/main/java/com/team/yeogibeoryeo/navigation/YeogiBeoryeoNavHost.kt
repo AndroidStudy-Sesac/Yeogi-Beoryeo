@@ -87,6 +87,7 @@ fun YeogiBeoryeoNavHost(
             composable<MapRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<MapRoute>()
                 CollectionSpotMapScreen(
+                    initialSpotType = route.toInitialCollectionSpotTypeOrNull(),
                     favoriteSpotMoveRequest = route.toFavoriteSpotMapMoveRequest(),
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (currentDestination?.hasRoute<MapRoute>() == true) {
