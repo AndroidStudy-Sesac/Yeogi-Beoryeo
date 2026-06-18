@@ -18,6 +18,10 @@ object SpotTypeMapper {
                 CollectionSpotType.MEDICINE_DROP_BOX
             }
 
+            targetText.containsAny(batteryKeywords) -> {
+                CollectionSpotType.BATTERY_BIN
+            }
+
             targetText.containsAny(fluorescentLampKeywords) -> {
                 CollectionSpotType.FLUORESCENT_LAMP_BIN
             }
@@ -32,10 +36,6 @@ object SpotTypeMapper {
 
             targetText.containsAny(wasteCookingOilKeywords) -> {
                 CollectionSpotType.WASTE_COOKING_OIL_BIN
-            }
-
-            targetText.containsAny(batteryKeywords) -> {
-                CollectionSpotType.BATTERY_BIN
             }
 
             targetText.containsAny(phoneKeywords) -> {
@@ -64,7 +64,9 @@ object SpotTypeMapper {
         "폐의약품 수거함",
         "폐의약품수거함",
         "의약품 수거함",
+        "의약품수거함",
         "약국 폐의약품 수거함",
+        "약국 폐의약품수거함",
     )
 
     private val fluorescentLampKeywords = listOf(
@@ -129,11 +131,16 @@ object SpotTypeMapper {
 
     private val smallEWasteKeywords = listOf(
         "중소형 수거함",
+        "중소형수거함",
         "중소형 폐가전수거함",
+        "중소형폐가전수거함",
         "중소형 폐가전 수거함",
         "소형가전 수거함",
+        "소형가전수거함",
         "소형전기전자제품 수거함",
+        "소형전기전자제품수거함",
         "폐가전 수거함",
+        "폐가전수거함",
     )
 
     private fun String.containsAny(keywords: List<String>): Boolean {

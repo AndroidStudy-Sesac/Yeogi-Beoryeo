@@ -88,6 +88,16 @@ class SpotTypeMapperTest {
     }
 
     @Test
+    fun `의약품수거함이면 MEDICINE_DROP_BOX를 반환한다`() {
+        val result = SpotTypeMapper.mapToType(
+            spotName = "의약품수거함",
+            detailAddress = null,
+        )
+
+        assertEquals(CollectionSpotType.MEDICINE_DROP_BOX, result)
+    }
+
+    @Test
     fun `폐형광등 수거함이면 FLUORESCENT_LAMP_BIN을 반환한다`() {
         val result = SpotTypeMapper.mapToType(
             spotName = "폐형광등 수거함",
@@ -138,9 +148,39 @@ class SpotTypeMapperTest {
     }
 
     @Test
+    fun `소형가전수거함이면 SMALL_E_WASTE_BIN을 반환한다`() {
+        val result = SpotTypeMapper.mapToType(
+            spotName = "소형가전수거함",
+            detailAddress = null,
+        )
+
+        assertEquals(CollectionSpotType.SMALL_E_WASTE_BIN, result)
+    }
+
+    @Test
+    fun `소형전기전자제품수거함이면 SMALL_E_WASTE_BIN을 반환한다`() {
+        val result = SpotTypeMapper.mapToType(
+            spotName = "소형전기전자제품수거함",
+            detailAddress = null,
+        )
+
+        assertEquals(CollectionSpotType.SMALL_E_WASTE_BIN, result)
+    }
+
+    @Test
     fun `폐가전 수거함이면 SMALL_E_WASTE_BIN을 반환한다`() {
         val result = SpotTypeMapper.mapToType(
             spotName = "폐가전 수거함",
+            detailAddress = null,
+        )
+
+        assertEquals(CollectionSpotType.SMALL_E_WASTE_BIN, result)
+    }
+
+    @Test
+    fun `폐가전수거함이면 SMALL_E_WASTE_BIN을 반환한다`() {
+        val result = SpotTypeMapper.mapToType(
+            spotName = "폐가전수거함",
             detailAddress = null,
         )
 
@@ -162,6 +202,26 @@ class SpotTypeMapperTest {
     fun `폐전지 수거함이면 BATTERY_BIN을 반환한다`() {
         val result = SpotTypeMapper.mapToType(
             spotName = "폐전지 수거함",
+            detailAddress = null,
+        )
+
+        assertEquals(CollectionSpotType.BATTERY_BIN, result)
+    }
+
+    @Test
+    fun `폐건전지와 폐형광등 복합 수거함은 현재 chip 정책상 BATTERY_BIN을 우선 반환한다`() {
+        val result = SpotTypeMapper.mapToType(
+            spotName = "폐건전지, 폐형광등 수거함",
+            detailAddress = null,
+        )
+
+        assertEquals(CollectionSpotType.BATTERY_BIN, result)
+    }
+
+    @Test
+    fun `폐형광등 전지수거함 복합 응답은 현재 chip 정책상 BATTERY_BIN을 우선 반환한다`() {
+        val result = SpotTypeMapper.mapToType(
+            spotName = "폐형광등,전지수거함",
             detailAddress = null,
         )
 
