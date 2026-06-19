@@ -328,6 +328,8 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun searchByCurrentLocationOnMapEntryIfPermitted(initialSpotType: CollectionSpotType? = null) {
+        applyInitialSpotType(initialSpotType)
+
         if (
             hasRequestedInitialCurrentLocationSearch ||
             uiState.value.hasSearched ||
@@ -337,7 +339,6 @@ class CollectionSpotMapViewModel @Inject constructor(
             return
         }
 
-        applyInitialSpotType(initialSpotType)
         hasRequestedInitialCurrentLocationSearch = true
 
         val currentState = uiState.value
