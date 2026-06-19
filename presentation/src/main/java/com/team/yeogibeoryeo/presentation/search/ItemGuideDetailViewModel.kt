@@ -10,6 +10,8 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleFavoriteUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.model.ItemGuideDetailAction
+import com.team.yeogibeoryeo.presentation.search.model.toDetailActions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -49,7 +51,10 @@ constructor(
                     val guide = getDisposalItemGuideUseCase(guideId)
 
                     if (guide != null) {
-                        _uiState.value = ItemGuideDetailUiState.Success(guide = guide)
+                        _uiState.value = ItemGuideDetailUiState.Success(
+                            guide = guide,
+                            actions = guide.toDetailActions(),
+                        )
                         observeFavorite(guide)
                     } else {
                         _uiState.value =
@@ -117,6 +122,7 @@ sealed interface ItemGuideDetailUiState {
     data class Success(
         val guide: DisposalItemGuide,
         val isFavorite: Boolean = false,
+        val actions: List<ItemGuideDetailAction> = emptyList(),
     ) : ItemGuideDetailUiState
 
     data class Error(

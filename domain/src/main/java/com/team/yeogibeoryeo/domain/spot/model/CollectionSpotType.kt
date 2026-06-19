@@ -11,5 +11,6 @@ enum class CollectionSpotType {
     CLOTHING_BIN,          // 의류수거함
     ICE_PACK_BIN,          // 아이스팩
     WASTE_COOKING_OIL_BIN, // 폐식용유
+    HAZARDOUS_WASTE_BIN,   // 생활계 유해폐기물
     OTHER                 // 기타
 }

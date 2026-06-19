@@ -138,6 +138,16 @@ class SpotTypeMapperTest {
     }
 
     @Test
+    fun `생활계 유해폐기물 전용수거함이면 HAZARDOUS_WASTE_BIN을 반환한다`() {
+        val result = SpotTypeMapper.mapToType(
+            spotName = "생활계 유해폐기물 전용수거함",
+            detailAddress = null,
+        )
+
+        assertEquals(CollectionSpotType.HAZARDOUS_WASTE_BIN, result)
+    }
+
+    @Test
     fun `소형가전 수거함이면 SMALL_E_WASTE_BIN을 반환한다`() {
         val result = SpotTypeMapper.mapToType(
             spotName = "소형가전 수거함",

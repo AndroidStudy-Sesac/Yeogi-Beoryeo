@@ -5,15 +5,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,6 +34,7 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
@@ -37,14 +44,18 @@ import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
 import com.team.yeogibeoryeo.presentation.search.components.containerColor
 import com.team.yeogibeoryeo.presentation.search.components.iconResId
 import com.team.yeogibeoryeo.presentation.search.components.iconTint
+import com.team.yeogibeoryeo.presentation.search.model.ItemGuideDetailAction
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
 fun ItemGuideDetailScreen(
     guide: DisposalItemGuide,
+    actions: List<ItemGuideDetailAction> = emptyList(),
     isFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onCollectionSpotTypeClick: (CollectionSpotType) -> Unit = {},
+    onOfficialGuideClick: (String) -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -58,20 +69,15 @@ fun ItemGuideDetailScreen(
         var previousOffset = 0
         onBottomBarVisibilityChangedState(true)
 
-        snapshotFlow { scrollState.value }
-            .collect { currentOffset ->
-                if (scrollState.maxValue > 0 && currentOffset >= scrollState.maxValue) {
-                    onBottomBarVisibilityChangedState(false)
-                    previousOffset = currentOffset
-                    return@collect
-                }
-
-                if (currentOffset == 0) {
-                    onBottomBarVisibilityChangedState(true)
-                } else if (currentOffset > previousOffset) {
-                    onBottomBarVisibilityChangedState(false)
-                } else if (currentOffset < previousOffset) {
-                    onBottomBarVisibilityChangedState(true)
+        snapshotFlow { scrollState.value to scrollState.maxValue }
+            .collect { (currentOffset, maxOffset) ->
+                val isAtBottom = maxOffset > 0 && currentOffset >= maxOffset
+                when {
+                    currentOffset == 0 -> onBottomBarVisibilityChangedState(true)
+                    currentOffset > previousOffset -> onBottomBarVisibilityChangedState(false)
+                    currentOffset < previousOffset && !isAtBottom -> {
+                        onBottomBarVisibilityChangedState(true)
+                    }
                 }
                 previousOffset = currentOffset
             }
@@ -179,6 +185,14 @@ fun ItemGuideDetailScreen(
             }
         }
 
+        if (actions.isNotEmpty()) {
+            ItemGuideActionButtons(
+                actions = actions,
+                onCollectionSpotTypeClick = onCollectionSpotTypeClick,
+                onOfficialGuideClick = onOfficialGuideClick,
+            )
+        }
+
         if (guide.detailSections.isNotEmpty()) {
             guide.detailSections.forEach { section ->
                 SectionCard(
@@ -230,4 +244,85 @@ fun ItemGuideDetailScreen(
             lines = listOf(stringResource(R.string.local_disposal_notice)),
         )
     }
+}
+
+@Composable
+private fun ItemGuideActionButtons(
+    actions: List<ItemGuideDetailAction>,
+    onCollectionSpotTypeClick: (CollectionSpotType) -> Unit,
+    onOfficialGuideClick: (String) -> Unit,
+) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+        actions.forEach { action ->
+            when (action) {
+                is ItemGuideDetailAction.MapSpot -> {
+                    ItemGuideActionButton(
+                        label = stringResource(action.labelResId),
+                        iconResId = CommonR.drawable.ic_action_search,
+                        onClick = { onCollectionSpotTypeClick(action.type) },
+                        prominent = true,
+                    )
+                }
+
+                is ItemGuideDetailAction.OfficialGuide -> {
+                    ItemGuideActionButton(
+                        label = stringResource(action.labelResId),
+                        iconResId = R.drawable.ic_disposal_route_report,
+                        onClick = { onOfficialGuideClick(action.url) },
+                        prominent = false,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItemGuideActionButton(
+    label: String,
+    iconResId: Int,
+    onClick: () -> Unit,
+    prominent: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val size = ItemSearchLayoutDefaults.size
+    val colors = MaterialTheme.colorScheme
+    val content: @Composable RowScope.() -> Unit = {
+        Icon(
+            painter = painterResource(id = iconResId),
+            contentDescription = null,
+            modifier = Modifier.size(size.iconStandard),
+        )
+        Spacer(modifier = Modifier.size(spacing.sm))
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            fontWeight = FontWeight.SemiBold,
+        )
+        Icon(
+            painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
+            contentDescription = null,
+            modifier = Modifier.size(size.iconStandard),
+        )
+    }
+
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = size.searchFieldHeight),
+        shape = MaterialTheme.shapes.large,
+        colors = if (prominent) {
+            ButtonDefaults.buttonColors()
+        } else {
+            ButtonDefaults.buttonColors(
+                containerColor = colors.tertiaryContainer,
+                contentColor = colors.onTertiaryContainer,
+            )
+        },
+        content = content,
+    )
 }
