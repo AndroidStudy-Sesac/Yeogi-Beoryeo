@@ -43,6 +43,7 @@ import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 
 @Composable
 fun CollectionSpotMapScreen(
+    initialSpotType: CollectionSpotType? = null,
     favoriteSpotMoveRequest: FavoriteSpotMapMoveRequest? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onRegionalGuideClick: (String) -> Unit = {},
@@ -84,10 +85,10 @@ fun CollectionSpotMapScreen(
         },
         onDenied = viewModel::onLocationPermissionDenied,
     )
-    LaunchedEffect(favoriteSpotMoveRequest) {
+    LaunchedEffect(favoriteSpotMoveRequest, initialSpotType) {
         val request = favoriteSpotMoveRequest
         if (request == null) {
-            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(initialSpotType)
         } else {
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.showFavoriteSpot(request)

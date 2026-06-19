@@ -327,10 +327,22 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    fun searchByCurrentLocationOnMapEntryIfPermitted() {
-        val currentState = uiState.value
+    fun searchByCurrentLocationOnMapEntryIfPermitted(initialSpotType: CollectionSpotType? = null) {
+        applyInitialSpotType(initialSpotType)
+
         if (
             hasRequestedInitialCurrentLocationSearch ||
+            uiState.value.hasSearched ||
+            uiState.value.isLoading ||
+            uiState.value.searchKeyword.isNotBlank()
+        ) {
+            return
+        }
+
+        hasRequestedInitialCurrentLocationSearch = true
+
+        val currentState = uiState.value
+        if (
             currentState.hasSearched ||
             currentState.isLoading ||
             currentState.searchKeyword.isNotBlank() ||
@@ -339,7 +351,6 @@ class CollectionSpotMapViewModel @Inject constructor(
             return
         }
 
-        hasRequestedInitialCurrentLocationSearch = true
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
             val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
@@ -356,6 +367,24 @@ class CollectionSpotMapViewModel @Inject constructor(
                     preservePreviousResultOnFailure = false,
                 )
             }
+        }
+    }
+
+    private fun applyInitialSpotType(type: CollectionSpotType?) {
+        if (type == null) return
+
+        val selectedTypes = setOf(type)
+        val filteredSpots = filterCollectionSpotsUseCase(
+            spots = originalSpots,
+            selectedTypes = selectedTypes,
+        )
+
+        _uiState.update {
+            it.copy(
+                selectedTypes = selectedTypes,
+                spots = filteredSpots,
+                selectedSpot = null,
+            )
         }
     }
 

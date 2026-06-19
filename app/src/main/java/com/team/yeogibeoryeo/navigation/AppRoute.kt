@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class MapRoute(
+    val initialSpotType: String? = null,
     val favoriteSpotRequestId: String? = null,
     val favoriteSpotTargetId: String? = null,
     val favoriteSpotName: String? = null,
