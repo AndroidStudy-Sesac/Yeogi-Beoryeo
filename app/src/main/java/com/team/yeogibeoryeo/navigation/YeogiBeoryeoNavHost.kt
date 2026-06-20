@@ -163,9 +163,6 @@ fun YeogiBeoryeoNavHost(
                     onBackClick = navController::popBackStack,
                     onCollectionSpotTypeClick = { type ->
                         navController.navigate(MapRoute(initialSpotType = type.name)) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
                             launchSingleTop = true
                             restoreState = false
                         }
