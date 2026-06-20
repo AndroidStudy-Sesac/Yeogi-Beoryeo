@@ -12,6 +12,7 @@ object MapSpotFilterChipPolicy {
         CollectionSpotType.CLOTHING_BIN,
         CollectionSpotType.ICE_PACK_BIN,
         CollectionSpotType.WASTE_COOKING_OIL_BIN,
+        CollectionSpotType.HAZARDOUS_WASTE_BIN,
         CollectionSpotType.RECYCLING_CENTER,
         CollectionSpotType.STANDARD_BAG_STORE,
         CollectionSpotType.OTHER,

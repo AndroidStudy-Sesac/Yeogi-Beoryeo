@@ -14,5 +14,6 @@ fun CollectionSpotType.toDisplayName(): String =
         CollectionSpotType.CLOTHING_BIN -> "의류수거함"
         CollectionSpotType.ICE_PACK_BIN -> "아이스팩"
         CollectionSpotType.WASTE_COOKING_OIL_BIN -> "폐식용유"
+        CollectionSpotType.HAZARDOUS_WASTE_BIN -> "생활계 유해폐기물"
         CollectionSpotType.OTHER -> "기타"
     }

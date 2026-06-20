@@ -25,6 +25,7 @@ class MapSpotFilterChipPolicyTest {
         assertTrue(CollectionSpotType.CLOTHING_BIN in visibleTypes)
         assertTrue(CollectionSpotType.ICE_PACK_BIN in visibleTypes)
         assertTrue(CollectionSpotType.WASTE_COOKING_OIL_BIN in visibleTypes)
+        assertTrue(CollectionSpotType.HAZARDOUS_WASTE_BIN in visibleTypes)
     }
 
     @Test
@@ -51,6 +52,7 @@ class MapSpotFilterChipPolicyTest {
                 CollectionSpotType.CLOTHING_BIN,
                 CollectionSpotType.ICE_PACK_BIN,
                 CollectionSpotType.WASTE_COOKING_OIL_BIN,
+                CollectionSpotType.HAZARDOUS_WASTE_BIN,
                 CollectionSpotType.RECYCLING_CENTER,
                 CollectionSpotType.STANDARD_BAG_STORE,
                 CollectionSpotType.OTHER,

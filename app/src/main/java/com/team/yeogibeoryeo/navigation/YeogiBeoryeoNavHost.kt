@@ -161,6 +161,12 @@ fun YeogiBeoryeoNavHost(
                 ItemGuideDetailScreenRoute(
                     guideId = route.guideId,
                     onBackClick = navController::popBackStack,
+                    onCollectionSpotTypeClick = { type ->
+                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    },
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (isItemDetailScreen) {
                             isBottomBarVisible = isVisible

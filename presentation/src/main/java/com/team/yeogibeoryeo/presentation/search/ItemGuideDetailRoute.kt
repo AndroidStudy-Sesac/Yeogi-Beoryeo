@@ -1,5 +1,7 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.FavoriteSnackbar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchStatusDescription
@@ -30,6 +33,7 @@ import com.team.yeogibeoryeo.presentation.search.components.ItemSearchStatusTitl
 fun ItemGuideDetailRoute(
     guideId: String,
     onBackClick: () -> Unit,
+    onCollectionSpotTypeClick: (CollectionSpotType) -> Unit,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ItemGuideDetailViewModel = hiltViewModel(),
@@ -73,9 +77,18 @@ fun ItemGuideDetailRoute(
             is ItemGuideDetailUiState.Success -> {
                 ItemGuideDetailScreen(
                     guide = state.guide,
+                    actions = state.actions,
                     isFavorite = state.isFavorite,
                     onBackClick = onBackClick,
                     onFavoriteClick = viewModel::toggleFavorite,
+                    onCollectionSpotTypeClick = onCollectionSpotTypeClick,
+                    onOfficialGuideClick = { url ->
+                        runCatching {
+                            currentContext.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                            )
+                        }
+                    },
                     onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
                     modifier = Modifier.padding(innerPadding),
                 )

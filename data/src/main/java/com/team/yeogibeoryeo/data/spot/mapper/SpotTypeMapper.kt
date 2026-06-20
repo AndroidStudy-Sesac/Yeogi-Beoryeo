@@ -38,6 +38,10 @@ object SpotTypeMapper {
                 CollectionSpotType.WASTE_COOKING_OIL_BIN
             }
 
+            targetText.containsAny(hazardousWasteKeywords) -> {
+                CollectionSpotType.HAZARDOUS_WASTE_BIN
+            }
+
             targetText.containsAny(phoneKeywords) -> {
                 CollectionSpotType.PHONE_DROP_OFF
             }
@@ -90,6 +94,14 @@ object SpotTypeMapper {
         "폐식용유수거함",
         "폐식용유 배출함",
         "식물성 식용유 수거함",
+    )
+
+    private val hazardousWasteKeywords = listOf(
+        "생활계 유해폐기물 전용수거함",
+        "생활계유해폐기물 전용수거함",
+        "생활계유해폐기물전용수거함",
+        "유해폐기물 전용수거함",
+        "유해폐기물수거함",
     )
 
     private val batteryKeywords = listOf(
