@@ -34,12 +34,14 @@ import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
+import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
 fun ItemSearchRoute(
     initialQuery: String? = null,
     onGuideSelected: (DisposalItemGuide) -> Unit,
+    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     viewModel: ItemSearchViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -83,6 +85,7 @@ fun ItemSearchRoute(
         onQueryChange = viewModel::onQueryChange,
         onSearchClick = viewModel::search,
         onGuideClick = onGuideSelected,
+        onUsefulGuideClick = onUsefulGuideClick,
         onQuickCategoryClick = viewModel::openCategoryGuide,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
@@ -95,6 +98,7 @@ fun ItemSearchScreen(
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     onGuideClick: (DisposalItemGuide) -> Unit,
+    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
     searchResultListState: LazyListState = rememberLazyListState(),
@@ -105,6 +109,7 @@ fun ItemSearchScreen(
             query = uiState.query,
             onQueryChange = onQueryChange,
             onSearchClick = onSearchClick,
+            onUsefulGuideClick = onUsefulGuideClick,
             onQuickCategoryClick = onQuickCategoryClick,
             listState = categoryListState,
             modifier = modifier,

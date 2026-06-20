@@ -5,26 +5,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -39,6 +29,7 @@ import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
+import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
 import com.team.yeogibeoryeo.presentation.search.components.containerColor
@@ -63,25 +54,11 @@ fun ItemGuideDetailScreen(
     val size = ItemSearchLayoutDefaults.size
     val textStyles = itemGuideDetailTextStyles()
     val scrollState = rememberScrollState()
-    val onBottomBarVisibilityChangedState by rememberUpdatedState(onBottomBarVisibilityChanged)
 
-    LaunchedEffect(scrollState) {
-        var previousOffset = 0
-        onBottomBarVisibilityChangedState(true)
-
-        snapshotFlow { scrollState.value to scrollState.maxValue }
-            .collect { (currentOffset, maxOffset) ->
-                val isAtBottom = maxOffset > 0 && currentOffset >= maxOffset
-                when {
-                    currentOffset == 0 -> onBottomBarVisibilityChangedState(true)
-                    currentOffset > previousOffset -> onBottomBarVisibilityChangedState(false)
-                    currentOffset < previousOffset && !isAtBottom -> {
-                        onBottomBarVisibilityChangedState(true)
-                    }
-                }
-                previousOffset = currentOffset
-            }
-    }
+    BottomBarVisibilityOnScrollEffect(
+        scrollState = scrollState,
+        onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+    )
 
     val backActionDescription = stringResource(R.string.back_action)
     val favoriteActionDescription =
@@ -277,52 +254,4 @@ private fun ItemGuideActionButtons(
             }
         }
     }
-}
-
-@Composable
-private fun ItemGuideActionButton(
-    label: String,
-    iconResId: Int,
-    onClick: () -> Unit,
-    prominent: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val spacing = ItemSearchLayoutDefaults.spacing
-    val size = ItemSearchLayoutDefaults.size
-    val colors = MaterialTheme.colorScheme
-    val content: @Composable RowScope.() -> Unit = {
-        Icon(
-            painter = painterResource(id = iconResId),
-            contentDescription = null,
-            modifier = Modifier.size(size.iconStandard),
-        )
-        Spacer(modifier = Modifier.size(spacing.sm))
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            fontWeight = FontWeight.SemiBold,
-        )
-        Icon(
-            painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
-            contentDescription = null,
-            modifier = Modifier.size(size.iconStandard),
-        )
-    }
-
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = size.searchFieldHeight),
-        shape = MaterialTheme.shapes.large,
-        colors = if (prominent) {
-            ButtonDefaults.buttonColors()
-        } else {
-            ButtonDefaults.buttonColors(
-                containerColor = colors.tertiaryContainer,
-                contentColor = colors.onTertiaryContainer,
-            )
-        },
-        content = content,
-    )
 }

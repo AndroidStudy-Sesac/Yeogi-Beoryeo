@@ -13,13 +13,22 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
+import com.team.yeogibeoryeo.presentation.search.components.ItemUsefulGuideBannerRow
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
+import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
+import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
@@ -27,11 +36,13 @@ fun ItemSearchInitialContent(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
+    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    val spacing = ItemSearchLayoutDefaults.spacing
+    var isQuickCategoryExpanded by rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
 
     BoxWithConstraints(
         modifier = modifier
@@ -45,12 +56,32 @@ fun ItemSearchInitialContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = metrics.horizontalPadding)
-                .padding(top = metrics.topPadding),
+                .padding(top = metrics.topPadding)
+                .onGloballyPositioned { coordinates ->
+                    viewportBottomInRootPx =
+                        coordinates.positionInRoot().y.toInt() + coordinates.size.height
+                },
             contentPadding = PaddingValues(bottom = metrics.listBottomPadding),
             verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
         ) {
             item {
                 ItemSearchHeader()
+            }
+
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
+                    KoreanLineBreakText(
+                        text = stringResource(R.string.item_useful_guide_section_title),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
+                    )
+                    ItemUsefulGuideBannerRow(
+                        guides = itemUsefulGuideContents,
+                        onGuideClick = onUsefulGuideClick,
+                    )
+                }
             }
 
             item {
@@ -76,7 +107,11 @@ fun ItemSearchInitialContent(
                     )
                     QuickCategoryGrid(
                         onCategoryClick = onQuickCategoryClick,
+                        isExpanded = isQuickCategoryExpanded,
+                        onMoreClick = { isQuickCategoryExpanded = true },
+                        onCollapseClick = { isQuickCategoryExpanded = false },
                         screenHorizontalPadding = metrics.horizontalPadding,
+                        viewportBottomInRootPx = viewportBottomInRootPx,
                     )
                 }
             }

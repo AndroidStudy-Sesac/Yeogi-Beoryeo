@@ -36,6 +36,11 @@ data class ItemSearchRoute(
 )
 
 @Serializable
+data class ItemUsefulGuideRoute(
+    val guideType: String,
+)
+
+@Serializable
 data class ItemGuideDetailRoute(
     val guideId: String,
     val source: ItemGuideDetailSource = ItemGuideDetailSource.SEARCH,

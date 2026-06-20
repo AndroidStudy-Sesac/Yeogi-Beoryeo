@@ -1,5 +1,7 @@
 package com.team.yeogibeoryeo.navigation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -16,9 +18,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -33,15 +37,20 @@ import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
+import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
+import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 
 @Composable
 fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
+    val currentContext by rememberUpdatedState(LocalContext.current)
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentDestination = currentBackStackEntry?.destination
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
+    val isUsefulGuideScreen = currentDestination?.hasRoute<ItemUsefulGuideRoute>() == true
+    val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(currentBackStackEntry) {
@@ -52,13 +61,13 @@ fun YeogiBeoryeoNavHost(
         modifier = modifier,
         bottomBar = {
             val enterTransition =
-                if (isItemDetailScreen) {
+                if (hidesBottomBarOnScroll) {
                     fadeIn() + expandVertically(expandFrom = Alignment.Bottom) + slideInVertically { it }
                 } else {
                     EnterTransition.None
                 }
             val exitTransition =
-                if (isItemDetailScreen) {
+                if (hidesBottomBarOnScroll) {
                     fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom) + slideOutVertically { it }
                 } else {
                     ExitTransition.None
@@ -153,6 +162,48 @@ fun YeogiBeoryeoNavHost(
                             ),
                         )
                     },
+                    onUsefulGuideClick = { guide ->
+                        navController.navigate(ItemUsefulGuideRoute(guide.type.name))
+                    },
+                )
+            }
+
+            composable<ItemUsefulGuideRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ItemUsefulGuideRoute>()
+                ItemUsefulGuideScreenRoute(
+                    guideType = ItemUsefulGuideType.valueOf(route.guideType),
+                    onBackClick = navController::popBackStack,
+                    onSmallEWasteClick = { type ->
+                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    },
+                    onFreePickupGuideClick = {
+                        runCatching {
+                            currentContext.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(FreePickupGuideUrl)),
+                            )
+                        }
+                    },
+                    onOfficialSiteClick = { url ->
+                        runCatching {
+                            currentContext.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                            )
+                        }
+                    },
+                    onRegionalGuideClick = {
+                        navController.navigate(RegionalGuideRoute()) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onItemSearchClick = navController::popBackStack,
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (isUsefulGuideScreen) {
+                            isBottomBarVisible = isVisible
+                        }
+                    },
                 )
             }
 
@@ -177,3 +228,5 @@ fun YeogiBeoryeoNavHost(
         }
     }
 }
+
+private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
