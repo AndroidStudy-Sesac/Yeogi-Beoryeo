@@ -8,6 +8,8 @@ data class ItemSearchUiState(
     val guides: List<DisposalItemGuide> = emptyList(),
     val favoriteGuideIds: Set<String> = emptySet(),
     val searchResultVersion: Int = 0,
+    val isQuickCategoryExpanded: Boolean = false,
+    val quickCategoryFixedCollapsedItemCount: Int = 0,
     val isLoading: Boolean = false,
     val hasSearched: Boolean = false,
     @param:StringRes val errorMessageResId: Int? = null,

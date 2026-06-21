@@ -184,14 +184,14 @@ fun YeogiBeoryeoNavHost(
                             currentContext.startActivity(
                                 Intent(Intent.ACTION_VIEW, Uri.parse(FreePickupGuideUrl)),
                             )
-                        }
+                        }.isSuccess
                     },
                     onOfficialSiteClick = { url ->
                         runCatching {
                             currentContext.startActivity(
                                 Intent(Intent.ACTION_VIEW, Uri.parse(url)),
                             )
-                        }
+                        }.isSuccess
                     },
                     onRegionalGuideClick = {
                         navController.navigate(RegionalGuideRoute()) {

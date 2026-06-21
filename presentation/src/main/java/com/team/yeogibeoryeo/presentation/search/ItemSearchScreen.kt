@@ -87,6 +87,10 @@ fun ItemSearchRoute(
         onGuideClick = onGuideSelected,
         onUsefulGuideClick = onUsefulGuideClick,
         onQuickCategoryClick = viewModel::openCategoryGuide,
+        onQuickCategoryMoreClick = viewModel::expandQuickCategory,
+        onQuickCategoryCollapseClick = viewModel::collapseQuickCategory,
+        onQuickCategoryViewportChanged =
+            viewModel::resetQuickCategoryFixedCollapsedItemCountIfCollapsed,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
     )
@@ -100,6 +104,9 @@ fun ItemSearchScreen(
     onGuideClick: (DisposalItemGuide) -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    onQuickCategoryMoreClick: (Int) -> Unit = {},
+    onQuickCategoryCollapseClick: () -> Unit = {},
+    onQuickCategoryViewportChanged: () -> Unit = {},
     modifier: Modifier = Modifier,
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
@@ -111,6 +118,12 @@ fun ItemSearchScreen(
             onSearchClick = onSearchClick,
             onUsefulGuideClick = onUsefulGuideClick,
             onQuickCategoryClick = onQuickCategoryClick,
+            isQuickCategoryExpanded = uiState.isQuickCategoryExpanded,
+            quickCategoryFixedCollapsedItemCount =
+                uiState.quickCategoryFixedCollapsedItemCount,
+            onQuickCategoryMoreClick = onQuickCategoryMoreClick,
+            onQuickCategoryCollapseClick = onQuickCategoryCollapseClick,
+            onQuickCategoryViewportChanged = onQuickCategoryViewportChanged,
             listState = categoryListState,
             modifier = modifier,
         )

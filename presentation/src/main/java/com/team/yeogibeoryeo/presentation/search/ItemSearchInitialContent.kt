@@ -38,10 +38,14 @@ fun ItemSearchInitialContent(
     onSearchClick: () -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    isQuickCategoryExpanded: Boolean,
+    quickCategoryFixedCollapsedItemCount: Int,
+    onQuickCategoryMoreClick: (Int) -> Unit,
+    onQuickCategoryCollapseClick: () -> Unit,
+    onQuickCategoryViewportChanged: () -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    var isQuickCategoryExpanded by rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
 
     BoxWithConstraints(
@@ -58,8 +62,12 @@ fun ItemSearchInitialContent(
                 .padding(horizontal = metrics.horizontalPadding)
                 .padding(top = metrics.topPadding)
                 .onGloballyPositioned { coordinates ->
-                    viewportBottomInRootPx =
+                    val measuredViewportBottomInRootPx =
                         coordinates.positionInRoot().y.toInt() + coordinates.size.height
+                    if (viewportBottomInRootPx != measuredViewportBottomInRootPx) {
+                        viewportBottomInRootPx = measuredViewportBottomInRootPx
+                        onQuickCategoryViewportChanged()
+                    }
                 },
             contentPadding = PaddingValues(bottom = metrics.listBottomPadding),
             verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
@@ -108,8 +116,9 @@ fun ItemSearchInitialContent(
                     QuickCategoryGrid(
                         onCategoryClick = onQuickCategoryClick,
                         isExpanded = isQuickCategoryExpanded,
-                        onMoreClick = { isQuickCategoryExpanded = true },
-                        onCollapseClick = { isQuickCategoryExpanded = false },
+                        fixedCollapsedItemCount = quickCategoryFixedCollapsedItemCount,
+                        onMoreClick = onQuickCategoryMoreClick,
+                        onCollapseClick = onQuickCategoryCollapseClick,
                         screenHorizontalPadding = metrics.horizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,
                     )

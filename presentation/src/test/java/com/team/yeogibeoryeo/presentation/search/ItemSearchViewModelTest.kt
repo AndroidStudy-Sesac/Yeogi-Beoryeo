@@ -235,6 +235,26 @@ class ItemSearchViewModelTest {
         }
 
     @Test
+    fun `빠른 분류 펼침 상태와 접힌 슬롯 수를 상태에 저장한다`() =
+        runTest {
+            val viewModel = createViewModel(FakeRepository())
+
+            viewModel.expandQuickCategory(8)
+
+            assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+            assertEquals(true, viewModel.uiState.value.isQuickCategoryExpanded)
+
+            viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
+
+            assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+
+            viewModel.collapseQuickCategory()
+            viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
+
+            assertEquals(0, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+        }
+
+    @Test
     fun `카테고리 대표 가이드가 없으면 첫 가이드 이동 이벤트를 발행한다`() =
         runTest {
             val expected = sampleGuide("첫 번째 가이드")

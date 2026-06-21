@@ -15,6 +15,7 @@ internal fun quickCategoryGridCollapseLayout(
     availableHeightPx: Int = 0,
     rowHeightPx: Int = 0,
     rowSpacingPx: Int = 0,
+    fixedCollapsedItemCount: Int = 0,
     isExpanded: Boolean,
 ): QuickCategoryGridCollapseLayout {
     val visibleRowCount = quickCategoryVisibleRowCount(
@@ -23,9 +24,13 @@ internal fun quickCategoryGridCollapseLayout(
         rowHeightPx = rowHeightPx,
         rowSpacingPx = rowSpacingPx,
     )
-    val collapsedItemCount = visibleRowCount * columnCount
-    val needsToggle = categoryCount > collapsedItemCount
-    val showsMore = !isExpanded && needsToggle
+    val measuredCollapsedItemCount = visibleRowCount * columnCount
+    val collapsedItemCount =
+        fixedCollapsedItemCount.takeIf { it > 0 } ?: measuredCollapsedItemCount
+    val needsMoreToggle = categoryCount > collapsedItemCount
+    val needsCollapseToggle =
+        categoryCount > quickCategoryMinCollapsedItemCount(columnCount)
+    val showsMore = !isExpanded && needsMoreToggle
 
     return QuickCategoryGridCollapseLayout(
         collapsedItemCount = collapsedItemCount,
@@ -35,7 +40,7 @@ internal fun quickCategoryGridCollapseLayout(
             categoryCount
         },
         showsMore = showsMore,
-        showsCollapse = isExpanded && needsToggle,
+        showsCollapse = isExpanded && needsCollapseToggle,
     )
 }
 
@@ -46,9 +51,15 @@ internal fun quickCategoryVisibleRowCount(
     rowSpacingPx: Int,
 ): Int {
     if (availableHeightPx <= 0 || rowHeightPx <= 0) {
-        return (QuickCategoryCollapsedMinItemCount + columnCount - 1) / columnCount
+        return quickCategoryMinCollapsedRowCount(columnCount)
     }
 
     return ((availableHeightPx + rowSpacingPx) / (rowHeightPx + rowSpacingPx))
         .coerceAtLeast(1)
 }
+
+private fun quickCategoryMinCollapsedItemCount(columnCount: Int): Int =
+    quickCategoryMinCollapsedRowCount(columnCount) * columnCount
+
+private fun quickCategoryMinCollapsedRowCount(columnCount: Int): Int =
+    (QuickCategoryCollapsedMinItemCount + columnCount - 1) / columnCount

@@ -1,6 +1,9 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasImeAction
@@ -8,9 +11,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
@@ -265,13 +271,24 @@ class ItemSearchScreenTest {
     @Test
     fun quick_category는_처음에_adaptive_접힘_목록과_더보기를_보여주고_누르면_전체를_펼친다() {
         composeTestRule.setContent {
+            var uiState by mutableStateOf(ItemSearchUiState())
             MaterialTheme {
                 ItemSearchScreen(
-                    uiState = ItemSearchUiState(),
+                    uiState = uiState,
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
                     onQuickCategoryClick = {},
+                    onQuickCategoryMoreClick = { count ->
+                        uiState =
+                            uiState.copy(
+                                isQuickCategoryExpanded = true,
+                                quickCategoryFixedCollapsedItemCount = count,
+                            )
+                    },
+                    onQuickCategoryCollapseClick = {
+                        uiState = uiState.copy(isQuickCategoryExpanded = false)
+                    },
                 )
             }
         }
@@ -282,7 +299,9 @@ class ItemSearchScreenTest {
         composeTestRule.onAllNodesWithText(RepresentativeGuideCategory.METAL.displayName)
             .assertCountEquals(0)
 
-        composeTestRule.onNodeWithText("더보기").performClick()
+        composeTestRule.onNodeWithText("더보기")
+            .performScrollTo()
+            .performClick()
 
         composeTestRule.onNodeWithText(RepresentativeGuideCategory.METAL.displayName)
             .performScrollTo()
@@ -296,6 +315,40 @@ class ItemSearchScreenTest {
         composeTestRule.onAllNodesWithText(RepresentativeGuideCategory.METAL.displayName)
             .assertCountEquals(0)
         composeTestRule.onNodeWithText("더보기").assertIsDisplayed()
+    }
+
+    @Test
+    fun 펼친_quick_category를_눌러도_펼침_상태를_유지한다() {
+        composeTestRule.setContent {
+            var uiState by mutableStateOf(ItemSearchUiState())
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onQuickCategoryMoreClick = { count ->
+                        uiState =
+                            uiState.copy(
+                                isQuickCategoryExpanded = true,
+                                quickCategoryFixedCollapsedItemCount = count,
+                            )
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("더보기")
+            .performScrollTo()
+            .performClick()
+        composeTestRule.onNodeWithText(RepresentativeGuideCategory.METAL.displayName)
+            .performScrollTo()
+            .performClick()
+
+        composeTestRule.onNodeWithText(RepresentativeGuideCategory.METAL.displayName)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("접기").assertIsDisplayed()
     }
 
     @Test
@@ -328,8 +381,8 @@ class ItemSearchScreenTest {
                     guideType = ItemUsefulGuideType.SMALL_E_WASTE,
                     onBackClick = {},
                     onSmallEWasteClick = {},
-                    onFreePickupGuideClick = {},
-                    onOfficialSiteClick = {},
+                    onFreePickupGuideClick = { true },
+                    onOfficialSiteClick = { true },
                     onRegionalGuideClick = {},
                     onItemSearchClick = {},
                     onBottomBarVisibilityChanged = {},
@@ -346,11 +399,35 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithText("무상방문수거 안내 보기")
             .performScrollTo()
             .assertIsDisplayed()
+        composeTestRule.swipeUpUntilTextExists("관련 사이트")
         composeTestRule.onNodeWithText("관련 사이트")
-            .performScrollTo()
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("생활폐기물 분리배출 누리집 보기")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun small_e_waste_안내_상세에서_외부_링크_실패_시_스낵바를_보여준다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemUsefulGuideRoute(
+                    guideType = ItemUsefulGuideType.SMALL_E_WASTE,
+                    onBackClick = {},
+                    onSmallEWasteClick = {},
+                    onFreePickupGuideClick = { false },
+                    onOfficialSiteClick = { true },
+                    onRegionalGuideClick = {},
+                    onItemSearchClick = {},
+                    onBottomBarVisibilityChanged = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("무상방문수거 안내 보기")
             .performScrollTo()
+            .performClick()
+
+        composeTestRule.onNodeWithText("공식 안내를 열 수 있는 앱이 없습니다. 브라우저 앱을 설치하거나 활성화한 뒤 다시 시도해주세요.")
             .assertIsDisplayed()
     }
 
@@ -367,4 +444,15 @@ class ItemSearchScreenTest {
             isRecyclable = true,
             relatedSpotTypes = emptyList(),
         )
+
+    private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.swipeUpUntilTextExists(
+        text: String,
+    ) {
+        repeat(5) {
+            if (onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) {
+                return
+            }
+            onRoot().performTouchInput { swipeUp() }
+        }
+    }
 }

@@ -81,4 +81,37 @@ class QuickCategoryGridCollapseLayoutTest {
         assertEquals(false, layout.showsMore)
         assertEquals(true, layout.showsCollapse)
     }
+
+    @Test
+    fun `펼친 퀵 카테고리는 스크롤 복귀 후 큰 가용 높이로 재측정돼도 접기를 유지한다`() {
+        val layout = quickCategoryGridCollapseLayout(
+            categoryCount = 20,
+            columnCount = 4,
+            availableHeightPx = 2000,
+            rowHeightPx = 70,
+            rowSpacingPx = 10,
+            isExpanded = true,
+        )
+
+        assertEquals(20, layout.visibleCategoryCount)
+        assertEquals(false, layout.showsMore)
+        assertEquals(true, layout.showsCollapse)
+    }
+
+    @Test
+    fun `고정된 접힘 슬롯이 있으면 현재 가용 높이보다 우선한다`() {
+        val layout = quickCategoryGridCollapseLayout(
+            categoryCount = 20,
+            columnCount = 4,
+            availableHeightPx = 2000,
+            rowHeightPx = 70,
+            rowSpacingPx = 10,
+            fixedCollapsedItemCount = 8,
+            isExpanded = false,
+        )
+
+        assertEquals(8, layout.collapsedItemCount)
+        assertEquals(7, layout.visibleCategoryCount)
+        assertEquals(true, layout.showsMore)
+    }
 }

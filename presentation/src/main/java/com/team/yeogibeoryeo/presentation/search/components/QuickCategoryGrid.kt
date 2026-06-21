@@ -53,7 +53,8 @@ fun QuickCategoryGrid(
     screenHorizontalPadding: Dp = 0.dp,
     viewportBottomInRootPx: Int = 0,
     isExpanded: Boolean = true,
-    onMoreClick: () -> Unit = {},
+    fixedCollapsedItemCount: Int = 0,
+    onMoreClick: (Int) -> Unit = {},
     onCollapseClick: () -> Unit = {},
     itemContent: @Composable (
         category: RepresentativeGuideCategory,
@@ -106,8 +107,10 @@ fun QuickCategoryGrid(
             availableHeightPx = initialAvailableHeightPx,
             rowHeightPx = rowHeightPx,
             rowSpacingPx = with(density) { metrics.verticalSpace.roundToPx() },
+            fixedCollapsedItemCount = fixedCollapsedItemCount,
             isExpanded = isExpanded,
         )
+
         val visibleCategories =
             if (collapseLayout.showsMore) {
                 categories.take(collapseLayout.visibleCategoryCount)
@@ -123,7 +126,7 @@ fun QuickCategoryGrid(
                             labelResId = R.string.quick_category_more_action,
                             onClick = {
                                 shouldBringExpandedGridIntoView = true
-                                onMoreClick()
+                                onMoreClick(collapseLayout.collapsedItemCount)
                             },
                         )
                     )
