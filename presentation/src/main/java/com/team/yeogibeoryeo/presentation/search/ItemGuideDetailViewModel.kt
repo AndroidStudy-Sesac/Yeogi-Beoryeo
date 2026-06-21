@@ -94,8 +94,24 @@ constructor(
                 }
             val latestState = uiState.value
             if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
-                _events.emit(ItemGuideDetailEvent.ShowFavoriteMessage(messageResId))
+                _events.emit(
+                    ItemGuideDetailEvent.ShowMessage(
+                        messageResId = messageResId,
+                        icon = ItemGuideDetailMessageIcon.Favorite,
+                    ),
+                )
             }
+        }
+    }
+
+    fun showOfficialGuideOpenFailedMessage() {
+        viewModelScope.launch {
+            _events.emit(
+                ItemGuideDetailEvent.ShowMessage(
+                    messageResId = R.string.item_guide_action_open_failed_message,
+                    icon = ItemGuideDetailMessageIcon.Warning,
+                ),
+            )
         }
     }
 
@@ -131,7 +147,13 @@ sealed interface ItemGuideDetailUiState {
 }
 
 sealed interface ItemGuideDetailEvent {
-    data class ShowFavoriteMessage(
+    data class ShowMessage(
         @param:StringRes val messageResId: Int,
+        val icon: ItemGuideDetailMessageIcon,
     ) : ItemGuideDetailEvent
+}
+
+enum class ItemGuideDetailMessageIcon {
+    Favorite,
+    Warning,
 }

@@ -81,7 +81,7 @@ class ItemGuideDetailViewModelTest {
             assertTrue(state.isFavorite)
             assertEquals(
                 R.string.item_guide_detail_favorite_added_message,
-                (event.await() as ItemGuideDetailEvent.ShowFavoriteMessage).messageResId,
+                (event.await() as ItemGuideDetailEvent.ShowMessage).messageResId,
             )
         }
 
@@ -116,8 +116,29 @@ class ItemGuideDetailViewModelTest {
             assertFalse(state.isFavorite)
             assertEquals(
                 R.string.item_guide_detail_favorite_removed_message,
-                (event.await() as ItemGuideDetailEvent.ShowFavoriteMessage).messageResId,
+                (event.await() as ItemGuideDetailEvent.ShowMessage).messageResId,
             )
+        }
+
+    @Test
+    fun `공식 안내 실행 실패 메시지 이벤트를 보낸다`() =
+        runTest {
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = sampleGuide("전기밥솥")),
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
+            viewModel.showOfficialGuideOpenFailedMessage()
+            advanceUntilIdle()
+
+            val messageEvent = event.await() as ItemGuideDetailEvent.ShowMessage
+            assertEquals(
+                R.string.item_guide_action_open_failed_message,
+                messageEvent.messageResId,
+            )
+            assertEquals(ItemGuideDetailMessageIcon.Warning, messageEvent.icon)
         }
 
     @Test
