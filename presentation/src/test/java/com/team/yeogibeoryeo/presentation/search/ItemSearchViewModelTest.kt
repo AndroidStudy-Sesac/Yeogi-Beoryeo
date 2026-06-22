@@ -235,13 +235,19 @@ class ItemSearchViewModelTest {
         }
 
     @Test
-    fun `빠른 분류 펼침 상태와 접힌 슬롯 수를 상태에 저장한다`() =
+    fun `빠른 분류 펼침 상태와 접힌 슬롯 수와 스크롤 복원 위치를 상태에 저장한다`() =
         runTest {
             val viewModel = createViewModel(FakeRepository())
 
-            viewModel.expandQuickCategory(8)
+            viewModel.expandQuickCategory(
+                collapsedItemCount = 8,
+                firstVisibleItemIndex = 3,
+                firstVisibleItemScrollOffset = 40,
+            )
 
             assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+            assertEquals(3, viewModel.uiState.value.quickCategoryScrollRestoreIndex)
+            assertEquals(40, viewModel.uiState.value.quickCategoryScrollRestoreOffset)
             assertEquals(true, viewModel.uiState.value.isQuickCategoryExpanded)
 
             viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
@@ -249,6 +255,10 @@ class ItemSearchViewModelTest {
             assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
 
             viewModel.collapseQuickCategory()
+
+            assertEquals(false, viewModel.uiState.value.isQuickCategoryExpanded)
+            assertEquals(1, viewModel.uiState.value.quickCategoryScrollRestoreVersion)
+
             viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
 
             assertEquals(0, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)

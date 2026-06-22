@@ -156,17 +156,28 @@ constructor(
             }
     }
 
-    fun expandQuickCategory(collapsedItemCount: Int) {
+    fun expandQuickCategory(
+        collapsedItemCount: Int,
+        firstVisibleItemIndex: Int,
+        firstVisibleItemScrollOffset: Int,
+    ) {
         _uiState.update {
             it.copy(
                 isQuickCategoryExpanded = true,
                 quickCategoryFixedCollapsedItemCount = collapsedItemCount,
+                quickCategoryScrollRestoreIndex = firstVisibleItemIndex,
+                quickCategoryScrollRestoreOffset = firstVisibleItemScrollOffset,
             )
         }
     }
 
     fun collapseQuickCategory() {
-        _uiState.update { it.copy(isQuickCategoryExpanded = false) }
+        _uiState.update {
+            it.copy(
+                isQuickCategoryExpanded = false,
+                quickCategoryScrollRestoreVersion = it.quickCategoryScrollRestoreVersion + 1,
+            )
+        }
     }
 
     fun resetQuickCategoryFixedCollapsedItemCountIfCollapsed() {

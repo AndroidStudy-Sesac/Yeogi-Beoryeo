@@ -279,7 +279,7 @@ class ItemSearchScreenTest {
                     onSearchClick = {},
                     onGuideClick = {},
                     onQuickCategoryClick = {},
-                    onQuickCategoryMoreClick = { count ->
+                    onQuickCategoryMoreClick = { count, _, _ ->
                         uiState =
                             uiState.copy(
                                 isQuickCategoryExpanded = true,
@@ -328,7 +328,7 @@ class ItemSearchScreenTest {
                     onSearchClick = {},
                     onGuideClick = {},
                     onQuickCategoryClick = {},
-                    onQuickCategoryMoreClick = { count ->
+                    onQuickCategoryMoreClick = { count, _, _ ->
                         uiState =
                             uiState.copy(
                                 isQuickCategoryExpanded = true,

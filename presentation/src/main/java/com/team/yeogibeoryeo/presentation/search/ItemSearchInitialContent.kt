@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,13 +41,35 @@ fun ItemSearchInitialContent(
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     isQuickCategoryExpanded: Boolean,
     quickCategoryFixedCollapsedItemCount: Int,
-    onQuickCategoryMoreClick: (Int) -> Unit,
+    quickCategoryScrollRestoreIndex: Int,
+    quickCategoryScrollRestoreOffset: Int,
+    quickCategoryScrollRestoreVersion: Int,
+    onQuickCategoryMoreClick: (Int, Int, Int) -> Unit,
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
+    var handledScrollRestoreVersion by rememberSaveable {
+        mutableIntStateOf(quickCategoryScrollRestoreVersion)
+    }
+
+    LaunchedEffect(
+        isQuickCategoryExpanded,
+        quickCategoryScrollRestoreVersion,
+    ) {
+        if (
+            !isQuickCategoryExpanded &&
+            quickCategoryScrollRestoreVersion != handledScrollRestoreVersion
+        ) {
+            listState.scrollToItem(
+                index = quickCategoryScrollRestoreIndex,
+                scrollOffset = quickCategoryScrollRestoreOffset,
+            )
+            handledScrollRestoreVersion = quickCategoryScrollRestoreVersion
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -117,7 +140,13 @@ fun ItemSearchInitialContent(
                         onCategoryClick = onQuickCategoryClick,
                         isExpanded = isQuickCategoryExpanded,
                         fixedCollapsedItemCount = quickCategoryFixedCollapsedItemCount,
-                        onMoreClick = onQuickCategoryMoreClick,
+                        onMoreClick = { collapsedItemCount ->
+                            onQuickCategoryMoreClick(
+                                collapsedItemCount,
+                                listState.firstVisibleItemIndex,
+                                listState.firstVisibleItemScrollOffset,
+                            )
+                        },
                         onCollapseClick = onQuickCategoryCollapseClick,
                         screenHorizontalPadding = metrics.horizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,

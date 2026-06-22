@@ -104,7 +104,7 @@ fun ItemSearchScreen(
     onGuideClick: (DisposalItemGuide) -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
-    onQuickCategoryMoreClick: (Int) -> Unit = {},
+    onQuickCategoryMoreClick: (Int, Int, Int) -> Unit = { _, _, _ -> },
     onQuickCategoryCollapseClick: () -> Unit = {},
     onQuickCategoryViewportChanged: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -121,6 +121,9 @@ fun ItemSearchScreen(
             isQuickCategoryExpanded = uiState.isQuickCategoryExpanded,
             quickCategoryFixedCollapsedItemCount =
                 uiState.quickCategoryFixedCollapsedItemCount,
+            quickCategoryScrollRestoreIndex = uiState.quickCategoryScrollRestoreIndex,
+            quickCategoryScrollRestoreOffset = uiState.quickCategoryScrollRestoreOffset,
+            quickCategoryScrollRestoreVersion = uiState.quickCategoryScrollRestoreVersion,
             onQuickCategoryMoreClick = onQuickCategoryMoreClick,
             onQuickCategoryCollapseClick = onQuickCategoryCollapseClick,
             onQuickCategoryViewportChanged = onQuickCategoryViewportChanged,
