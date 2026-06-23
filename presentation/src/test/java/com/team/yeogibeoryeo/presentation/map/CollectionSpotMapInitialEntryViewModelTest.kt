@@ -12,6 +12,7 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
+import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
@@ -54,7 +55,7 @@ class CollectionSpotMapInitialEntryViewModelTest {
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted(CollectionSpotType.MEDICINE_DROP_BOX)
 
             assertEquals(setOf(CollectionSpotType.MEDICINE_DROP_BOX), viewModel.uiState.value.selectedTypes)
-            assertEquals(listOf(medicineSpot), viewModel.uiState.value.spots)
+            assertEquals(listOf(medicineSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
             assertEquals(1, repository.locationSearchCallCount)
             assertEquals(currentCoordinate, repository.lastLocationCoordinate)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
@@ -123,7 +124,10 @@ class CollectionSpotMapInitialEntryViewModelTest {
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted(CollectionSpotType.BATTERY_BIN)
 
             assertEquals(setOf(CollectionSpotType.BATTERY_BIN), viewModel.uiState.value.selectedTypes)
-            assertEquals(listOf(batterySpot), viewModel.uiState.value.spots)
+            assertEquals(
+                listOf(batterySpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                viewModel.uiState.value.spots,
+            )
             assertEquals(1, repository.locationSearchCallCount)
         }
 
@@ -173,6 +177,7 @@ class CollectionSpotMapInitialEntryViewModelTest {
             toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
                 collectionSpotFavoriteRepository = FakeCollectionSpotFavoriteRepository(favoriteRepository),
             ),
+            calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
         )
     }
 
@@ -188,6 +193,23 @@ class CollectionSpotMapInitialEntryViewModelTest {
             detailLocation = null,
             coordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
         )
+    }
+
+    private fun List<CollectionSpot>.withDistanceFrom(
+        coordinate: Coordinate,
+    ): List<CollectionSpot> {
+        val calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase()
+
+        return map { spot ->
+            val spotCoordinate = spot.coordinate ?: return@map spot
+
+            spot.copy(
+                distanceMeter = calculateDistanceMeterUseCase(
+                    from = coordinate,
+                    to = spotCoordinate,
+                ),
+            )
+        }
     }
 
     private class FakeCurrentLocationProvider(

@@ -15,6 +15,7 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
+import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
@@ -142,7 +143,7 @@ class CollectionSpotMapViewModelTest {
 
             assertEquals(currentCoordinate, repository.lastLocationCoordinate)
             assertEquals(500, repository.lastRadiusMeter)
-            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(expectedSpots.withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertNull(viewModel.uiState.value.locationNoticeMessage)
             assertNull(viewModel.uiState.value.errorMessage)
@@ -152,6 +153,7 @@ class CollectionSpotMapViewModelTest {
     @Test
     fun `현재 위치 검색은 신선한 캐시가 있으면 캐시를 먼저 표시하고 조용히 갱신한다`() =
         runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
             val currentLocationResult = CompletableDeferred<CurrentLocationResult>()
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val refreshedSpot = sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)
@@ -179,12 +181,12 @@ class CollectionSpotMapViewModelTest {
 
             currentLocationResult.complete(
                 CurrentLocationResult.Found(
-                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                    currentCoordinate,
                 ),
             )
             advanceUntilIdle()
 
-            assertEquals(listOf(refreshedSpot), viewModel.uiState.value.spots)
+            assertEquals(listOf(refreshedSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
             assertEquals(1, repository.locationSearchCallCount)
         }
 
@@ -342,7 +344,10 @@ class CollectionSpotMapViewModelTest {
             viewModel.onSpotTypeClick(CollectionSpotType.RECYCLING_CENTER)
 
             assertEquals(setOf(CollectionSpotType.RECYCLING_CENTER), viewModel.uiState.value.selectedTypes)
-            assertEquals(listOf(recyclingCenterSpot), viewModel.uiState.value.spots)
+            assertEquals(
+                listOf(recyclingCenterSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                viewModel.uiState.value.spots,
+            )
         }
 
     @Test
@@ -477,7 +482,10 @@ class CollectionSpotMapViewModelTest {
             advanceUntilIdle()
 
             assertEquals("용답동", viewModel.uiState.value.searchKeyword)
-            assertEquals(listOf(locationSpot), viewModel.uiState.value.spots)
+            assertEquals(
+                listOf(locationSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                viewModel.uiState.value.spots,
+            )
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)
         }
@@ -498,7 +506,7 @@ class CollectionSpotMapViewModelTest {
 
             assertEquals(1, repository.locationSearchCallCount)
             assertEquals(currentCoordinate, repository.lastLocationCoordinate)
-            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(expectedSpots.withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
         }
 
@@ -592,7 +600,10 @@ class CollectionSpotMapViewModelTest {
             advanceUntilIdle()
 
             assertEquals(1, repository.locationSearchCallCount)
-            assertEquals(listOf(locationSpot), viewModel.uiState.value.spots)
+            assertEquals(
+                listOf(locationSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                viewModel.uiState.value.spots,
+            )
         }
 
     @Test
@@ -708,6 +719,7 @@ class CollectionSpotMapViewModelTest {
     @Test
     fun `유효한 캐시 표시 후 refresh 성공 시 화면 결과와 캐시를 최신 결과로 교체한다`() =
         runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val refreshedSpot = sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)
             val cache = FakeRecentCurrentLocationSpotCacheRepository(
@@ -726,8 +738,8 @@ class CollectionSpotMapViewModelTest {
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
             advanceUntilIdle()
 
-            assertEquals(listOf(refreshedSpot), viewModel.uiState.value.spots)
-            assertEquals(listOf(refreshedSpot), cache.entry?.spots)
+            assertEquals(listOf(refreshedSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(listOf(refreshedSpot).withDistanceFrom(currentCoordinate), cache.entry?.spots)
             assertEquals(1, repository.locationSearchCallCount)
             assertEquals(1, cache.saveCallCount)
         }
@@ -780,7 +792,7 @@ class CollectionSpotMapViewModelTest {
             assertEquals(1, cache.getCallCount)
             assertEquals(1, repository.locationSearchCallCount)
             assertEquals(currentCoordinate, repository.lastLocationCoordinate)
-            assertEquals(listOf(expectedSpot), viewModel.uiState.value.spots)
+            assertEquals(listOf(expectedSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
         }
 
     @Test
@@ -808,7 +820,10 @@ class CollectionSpotMapViewModelTest {
             advanceUntilIdle()
 
             assertEquals(1, repository.locationSearchCallCount)
-            assertEquals(listOf(expectedSpot), viewModel.uiState.value.spots)
+            assertEquals(
+                listOf(expectedSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                viewModel.uiState.value.spots,
+            )
         }
 
     @Test
@@ -894,7 +909,10 @@ class CollectionSpotMapViewModelTest {
             viewModel.searchByCurrentLocation()
 
             assertEquals(1, cache.saveCallCount)
-            assertEquals(listOf(expectedSpot), cache.entry?.spots)
+            assertEquals(
+                listOf(expectedSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                cache.entry?.spots,
+            )
         }
 
     @Test
@@ -1299,6 +1317,7 @@ class CollectionSpotMapViewModelTest {
                         snapshotRepository = snapshotRepository,
                     ),
             ),
+            calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
         )
     }
 
@@ -1323,6 +1342,23 @@ class CollectionSpotMapViewModelTest {
             detailLocation = null,
             coordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
         )
+    }
+
+    private fun List<CollectionSpot>.withDistanceFrom(
+        coordinate: Coordinate,
+    ): List<CollectionSpot> {
+        val calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase()
+
+        return map { spot ->
+            val spotCoordinate = spot.coordinate ?: return@map spot
+
+            spot.copy(
+                distanceMeter = calculateDistanceMeterUseCase(
+                    from = coordinate,
+                    to = spotCoordinate,
+                ),
+            )
+        }
     }
 
     private fun sampleFavoriteSpotMapMoveRequest(
