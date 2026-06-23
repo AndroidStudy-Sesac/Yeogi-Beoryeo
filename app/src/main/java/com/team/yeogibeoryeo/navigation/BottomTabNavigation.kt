@@ -22,10 +22,7 @@ internal fun NavHostController.createBottomNavigationItems(
             iconResId = CommonR.drawable.ic_symbol_recycle,
             selected = currentBackStackEntry.isItemSearchSelected(),
             onClick = {
-                navigateBottomTabClearingRegionalGuideReentry(
-                    currentBackStackEntry = currentBackStackEntry,
-                    route = ItemSearchRoute(),
-                )
+                navigateItemSearchRoot(currentBackStackEntry)
             },
         ),
         BottomNavigationItem(
@@ -44,10 +41,7 @@ internal fun NavHostController.createBottomNavigationItems(
             iconResId = AppR.drawable.ic_navigation_guide,
             selected = currentBackStackEntry.isRegionalGuideSelected(),
             onClick = {
-                navigateBottomTabClearingRegionalGuideReentry(
-                    currentBackStackEntry = currentBackStackEntry,
-                    route = RegionalGuideRoute(),
-                )
+                navigateRegionalGuideRoot(currentBackStackEntry)
             },
         ),
         BottomNavigationItem(
@@ -84,7 +78,8 @@ private fun NavBackStackEntry?.isMapRegionalGuideSelected(): Boolean =
         toRoute<RegionalGuideRoute>().isMapReentryRoute()
 
 internal fun RegionalGuideRoute.isFavoriteReentryRoute(): Boolean =
-    !initialFavoriteTargetId.isNullOrBlank()
+    !initialFavoriteTargetId.isNullOrBlank() &&
+        entrySource == RegionalGuideEntrySource.FAVORITES
 
 internal fun RegionalGuideRoute.isMapReentryRoute(): Boolean =
     initialFavoriteTargetId.isNullOrBlank() &&
@@ -103,6 +98,52 @@ private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSo
     this != null &&
         destination.hasRoute<ItemGuideDetailRoute>() &&
         toRoute<ItemGuideDetailRoute>().source == source
+
+private fun NavHostController.navigateItemSearchRoot(
+    currentBackStackEntry: NavBackStackEntry?,
+) {
+    when {
+        currentBackStackEntry?.destination?.hasRoute<ItemSearchRoute>() == true -> return
+        currentBackStackEntry.isItemGuideDetailSource(ItemGuideDetailSource.SEARCH) -> {
+            if (!popBackStack<ItemSearchRoute>(inclusive = false)) {
+                navigateItemSearchTab()
+            }
+        }
+        else -> {
+            popRegionalGuideReentryToSourceRoot(currentBackStackEntry)
+            navigateItemSearchTab()
+        }
+    }
+}
+
+private fun NavHostController.navigateRegionalGuideRoot(
+    currentBackStackEntry: NavBackStackEntry?,
+) {
+    val currentRoute = currentBackStackEntry
+        ?.takeIf { entry -> entry.destination.hasRoute<RegionalGuideRoute>() }
+        ?.toRoute<RegionalGuideRoute>()
+
+    if (currentRoute == RegionalGuideRoute()) return
+
+    popRegionalGuideReentryToSourceRoot(currentBackStackEntry)
+    navigate(RegionalGuideRoute()) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = false
+    }
+}
+
+private fun NavHostController.navigateItemSearchTab() {
+    navigate(ItemSearchRoute()) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = false
+    }
+}
 
 private fun NavHostController.navigateFavoritesRoot(
     currentBackStackEntry: NavBackStackEntry?,
@@ -129,6 +170,17 @@ private fun NavHostController.navigateMapRoot(
 ) {
     if (currentBackStackEntry.isMapRegionalGuideSelected()) {
         popBackStack<MapRoute>(inclusive = false)
+        return
+    }
+
+    if (currentBackStackEntry.isRegionalGuideSelected()) {
+        navigate(MapRoute()) {
+            popUpTo(graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = false
+        }
         return
     }
 

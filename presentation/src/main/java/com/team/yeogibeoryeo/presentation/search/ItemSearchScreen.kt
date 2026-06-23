@@ -34,15 +34,20 @@ import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
+import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
 fun ItemSearchRoute(
     initialQuery: String? = null,
     onGuideSelected: (DisposalItemGuide) -> Unit,
+    onRegionalGuideSummaryClick: (String) -> Unit,
     viewModel: ItemSearchViewModel = hiltViewModel(),
+    regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val regionalGuideSummaryState by
+        regionalGuideSummaryViewModel.uiState.collectAsStateWithLifecycle()
     val currentOnGuideSelected by rememberUpdatedState(onGuideSelected)
 
     val searchResultListState = rememberLazyListState()
@@ -80,9 +85,12 @@ fun ItemSearchRoute(
 
     ItemSearchScreen(
         uiState = uiState,
+        regionalGuideSummaryState = regionalGuideSummaryState,
         onQueryChange = viewModel::onQueryChange,
         onSearchClick = viewModel::search,
         onGuideClick = onGuideSelected,
+        onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
+        onRegionalGuideSummaryRetryClick = regionalGuideSummaryViewModel::retry,
         onQuickCategoryClick = viewModel::openCategoryGuide,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
@@ -92,9 +100,12 @@ fun ItemSearchRoute(
 @Composable
 fun ItemSearchScreen(
     uiState: ItemSearchUiState,
+    regionalGuideSummaryState: HomeRegionalGuideSummaryUiState = HomeRegionalGuideSummaryUiState.NoFavorite,
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     onGuideClick: (DisposalItemGuide) -> Unit,
+    onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
     searchResultListState: LazyListState = rememberLazyListState(),
@@ -105,6 +116,9 @@ fun ItemSearchScreen(
             query = uiState.query,
             onQueryChange = onQueryChange,
             onSearchClick = onSearchClick,
+            regionalGuideSummaryState = regionalGuideSummaryState,
+            onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
+            onRegionalGuideSummaryRetryClick = onRegionalGuideSummaryRetryClick,
             onQuickCategoryClick = onQuickCategoryClick,
             listState = categoryListState,
             modifier = modifier,

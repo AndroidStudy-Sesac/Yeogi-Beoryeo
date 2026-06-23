@@ -135,7 +135,10 @@ fun YeogiBeoryeoNavHost(
                     },
                     onRegionalGuideClick = { targetId ->
                         navController.navigate(
-                            RegionalGuideRoute(initialFavoriteTargetId = targetId),
+                            RegionalGuideRoute(
+                                initialFavoriteTargetId = targetId,
+                                entrySource = RegionalGuideEntrySource.FAVORITES,
+                            ),
                         )
                     },
                 )
@@ -150,6 +153,13 @@ fun YeogiBeoryeoNavHost(
                             ItemGuideDetailRoute(
                                 guideId = guide.id,
                                 source = ItemGuideDetailSource.SEARCH,
+                            ),
+                        )
+                    },
+                    onRegionalGuideSummaryClick = { targetId ->
+                        navController.navigate(
+                            RegionalGuideRoute(
+                                initialFavoriteTargetId = targetId,
                             ),
                         )
                     },
