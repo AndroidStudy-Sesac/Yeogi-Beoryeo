@@ -22,6 +22,12 @@ fun HomeRegionalGuideSummaryResult.toUiState(): HomeRegionalGuideSummaryUiState 
                 regionName = regionName,
             )
 
+        is HomeRegionalGuideSummaryResult.ScheduleNeedsConfirmation ->
+            HomeRegionalGuideSummaryUiState.ScheduleNeedsConfirmation(
+                targetId = targetId,
+                regionName = regionName,
+            )
+
         is HomeRegionalGuideSummaryResult.FavoriteRestoreFailed ->
             HomeRegionalGuideSummaryUiState.FavoriteRestoreFailed(targetId = targetId)
 

@@ -8,6 +8,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavorit
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
+import com.team.yeogibeoryeo.domain.regionalguide.model.TodayRegionalWasteSummaryResult
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -62,20 +63,27 @@ class ObserveHomeRegionalGuideSummaryUseCase
                     )
             ) {
                 is RegionalGuideLookupResult.Success -> {
-                    val summary =
-                        getTodayRegionalWasteSummaryUseCase(
+                    when (
+                        val summaryResult = getTodayRegionalWasteSummaryUseCase(
                             targetId = snapshot.targetId,
                             regionName = regionName,
                             guide = result.guide,
                         )
+                    ) {
+                        is TodayRegionalWasteSummaryResult.Summary ->
+                            HomeRegionalGuideSummaryResult.Success(summaryResult.summary)
 
-                    if (summary == null) {
-                        HomeRegionalGuideSummaryResult.NoTodaySchedule(
-                            targetId = snapshot.targetId,
-                            regionName = regionName,
-                        )
-                    } else {
-                        HomeRegionalGuideSummaryResult.Success(summary)
+                        TodayRegionalWasteSummaryResult.NoTodaySchedule ->
+                            HomeRegionalGuideSummaryResult.NoTodaySchedule(
+                                targetId = snapshot.targetId,
+                                regionName = regionName,
+                            )
+
+                        TodayRegionalWasteSummaryResult.NeedsScheduleConfirmation ->
+                            HomeRegionalGuideSummaryResult.ScheduleNeedsConfirmation(
+                                targetId = snapshot.targetId,
+                                regionName = regionName,
+                            )
                     }
                 }
 

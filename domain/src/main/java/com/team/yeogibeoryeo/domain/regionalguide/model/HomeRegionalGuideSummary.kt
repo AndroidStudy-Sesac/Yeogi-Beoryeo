@@ -8,6 +8,16 @@ data class HomeRegionalGuideSummary(
     val disposalTime: String?,
 )
 
+sealed interface TodayRegionalWasteSummaryResult {
+    data class Summary(
+        val summary: HomeRegionalGuideSummary,
+    ) : TodayRegionalWasteSummaryResult
+
+    data object NoTodaySchedule : TodayRegionalWasteSummaryResult
+
+    data object NeedsScheduleConfirmation : TodayRegionalWasteSummaryResult
+}
+
 sealed interface HomeRegionalGuideSummaryResult {
     data object Loading : HomeRegionalGuideSummaryResult
 
@@ -18,6 +28,11 @@ sealed interface HomeRegionalGuideSummaryResult {
     ) : HomeRegionalGuideSummaryResult
 
     data class NoTodaySchedule(
+        val targetId: String,
+        val regionName: String,
+    ) : HomeRegionalGuideSummaryResult
+
+    data class ScheduleNeedsConfirmation(
         val targetId: String,
         val regionName: String,
     ) : HomeRegionalGuideSummaryResult

@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.usecase
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummary
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
+import com.team.yeogibeoryeo.domain.regionalguide.model.TodayRegionalWasteSummaryResult
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
@@ -16,32 +17,40 @@ class GetTodayRegionalWasteSummaryUseCase
             regionName: String,
             guide: RegionalDisposalGuide,
             today: LocalDate = LocalDate.now(SEOUL_ZONE_ID),
-        ): HomeRegionalGuideSummary? {
+        ): TodayRegionalWasteSummaryResult {
             val todaySchedules =
                 guide.schedules.filter { schedule ->
                     schedule.disposalDays.hasDay(today.dayOfWeek)
                 }
 
-            if (todaySchedules.isEmpty()) return null
+            if (todaySchedules.isEmpty()) {
+                return if (guide.schedules.any { schedule -> schedule.disposalDays.needsConfirmation() }) {
+                    TodayRegionalWasteSummaryResult.NeedsScheduleConfirmation
+                } else {
+                    TodayRegionalWasteSummaryResult.NoTodaySchedule
+                }
+            }
 
-            return HomeRegionalGuideSummary(
-                targetId = targetId,
-                regionName = regionName,
-                wasteTypeNames =
-                    todaySchedules
-                        .map { schedule -> schedule.wasteType.description }
-                        .distinct(),
-                disposalDays =
-                    todaySchedules
-                        .mapNotNull { schedule -> schedule.disposalDays?.trimToNull() }
-                        .distinct()
-                        .joinToString(DISPLAY_SEPARATOR),
-                disposalTime =
-                    todaySchedules
-                        .mapNotNull { schedule -> schedule.displayTime() }
-                        .distinct()
-                        .joinToString(DISPLAY_SEPARATOR)
-                        .takeIf { it.isNotBlank() },
+            return TodayRegionalWasteSummaryResult.Summary(
+                HomeRegionalGuideSummary(
+                    targetId = targetId,
+                    regionName = regionName,
+                    wasteTypeNames =
+                        todaySchedules
+                            .map { schedule -> schedule.wasteType.description }
+                            .distinct(),
+                    disposalDays =
+                        todaySchedules
+                            .mapNotNull { schedule -> schedule.disposalDays?.trimToNull() }
+                            .distinct()
+                            .joinToString(DISPLAY_SEPARATOR),
+                    disposalTime =
+                        todaySchedules
+                            .mapNotNull { schedule -> schedule.displayTime() }
+                            .distinct()
+                            .joinToString(DISPLAY_SEPARATOR)
+                            .takeIf { it.isNotBlank() },
+                ),
             )
         }
 
@@ -53,6 +62,13 @@ class GetTodayRegionalWasteSummaryUseCase
                 ?.any { day -> day == dayLabel }
                 ?: false
         }
+
+        private fun String?.needsConfirmation(): Boolean =
+            this
+                ?.split(',')
+                ?.mapNotNull { day -> day.trimToNull() }
+                ?.any { day -> day in NEEDS_CONFIRMATION_DAY_LABELS }
+                ?: false
 
         private fun RegionalWasteSchedule.displayTime(): String? {
             val start = disposalStartTime.trimToNull()
@@ -71,6 +87,8 @@ class GetTodayRegionalWasteSummaryUseCase
             val SEOUL_ZONE_ID: ZoneId = ZoneId.of("Asia/Seoul")
 
             private const val DISPLAY_SEPARATOR = " / "
+
+            private val NEEDS_CONFIRMATION_DAY_LABELS = setOf("기타", "미지정")
 
             private val DAY_LABELS =
                 mapOf(

@@ -4,9 +4,9 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
+import com.team.yeogibeoryeo.domain.regionalguide.model.TodayRegionalWasteSummaryResult
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class GetTodayRegionalWasteSummaryUseCaseTest {
@@ -39,11 +39,13 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 today = LocalDate.of(2026, 6, 15),
             )
 
-        requireNotNull(summary)
-        assertEquals("target-id", summary.targetId)
-        assertEquals(listOf(RegionalWasteType.GENERAL.description), summary.wasteTypeNames)
-        assertEquals("월, 수, 금", summary.disposalDays)
-        assertEquals("18:00 이후", summary.disposalTime)
+        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        summary.summary.run {
+            assertEquals("target-id", targetId)
+            assertEquals(listOf(RegionalWasteType.GENERAL.description), wasteTypeNames)
+            assertEquals("월, 수, 금", disposalDays)
+            assertEquals("18:00 이후", disposalTime)
+        }
     }
 
     @Test
@@ -67,7 +69,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 today = LocalDate.of(2026, 6, 15),
             )
 
-        assertNull(summary)
+        assertEquals(TodayRegionalWasteSummaryResult.NoTodaySchedule, summary)
     }
 
     @Test
@@ -91,7 +93,32 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 today = LocalDate.of(2026, 6, 15),
             )
 
-        assertNull(summary)
+        assertEquals(TodayRegionalWasteSummaryResult.NoTodaySchedule, summary)
+    }
+
+    @Test
+    fun `unknown weekday returns needs confirmation`() {
+        val guide =
+            sampleGuide(
+                schedules =
+                    listOf(
+                        sampleSchedule(
+                            type = RegionalWasteType.GENERAL,
+                            days = "기타",
+                            start = "18:00",
+                        ),
+                    ),
+            )
+
+        val summary =
+            useCase(
+                targetId = "target-id",
+                regionName = "서울특별시 > 노원구 > 하계동",
+                guide = guide,
+                today = LocalDate.of(2026, 6, 15),
+            )
+
+        assertEquals(TodayRegionalWasteSummaryResult.NeedsScheduleConfirmation, summary)
     }
 
     private fun sampleGuide(

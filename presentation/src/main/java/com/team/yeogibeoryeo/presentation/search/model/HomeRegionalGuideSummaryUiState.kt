@@ -18,6 +18,11 @@ sealed interface HomeRegionalGuideSummaryUiState {
         val regionName: String,
     ) : HomeRegionalGuideSummaryUiState
 
+    data class ScheduleNeedsConfirmation(
+        val targetId: String,
+        val regionName: String,
+    ) : HomeRegionalGuideSummaryUiState
+
     data class FavoriteRestoreFailed(
         val targetId: String,
     ) : HomeRegionalGuideSummaryUiState

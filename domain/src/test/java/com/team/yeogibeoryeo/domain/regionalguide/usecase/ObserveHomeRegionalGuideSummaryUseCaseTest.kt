@@ -177,7 +177,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                                             listOf(
                                                 sampleSchedule(
                                                     type = RegionalWasteType.GENERAL,
-                                                    days = "미지정",
+                                                    days = "해당없음",
                                                 ),
                                             ),
                                     ),
@@ -189,6 +189,54 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
 
             assertEquals(
                 HomeRegionalGuideSummaryResult.NoTodaySchedule(
+                    targetId = "regional",
+                    regionName = "서울특별시 > 노원구 > 하계동",
+                ),
+                result,
+            )
+        }
+
+    @Test
+    fun `unknown weekday returns schedule needs confirmation`() =
+        runBlocking {
+            val snapshot = sampleSnapshot(targetId = "regional")
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(listOf(snapshot)),
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            candidates =
+                                listOf(
+                                    sampleGuide(
+                                        region = snapshot.region,
+                                        schedules =
+                                            listOf(
+                                                sampleSchedule(
+                                                    type = RegionalWasteType.GENERAL,
+                                                    days = "기타",
+                                                ),
+                                            ),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val result = useCase().drop(1).first()
+
+            assertEquals(
+                HomeRegionalGuideSummaryResult.ScheduleNeedsConfirmation(
                     targetId = "regional",
                     regionName = "서울특별시 > 노원구 > 하계동",
                 ),

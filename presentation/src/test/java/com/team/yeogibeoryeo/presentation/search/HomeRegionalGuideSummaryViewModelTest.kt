@@ -127,6 +127,49 @@ class HomeRegionalGuideSummaryViewModelTest {
             assertEquals(2, regionalRepository.requestCount)
         }
 
+    @Test
+    fun `unknown weekday shows schedule confirmation state`() =
+        runTest {
+            val snapshot = sampleSnapshot(targetId = "regional-target")
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    snapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            initialSnapshots = listOf(snapshot),
+                        ),
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            guides = listOf(
+                                sampleGuide(
+                                    region = snapshot.region,
+                                    schedules = listOf(sampleSchedule(days = "기타")),
+                                ),
+                            ),
+                        ),
+                )
+            collectState(viewModel)
+            advanceUntilIdle()
+
+            assertEquals(
+                HomeRegionalGuideSummaryUiState.ScheduleNeedsConfirmation(
+                    targetId = "regional-target",
+                    regionName = "Sido > Sigungu > Dong",
+                ),
+                viewModel.uiState.value,
+            )
+        }
+
     private fun TestScope.collectState(viewModel: HomeRegionalGuideSummaryViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect()
@@ -169,18 +212,28 @@ class HomeRegionalGuideSummaryViewModelTest {
 
     private fun sampleGuide(
         region: Region,
+        schedules: List<RegionalWasteSchedule> =
+            listOf(
+                sampleSchedule(
+                    days = "월, 화, 수, 목, 금, 토, 일",
+                    start = "18:00",
+                ),
+            ),
     ): RegionalDisposalGuide =
         RegionalDisposalGuide(
             region = region,
             targetRegionName = region.eupmyeondong,
-            schedules =
-                listOf(
-                    RegionalWasteSchedule(
-                        wasteType = RegionalWasteType.GENERAL,
-                        disposalDays = "월, 화, 수, 목, 금, 토, 일",
-                        disposalStartTime = "18:00",
-                    ),
-                ),
+            schedules = schedules,
+        )
+
+    private fun sampleSchedule(
+        days: String?,
+        start: String? = null,
+    ): RegionalWasteSchedule =
+        RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = days,
+            disposalStartTime = start,
         )
 
     private class FakeFavoriteRepository(
