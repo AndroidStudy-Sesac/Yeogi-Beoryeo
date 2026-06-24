@@ -133,12 +133,7 @@ constructor(
         searchJob?.cancel()
         searchJob =
             viewModelScope.launch {
-                _uiState.update {
-                    it.copy(
-                        isLoading = true,
-                        errorMessageResId = null,
-                    )
-                }
+                _uiState.update { it.copy(errorMessageResId = null) }
 
                 runCatchingCancellable { getDisposalCategoryGuidesUseCase(category.disposalCategory) }
                     .onSuccess { guides ->
@@ -146,7 +141,6 @@ constructor(
                             guides.firstOrNull { it.name == category.representativeGuideName }
                                 ?: guides.firstOrNull()
 
-                        _uiState.update { it.copy(isLoading = false) }
                         if (representativeGuide != null) {
                             _events.emit(ItemSearchEvent.NavigateToGuide(representativeGuide))
                         }
@@ -160,6 +154,40 @@ constructor(
                         }
                     }
             }
+    }
+
+    fun expandQuickCategory(
+        collapsedItemCount: Int,
+        firstVisibleItemIndex: Int,
+        firstVisibleItemScrollOffset: Int,
+    ) {
+        _uiState.update {
+            it.copy(
+                isQuickCategoryExpanded = true,
+                quickCategoryFixedCollapsedItemCount = collapsedItemCount,
+                quickCategoryScrollRestoreIndex = firstVisibleItemIndex,
+                quickCategoryScrollRestoreOffset = firstVisibleItemScrollOffset,
+            )
+        }
+    }
+
+    fun collapseQuickCategory() {
+        _uiState.update {
+            it.copy(
+                isQuickCategoryExpanded = false,
+                quickCategoryScrollRestoreVersion = it.quickCategoryScrollRestoreVersion + 1,
+            )
+        }
+    }
+
+    fun resetQuickCategoryFixedCollapsedItemCountIfCollapsed() {
+        _uiState.update {
+            if (it.isQuickCategoryExpanded) {
+                it
+            } else {
+                it.copy(quickCategoryFixedCollapsedItemCount = 0)
+            }
+        }
     }
 
     private suspend fun <T> runCatchingCancellable(block: suspend () -> T): Result<T> =

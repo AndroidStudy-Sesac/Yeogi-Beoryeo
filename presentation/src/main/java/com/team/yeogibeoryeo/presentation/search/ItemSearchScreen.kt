@@ -35,12 +35,14 @@ import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
 import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
+import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
 fun ItemSearchRoute(
     initialQuery: String? = null,
     onGuideSelected: (DisposalItemGuide) -> Unit,
+    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onRegionalGuideSummaryClick: (String) -> Unit,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
@@ -89,9 +91,14 @@ fun ItemSearchRoute(
         onQueryChange = viewModel::onQueryChange,
         onSearchClick = viewModel::search,
         onGuideClick = onGuideSelected,
+        onUsefulGuideClick = onUsefulGuideClick,
         onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
         onRegionalGuideSummaryRetryClick = regionalGuideSummaryViewModel::retry,
         onQuickCategoryClick = viewModel::openCategoryGuide,
+        onQuickCategoryMoreClick = viewModel::expandQuickCategory,
+        onQuickCategoryCollapseClick = viewModel::collapseQuickCategory,
+        onQuickCategoryViewportChanged =
+            viewModel::resetQuickCategoryFixedCollapsedItemCountIfCollapsed,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
     )
@@ -104,9 +111,13 @@ fun ItemSearchScreen(
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     onGuideClick: (DisposalItemGuide) -> Unit,
+    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onRegionalGuideSummaryClick: (String) -> Unit = {},
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    onQuickCategoryMoreClick: (Int, Int, Int) -> Unit = { _, _, _ -> },
+    onQuickCategoryCollapseClick: () -> Unit = {},
+    onQuickCategoryViewportChanged: () -> Unit = {},
     modifier: Modifier = Modifier,
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
@@ -116,10 +127,20 @@ fun ItemSearchScreen(
             query = uiState.query,
             onQueryChange = onQueryChange,
             onSearchClick = onSearchClick,
+            onUsefulGuideClick = onUsefulGuideClick,
             regionalGuideSummaryState = regionalGuideSummaryState,
             onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
             onRegionalGuideSummaryRetryClick = onRegionalGuideSummaryRetryClick,
             onQuickCategoryClick = onQuickCategoryClick,
+            isQuickCategoryExpanded = uiState.isQuickCategoryExpanded,
+            quickCategoryFixedCollapsedItemCount =
+                uiState.quickCategoryFixedCollapsedItemCount,
+            quickCategoryScrollRestoreIndex = uiState.quickCategoryScrollRestoreIndex,
+            quickCategoryScrollRestoreOffset = uiState.quickCategoryScrollRestoreOffset,
+            quickCategoryScrollRestoreVersion = uiState.quickCategoryScrollRestoreVersion,
+            onQuickCategoryMoreClick = onQuickCategoryMoreClick,
+            onQuickCategoryCollapseClick = onQuickCategoryCollapseClick,
+            onQuickCategoryViewportChanged = onQuickCategoryViewportChanged,
             listState = categoryListState,
             modifier = modifier,
         )

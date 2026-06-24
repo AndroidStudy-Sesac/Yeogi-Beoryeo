@@ -2,6 +2,8 @@ package com.team.yeogibeoryeo.presentation.search.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -10,14 +12,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -38,6 +51,11 @@ fun QuickCategoryGrid(
     onCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
     screenHorizontalPadding: Dp = 0.dp,
+    viewportBottomInRootPx: Int = 0,
+    isExpanded: Boolean = true,
+    fixedCollapsedItemCount: Int = 0,
+    onMoreClick: (Int) -> Unit = {},
+    onCollapseClick: () -> Unit = {},
     itemContent: @Composable (
         category: RepresentativeGuideCategory,
         onClick: () -> Unit,
@@ -49,9 +67,78 @@ fun QuickCategoryGrid(
         )
     },
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    val density = LocalDensity.current
+    var measuredViewportBottomInRootPx by remember { mutableIntStateOf(0) }
+    var initialAvailableHeightPx by remember { mutableIntStateOf(0) }
+    var rowHeightPx by remember { mutableIntStateOf(0) }
+    var shouldBringExpandedGridIntoView by remember { mutableStateOf(false) }
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+
+    LaunchedEffect(isExpanded, shouldBringExpandedGridIntoView) {
+        if (isExpanded && shouldBringExpandedGridIntoView) {
+            bringIntoViewRequester.bringIntoView()
+            shouldBringExpandedGridIntoView = false
+        }
+    }
+
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onGloballyPositioned { coordinates ->
+                if (measuredViewportBottomInRootPx != viewportBottomInRootPx) {
+                    measuredViewportBottomInRootPx = viewportBottomInRootPx
+                    initialAvailableHeightPx = 0
+                }
+                if (viewportBottomInRootPx > 0 && initialAvailableHeightPx == 0) {
+                    initialAvailableHeightPx =
+                        (
+                            viewportBottomInRootPx -
+                                coordinates.positionInRoot().y.toInt()
+                            ).coerceAtLeast(0)
+                }
+            }
+    ) {
         val metrics = quickCategoryGridMetrics(maxWidth = maxWidth)
         val columnCount = metrics.columnCount
+        val collapseLayout = quickCategoryGridCollapseLayout(
+            categoryCount = categories.size,
+            columnCount = columnCount,
+            availableHeightPx = initialAvailableHeightPx,
+            rowHeightPx = rowHeightPx,
+            rowSpacingPx = with(density) { metrics.verticalSpace.roundToPx() },
+            fixedCollapsedItemCount = fixedCollapsedItemCount,
+            isExpanded = isExpanded,
+        )
+
+        val visibleCategories =
+            if (collapseLayout.showsMore) {
+                categories.take(collapseLayout.visibleCategoryCount)
+            } else {
+                categories
+            }
+        val gridItems =
+            buildList {
+                addAll(visibleCategories.map(QuickCategoryGridItem::Category))
+                when {
+                    collapseLayout.showsMore -> add(
+                        QuickCategoryGridItem.Toggle(
+                            labelResId = R.string.quick_category_more_action,
+                            onClick = {
+                                shouldBringExpandedGridIntoView = true
+                                onMoreClick(collapseLayout.collapsedItemCount)
+                            },
+                        )
+                    )
+
+                    collapseLayout.showsCollapse -> add(
+                        QuickCategoryGridItem.Toggle(
+                            labelResId = R.string.quick_category_collapse_action,
+                            onClick = onCollapseClick,
+                        )
+                    )
+                }
+            }
 
         CompositionLocalProvider(LocalQuickCategoryGridMetrics provides metrics) {
             Column(
@@ -59,12 +146,17 @@ fun QuickCategoryGrid(
                 verticalArrangement = Arrangement.spacedBy(metrics.verticalSpace),
                 horizontalAlignment = Alignment.Start,
             ) {
-                categories.chunked(columnCount).forEach { rowCategories ->
+                gridItems.chunked(columnCount).forEach { rowItems ->
                     QuickCategoryRow(
-                        categories = rowCategories,
+                        items = rowItems,
                         columnCount = columnCount,
                         screenHorizontalPadding = screenHorizontalPadding,
                         onCategoryClick = onCategoryClick,
+                        onRowHeightChanged = { height ->
+                            if (rowHeightPx != height) {
+                                rowHeightPx = height
+                            }
+                        },
                         itemContent = itemContent,
                     )
                 }
@@ -74,11 +166,67 @@ fun QuickCategoryGrid(
 }
 
 @Composable
+private fun QuickCategoryToggleItem(
+    labelResId: Int,
+    onClick: () -> Unit,
+) {
+    val size = ItemSearchLayoutDefaults.size
+    val metrics = LocalQuickCategoryGridMetrics.current
+    val label = stringResource(labelResId)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(metrics.labelSpacing),
+        modifier = Modifier
+            .sizeIn(
+                minWidth = size.minTouchTarget,
+                minHeight = size.minTouchTarget,
+            )
+            .width(metrics.cellSize)
+            .clickable(
+                onClickLabel = label,
+                role = Role.Button,
+                onClick = onClick,
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .size(metrics.tileSize)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = MaterialTheme.shapes.large,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.MoreHoriz,
+                contentDescription = null,
+                modifier = Modifier.size(metrics.iconSize),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = label,
+            modifier = Modifier
+                .width(metrics.cellSize)
+                .koreanLineBreakSemantics(label),
+            style = metrics.labelTextStyle.copy(
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground,
+            ),
+            minLines = 2,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
 private fun QuickCategoryRow(
-    categories: List<RepresentativeGuideCategory>,
+    items: List<QuickCategoryGridItem>,
     columnCount: Int,
     screenHorizontalPadding: Dp,
     onCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    onRowHeightChanged: (Int) -> Unit,
     itemContent: @Composable (
         category: RepresentativeGuideCategory,
         onClick: () -> Unit,
@@ -87,10 +235,23 @@ private fun QuickCategoryRow(
     val metrics = LocalQuickCategoryGridMetrics.current
 
     Layout(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                onRowHeightChanged(coordinates.size.height)
+            },
         content = {
-            categories.forEach { category ->
-                itemContent(category) { onCategoryClick(category) }
+            items.forEach { item ->
+                when (item) {
+                    is QuickCategoryGridItem.Category ->
+                        itemContent(item.category) { onCategoryClick(item.category) }
+
+                    is QuickCategoryGridItem.Toggle ->
+                        QuickCategoryToggleItem(
+                            labelResId = item.labelResId,
+                            onClick = item.onClick,
+                        )
+                }
             }
         },
     ) { measurables, constraints ->
@@ -121,6 +282,14 @@ private fun QuickCategoryRow(
             }
         }
     }
+}
+
+private sealed interface QuickCategoryGridItem {
+    data class Category(val category: RepresentativeGuideCategory) : QuickCategoryGridItem
+    data class Toggle(
+        val labelResId: Int,
+        val onClick: () -> Unit,
+    ) : QuickCategoryGridItem
 }
 
 @Composable

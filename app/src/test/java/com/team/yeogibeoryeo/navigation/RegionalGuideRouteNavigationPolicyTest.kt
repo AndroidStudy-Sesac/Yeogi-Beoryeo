@@ -37,6 +37,14 @@ class RegionalGuideRouteNavigationPolicyTest {
     }
 
     @Test
+    fun `품목 안내 상세에서 이동한 지역 가이드 route는 안내 탭 route로 유지된다`() {
+        val route = RegionalGuideRoute()
+
+        assertFalse(route.isFavoriteReentryRoute())
+        assertFalse(route.isMapReentryRoute())
+    }
+
+    @Test
     fun `regional guide route from favorites remains favorites reentry route`() {
         val route = RegionalGuideRoute(
             initialFavoriteTargetId = "regional-guide-v2|4:Sido",
