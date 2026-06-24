@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.presentation.map.formatter.DistanceFormatter
 import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 import com.team.yeogibeoryeo.common.R as CommonR
 
@@ -59,6 +60,7 @@ fun SpotBottomCard(
             }
         }
     }
+    val distanceText = DistanceFormatter.format(spot.distanceMeter)
 
     Card(
         modifier = cardModifier,
@@ -97,11 +99,11 @@ fun SpotBottomCard(
                             },
                         )
 
-                        spot.distanceMeter?.let { distanceMeter ->
+                        distanceText?.let { formattedDistance ->
                             Spacer(modifier = Modifier.width(8.dp))
 
                             Text(
-                                text = "${distanceMeter}m",
+                                text = formattedDistance,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = supportingContentColor,
                             )
