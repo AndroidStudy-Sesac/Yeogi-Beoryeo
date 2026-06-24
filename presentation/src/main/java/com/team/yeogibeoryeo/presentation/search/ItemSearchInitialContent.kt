@@ -5,11 +5,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -31,8 +38,8 @@ import com.team.yeogibeoryeo.presentation.search.components.ItemUsefulGuideBanne
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
 import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
-import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
+import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 
 @Composable
 fun ItemSearchInitialContent(
@@ -41,9 +48,13 @@ fun ItemSearchInitialContent(
     onSearchClick: () -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     regionalGuideSummaryState: HomeRegionalGuideSummaryUiState,
+    modifier: Modifier = Modifier,
     onRegionalGuideSummaryClick: (String) -> Unit = {},
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    onQuickCategorySettingsClick: (Int) -> Unit,
+    quickCategories: List<RepresentativeGuideCategory>,
+    selectedQuickCategories: Set<RepresentativeGuideCategory>,
     isQuickCategoryExpanded: Boolean,
     quickCategoryFixedCollapsedItemCount: Int,
     quickCategoryScrollRestoreIndex: Int,
@@ -53,9 +64,9 @@ fun ItemSearchInitialContent(
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
     listState: LazyListState,
-    modifier: Modifier = Modifier,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
+    var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
     var handledScrollRestoreVersion by rememberSaveable {
         mutableIntStateOf(quickCategoryScrollRestoreVersion)
     }
@@ -121,6 +132,14 @@ fun ItemSearchInitialContent(
             }
 
             item {
+                HomeRegionalGuideSummaryBanner(
+                    state = regionalGuideSummaryState,
+                    onClick = onRegionalGuideSummaryClick,
+                    onRetryClick = onRegionalGuideSummaryRetryClick,
+                )
+            }
+
+            item {
                 ItemSearchBar(
                     keyword = query,
                     onKeywordChange = onQueryChange,
@@ -132,24 +151,42 @@ fun ItemSearchInitialContent(
             }
 
             item {
-                HomeRegionalGuideSummaryBanner(
-                    state = regionalGuideSummaryState,
-                    onClick = onRegionalGuideSummaryClick,
-                    onRetryClick = onRegionalGuideSummaryRetryClick,
-                )
-            }
-
-            item {
                 Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
                     val quickCategoriesTitle = stringResource(R.string.quick_categories)
-                    KoreanLineBreakText(
-                        text = quickCategoriesTitle,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        KoreanLineBreakText(
+                            text = quickCategoriesTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                        )
+                        AssistChip(
+                            onClick = { onQuickCategorySettingsClick(maxSelectedQuickCategoryCount) },
+                            label = {
+                                Text(text = stringResource(R.string.quick_category_edit_action))
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = null,
+                                )
+                            },
+                            colors =
+                                AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    labelColor = MaterialTheme.colorScheme.primary,
+                                    trailingIconContentColor = MaterialTheme.colorScheme.primary,
+                                ),
+                        )
+                    }
                     QuickCategoryGrid(
+                        categories = quickCategories,
+                        selectedCategories = selectedQuickCategories,
                         onCategoryClick = onQuickCategoryClick,
                         isExpanded = isQuickCategoryExpanded,
                         fixedCollapsedItemCount = quickCategoryFixedCollapsedItemCount,
@@ -163,6 +200,7 @@ fun ItemSearchInitialContent(
                         onCollapseClick = onQuickCategoryCollapseClick,
                         screenHorizontalPadding = metrics.horizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,
+                        onVisibleCategoryCountChange = { maxSelectedQuickCategoryCount = it },
                     )
                 }
             }

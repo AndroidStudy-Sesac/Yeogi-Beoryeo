@@ -38,6 +38,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as Re
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
+import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 
 @Composable
@@ -175,6 +176,19 @@ fun YeogiBeoryeoNavHost(
                             ),
                         )
                     },
+                    onQuickCategorySettingsClick = { maxSelectedCount ->
+                        navController.navigate(
+                            QuickCategorySettingsRoute(maxSelectedCount = maxSelectedCount),
+                        )
+                    },
+                )
+            }
+
+            composable<QuickCategorySettingsRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<QuickCategorySettingsRoute>()
+                QuickCategorySettingsScreenRoute(
+                    maxSelectedCount = route.maxSelectedCount,
+                    onBackClick = navController::popBackStack,
                 )
             }
 

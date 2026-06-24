@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +43,7 @@ fun ItemSearchRoute(
     onGuideSelected: (DisposalItemGuide) -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onRegionalGuideSummaryClick: (String) -> Unit,
+    onQuickCategorySettingsClick: (Int) -> Unit,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -99,6 +99,7 @@ fun ItemSearchRoute(
         onQuickCategoryCollapseClick = viewModel::collapseQuickCategory,
         onQuickCategoryViewportChanged =
             viewModel::resetQuickCategoryFixedCollapsedItemCountIfCollapsed,
+        onQuickCategorySettingsClick = onQuickCategorySettingsClick,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
     )
@@ -107,18 +108,19 @@ fun ItemSearchRoute(
 @Composable
 fun ItemSearchScreen(
     uiState: ItemSearchUiState,
-    regionalGuideSummaryState: HomeRegionalGuideSummaryUiState = HomeRegionalGuideSummaryUiState.NoFavorite,
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     onGuideClick: (DisposalItemGuide) -> Unit,
+    onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
+    modifier: Modifier = Modifier,
+    regionalGuideSummaryState: HomeRegionalGuideSummaryUiState = HomeRegionalGuideSummaryUiState.NoFavorite,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onRegionalGuideSummaryClick: (String) -> Unit = {},
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
-    onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     onQuickCategoryMoreClick: (Int, Int, Int) -> Unit = { _, _, _ -> },
     onQuickCategoryCollapseClick: () -> Unit = {},
     onQuickCategoryViewportChanged: () -> Unit = {},
-    modifier: Modifier = Modifier,
+    onQuickCategorySettingsClick: (Int) -> Unit = {},
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
@@ -132,6 +134,9 @@ fun ItemSearchScreen(
             onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
             onRegionalGuideSummaryRetryClick = onRegionalGuideSummaryRetryClick,
             onQuickCategoryClick = onQuickCategoryClick,
+            onQuickCategorySettingsClick = onQuickCategorySettingsClick,
+            quickCategories = uiState.quickCategories,
+            selectedQuickCategories = uiState.homeQuickCategories.toSet(),
             isQuickCategoryExpanded = uiState.isQuickCategoryExpanded,
             quickCategoryFixedCollapsedItemCount =
                 uiState.quickCategoryFixedCollapsedItemCount,

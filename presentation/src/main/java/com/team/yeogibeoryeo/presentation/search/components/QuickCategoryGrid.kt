@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -9,13 +10,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -47,15 +52,17 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 
 @Composable
 fun QuickCategoryGrid(
-    categories: List<RepresentativeGuideCategory> = quickCategoryOrder,
     onCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
+    categories: List<RepresentativeGuideCategory> = quickCategoryOrder,
+    selectedCategories: Set<RepresentativeGuideCategory> = emptySet(),
     screenHorizontalPadding: Dp = 0.dp,
     viewportBottomInRootPx: Int = 0,
     isExpanded: Boolean = true,
     fixedCollapsedItemCount: Int = 0,
     onMoreClick: (Int) -> Unit = {},
     onCollapseClick: () -> Unit = {},
+    onVisibleCategoryCountChange: (Int) -> Unit = {},
     itemContent: @Composable (
         category: RepresentativeGuideCategory,
         onClick: () -> Unit,
@@ -63,6 +70,7 @@ fun QuickCategoryGrid(
         QuickCategoryItem(
             category = category,
             name = category.quickCategoryLabel,
+            isSelected = category in selectedCategories,
             onClick = onClick,
         )
     },
@@ -117,6 +125,16 @@ fun QuickCategoryGrid(
             } else {
                 categories
             }
+        val collapsedVisibleCategoryCount =
+            if (categories.size > collapseLayout.collapsedItemCount) {
+                (collapseLayout.collapsedItemCount - 1).coerceAtLeast(0)
+            } else {
+                categories.size
+            }
+
+        LaunchedEffect(collapsedVisibleCategoryCount) {
+            onVisibleCategoryCountChange(collapsedVisibleCategoryCount)
+        }
         val gridItems =
             buildList {
                 addAll(visibleCategories.map(QuickCategoryGridItem::Category))
@@ -296,10 +314,10 @@ private sealed interface QuickCategoryGridItem {
 internal fun QuickCategoryItem(
     category: RepresentativeGuideCategory,
     name: String,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
     onLabelTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
-    val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
     val metrics = LocalQuickCategoryGridMetrics.current
     val clickActionLabel = stringResource(R.string.quick_category_click_action)
@@ -335,6 +353,32 @@ internal fun QuickCategoryItem(
                 modifier = Modifier.size(metrics.iconSize),
                 tint = category.iconTint()
             )
+            if (isSelected) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(
+                            x = size.categorySelectionBadgeOffset,
+                            y = -size.categorySelectionBadgeOffset,
+                        )
+                        .size(size.categorySelectionBadge),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    border = BorderStroke(
+                        width = ItemSearchLayoutDefaults.stroke.outline,
+                        color = MaterialTheme.colorScheme.primary,
+                    ),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(size.categorySelectionBadgeIcon),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
         }
         Text(
             text = name.withKoreanLineBreakOpportunities(),

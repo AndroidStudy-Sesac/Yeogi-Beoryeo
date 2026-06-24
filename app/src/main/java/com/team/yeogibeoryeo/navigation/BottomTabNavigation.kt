@@ -58,6 +58,7 @@ internal fun NavHostController.createBottomNavigationItems(
 
 private fun NavBackStackEntry?.isItemSearchSelected(): Boolean =
     this?.destination?.hasRoute<ItemSearchRoute>() == true ||
+        this?.destination?.hasRoute<QuickCategorySettingsRoute>() == true ||
         isItemGuideDetailSource(ItemGuideDetailSource.SEARCH)
 
 private fun NavBackStackEntry?.isFavoritesSelected(): Boolean =

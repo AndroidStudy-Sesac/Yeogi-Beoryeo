@@ -42,6 +42,11 @@ data class ItemSearchRoute(
 )
 
 @Serializable
+data class QuickCategorySettingsRoute(
+    val maxSelectedCount: Int,
+)
+
+@Serializable
 data class ItemUsefulGuideRoute(
     val guideType: String,
 )

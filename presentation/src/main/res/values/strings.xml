@@ -11,6 +11,11 @@
     <string name="quick_categories">분리배출 분류</string>
     <string name="quick_category_more_action">더보기</string>
     <string name="quick_category_collapse_action">접기</string>
+    <string name="quick_category_edit_action">표시 항목 관리</string>
+    <string name="quick_category_settings_title">분리배출 분류 편집</string>
+    <string name="quick_category_settings_description">홈에 표시할 분리배출 분류를 선택하세요.</string>
+    <string name="quick_category_search_placeholder">분류 또는 품목 검색</string>
+    <string name="quick_category_selected_count">홈에 표시할 분류 %1$d/%2$d개 선택됨</string>
     <string name="item_useful_guide_section_title">안내 사항</string>
     <string name="item_useful_guide_small_e_waste_label">지도</string>
     <string name="item_useful_guide_small_e_waste_title">중소형 폐가전 수거함 안내</string>
