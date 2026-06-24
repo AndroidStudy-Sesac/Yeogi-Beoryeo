@@ -1,11 +1,10 @@
 package com.team.yeogibeoryeo.common.navigation
 
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 
-inline fun <reified T : Any> NavHostController.navigateBottomTab(route: T) {
+inline fun <reified T : Any, reified StartDestination : Any> NavHostController.navigateBottomTab(route: T) {
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) {
+        popUpTo<StartDestination> {
             saveState = true
         }
         launchSingleTop = true

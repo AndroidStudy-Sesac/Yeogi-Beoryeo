@@ -3,7 +3,6 @@ package com.team.yeogibeoryeo.navigation
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.toRoute
 import com.team.yeogibeoryeo.R as AppR
@@ -91,7 +90,7 @@ private inline fun <reified T : Any> NavHostController.navigateBottomTabClearing
 ) {
     popRegionalGuideReentryToSourceRoot(currentBackStackEntry)
 
-    navigateBottomTab(route)
+    navigateBottomTab<T, ItemSearchRoute>(route)
 }
 
 private fun NavBackStackEntry?.isItemGuideDetailSource(source: ItemGuideDetailSource): Boolean =
@@ -127,7 +126,7 @@ private fun NavHostController.navigateRegionalGuideRoot(
 
     popRegionalGuideReentryToSourceRoot(currentBackStackEntry)
     navigate(RegionalGuideRoute()) {
-        popUpTo(graph.findStartDestination().id) {
+        popUpTo<ItemSearchRoute> {
             saveState = true
         }
         launchSingleTop = true
@@ -137,7 +136,7 @@ private fun NavHostController.navigateRegionalGuideRoot(
 
 private fun NavHostController.navigateItemSearchTab() {
     navigate(ItemSearchRoute()) {
-        popUpTo(graph.findStartDestination().id) {
+        popUpTo<ItemSearchRoute> {
             saveState = true
         }
         launchSingleTop = true
@@ -155,7 +154,7 @@ private fun NavHostController.navigateFavoritesRoot(
         }
         else -> {
             navigate(FavoritesRoute) {
-                popUpTo(graph.findStartDestination().id) {
+                popUpTo<ItemSearchRoute> {
                     saveState = true
                 }
                 launchSingleTop = true
@@ -175,7 +174,7 @@ private fun NavHostController.navigateMapRoot(
 
     if (currentBackStackEntry.isRegionalGuideSelected()) {
         navigate(MapRoute()) {
-            popUpTo(graph.findStartDestination().id) {
+            popUpTo<ItemSearchRoute> {
                 saveState = true
             }
             launchSingleTop = true
