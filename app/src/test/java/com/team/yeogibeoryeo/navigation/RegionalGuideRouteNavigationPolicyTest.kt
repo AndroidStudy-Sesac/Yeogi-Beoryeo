@@ -16,10 +16,10 @@ class RegionalGuideRouteNavigationPolicyTest {
     }
 
     @Test
-    fun `regional guide route with favorite target is favorites reentry route`() {
+    fun `regional guide route with favorite target and no source is guide tab route`() {
         val route = RegionalGuideRoute(initialFavoriteTargetId = "regional-guide-v1|4:Sido")
 
-        assertTrue(route.isFavoriteReentryRoute())
+        assertFalse(route.isFavoriteReentryRoute())
         assertFalse(route.isMapReentryRoute())
     }
 
@@ -29,12 +29,39 @@ class RegionalGuideRouteNavigationPolicyTest {
     }
 
     @Test
+    fun `regional guide route from home summary remains guide tab route`() {
+        val route = RegionalGuideRoute(initialFavoriteTargetId = "regional-guide-v2|4:Sido")
+
+        assertFalse(route.isFavoriteReentryRoute())
+        assertFalse(route.isMapReentryRoute())
+    }
+
+    @Test
+    fun `품목 안내 상세에서 이동한 지역 가이드 route는 안내 탭 route로 유지된다`() {
+        val route = RegionalGuideRoute()
+
+        assertFalse(route.isFavoriteReentryRoute())
+        assertFalse(route.isMapReentryRoute())
+    }
+
+    @Test
+    fun `regional guide route from favorites remains favorites reentry route`() {
+        val route = RegionalGuideRoute(
+            initialFavoriteTargetId = "regional-guide-v2|4:Sido",
+            entrySource = RegionalGuideEntrySource.FAVORITES,
+        )
+
+        assertTrue(route.isFavoriteReentryRoute())
+        assertFalse(route.isMapReentryRoute())
+    }
+
+    @Test
     fun `spot address creates regional guide address route`() {
-        val address = "  서울특별시 중구 남대문로 63 (남대문로2가, 한진빌딩)  "
+        val address = "  서울특별시 중구 퇴계로 63 (남창동, 삼익패션타운)  "
 
         val route = address.toRegionalGuideAddressRouteOrNull()
 
-        assertEquals("서울특별시 중구 남대문로 63 (남대문로2가, 한진빌딩)", route?.initialAddress)
+        assertEquals("서울특별시 중구 퇴계로 63 (남창동, 삼익패션타운)", route?.initialAddress)
         assertFalse(route!!.isFavoriteReentryRoute())
         assertTrue(route.isMapReentryRoute())
     }
@@ -45,13 +72,13 @@ class RegionalGuideRouteNavigationPolicyTest {
     }
 
     @Test
-    fun `regional guide route with address and favorite target remains favorites reentry route`() {
+    fun `regional guide route with address and favorite target requires favorites source for favorites reentry`() {
         val route = RegionalGuideRoute(
-            initialAddress = "서울특별시 중구 남대문로 63 (남대문로2가, 한진빌딩)",
+            initialAddress = "서울특별시 중구 퇴계로 63 (남창동, 삼익패션타운)",
             initialFavoriteTargetId = "regional-guide-v1|4:Sido",
         )
 
-        assertTrue(route.isFavoriteReentryRoute())
+        assertFalse(route.isFavoriteReentryRoute())
         assertFalse(route.isMapReentryRoute())
     }
 }

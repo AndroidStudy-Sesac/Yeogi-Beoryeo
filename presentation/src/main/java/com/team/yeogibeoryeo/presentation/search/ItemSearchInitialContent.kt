@@ -25,9 +25,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
-import com.team.yeogibeoryeo.presentation.search.components.ItemUsefulGuideBannerRow
+import com.team.yeogibeoryeo.presentation.search.components.HomeRegionalGuideSummaryBanner
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
+import com.team.yeogibeoryeo.presentation.search.components.ItemUsefulGuideBannerRow
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
+import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
@@ -38,6 +40,9 @@ fun ItemSearchInitialContent(
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
+    regionalGuideSummaryState: HomeRegionalGuideSummaryUiState,
+    onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     isQuickCategoryExpanded: Boolean,
     quickCategoryFixedCollapsedItemCount: Int,
@@ -123,6 +128,14 @@ fun ItemSearchInitialContent(
                     placeholder = stringResource(R.string.item_search_query_label),
                     modifier = Modifier.fillMaxWidth(),
                     iconSize = metrics.searchIconSize,
+                )
+            }
+
+            item {
+                HomeRegionalGuideSummaryBanner(
+                    state = regionalGuideSummaryState,
+                    onClick = onRegionalGuideSummaryClick,
+                    onRetryClick = onRegionalGuideSummaryRetryClick,
                 )
             }
 

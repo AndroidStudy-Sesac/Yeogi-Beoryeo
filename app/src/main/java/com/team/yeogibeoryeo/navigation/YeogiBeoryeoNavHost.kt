@@ -144,7 +144,10 @@ fun YeogiBeoryeoNavHost(
                     },
                     onRegionalGuideClick = { targetId ->
                         navController.navigate(
-                            RegionalGuideRoute(initialFavoriteTargetId = targetId),
+                            RegionalGuideRoute(
+                                initialFavoriteTargetId = targetId,
+                                entrySource = RegionalGuideEntrySource.FAVORITES,
+                            ),
                         )
                     },
                 )
@@ -164,6 +167,13 @@ fun YeogiBeoryeoNavHost(
                     },
                     onUsefulGuideClick = { guide ->
                         navController.navigate(ItemUsefulGuideRoute(guide.type.name))
+                    },
+                    onRegionalGuideSummaryClick = { targetId ->
+                        navController.navigate(
+                            RegionalGuideRoute(
+                                initialFavoriteTargetId = targetId,
+                            ),
+                        )
                     },
                 )
             }
@@ -195,7 +205,11 @@ fun YeogiBeoryeoNavHost(
                     },
                     onRegionalGuideClick = {
                         navController.navigate(RegionalGuideRoute()) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
                             launchSingleTop = true
+                            restoreState = false
                         }
                     },
                     onItemSearchClick = navController::popBackStack,
