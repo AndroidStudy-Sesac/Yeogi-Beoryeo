@@ -205,9 +205,6 @@ fun YeogiBeoryeoNavHost(
                     },
                     onRegionalGuideClick = {
                         navController.navigate(RegionalGuideRoute()) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
                             launchSingleTop = true
                             restoreState = false
                         }
