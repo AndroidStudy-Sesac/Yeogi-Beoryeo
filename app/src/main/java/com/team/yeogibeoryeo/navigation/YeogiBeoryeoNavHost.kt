@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -135,7 +134,7 @@ fun YeogiBeoryeoNavHost(
                     },
                     onCollectionSpotClick = { request ->
                         navController.navigate(request.toMapRoute()) {
-                            popUpTo(navController.graph.findStartDestination().id) {
+                            popUpTo<ItemSearchRoute> {
                                 saveState = true
                             }
                             launchSingleTop = true
