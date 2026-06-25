@@ -1,53 +1,14 @@
 ﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
-import com.team.yeogibeoryeo.domain.favorite.model.Favorite
-import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
-import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
-import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
-import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
-import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteRepository
-import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSnapshotRepository
-import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSnapshotUseCase
-import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
-import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
-import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
-import com.team.yeogibeoryeo.domain.region.repository.RegionRepository
-import com.team.yeogibeoryeo.domain.region.usecase.ClassifyRegionSearchInputUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
-import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
-import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
-import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
-import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
