@@ -156,6 +156,59 @@ class RegionalGuideFavoriteViewModelTest {
     }
 
     @Test
+    fun `favorite click after guide candidate selection keeps original none zone values in snapshot`() = runTest {
+        val region = Region(sido = "경기도", sigungu = "성남시")
+        val doorToDoorGuide =
+            RegionalDisposalGuide(
+                region = region,
+                managementZoneName = "없음",
+                targetRegionName = "없음",
+                disposalPlaceType = "문전수거",
+                schedules = emptyList(),
+            )
+        val basePointGuide =
+            RegionalDisposalGuide(
+                region = region,
+                managementZoneName = "없음",
+                targetRegionName = "없음",
+                disposalPlaceType = "거점수거",
+                schedules = emptyList(),
+            )
+        val favoriteRepository = FakeFavoriteRepository()
+        val snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository()
+        val viewModel =
+            createViewModel(
+                regionRepository = FakeRegionRepository(resolvedRegion = region),
+                regionalGuideRepository =
+                    FakeRegionalDisposalGuideRepository(candidates = listOf(doorToDoorGuide, basePointGuide)),
+                favoriteRepository = favoriteRepository,
+                regionalGuideSnapshotRepository = snapshotRepository,
+                regionalGuideFavoriteRepository =
+                    FakeRegionalGuideFavoriteRepository(
+                        favoriteRepository = favoriteRepository,
+                        snapshotRepository = snapshotRepository,
+                    ),
+            )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("성남시")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val candidate = (viewModel.uiState.value as RegionalGuideUiState.GuideCandidates)
+            .candidates
+            .first { candidate -> candidate.displayText.contains("문전수거") }
+
+        viewModel.onRegionalGuideCandidateSelected(candidate)
+        viewModel.onFavoriteClick()
+        advanceUntilIdle()
+
+        val expectedSnapshot = doorToDoorGuide.toFavoriteSnapshot()
+        assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, expectedSnapshot.targetId))
+        assertEquals(expectedSnapshot, snapshotRepository.getSnapshot(expectedSnapshot.targetId))
+    }
+
+    @Test
     fun `legacy regional guide favorite key is observed and removed with current snapshot`() = runTest {
         val region = Region(sido = "Sido", sigungu = "Sigungu", eupmyeondong = "Dong")
         val guide =
