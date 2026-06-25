@@ -203,8 +203,6 @@ class RegionalGuideViewModel @Inject constructor(
     fun onRegionCandidateSelected(candidate: RegionSearchCandidateUiModel) {
         if (!candidate.isValid) return
 
-        _searchKeyword.value = candidate.displayText
-
         val region = candidate.toRegion()
         searchBySelectedRegion(
             query = candidate.displayText,
