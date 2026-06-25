@@ -34,26 +34,6 @@ enum class RepresentativeGuideCategory(
             entries.firstOrNull { it.representativeGuideName == name }
 
         fun fromDisposalCategory(category: DisposalCategory): RepresentativeGuideCategory =
-            when (category) {
-                DisposalCategory.PAPER -> PAPER
-                DisposalCategory.PAPER_PACK -> PAPER_PACK
-                DisposalCategory.COLORLESS_PET -> COLORLESS_PET
-                DisposalCategory.GLASS -> GLASS
-                DisposalCategory.METAL -> METAL
-                DisposalCategory.PLASTIC -> PLASTIC
-                DisposalCategory.STYROFOAM -> STYROFOAM
-                DisposalCategory.VINYL -> VINYL
-                DisposalCategory.FOOD_WASTE -> FOOD_WASTE
-                DisposalCategory.LARGE_WASTE -> LARGE_WASTE
-                DisposalCategory.ELECTRONICS -> ELECTRONICS
-                DisposalCategory.BATTERY -> BATTERY
-                DisposalCategory.LIGHTING -> LIGHTING
-                DisposalCategory.CLOTHING -> CLOTHING
-                DisposalCategory.HAZARDOUS -> HAZARDOUS
-                DisposalCategory.NON_COMBUSTIBLE -> NON_COMBUSTIBLE
-                DisposalCategory.CONSTRUCTION_WASTE -> CONSTRUCTION_WASTE
-                DisposalCategory.GENERAL -> GENERAL
-                DisposalCategory.OTHER -> OTHER
-            }
+            entries.first { it.disposalCategory == category }
     }
 }
