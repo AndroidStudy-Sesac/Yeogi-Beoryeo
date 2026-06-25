@@ -50,7 +50,7 @@ import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class RegionalGuideViewModelTest {
+class RegionalGuideSelectorViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
@@ -266,6 +266,13 @@ class RegionalGuideViewModelTest {
         assertEquals(2, regionalGuideRepository.queries.size)
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
     }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class RegionalGuideKeywordSearchViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
     fun `ambiguous keyword search exposes region candidates`() = runTest {
@@ -595,6 +602,14 @@ class RegionalGuideViewModelTest {
         }
     }
 
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class RegionalGuideAddressSearchViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = RegionalGuideMainDispatcherRule()
+
     @Test
     fun `address lookup normalizes administrative district before selector and guide lookup`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
@@ -868,6 +883,14 @@ class RegionalGuideViewModelTest {
         }
     }
 
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class RegionalGuideCandidateSelectionViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = RegionalGuideMainDispatcherRule()
+
     @Test
     fun `regional guide lookup exposes multiple guide candidates`() = runTest {
         val viewModel = createViewModel(
@@ -988,6 +1011,14 @@ class RegionalGuideViewModelTest {
             assertNull(selectedEupmyeondong)
         }
     }
+
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class RegionalGuideFavoriteViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
     fun `favorite click stores regional guide favorite and observes state`() = runTest {
@@ -1185,7 +1216,9 @@ class RegionalGuideViewModelTest {
         assertNull(snapshotRepository.getSnapshot(currentSnapshot.targetId))
     }
 
-    private fun createViewModel(
+}
+
+private fun createViewModel(
         regionRepository: RegionRepository = FakeRegionRepository(),
         regionOptionsRepository: RegionOptionsRepository = FakeRegionOptionsRepository(),
         regionalGuideRepository: RegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
@@ -1465,8 +1498,6 @@ class RegionalGuideViewModelTest {
             }
         }
     }
-}
-
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegionalGuideMainDispatcherRule(
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
