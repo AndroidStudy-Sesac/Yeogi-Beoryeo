@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSna
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.usecase.ClassifyRegionSearchInputUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
@@ -16,6 +17,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
+import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
@@ -38,6 +40,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class RegionalGuideViewModel @Inject constructor(
+    private val classifyRegionSearchInputUseCase: ClassifyRegionSearchInputUseCase,
     private val resolveRegionFromKeywordUseCase: ResolveRegionFromKeywordUseCase,
     private val extractRegionFromAddressUseCase: ExtractRegionFromAddressUseCase,
     private val getRegionalDisposalGuideUseCase: GetRegionalDisposalGuideUseCase,
@@ -261,6 +264,11 @@ class RegionalGuideViewModel @Inject constructor(
             return
         }
 
+        if (classifyRegionSearchInputUseCase(trimmedKeyword) == RegionSearchInputType.ADDRESS) {
+            loadByAddress(trimmedKeyword)
+            return
+        }
+
         lastRequest = RegionalGuideRequest.Keyword(trimmedKeyword)
 
         guideLookupJob = viewModelScope.launch {
@@ -321,6 +329,7 @@ class RegionalGuideViewModel @Inject constructor(
         lastRequest = RegionalGuideRequest.Address(trimmedAddress)
 
         guideLookupJob = viewModelScope.launch {
+            clearSelectedRegion()
             _uiState.value = RegionalGuideUiState.Loading(query = trimmedAddress)
 
             try {
