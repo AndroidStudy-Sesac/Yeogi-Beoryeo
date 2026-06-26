@@ -320,16 +320,17 @@ internal class FakeRegionalGuideFavoriteRepository(
         }
     }
 }
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegionalGuideMainDispatcherRule(
-private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+    private val testDispatcher: TestDispatcher = StandardTestDispatcher(),
 ) : TestWatcher() {
-override fun starting(description: Description) {
-    Dispatchers.setMain(testDispatcher)
-}
+    override fun starting(description: Description) {
+        Dispatchers.setMain(testDispatcher)
+    }
 
-override fun finished(description: Description) {
-    Dispatchers.resetMain()
-}
+    override fun finished(description: Description) {
+        Dispatchers.resetMain()
+    }
 }
 
