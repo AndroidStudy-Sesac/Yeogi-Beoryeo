@@ -9,6 +9,13 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.supervisorScope
 
 class CollectionSpotRepositoryImpl @Inject constructor(
     private val remoteDataSource: SpotRemoteDataSource,
@@ -73,8 +80,59 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     }
 
     private suspend fun List<CollectionSpot>.geocodeAll(): List<CollectionSpot> {
-        return map { spot ->
-            geocodeSpot(spot)
+        if (isEmpty()) return this
+
+        return supervisorScope {
+            val geocodeJobsByAddress = LinkedHashMap<String, Deferred<Coordinate?>>()
+            val geocodeSemaphore = Semaphore(MAX_CONCURRENT_GEOCODING_COUNT)
+
+            forEach { spot ->
+                val addressKey = spot.address.toGeocodeKey() ?: return@forEach
+
+                geocodeJobsByAddress.getOrPut(addressKey) {
+                    async {
+                        geocodeSafely(
+                            address = addressKey,
+                            semaphore = geocodeSemaphore,
+                        )
+                    }
+                }
+            }
+
+            geocodeJobsByAddress.values.awaitAll()
+
+            map { spot ->
+                val addressKey = spot.address.toGeocodeKey()
+                    ?: return@map spot
+                val coordinate = geocodeJobsByAddress[addressKey]?.await()
+
+                spot.copy(
+                    coordinate = coordinate,
+                )
+            }
         }
+    }
+
+    private suspend fun geocodeSafely(
+        address: String,
+        semaphore: Semaphore,
+    ): Coordinate? {
+        return semaphore.withPermit {
+            runCatching {
+                spotGeocoder.geocode(address)
+            }.getOrElse { exception ->
+                if (exception is CancellationException) throw exception
+
+                null
+            }
+        }
+    }
+
+    private fun String.toGeocodeKey(): String? {
+        return trim().takeIf { it.isNotBlank() }
+    }
+
+    private companion object {
+        const val MAX_CONCURRENT_GEOCODING_COUNT = 3
     }
 }

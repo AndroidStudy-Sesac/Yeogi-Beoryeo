@@ -1,39 +1,45 @@
 package com.team.yeogibeoryeo.data.spot.geocoder
 
-import androidx.annotation.RequiresApi
 import android.content.Context
 import android.location.Geocoder
 import android.os.Build
+import androidx.annotation.RequiresApi
+import com.team.yeogibeoryeo.data.core.di.IoDispatcher
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.coroutines.resume
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 
 interface SpotGeocoder {
     suspend fun geocode(address: String): Coordinate?
 }
 
 class AndroidSpotGeocoder @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : SpotGeocoder {
 
     override suspend fun geocode(address: String): Coordinate? {
         if (address.isBlank()) return null
 
-        val geocoder = Geocoder(context, Locale.KOREA)
+        return withContext(ioDispatcher) {
+            val geocoder = Geocoder(context, Locale.KOREA)
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            geocodeForTiramisuAndAbove(
-                geocoder = geocoder,
-                address = address,
-            )
-        } else {
-            geocodeForBelowTiramisu(
-                geocoder = geocoder,
-                address = address,
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                geocodeForTiramisuAndAbove(
+                    geocoder = geocoder,
+                    address = address,
+                )
+            } else {
+                geocodeForBelowTiramisu(
+                    geocoder = geocoder,
+                    address = address,
+                )
+            }
         }
     }
 
