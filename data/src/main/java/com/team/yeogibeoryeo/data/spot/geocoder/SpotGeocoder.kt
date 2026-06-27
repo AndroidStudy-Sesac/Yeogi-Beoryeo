@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.spot.geocoder
 
 import android.content.Context
+import android.location.Address
 import android.location.Geocoder
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -49,20 +50,28 @@ class AndroidSpotGeocoder @Inject constructor(
         address: String,
     ): Coordinate? {
         return suspendCancellableCoroutine { continuation ->
-            geocoder.getFromLocationName(
-                address,
-                MAX_RESULT_COUNT,
-            ) { addresses ->
-                val firstAddress = addresses.firstOrNull()
+            runCatching {
+                geocoder.getFromLocationName(
+                    address,
+                    MAX_RESULT_COUNT,
+                    object : Geocoder.GeocodeListener {
+                        override fun onGeocode(addresses: MutableList<Address>) {
+                            if (continuation.isActive) {
+                                continuation.resume(addresses.firstOrNull().toCoordinate())
+                            }
+                        }
 
-                continuation.resume(
-                    firstAddress?.let {
-                        Coordinate(
-                            latitude = it.latitude,
-                            longitude = it.longitude,
-                        )
+                        override fun onError(errorMessage: String?) {
+                            if (continuation.isActive) {
+                                continuation.resume(null)
+                            }
+                        }
                     },
                 )
+            }.onFailure {
+                if (continuation.isActive) {
+                    continuation.resume(null)
+                }
             }
         }
     }
@@ -87,5 +96,14 @@ class AndroidSpotGeocoder @Inject constructor(
 
     private companion object {
         const val MAX_RESULT_COUNT = 1
+    }
+}
+
+private fun Address?.toCoordinate(): Coordinate? {
+    return this?.let {
+        Coordinate(
+            latitude = it.latitude,
+            longitude = it.longitude,
+        )
     }
 }
