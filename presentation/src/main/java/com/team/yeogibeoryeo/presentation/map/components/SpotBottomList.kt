@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
@@ -23,11 +24,12 @@ fun SpotBottomList(
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
+    bottomContentPadding: Dp = 0.dp,
     contentPadding: PaddingValues = PaddingValues(
         start = 16.dp,
         top = 12.dp,
         end = 16.dp,
-        bottom = 96.dp,
+        bottom = 96.dp + bottomContentPadding,
     ),
 ) {
     val listState = rememberLazyListState()

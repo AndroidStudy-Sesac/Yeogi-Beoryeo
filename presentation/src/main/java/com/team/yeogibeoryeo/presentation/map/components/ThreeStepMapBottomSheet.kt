@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -29,15 +30,17 @@ fun ThreeStepMapBottomSheet(
     sheetLevel: MapSheetLevel,
     revealKey: Any?,
     onSheetLevelChanged: (MapSheetLevel) -> Unit,
+    bottomInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val coroutineScope = rememberCoroutineScope()
+        val sheetBottomInset = bottomInset.coerceAtLeast(0.dp)
         val sheetHeight = maxHeight - MapSheetTopMargin
         val sheetHeightPx = with(density) {
-            sheetHeight.toPx().coerceAtLeast(1f)
+            sheetHeight.toPx()
         }
         val hiddenOffset = with(density) {
             (sheetHeight - Dp.Hairline).toPx().coerceIn(0f, sheetHeightPx)
@@ -48,12 +51,15 @@ fun ThreeStepMapBottomSheet(
         val mediumOffset = with(density) {
             (sheetHeight - MapSpotDetailBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
         }
+        val halfOffset = (sheetHeightPx * (1f - MapSheetHalfVisibleRatio))
+            .coerceIn(0f, hiddenOffset)
         val expandedOffset = 0f
         fun offsetFor(level: MapSheetLevel): Float =
             when (level) {
                 MapSheetLevel.Hidden -> hiddenOffset
                 MapSheetLevel.Peek -> peekOffset
                 MapSheetLevel.Medium -> mediumOffset
+                MapSheetLevel.Half -> halfOffset
                 MapSheetLevel.Expanded -> expandedOffset
             }
 
@@ -74,7 +80,7 @@ fun ThreeStepMapBottomSheet(
                 .offset {
                     IntOffset(x = 0, y = sheetOffset.value.roundToInt())
                 }
-                .pointerInput(sheetHeightPx, hiddenOffset, peekOffset, mediumOffset) {
+                .pointerInput(sheetHeightPx, hiddenOffset, peekOffset, mediumOffset, halfOffset) {
                     detectVerticalDragGestures(
                         onVerticalDrag = { change, dragAmount ->
                             change.consume()
@@ -103,7 +109,11 @@ fun ThreeStepMapBottomSheet(
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 4.dp,
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = sheetBottomInset),
+            ) {
                 content()
             }
         }
@@ -114,9 +124,11 @@ enum class MapSheetLevel {
     Hidden,
     Peek,
     Medium,
+    Half,
     Expanded,
 }
 
 private val MapSheetTopMargin = 72.dp
+private const val MapSheetHalfVisibleRatio = 0.55f
 val MapResultBottomSheetPeekHeight = 144.dp
 val MapSpotDetailBottomSheetPeekHeight = 220.dp
