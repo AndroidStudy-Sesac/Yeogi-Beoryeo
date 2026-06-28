@@ -26,6 +26,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -649,7 +650,7 @@ class RegionalGuideViewModel @Inject constructor(
                         sigungu = guide.region.sigungu,
                         eupmyeondong = guide.region.eupmyeondong
                     )
-                }
+                }.sortedWith(regionalGuideCandidateDisplayComparator)
             )
 
             RegionalGuideLookupResult.NotFound -> RegionalGuideUiState.Empty(

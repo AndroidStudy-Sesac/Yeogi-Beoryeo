@@ -49,8 +49,11 @@ class RegionalGuideCandidateSelectionViewModelTest {
         assertEquals("울주군", state.query)
         assertEquals(2, state.candidates.size)
         assertEquals(
-            "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생",
-            state.candidates.first().displayText
+            listOf(
+                "두동, 두서, 삼동",
+                "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"
+            ),
+            state.candidates.map { candidate -> candidate.displayText }
         )
     }
 
@@ -127,7 +130,7 @@ class RegionalGuideCandidateSelectionViewModelTest {
         assertEquals("울주군", viewModel.searchKeyword.value)
         assertEquals("울주군", state.query)
         assertEquals(
-            "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생",
+            "두동, 두서, 삼동",
             state.guide.targetRegionName
         )
 
