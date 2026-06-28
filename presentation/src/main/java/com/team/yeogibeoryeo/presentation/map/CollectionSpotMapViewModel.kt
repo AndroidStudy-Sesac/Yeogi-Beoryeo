@@ -278,6 +278,12 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
+    fun clearSelectedSpot() {
+        _uiState.update {
+            it.copy(selectedSpot = null)
+        }
+    }
+
     fun showFavoriteSpot(request: FavoriteSpotMapMoveRequest) {
         if (!consumedFavoriteSpotMoveRequestIds.add(request.requestId)) return
 
