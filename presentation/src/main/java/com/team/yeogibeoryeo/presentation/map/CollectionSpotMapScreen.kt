@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.map
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -116,6 +117,7 @@ fun CollectionSpotMapScreen(
         },
         onTypeClick = viewModel::onSpotTypeClick,
         onSpotClick = viewModel::onSpotClick,
+        onSpotDetailDismiss = viewModel::clearSelectedSpot,
         onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
         onRegionalGuideClick = onRegionalGuideClick,
@@ -136,6 +138,7 @@ private fun CollectionSpotMapContent(
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onTypeClick: (CollectionSpotType) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
+    onSpotDetailDismiss: () -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
     onBottomBarVisibilityChanged: (Boolean) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
@@ -162,6 +165,18 @@ private fun CollectionSpotMapContent(
         !isLocationPermissionGranted -> LocationTrackingMode.None
         locationTrackingMode == LocationTrackingMode.None -> LocationTrackingMode.NoFollow
         else -> locationTrackingMode
+    }
+    val hasResultListToReturn = uiState.hasSearched || uiState.spots.isNotEmpty()
+
+    BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
+        onSpotDetailDismiss()
+        mapUiMode = if (hasResultListToReturn) {
+            sheetLevel = MapSheetLevel.Peek
+            MapUiMode.ResultList
+        } else {
+            sheetLevel = MapSheetLevel.Hidden
+            MapUiMode.Browsing
+        }
     }
 
     LaunchedEffect(isLocationPermissionGranted) {
@@ -356,6 +371,7 @@ private fun CollectionSpotMapContent(
                             onFavoriteClick = onSpotFavoriteClick,
                             onRegionalGuideClick = onRegionalGuideClick,
                             onCloseClick = {
+                                onSpotDetailDismiss()
                                 mapUiMode = MapUiMode.ResultList
                                 sheetLevel = MapSheetLevel.Peek
                             },
@@ -442,6 +458,7 @@ private fun CollectionSpotMapContentPreview() {
                 onLocationNoticeActionClick = {},
                 onTypeClick = {},
                 onSpotClick = {},
+                onSpotDetailDismiss = {},
                 onSpotFavoriteClick = {},
                 onBottomBarVisibilityChanged = {},
                 onRegionalGuideClick = {},
