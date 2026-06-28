@@ -37,7 +37,7 @@ fun ThreeStepMapBottomSheet(
         val coroutineScope = rememberCoroutineScope()
         val sheetHeight = maxHeight - MapSheetTopMargin
         val sheetHeightPx = with(density) {
-            sheetHeight.toPx().coerceAtLeast(1f)
+            sheetHeight.toPx()
         }
         val hiddenOffset = with(density) {
             (sheetHeight - Dp.Hairline).toPx().coerceIn(0f, sheetHeightPx)
@@ -48,12 +48,15 @@ fun ThreeStepMapBottomSheet(
         val mediumOffset = with(density) {
             (sheetHeight - MapSpotDetailBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
         }
+        val halfOffset = (sheetHeightPx * (1f - MapSheetHalfVisibleRatio))
+            .coerceIn(0f, hiddenOffset)
         val expandedOffset = 0f
         fun offsetFor(level: MapSheetLevel): Float =
             when (level) {
                 MapSheetLevel.Hidden -> hiddenOffset
                 MapSheetLevel.Peek -> peekOffset
                 MapSheetLevel.Medium -> mediumOffset
+                MapSheetLevel.Half -> halfOffset
                 MapSheetLevel.Expanded -> expandedOffset
             }
 
@@ -74,7 +77,7 @@ fun ThreeStepMapBottomSheet(
                 .offset {
                     IntOffset(x = 0, y = sheetOffset.value.roundToInt())
                 }
-                .pointerInput(sheetHeightPx, hiddenOffset, peekOffset, mediumOffset) {
+                .pointerInput(sheetHeightPx, hiddenOffset, peekOffset, mediumOffset, halfOffset) {
                     detectVerticalDragGestures(
                         onVerticalDrag = { change, dragAmount ->
                             change.consume()
@@ -114,9 +117,11 @@ enum class MapSheetLevel {
     Hidden,
     Peek,
     Medium,
+    Half,
     Expanded,
 }
 
 private val MapSheetTopMargin = 72.dp
+private const val MapSheetHalfVisibleRatio = 0.55f
 val MapResultBottomSheetPeekHeight = 144.dp
 val MapSpotDetailBottomSheetPeekHeight = 220.dp

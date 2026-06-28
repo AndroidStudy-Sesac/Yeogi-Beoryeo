@@ -2,6 +2,9 @@ package com.team.yeogibeoryeo.navigation
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -23,6 +26,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -46,8 +51,10 @@ fun YeogiBeoryeoNavHost(
     navController: NavHostController = rememberNavController(),
 ) {
     val currentContext by rememberUpdatedState(LocalContext.current)
+    val layoutDirection = LocalLayoutDirection.current
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentDestination = currentBackStackEntry?.destination
+    val isMapScreen = currentDestination?.hasRoute<MapRoute>() == true
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
     val isUsefulGuideScreen = currentDestination?.hasRoute<ItemUsefulGuideRoute>() == true
     val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen
@@ -88,10 +95,21 @@ fun YeogiBeoryeoNavHost(
             }
         },
     ) { innerPadding ->
+        val navHostPadding = if (isMapScreen && !isBottomBarVisible) {
+            PaddingValues(
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                top = 0.dp,
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = 0.dp,
+            )
+        } else {
+            innerPadding
+        }
+
         NavHost(
             navController = navController,
             startDestination = ItemSearchRoute(),
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(navHostPadding),
         ) {
             composable<MapRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<MapRoute>()
@@ -99,7 +117,7 @@ fun YeogiBeoryeoNavHost(
                     initialSpotType = route.toInitialCollectionSpotTypeOrNull(),
                     favoriteSpotMoveRequest = route.toFavoriteSpotMapMoveRequest(),
                     onBottomBarVisibilityChanged = { isVisible ->
-                        if (currentDestination?.hasRoute<MapRoute>() == true) {
+                        if (isMapScreen) {
                             isBottomBarVisible = isVisible
                         }
                     },
