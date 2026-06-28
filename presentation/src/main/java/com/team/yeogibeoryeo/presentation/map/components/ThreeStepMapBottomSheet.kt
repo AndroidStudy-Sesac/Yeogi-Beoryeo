@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -30,14 +29,12 @@ fun ThreeStepMapBottomSheet(
     sheetLevel: MapSheetLevel,
     revealKey: Any?,
     onSheetLevelChanged: (MapSheetLevel) -> Unit,
-    bottomInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val coroutineScope = rememberCoroutineScope()
-        val sheetBottomInset = bottomInset.coerceAtLeast(0.dp)
         val sheetHeight = maxHeight - MapSheetTopMargin
         val sheetHeightPx = with(density) {
             sheetHeight.toPx()
@@ -109,11 +106,7 @@ fun ThreeStepMapBottomSheet(
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 4.dp,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = sheetBottomInset),
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 content()
             }
         }

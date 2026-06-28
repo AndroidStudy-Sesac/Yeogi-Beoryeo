@@ -346,7 +346,6 @@ private fun CollectionSpotMapContent(
                 onSheetLevelChanged = { level ->
                     sheetLevel = level
                 },
-                bottomInset = navigationBarBottomPadding,
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 when {
