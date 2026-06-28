@@ -371,6 +371,7 @@ private fun CollectionSpotMapContent(
                             onFavoriteClick = onSpotFavoriteClick,
                             onRegionalGuideClick = onRegionalGuideClick,
                             onCloseClick = {
+                                onSpotDetailDismiss()
                                 mapUiMode = MapUiMode.ResultList
                                 sheetLevel = MapSheetLevel.Peek
                             },
