@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -83,6 +84,7 @@ fun SettingsDetailRoute(
     appVersionName: String,
     onBackClick: () -> Unit,
     onOpenAppSettingsClick: () -> Unit,
+    onClearLocationCacheClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(
@@ -112,7 +114,9 @@ fun SettingsDetailRoute(
                 }
                 SettingsDetailType.Terms -> item { TermsDetail() }
                 SettingsDetailType.Sources -> item { SourcesDetail() }
-                SettingsDetailType.Cache -> item { CacheDetail() }
+                SettingsDetailType.Cache -> item {
+                    CacheDetail(onClearLocationCacheClick = onClearLocationCacheClick)
+                }
             }
         }
     }
@@ -165,7 +169,10 @@ private fun SettingsListItem(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(
+                role = Role.Button,
+                onClick = onClick,
+            ),
     ) {
         Row(
             modifier = Modifier
@@ -305,13 +312,15 @@ private fun SourcesDetail() {
 }
 
 @Composable
-private fun CacheDetail() {
+private fun CacheDetail(
+    onClearLocationCacheClick: () -> Unit,
+) {
     SettingsDetailContent {
         SettingsSection(
             title = stringResource(R.string.settings_cache_detail_title),
             description = stringResource(R.string.settings_cache_confirm_description),
         )
-        Button(onClick = {}) {
+        Button(onClick = onClearLocationCacheClick) {
             Text(text = stringResource(R.string.settings_cache_delete_action))
         }
     }
@@ -410,5 +419,5 @@ private object SettingsLayoutDefaults {
     val detailItemSpacing: Dp = 24.dp
     val detailContentSpacing: Dp = 20.dp
     val sectionSpacing: Dp = 8.dp
-    val infoRowSpacing: Dp = 6.dp
+    val infoRowSpacing: Dp = 8.dp
 }

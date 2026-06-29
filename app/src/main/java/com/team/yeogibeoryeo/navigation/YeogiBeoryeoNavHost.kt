@@ -235,6 +235,7 @@ fun YeogiBeoryeoNavHost(
                     onOpenAppSettingsClick = {
                         currentContext.openAppSettings()
                     },
+                    onClearLocationCacheClick = ::clearLocationCache,
                 )
             }
 
@@ -331,3 +332,5 @@ private fun android.content.Context.openAppSettings() {
         startActivity(intent)
     }
 }
+
+private fun clearLocationCache() = Unit

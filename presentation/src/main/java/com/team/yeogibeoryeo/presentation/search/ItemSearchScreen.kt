@@ -123,7 +123,7 @@ fun ItemSearchScreen(
     onQuickCategoryCollapseClick: () -> Unit = {},
     onQuickCategoryViewportChanged: () -> Unit = {},
     onQuickCategorySettingsClick: (Int) -> Unit = {},
-    onSettingsClick: () -> Unit = {},
+    onSettingsClick: (() -> Unit)? = null,
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {

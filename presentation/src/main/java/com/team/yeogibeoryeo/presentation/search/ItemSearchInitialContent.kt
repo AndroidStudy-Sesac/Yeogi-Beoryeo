@@ -66,7 +66,7 @@ fun ItemSearchInitialContent(
     onQuickCategoryMoreClick: (Int, Int, Int) -> Unit,
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
-    onSettingsClick: () -> Unit,
+    onSettingsClick: (() -> Unit)?,
     listState: LazyListState,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
