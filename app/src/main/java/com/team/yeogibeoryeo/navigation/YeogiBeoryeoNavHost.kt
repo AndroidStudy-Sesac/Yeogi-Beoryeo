@@ -220,7 +220,7 @@ fun YeogiBeoryeoNavHost(
                 SettingsScreenRoute(
                     onBackClick = navController::popBackStack,
                     onDetailClick = { detailType ->
-                        navController.navigate(SettingsDetailRoute(detailType.routeValue))
+                        navController.navigate(SettingsDetailRoute(detailType.toRouteType()))
                     },
                 )
             }
@@ -228,7 +228,7 @@ fun YeogiBeoryeoNavHost(
             composable<SettingsDetailRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<SettingsDetailRoute>()
                 SettingsDetailScreenRoute(
-                    detailType = SettingsDetailType.fromRouteValue(route.detailType),
+                    detailType = route.detailType.toScreenType(),
                     onBackClick = navController::popBackStack,
                     onOpenAppSettingsClick = {
                         currentContext.openAppSettings()
@@ -299,6 +299,28 @@ fun YeogiBeoryeoNavHost(
 }
 
 private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
+
+private fun SettingsDetailType.toRouteType(): SettingsDetailRouteType =
+    when (this) {
+        SettingsDetailType.Notice -> SettingsDetailRouteType.Notice
+        SettingsDetailType.Contact -> SettingsDetailRouteType.Contact
+        SettingsDetailType.AppInfo -> SettingsDetailRouteType.AppInfo
+        SettingsDetailType.LocationPermission -> SettingsDetailRouteType.LocationPermission
+        SettingsDetailType.Terms -> SettingsDetailRouteType.Terms
+        SettingsDetailType.Sources -> SettingsDetailRouteType.Sources
+        SettingsDetailType.Cache -> SettingsDetailRouteType.Cache
+    }
+
+private fun SettingsDetailRouteType.toScreenType(): SettingsDetailType =
+    when (this) {
+        SettingsDetailRouteType.Notice -> SettingsDetailType.Notice
+        SettingsDetailRouteType.Contact -> SettingsDetailType.Contact
+        SettingsDetailRouteType.AppInfo -> SettingsDetailType.AppInfo
+        SettingsDetailRouteType.LocationPermission -> SettingsDetailType.LocationPermission
+        SettingsDetailRouteType.Terms -> SettingsDetailType.Terms
+        SettingsDetailRouteType.Sources -> SettingsDetailType.Sources
+        SettingsDetailRouteType.Cache -> SettingsDetailType.Cache
+    }
 
 private fun android.content.Context.openAppSettings() {
     val uri = Uri.fromParts("package", packageName, null)

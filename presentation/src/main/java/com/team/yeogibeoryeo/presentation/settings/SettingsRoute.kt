@@ -34,22 +34,15 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 
 enum class SettingsDetailType(
-    val routeValue: String,
     @param:StringRes val titleResId: Int,
 ) {
-    Notice("notice", R.string.settings_notice_title),
-    Contact("contact", R.string.settings_contact_title),
-    AppInfo("app_info", R.string.settings_app_info_title),
-    LocationPermission("location_permission", R.string.settings_location_permission_title),
-    Terms("terms", R.string.settings_terms_title),
-    Sources("sources", R.string.settings_sources_title),
-    Cache("cache", R.string.settings_cache_title),
-    ;
-
-    companion object {
-        fun fromRouteValue(routeValue: String): SettingsDetailType =
-            values().firstOrNull { detailType -> detailType.routeValue == routeValue } ?: AppInfo
-    }
+    Notice(R.string.settings_notice_title),
+    Contact(R.string.settings_contact_title),
+    AppInfo(R.string.settings_app_info_title),
+    LocationPermission(R.string.settings_location_permission_title),
+    Terms(R.string.settings_terms_title),
+    Sources(R.string.settings_sources_title),
+    Cache(R.string.settings_cache_title),
 }
 
 @Composable
