@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">여기버려</string>
+    <string name="bottom_tab_item_search">품목</string>
+    <string name="bottom_tab_map">지도</string>
+    <string name="bottom_tab_regional_guide">안내</string>
+    <string name="bottom_tab_favorites">저장</string>
 </resources>
