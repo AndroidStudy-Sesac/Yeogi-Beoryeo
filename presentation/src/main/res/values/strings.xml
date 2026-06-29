@@ -119,7 +119,6 @@
     <string name="settings_contact_email_label">문의할 이메일 주소:</string>
     <string name="settings_app_info_description">내 위치 기반 맞춤형 분리수거 가이드와 수거 장소 안내 서비스입니다.</string>
     <string name="settings_app_info_version_label">버전</string>
-    <string name="settings_app_info_version_name">1.0</string>
     <string name="settings_app_info_features_label">제공 기능</string>
     <string name="settings_app_info_features">품목별 배출 방법 검색, 즐겨찾기, 근처 수거 장소 찾기, 지역별 배출 안내를 제공합니다.</string>
     <string name="settings_location_permission_description">현재 위치를 기준으로 가까운 수거 장소를 찾을 때 위치 권한을 사용합니다.</string>

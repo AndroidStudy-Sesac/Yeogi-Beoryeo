@@ -36,6 +36,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.team.yeogibeoryeo.BuildConfig
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
@@ -229,6 +230,7 @@ fun YeogiBeoryeoNavHost(
                 val route = backStackEntry.toRoute<SettingsDetailRoute>()
                 SettingsDetailScreenRoute(
                     detailType = route.detailType.toScreenType(),
+                    appVersionName = BuildConfig.VERSION_NAME,
                     onBackClick = navController::popBackStack,
                     onOpenAppSettingsClick = {
                         currentContext.openAppSettings()

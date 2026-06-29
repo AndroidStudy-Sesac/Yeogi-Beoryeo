@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
@@ -30,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
@@ -42,6 +42,7 @@ import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryU
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun ItemSearchInitialContent(
@@ -242,7 +243,7 @@ fun ItemSearchHeader(
         if (onSettingsClick != null) {
             IconButton(onClick = onSettingsClick) {
                 Icon(
-                    imageVector = Icons.Filled.Settings,
+                    painter = painterResource(id = CommonR.drawable.ic_action_settings),
                     contentDescription = stringResource(R.string.settings_action),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
