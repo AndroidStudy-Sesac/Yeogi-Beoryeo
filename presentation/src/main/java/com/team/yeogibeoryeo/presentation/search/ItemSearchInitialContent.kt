@@ -13,9 +13,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,6 +65,7 @@ fun ItemSearchInitialContent(
     onQuickCategoryMoreClick: (Int, Int, Int) -> Unit,
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
+    onSettingsClick: () -> Unit,
     listState: LazyListState,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
@@ -112,7 +115,7 @@ fun ItemSearchInitialContent(
             verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
         ) {
             item {
-                ItemSearchHeader()
+                ItemSearchHeader(onSettingsClick = onSettingsClick)
             }
 
             item {
@@ -211,23 +214,39 @@ fun ItemSearchInitialContent(
 @Composable
 fun ItemSearchHeader(
     modifier: Modifier = Modifier,
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
 
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(spacing.xs),
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+        verticalAlignment = Alignment.Top,
     ) {
-        Text(
-            text = stringResource(R.string.item_search_title),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(R.string.item_search_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(spacing.xs),
+        ) {
+            Text(
+                text = stringResource(R.string.item_search_title),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.item_search_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (onSettingsClick != null) {
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = stringResource(R.string.settings_action),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
     }
 }

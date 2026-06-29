@@ -47,6 +47,14 @@ data class QuickCategorySettingsRoute(
 )
 
 @Serializable
+data object SettingsRoute
+
+@Serializable
+data class SettingsDetailRoute(
+    val detailType: String,
+)
+
+@Serializable
 data class ItemUsefulGuideRoute(
     val guideType: String,
 )
