@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -25,6 +27,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
@@ -55,6 +60,7 @@ fun CollectionSpotMapScreen(
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val hasFineLocationPermission = rememberFineLocationPermissionGranted()
     var hasGrantedLocationPermissionInSession by rememberSaveable {
@@ -65,6 +71,8 @@ fun CollectionSpotMapScreen(
     }
     val isLocationPermissionGranted =
         hasFineLocationPermission || hasGrantedLocationPermissionInSession
+    val currentLocationNotice by rememberUpdatedState(uiState.locationNotice)
+    val currentHasFineLocationPermission by rememberUpdatedState(hasFineLocationPermission)
     var locationTrackingMode by remember {
         mutableStateOf(LocationTrackingMode.None)
     }
@@ -78,6 +86,26 @@ fun CollectionSpotMapScreen(
             viewModel.searchByCurrentLocation()
         }
         previousFineLocationPermission = hasFineLocationPermission
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (
+                event == Lifecycle.Event.ON_RESUME &&
+                currentHasFineLocationPermission &&
+                currentLocationNotice.shouldRetryCurrentLocationSearchOnResume()
+            ) {
+                hasGrantedLocationPermissionInSession = true
+                previousFineLocationPermission = true
+                locationTrackingMode = LocationTrackingMode.NoFollow
+                viewModel.searchByCurrentLocation()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     val requestCurrentLocationSearch = rememberCurrentLocationSearchRequester(
@@ -492,4 +520,10 @@ private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
             Settings.ACTION_LOCATION_SOURCE_SETTINGS,
         )
     }
+}
+
+private fun MapLocationNotice?.shouldRetryCurrentLocationSearchOnResume(): Boolean {
+    return this == MapLocationNotices.PermissionDenied ||
+        this == MapLocationNotices.LocationServiceDisabled ||
+        this == MapLocationNotices.CurrentLocationUnavailable
 }

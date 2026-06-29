@@ -515,6 +515,39 @@ class CollectionSpotMapViewModelTest {
         }
 
     @Test
+    fun `현재 위치 검색 실패 안내 후 재시도에 성공하면 이전 notice를 정리하고 결과를 표시한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            var currentLocationResult: CurrentLocationResult = CurrentLocationResult.LocationServiceDisabled
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(locationSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    currentLocationResult
+                },
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            assertEquals("위치 서비스가 꺼져 있습니다.", viewModel.uiState.value.locationNotice?.title)
+
+            currentLocationResult = CurrentLocationResult.Found(currentCoordinate)
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            assertEquals(listOf(locationSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+            assertNull(viewModel.uiState.value.locationNotice)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
+            assertNull(viewModel.uiState.value.errorMessage)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
     fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 유지하고 현재 위치 결과를 반영한다`() =
         runTest {
             val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
