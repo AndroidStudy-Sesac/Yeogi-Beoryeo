@@ -8,9 +8,14 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
+import com.team.yeogibeoryeo.domain.item.repository.HomeQuickCategoryRepository
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalCategoryGuidesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.LimitHomeQuickCategoriesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.ObserveHomeQuickCategoriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.ToggleHomeQuickCategoryUseCase
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -235,6 +240,36 @@ class ItemSearchViewModelTest {
         }
 
     @Test
+    fun `빠른 분류 펼침 상태와 접힌 슬롯 수와 스크롤 복원 위치를 상태에 저장한다`() =
+        runTest {
+            val viewModel = createViewModel(FakeRepository())
+
+            viewModel.expandQuickCategory(
+                collapsedItemCount = 8,
+                firstVisibleItemIndex = 3,
+                firstVisibleItemScrollOffset = 40,
+            )
+
+            assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+            assertEquals(3, viewModel.uiState.value.quickCategoryScrollRestoreIndex)
+            assertEquals(40, viewModel.uiState.value.quickCategoryScrollRestoreOffset)
+            assertEquals(true, viewModel.uiState.value.isQuickCategoryExpanded)
+
+            viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
+
+            assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+
+            viewModel.collapseQuickCategory()
+
+            assertEquals(false, viewModel.uiState.value.isQuickCategoryExpanded)
+            assertEquals(1, viewModel.uiState.value.quickCategoryScrollRestoreVersion)
+
+            viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
+
+            assertEquals(0, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+        }
+
+    @Test
     fun `카테고리 대표 가이드가 없으면 첫 가이드 이동 이벤트를 발행한다`() =
         runTest {
             val expected = sampleGuide("첫 번째 가이드")
@@ -301,14 +336,130 @@ class ItemSearchViewModelTest {
             assertEquals(setOf("유리병"), viewModel.uiState.value.favoriteGuideIds)
         }
 
+    @Test
+    fun `홈 표시 분류를 상태에 반영한다`() =
+        runTest {
+            val homeQuickCategoryRepository =
+                FakeHomeQuickCategoryRepository(
+                    initialCategories = listOf(DisposalCategory.ELECTRONICS),
+                )
+            val viewModel = createViewModel(
+                repository = FakeRepository(),
+                homeQuickCategoryRepository = homeQuickCategoryRepository,
+            )
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(RepresentativeGuideCategory.ELECTRONICS),
+                viewModel.uiState.value.homeQuickCategories,
+            )
+        }
+
+    @Test
+    fun `선택한 분류가 없으면 홈 빠른 분류는 기본 순서를 노출한다`() {
+        val uiState = ItemSearchUiState()
+
+        assertEquals(quickCategoryOrder, uiState.quickCategories)
+    }
+
+    @Test
+    fun `선택한 분류가 있으면 홈 빠른 분류는 선택한 분류를 앞에 노출한다`() {
+        val selectedCategories =
+            listOf(
+                RepresentativeGuideCategory.ELECTRONICS,
+                RepresentativeGuideCategory.BATTERY,
+            )
+
+        val uiState = ItemSearchUiState(homeQuickCategories = selectedCategories)
+
+        assertEquals(selectedCategories, uiState.quickCategories.take(selectedCategories.size))
+        assertEquals(quickCategoryOrder.size, uiState.quickCategories.size)
+    }
+
+    @Test
+    fun `홈 표시 분류 토글 시 저장소에 분류를 전달한다`() =
+        runTest {
+            val homeQuickCategoryRepository = FakeHomeQuickCategoryRepository()
+            val viewModel = createViewModel(
+                repository = FakeRepository(),
+                homeQuickCategoryRepository = homeQuickCategoryRepository,
+            )
+
+            viewModel.toggleHomeQuickCategory(
+                category = RepresentativeGuideCategory.BATTERY,
+                maxSelectedCount = 1,
+            )
+            advanceUntilIdle()
+
+            assertEquals(listOf(DisposalCategory.BATTERY), homeQuickCategoryRepository.toggledHomeQuickCategories)
+            assertEquals(
+                listOf(RepresentativeGuideCategory.BATTERY),
+                viewModel.uiState.value.homeQuickCategories,
+            )
+        }
+
+    @Test
+    fun `홈 표시 분류 토글 시 최대 개수 이상 추가하지 않는다`() =
+        runTest {
+            val homeQuickCategoryRepository =
+                FakeHomeQuickCategoryRepository(
+                    initialCategories = listOf(DisposalCategory.BATTERY),
+                )
+            val viewModel = createViewModel(
+                repository = FakeRepository(),
+                homeQuickCategoryRepository = homeQuickCategoryRepository,
+            )
+            advanceUntilIdle()
+
+            viewModel.toggleHomeQuickCategory(
+                category = RepresentativeGuideCategory.ELECTRONICS,
+                maxSelectedCount = 1,
+            )
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(RepresentativeGuideCategory.BATTERY),
+                viewModel.uiState.value.homeQuickCategories,
+            )
+        }
+
+    @Test
+    fun `홈 표시 분류 제한 시 앞에서부터 최대 개수만 유지한다`() =
+        runTest {
+            val homeQuickCategoryRepository =
+                FakeHomeQuickCategoryRepository(
+                    initialCategories = listOf(
+                        DisposalCategory.BATTERY,
+                        DisposalCategory.ELECTRONICS,
+                    ),
+                )
+            val viewModel = createViewModel(
+                repository = FakeRepository(),
+                homeQuickCategoryRepository = homeQuickCategoryRepository,
+            )
+            advanceUntilIdle()
+
+            viewModel.limitHomeQuickCategories(maxSelectedCount = 1)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(RepresentativeGuideCategory.BATTERY),
+                viewModel.uiState.value.homeQuickCategories,
+            )
+        }
+
     private fun createViewModel(
         repository: FakeRepository,
         favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+        homeQuickCategoryRepository: FakeHomeQuickCategoryRepository = FakeHomeQuickCategoryRepository(),
     ) =
         ItemSearchViewModel(
             SearchDisposalItemGuidesUseCase(repository),
             GetDisposalCategoryGuidesUseCase(repository),
+            ToggleHomeQuickCategoryUseCase(homeQuickCategoryRepository),
+            LimitHomeQuickCategoriesUseCase(homeQuickCategoryRepository),
             ObserveFavoritesUseCase(favoriteRepository),
+            ObserveHomeQuickCategoriesUseCase(homeQuickCategoryRepository),
         )
 
     private fun sampleGuide(name: String): DisposalItemGuide =
@@ -392,6 +543,33 @@ class ItemSearchViewModelTest {
         ) {
             favorites.value =
                 favorites.value.filterNot { it.type == type && it.targetId == targetId }
+        }
+    }
+
+    private class FakeHomeQuickCategoryRepository(
+        initialCategories: List<DisposalCategory> = emptyList(),
+    ) : HomeQuickCategoryRepository {
+        private val categories = MutableStateFlow(initialCategories)
+        val toggledHomeQuickCategories = mutableListOf<DisposalCategory>()
+
+        override fun observeHomeQuickCategories(): Flow<List<DisposalCategory>> = categories
+
+        override suspend fun toggleHomeQuickCategory(
+            category: DisposalCategory,
+            maxSelectedCount: Int,
+        ) {
+            toggledHomeQuickCategories += category
+            if (category in categories.value) {
+                categories.value = categories.value - category
+            } else if (categories.value.size >= maxSelectedCount.coerceAtLeast(0)) {
+                return
+            } else {
+                categories.value = categories.value + category
+            }
+        }
+
+        override suspend fun limitHomeQuickCategories(maxSelectedCount: Int) {
+            categories.value = categories.value.take(maxSelectedCount.coerceAtLeast(0))
         }
     }
 }

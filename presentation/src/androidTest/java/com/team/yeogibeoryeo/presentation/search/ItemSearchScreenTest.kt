@@ -1,6 +1,9 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasImeAction
@@ -8,14 +11,19 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
+import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -41,8 +49,23 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNodeWithText("여기 버려").assertIsDisplayed()
         composeTestRule.onNodeWithText("품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("안내 사항").assertIsDisplayed()
+        composeTestRule.onNodeWithText("중소형 폐가전 수거함 안내").assertIsDisplayed()
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
         composeTestRule.onNodeWithText("종이").assertIsDisplayed()
+    }
+
+    @Test
+    fun useful_guide_목록에는_대표_분류_안내를_포함한다() {
+        assertEquals(
+            listOf(
+                ItemUsefulGuideType.SMALL_E_WASTE,
+                ItemUsefulGuideType.REGIONAL_GUIDE,
+                ItemUsefulGuideType.REPRESENTATIVE_CATEGORY,
+                ItemUsefulGuideType.ITEM_DICTIONARY,
+            ),
+            itemUsefulGuideContents.map { it.type },
+        )
     }
 
     @Test
@@ -245,6 +268,169 @@ class ItemSearchScreenTest {
         assertEquals(RepresentativeGuideCategory.PLASTIC, clickedCategory)
     }
 
+    @Test
+    fun quick_category는_처음에_adaptive_접힘_목록과_더보기를_보여주고_누르면_전체를_펼친다() {
+        composeTestRule.setContent {
+            var uiState by mutableStateOf(ItemSearchUiState())
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onQuickCategoryMoreClick = { count, _, _ ->
+                        uiState =
+                            uiState.copy(
+                                isQuickCategoryExpanded = true,
+                                quickCategoryFixedCollapsedItemCount = count,
+                            )
+                    },
+                    onQuickCategoryCollapseClick = {
+                        uiState = uiState.copy(isQuickCategoryExpanded = false)
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("더보기")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onAllNodesWithText(RepresentativeGuideCategory.METAL.displayName)
+            .assertCountEquals(0)
+
+        composeTestRule.onNodeWithText("더보기")
+            .performScrollTo()
+            .performClick()
+
+        composeTestRule.onNodeWithText(RepresentativeGuideCategory.METAL.displayName)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("접기")
+            .performScrollTo()
+            .assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("접기").performClick()
+
+        composeTestRule.onAllNodesWithText(RepresentativeGuideCategory.METAL.displayName)
+            .assertCountEquals(0)
+        composeTestRule.onNodeWithText("더보기").assertIsDisplayed()
+    }
+
+    @Test
+    fun 펼친_quick_category를_눌러도_펼침_상태를_유지한다() {
+        composeTestRule.setContent {
+            var uiState by mutableStateOf(ItemSearchUiState())
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onQuickCategoryMoreClick = { count, _, _ ->
+                        uiState =
+                            uiState.copy(
+                                isQuickCategoryExpanded = true,
+                                quickCategoryFixedCollapsedItemCount = count,
+                            )
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("더보기")
+            .performScrollTo()
+            .performClick()
+        composeTestRule.onNodeWithText(RepresentativeGuideCategory.METAL.displayName)
+            .performScrollTo()
+            .performClick()
+
+        composeTestRule.onNodeWithText(RepresentativeGuideCategory.METAL.displayName)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("접기").assertIsDisplayed()
+    }
+
+    @Test
+    fun useful_guide_배너를_누르면_선택한_안내를_전달한다() {
+        var clickedGuideType: ItemUsefulGuideType? = null
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onUsefulGuideClick = { clickedGuideType = it.type },
+                    onQuickCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("중소형 폐가전 수거함 안내").performClick()
+
+        assertEquals(ItemUsefulGuideType.SMALL_E_WASTE, clickedGuideType)
+    }
+
+    @Test
+    fun small_e_waste_안내_상세는_공식_안내_기준의_배출_조건을_보여준다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemUsefulGuideRoute(
+                    guideType = ItemUsefulGuideType.SMALL_E_WASTE,
+                    onBackClick = {},
+                    onSmallEWasteClick = {},
+                    onFreePickupGuideClick = { true },
+                    onOfficialSiteClick = { true },
+                    onRegionalGuideClick = {},
+                    onItemSearchClick = {},
+                    onBottomBarVisibilityChanged = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("어떻게 배출하나요?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("집 근처에 수거함이 있으면 가까운 장소에 가져가 배출할 수 있습니다.")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("배터리 분리가 가능한 제품은 배터리를 분리한 뒤 배출하세요.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("무상방문수거 안내 보기")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.swipeUpUntilTextExists("관련 사이트")
+        composeTestRule.onNodeWithText("관련 사이트")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("생활폐기물 분리배출 누리집 보기")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun small_e_waste_안내_상세에서_외부_링크_실패_시_스낵바를_보여준다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemUsefulGuideRoute(
+                    guideType = ItemUsefulGuideType.SMALL_E_WASTE,
+                    onBackClick = {},
+                    onSmallEWasteClick = {},
+                    onFreePickupGuideClick = { false },
+                    onOfficialSiteClick = { true },
+                    onRegionalGuideClick = {},
+                    onItemSearchClick = {},
+                    onBottomBarVisibilityChanged = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("무상방문수거 안내 보기")
+            .performScrollTo()
+            .performClick()
+
+        composeTestRule.onNodeWithText("공식 안내를 열 수 있는 앱이 없습니다. 브라우저 앱을 설치하거나 활성화한 뒤 다시 시도해주세요.")
+            .assertIsDisplayed()
+    }
+
     private fun sampleGuide(name: String): DisposalItemGuide =
         DisposalItemGuide(
             id = name,
@@ -258,4 +444,15 @@ class ItemSearchScreenTest {
             isRecyclable = true,
             relatedSpotTypes = emptyList(),
         )
+
+    private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.swipeUpUntilTextExists(
+        text: String,
+    ) {
+        repeat(5) {
+            if (onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) {
+                return
+            }
+            onRoot().performTouchInput { swipeUp() }
+        }
+    }
 }

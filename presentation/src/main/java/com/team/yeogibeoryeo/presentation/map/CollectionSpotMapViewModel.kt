@@ -8,6 +8,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavorit
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
@@ -38,6 +39,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val saveRecentCurrentLocationSpotsUseCase: SaveRecentCurrentLocationSpotsUseCase,
     private val observeFavoritesUseCase: ObserveFavoritesUseCase,
     private val toggleCollectionSpotFavoriteUseCase: ToggleCollectionSpotFavoriteUseCase,
+    private val calculateDistanceMeterUseCase: CalculateDistanceMeterUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
@@ -232,8 +234,10 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             if (!canApplyCurrentLocationResult()) return
 
-            updateSpotResult(spots)
-            saveRecentCurrentLocationSpotsUseCase(spots)
+            val spotsWithDistance = spots.withDistanceFrom(coordinate)
+
+            updateSpotResult(spotsWithDistance)
+            saveRecentCurrentLocationSpotsUseCase(spotsWithDistance)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
 
@@ -271,6 +275,12 @@ class CollectionSpotMapViewModel @Inject constructor(
     fun onSpotClick(spot: CollectionSpot) {
         _uiState.update {
             it.copy(selectedSpot = spot)
+        }
+    }
+
+    fun clearSelectedSpot() {
+        _uiState.update {
+            it.copy(selectedSpot = null)
         }
     }
 
@@ -327,10 +337,22 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    fun searchByCurrentLocationOnMapEntryIfPermitted() {
-        val currentState = uiState.value
+    fun searchByCurrentLocationOnMapEntryIfPermitted(initialSpotType: CollectionSpotType? = null) {
+        applyInitialSpotType(initialSpotType)
+
         if (
             hasRequestedInitialCurrentLocationSearch ||
+            uiState.value.hasSearched ||
+            uiState.value.isLoading ||
+            uiState.value.searchKeyword.isNotBlank()
+        ) {
+            return
+        }
+
+        hasRequestedInitialCurrentLocationSearch = true
+
+        val currentState = uiState.value
+        if (
             currentState.hasSearched ||
             currentState.isLoading ||
             currentState.searchKeyword.isNotBlank() ||
@@ -339,7 +361,6 @@ class CollectionSpotMapViewModel @Inject constructor(
             return
         }
 
-        hasRequestedInitialCurrentLocationSearch = true
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
             val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
@@ -356,6 +377,24 @@ class CollectionSpotMapViewModel @Inject constructor(
                     preservePreviousResultOnFailure = false,
                 )
             }
+        }
+    }
+
+    private fun applyInitialSpotType(type: CollectionSpotType?) {
+        if (type == null) return
+
+        val selectedTypes = setOf(type)
+        val filteredSpots = filterCollectionSpotsUseCase(
+            spots = originalSpots,
+            selectedTypes = selectedTypes,
+        )
+
+        _uiState.update {
+            it.copy(
+                selectedTypes = selectedTypes,
+                spots = filteredSpots,
+                selectedSpot = null,
+            )
         }
     }
 
@@ -615,6 +654,20 @@ class CollectionSpotMapViewModel @Inject constructor(
     private fun List<CollectionSpot>.withFavoriteState(): List<CollectionSpot> =
         map { spot ->
             spot.copy(isBookmarked = spot.id in favoriteSpotIds)
+        }
+
+    private fun List<CollectionSpot>.withDistanceFrom(
+        coordinate: Coordinate,
+    ): List<CollectionSpot> =
+        map { spot ->
+            val spotCoordinate = spot.coordinate ?: return@map spot
+
+            spot.copy(
+                distanceMeter = calculateDistanceMeterUseCase(
+                    from = coordinate,
+                    to = spotCoordinate,
+                ),
+            )
         }
 
     private fun FavoriteSpotMapMoveRequest.toCollectionSpot(): CollectionSpot =

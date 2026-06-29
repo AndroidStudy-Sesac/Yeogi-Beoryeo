@@ -6,7 +6,10 @@ import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalCategoryGuidesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.LimitHomeQuickCategoriesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.ObserveHomeQuickCategoriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.ToggleHomeQuickCategoryUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +31,10 @@ class ItemSearchViewModel
 constructor(
     private val searchDisposalItemGuidesUseCase: SearchDisposalItemGuidesUseCase,
     private val getDisposalCategoryGuidesUseCase: GetDisposalCategoryGuidesUseCase,
+    private val toggleHomeQuickCategoryUseCase: ToggleHomeQuickCategoryUseCase,
+    private val limitHomeQuickCategoriesUseCase: LimitHomeQuickCategoriesUseCase,
     observeFavoritesUseCase: ObserveFavoritesUseCase,
+    observeHomeQuickCategoriesUseCase: ObserveHomeQuickCategoriesUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ItemSearchUiState())
     val uiState: StateFlow<ItemSearchUiState> = _uiState.asStateFlow()
@@ -46,6 +52,17 @@ constructor(
                                 favorites
                                     .map { it.targetId }
                                     .toSet(),
+                        )
+                    }
+                }
+        }
+        viewModelScope.launch {
+            observeHomeQuickCategoriesUseCase()
+                .collect { categories ->
+                    _uiState.update { state ->
+                        state.copy(
+                            homeQuickCategories =
+                                categories.map(RepresentativeGuideCategory::fromDisposalCategory),
                         )
                     }
                 }
@@ -133,12 +150,7 @@ constructor(
         searchJob?.cancel()
         searchJob =
             viewModelScope.launch {
-                _uiState.update {
-                    it.copy(
-                        isLoading = true,
-                        errorMessageResId = null,
-                    )
-                }
+                _uiState.update { it.copy(errorMessageResId = null) }
 
                 runCatchingCancellable { getDisposalCategoryGuidesUseCase(category.disposalCategory) }
                     .onSuccess { guides ->
@@ -146,7 +158,6 @@ constructor(
                             guides.firstOrNull { it.name == category.representativeGuideName }
                                 ?: guides.firstOrNull()
 
-                        _uiState.update { it.copy(isLoading = false) }
                         if (representativeGuide != null) {
                             _events.emit(ItemSearchEvent.NavigateToGuide(representativeGuide))
                         }
@@ -160,6 +171,55 @@ constructor(
                         }
                     }
             }
+    }
+
+    fun expandQuickCategory(
+        collapsedItemCount: Int,
+        firstVisibleItemIndex: Int,
+        firstVisibleItemScrollOffset: Int,
+    ) {
+        _uiState.update {
+            it.copy(
+                isQuickCategoryExpanded = true,
+                quickCategoryFixedCollapsedItemCount = collapsedItemCount,
+                quickCategoryScrollRestoreIndex = firstVisibleItemIndex,
+                quickCategoryScrollRestoreOffset = firstVisibleItemScrollOffset,
+            )
+        }
+    }
+
+    fun collapseQuickCategory() {
+        _uiState.update {
+            it.copy(
+                isQuickCategoryExpanded = false,
+                quickCategoryScrollRestoreVersion = it.quickCategoryScrollRestoreVersion + 1,
+            )
+        }
+    }
+
+    fun resetQuickCategoryFixedCollapsedItemCountIfCollapsed() {
+        _uiState.update {
+            if (it.isQuickCategoryExpanded) {
+                it
+            } else {
+                it.copy(quickCategoryFixedCollapsedItemCount = 0)
+            }
+        }
+    }
+
+    fun toggleHomeQuickCategory(
+        category: RepresentativeGuideCategory,
+        maxSelectedCount: Int,
+    ) {
+        viewModelScope.launch {
+            toggleHomeQuickCategoryUseCase(category.disposalCategory, maxSelectedCount)
+        }
+    }
+
+    fun limitHomeQuickCategories(maxSelectedCount: Int) {
+        viewModelScope.launch {
+            limitHomeQuickCategoriesUseCase(maxSelectedCount)
+        }
     }
 
     private suspend fun <T> runCatchingCancellable(block: suspend () -> T): Result<T> =

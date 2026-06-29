@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
@@ -39,13 +41,14 @@ fun SpotBottomSheetContent(
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     val hasNoticeOrError = locationNotice != null ||
         locationNoticeMessage != null ||
         errorMessage != null
 
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxSize(),
     ) {
         SpotBottomSheetHeader(
             resultCount = spots.size,
@@ -54,6 +57,7 @@ fun SpotBottomSheetContent(
 
         if (hasSearched && !isLoading && !hasNoticeOrError) {
             SpotFilterChipRow(
+                types = MapSpotFilterChipPolicy.visibleTypes,
                 selectedTypes = selectedTypes,
                 onTypeClick = onTypeClick,
                 modifier = Modifier.padding(top = 4.dp),
@@ -100,9 +104,10 @@ fun SpotBottomSheetContent(
                     selectedSpot = selectedSpot,
                     onSpotClick = onSpotClick,
                     onSpotFavoriteClick = onSpotFavoriteClick,
+                    bottomContentPadding = bottomContentPadding,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = SpotBottomSheetListMaxHeight),
+                        .weight(1f),
                 )
             }
         }
@@ -157,12 +162,13 @@ fun SpotDetailBottomSheetContent(
     onRegionalGuideClick: (String) -> Unit = {},
     onCloseClick: () -> Unit,
     modifier: Modifier = Modifier,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
-            .padding(top = 16.dp, bottom = 8.dp),
+            .padding(top = 16.dp, bottom = 8.dp + bottomContentPadding),
     ) {
         SpotBottomCard(
             spot = spot,
@@ -345,8 +351,6 @@ private fun sampleSpotBottomSheetSpots(): List<CollectionSpot> {
         ),
     )
 }
-
-private val SpotBottomSheetListMaxHeight = 560.dp
 
 private fun MapLocationNoticeAction.toActionLabel(): String {
     return when (this) {

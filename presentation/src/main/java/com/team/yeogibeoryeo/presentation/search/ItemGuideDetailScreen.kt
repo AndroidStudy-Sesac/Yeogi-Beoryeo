@@ -15,10 +15,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -28,23 +24,29 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
+import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
 import com.team.yeogibeoryeo.presentation.search.components.containerColor
 import com.team.yeogibeoryeo.presentation.search.components.iconResId
 import com.team.yeogibeoryeo.presentation.search.components.iconTint
+import com.team.yeogibeoryeo.presentation.search.model.ItemGuideDetailAction
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
 fun ItemGuideDetailScreen(
     guide: DisposalItemGuide,
+    actions: List<ItemGuideDetailAction> = emptyList(),
     isFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onCollectionSpotTypeClick: (CollectionSpotType) -> Unit = {},
+    onOfficialGuideClick: (String) -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -52,30 +54,11 @@ fun ItemGuideDetailScreen(
     val size = ItemSearchLayoutDefaults.size
     val textStyles = itemGuideDetailTextStyles()
     val scrollState = rememberScrollState()
-    val onBottomBarVisibilityChangedState by rememberUpdatedState(onBottomBarVisibilityChanged)
 
-    LaunchedEffect(scrollState) {
-        var previousOffset = 0
-        onBottomBarVisibilityChangedState(true)
-
-        snapshotFlow { scrollState.value }
-            .collect { currentOffset ->
-                if (scrollState.maxValue > 0 && currentOffset >= scrollState.maxValue) {
-                    onBottomBarVisibilityChangedState(false)
-                    previousOffset = currentOffset
-                    return@collect
-                }
-
-                if (currentOffset == 0) {
-                    onBottomBarVisibilityChangedState(true)
-                } else if (currentOffset > previousOffset) {
-                    onBottomBarVisibilityChangedState(false)
-                } else if (currentOffset < previousOffset) {
-                    onBottomBarVisibilityChangedState(true)
-                }
-                previousOffset = currentOffset
-            }
-    }
+    BottomBarVisibilityOnScrollEffect(
+        scrollState = scrollState,
+        onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+    )
 
     val backActionDescription = stringResource(R.string.back_action)
     val favoriteActionDescription =
@@ -179,6 +162,14 @@ fun ItemGuideDetailScreen(
             }
         }
 
+        if (actions.isNotEmpty()) {
+            ItemGuideActionButtons(
+                actions = actions,
+                onCollectionSpotTypeClick = onCollectionSpotTypeClick,
+                onOfficialGuideClick = onOfficialGuideClick,
+            )
+        }
+
         if (guide.detailSections.isNotEmpty()) {
             guide.detailSections.forEach { section ->
                 SectionCard(
@@ -229,5 +220,38 @@ fun ItemGuideDetailScreen(
             title = stringResource(R.string.local_disposal_notice_title),
             lines = listOf(stringResource(R.string.local_disposal_notice)),
         )
+    }
+}
+
+@Composable
+private fun ItemGuideActionButtons(
+    actions: List<ItemGuideDetailAction>,
+    onCollectionSpotTypeClick: (CollectionSpotType) -> Unit,
+    onOfficialGuideClick: (String) -> Unit,
+) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+        actions.forEach { action ->
+            when (action) {
+                is ItemGuideDetailAction.MapSpot -> {
+                    ItemGuideActionButton(
+                        label = stringResource(action.labelResId),
+                        iconResId = CommonR.drawable.ic_action_search,
+                        onClick = { onCollectionSpotTypeClick(action.type) },
+                        prominent = true,
+                    )
+                }
+
+                is ItemGuideDetailAction.OfficialGuide -> {
+                    ItemGuideActionButton(
+                        label = stringResource(action.labelResId),
+                        iconResId = R.drawable.ic_disposal_route_report,
+                        onClick = { onOfficialGuideClick(action.url) },
+                        prominent = false,
+                    )
+                }
+            }
+        }
     }
 }

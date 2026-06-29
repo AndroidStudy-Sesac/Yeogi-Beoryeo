@@ -1,5 +1,10 @@
 package com.team.yeogibeoryeo.navigation
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -16,11 +21,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,15 +41,23 @@ import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
+import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
+import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
+import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 
 @Composable
 fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
+    val currentContext by rememberUpdatedState(LocalContext.current)
+    val layoutDirection = LocalLayoutDirection.current
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentDestination = currentBackStackEntry?.destination
+    val isMapScreen = currentDestination?.hasRoute<MapRoute>() == true
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
+    val isUsefulGuideScreen = currentDestination?.hasRoute<ItemUsefulGuideRoute>() == true
+    val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(currentBackStackEntry) {
@@ -52,13 +68,13 @@ fun YeogiBeoryeoNavHost(
         modifier = modifier,
         bottomBar = {
             val enterTransition =
-                if (isItemDetailScreen) {
+                if (hidesBottomBarOnScroll) {
                     fadeIn() + expandVertically(expandFrom = Alignment.Bottom) + slideInVertically { it }
                 } else {
                     EnterTransition.None
                 }
             val exitTransition =
-                if (isItemDetailScreen) {
+                if (hidesBottomBarOnScroll) {
                     fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom) + slideOutVertically { it }
                 } else {
                     ExitTransition.None
@@ -79,17 +95,29 @@ fun YeogiBeoryeoNavHost(
             }
         },
     ) { innerPadding ->
+        val navHostPadding = if (isMapScreen && !isBottomBarVisible) {
+            PaddingValues(
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                top = 0.dp,
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = 0.dp,
+            )
+        } else {
+            innerPadding
+        }
+
         NavHost(
             navController = navController,
             startDestination = ItemSearchRoute(),
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(navHostPadding),
         ) {
             composable<MapRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<MapRoute>()
                 CollectionSpotMapScreen(
+                    initialSpotType = route.toInitialCollectionSpotTypeOrNull(),
                     favoriteSpotMoveRequest = route.toFavoriteSpotMapMoveRequest(),
                     onBottomBarVisibilityChanged = { isVisible ->
-                        if (currentDestination?.hasRoute<MapRoute>() == true) {
+                        if (isMapScreen) {
                             isBottomBarVisible = isVisible
                         }
                     },
@@ -125,7 +153,7 @@ fun YeogiBeoryeoNavHost(
                     },
                     onCollectionSpotClick = { request ->
                         navController.navigate(request.toMapRoute()) {
-                            popUpTo(navController.graph.findStartDestination().id) {
+                            popUpTo<ItemSearchRoute> {
                                 saveState = true
                             }
                             launchSingleTop = true
@@ -134,7 +162,10 @@ fun YeogiBeoryeoNavHost(
                     },
                     onRegionalGuideClick = { targetId ->
                         navController.navigate(
-                            RegionalGuideRoute(initialFavoriteTargetId = targetId),
+                            RegionalGuideRoute(
+                                initialFavoriteTargetId = targetId,
+                                entrySource = RegionalGuideEntrySource.FAVORITES,
+                            ),
                         )
                     },
                 )
@@ -152,6 +183,69 @@ fun YeogiBeoryeoNavHost(
                             ),
                         )
                     },
+                    onUsefulGuideClick = { guide ->
+                        navController.navigate(ItemUsefulGuideRoute(guide.type.name))
+                    },
+                    onRegionalGuideSummaryClick = { targetId ->
+                        navController.navigate(
+                            RegionalGuideRoute(
+                                initialFavoriteTargetId = targetId,
+                            ),
+                        )
+                    },
+                    onQuickCategorySettingsClick = { maxSelectedCount ->
+                        navController.navigate(
+                            QuickCategorySettingsRoute(maxSelectedCount = maxSelectedCount),
+                        )
+                    },
+                )
+            }
+
+            composable<QuickCategorySettingsRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<QuickCategorySettingsRoute>()
+                QuickCategorySettingsScreenRoute(
+                    maxSelectedCount = route.maxSelectedCount,
+                    onBackClick = navController::popBackStack,
+                )
+            }
+
+            composable<ItemUsefulGuideRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ItemUsefulGuideRoute>()
+                ItemUsefulGuideScreenRoute(
+                    guideType = ItemUsefulGuideType.valueOf(route.guideType),
+                    onBackClick = navController::popBackStack,
+                    onSmallEWasteClick = { type ->
+                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    },
+                    onFreePickupGuideClick = {
+                        runCatching {
+                            currentContext.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(FreePickupGuideUrl)),
+                            )
+                        }.isSuccess
+                    },
+                    onOfficialSiteClick = { url ->
+                        runCatching {
+                            currentContext.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                            )
+                        }.isSuccess
+                    },
+                    onRegionalGuideClick = {
+                        navController.navigate(RegionalGuideRoute()) {
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    },
+                    onItemSearchClick = navController::popBackStack,
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (isUsefulGuideScreen) {
+                            isBottomBarVisible = isVisible
+                        }
+                    },
                 )
             }
 
@@ -160,6 +254,12 @@ fun YeogiBeoryeoNavHost(
                 ItemGuideDetailScreenRoute(
                     guideId = route.guideId,
                     onBackClick = navController::popBackStack,
+                    onCollectionSpotTypeClick = { type ->
+                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    },
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (isItemDetailScreen) {
                             isBottomBarVisible = isVisible
@@ -170,3 +270,5 @@ fun YeogiBeoryeoNavHost(
         }
     }
 }
+
+private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"

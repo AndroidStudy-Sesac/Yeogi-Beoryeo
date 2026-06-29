@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSna
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.usecase.ClassifyRegionSearchInputUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
@@ -16,6 +17,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
+import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
@@ -24,6 +26,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -38,6 +41,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class RegionalGuideViewModel @Inject constructor(
+    private val classifyRegionSearchInputUseCase: ClassifyRegionSearchInputUseCase,
     private val resolveRegionFromKeywordUseCase: ResolveRegionFromKeywordUseCase,
     private val extractRegionFromAddressUseCase: ExtractRegionFromAddressUseCase,
     private val getRegionalDisposalGuideUseCase: GetRegionalDisposalGuideUseCase,
@@ -203,8 +207,6 @@ class RegionalGuideViewModel @Inject constructor(
     fun onRegionCandidateSelected(candidate: RegionSearchCandidateUiModel) {
         if (!candidate.isValid) return
 
-        _searchKeyword.value = candidate.displayText
-
         val region = candidate.toRegion()
         searchBySelectedRegion(
             query = candidate.displayText,
@@ -260,6 +262,11 @@ class RegionalGuideViewModel @Inject constructor(
                 query = trimmedKeyword,
                 message = "검색할 지역명을 입력해주세요."
             )
+            return
+        }
+
+        if (classifyRegionSearchInputUseCase(trimmedKeyword) == RegionSearchInputType.ADDRESS) {
+            loadByAddress(trimmedKeyword)
             return
         }
 
@@ -323,6 +330,7 @@ class RegionalGuideViewModel @Inject constructor(
         lastRequest = RegionalGuideRequest.Address(trimmedAddress)
 
         guideLookupJob = viewModelScope.launch {
+            clearSelectedRegion()
             _uiState.value = RegionalGuideUiState.Loading(query = trimmedAddress)
 
             try {
@@ -642,7 +650,7 @@ class RegionalGuideViewModel @Inject constructor(
                         sigungu = guide.region.sigungu,
                         eupmyeondong = guide.region.eupmyeondong
                     )
-                }
+                }.sortedWith(regionalGuideCandidateDisplayComparator)
             )
 
             RegionalGuideLookupResult.NotFound -> RegionalGuideUiState.Empty(

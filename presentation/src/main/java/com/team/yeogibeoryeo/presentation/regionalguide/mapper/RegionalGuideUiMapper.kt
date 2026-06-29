@@ -5,12 +5,13 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.takeIfRegionalGuideDisplayValue
 
 fun RegionalDisposalGuide.toUiModel(): RegionalGuideUiModel {
     return RegionalGuideUiModel(
         regionName = displayRegionName(),
-        managementZoneName = managementZoneName.takeIfNotBlank(),
-        targetRegionName = targetRegionName.takeIfNotBlank(),
+        managementZoneName = managementZoneName,
+        targetRegionName = targetRegionName,
         disposalPlaceType = disposalPlaceType.takeIfNotBlank(),
         disposalPlaceDescription = disposalPlaceDescription.takeIfNotBlank(),
         schedules = schedules
@@ -50,8 +51,8 @@ private fun RegionalDisposalGuide.displayRegionName(): String {
         .joinToString(" ")
 
     return regionName.ifBlank {
-        targetRegionName
-            ?: managementZoneName
+        targetRegionName.takeIfRegionalGuideDisplayValue()
+            ?: managementZoneName.takeIfRegionalGuideDisplayValue()
             ?: "지역 정보"
     }
 }

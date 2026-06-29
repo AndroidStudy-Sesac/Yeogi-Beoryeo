@@ -10,6 +10,8 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleFavoriteUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.model.ItemGuideDetailAction
+import com.team.yeogibeoryeo.presentation.search.model.toDetailActions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -49,7 +51,10 @@ constructor(
                     val guide = getDisposalItemGuideUseCase(guideId)
 
                     if (guide != null) {
-                        _uiState.value = ItemGuideDetailUiState.Success(guide = guide)
+                        _uiState.value = ItemGuideDetailUiState.Success(
+                            guide = guide,
+                            actions = guide.toDetailActions(),
+                        )
                         observeFavorite(guide)
                     } else {
                         _uiState.value =
@@ -89,8 +94,24 @@ constructor(
                 }
             val latestState = uiState.value
             if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
-                _events.emit(ItemGuideDetailEvent.ShowFavoriteMessage(messageResId))
+                _events.emit(
+                    ItemGuideDetailEvent.ShowMessage(
+                        messageResId = messageResId,
+                        icon = ItemGuideDetailMessageIcon.Favorite,
+                    ),
+                )
             }
+        }
+    }
+
+    fun showOfficialGuideOpenFailedMessage() {
+        viewModelScope.launch {
+            _events.emit(
+                ItemGuideDetailEvent.ShowMessage(
+                    messageResId = R.string.item_guide_action_open_failed_message,
+                    icon = ItemGuideDetailMessageIcon.Warning,
+                ),
+            )
         }
     }
 
@@ -117,6 +138,7 @@ sealed interface ItemGuideDetailUiState {
     data class Success(
         val guide: DisposalItemGuide,
         val isFavorite: Boolean = false,
+        val actions: List<ItemGuideDetailAction> = emptyList(),
     ) : ItemGuideDetailUiState
 
     data class Error(
@@ -125,7 +147,13 @@ sealed interface ItemGuideDetailUiState {
 }
 
 sealed interface ItemGuideDetailEvent {
-    data class ShowFavoriteMessage(
+    data class ShowMessage(
         @param:StringRes val messageResId: Int,
+        val icon: ItemGuideDetailMessageIcon,
     ) : ItemGuideDetailEvent
+}
+
+enum class ItemGuideDetailMessageIcon {
+    Favorite,
+    Warning,
 }

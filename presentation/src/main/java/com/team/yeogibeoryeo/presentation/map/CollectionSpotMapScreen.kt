@@ -3,24 +3,33 @@ package com.team.yeogibeoryeo.presentation.map
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
@@ -43,6 +52,7 @@ import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 
 @Composable
 fun CollectionSpotMapScreen(
+    initialSpotType: CollectionSpotType? = null,
     favoriteSpotMoveRequest: FavoriteSpotMapMoveRequest? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onRegionalGuideClick: (String) -> Unit = {},
@@ -50,6 +60,7 @@ fun CollectionSpotMapScreen(
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val hasFineLocationPermission = rememberFineLocationPermissionGranted()
     var hasGrantedLocationPermissionInSession by rememberSaveable {
@@ -60,6 +71,8 @@ fun CollectionSpotMapScreen(
     }
     val isLocationPermissionGranted =
         hasFineLocationPermission || hasGrantedLocationPermissionInSession
+    val currentLocationNotice by rememberUpdatedState(uiState.locationNotice)
+    val currentHasFineLocationPermission by rememberUpdatedState(hasFineLocationPermission)
     var locationTrackingMode by remember {
         mutableStateOf(LocationTrackingMode.None)
     }
@@ -75,6 +88,26 @@ fun CollectionSpotMapScreen(
         previousFineLocationPermission = hasFineLocationPermission
     }
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (
+                event == Lifecycle.Event.ON_RESUME &&
+                currentHasFineLocationPermission &&
+                currentLocationNotice.shouldRetryCurrentLocationSearchOnResume()
+            ) {
+                hasGrantedLocationPermissionInSession = true
+                previousFineLocationPermission = true
+                locationTrackingMode = LocationTrackingMode.NoFollow
+                viewModel.searchByCurrentLocation()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val requestCurrentLocationSearch = rememberCurrentLocationSearchRequester(
         onGranted = {
             hasGrantedLocationPermissionInSession = true
@@ -84,10 +117,10 @@ fun CollectionSpotMapScreen(
         },
         onDenied = viewModel::onLocationPermissionDenied,
     )
-    LaunchedEffect(favoriteSpotMoveRequest) {
+    LaunchedEffect(favoriteSpotMoveRequest, initialSpotType) {
         val request = favoriteSpotMoveRequest
         if (request == null) {
-            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(initialSpotType)
         } else {
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.showFavoriteSpot(request)
@@ -112,6 +145,7 @@ fun CollectionSpotMapScreen(
         },
         onTypeClick = viewModel::onSpotTypeClick,
         onSpotClick = viewModel::onSpotClick,
+        onSpotDetailDismiss = viewModel::clearSelectedSpot,
         onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
         onRegionalGuideClick = onRegionalGuideClick,
@@ -132,6 +166,7 @@ private fun CollectionSpotMapContent(
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onTypeClick: (CollectionSpotType) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
+    onSpotDetailDismiss: () -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
     onBottomBarVisibilityChanged: (Boolean) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
@@ -158,6 +193,18 @@ private fun CollectionSpotMapContent(
         !isLocationPermissionGranted -> LocationTrackingMode.None
         locationTrackingMode == LocationTrackingMode.None -> LocationTrackingMode.NoFollow
         else -> locationTrackingMode
+    }
+    val hasResultListToReturn = uiState.hasSearched || uiState.spots.isNotEmpty()
+
+    BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
+        onSpotDetailDismiss()
+        mapUiMode = if (hasResultListToReturn) {
+            sheetLevel = MapSheetLevel.Peek
+            MapUiMode.ResultList
+        } else {
+            sheetLevel = MapSheetLevel.Hidden
+            MapUiMode.Browsing
+        }
     }
 
     LaunchedEffect(isLocationPermissionGranted) {
@@ -228,6 +275,11 @@ private fun CollectionSpotMapContent(
     BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
     ) {
+        val density = LocalDensity.current
+        val navigationBarBottomPadding = with(density) {
+            WindowInsets.navigationBars.getBottom(density).toDp()
+        }
+
         CollectionSpotNaverMap(
             spots = uiState.spots,
             selectedSpot = uiState.selectedSpot,
@@ -347,9 +399,11 @@ private fun CollectionSpotMapContent(
                             onFavoriteClick = onSpotFavoriteClick,
                             onRegionalGuideClick = onRegionalGuideClick,
                             onCloseClick = {
+                                onSpotDetailDismiss()
                                 mapUiMode = MapUiMode.ResultList
                                 sheetLevel = MapSheetLevel.Peek
                             },
+                            bottomContentPadding = navigationBarBottomPadding,
                         )
                     }
 
@@ -373,6 +427,7 @@ private fun CollectionSpotMapContent(
                                 sheetRevealRequest += 1
                                 onSpotClick(spot)
                             },
+                            bottomContentPadding = navigationBarBottomPadding,
                         )
                     }
                 }
@@ -406,6 +461,7 @@ private fun myLocationButtonBottomPadding(
         MapSheetLevel.Hidden -> MyLocationButtonBottomPadding
         MapSheetLevel.Peek -> MapResultBottomSheetPeekHeight + MyLocationButtonBottomPadding
         MapSheetLevel.Medium -> MapSpotDetailBottomSheetPeekHeight + MyLocationButtonBottomPadding
+        MapSheetLevel.Half,
         MapSheetLevel.Expanded -> MyLocationButtonBottomPadding
     }
 }
@@ -430,6 +486,7 @@ private fun CollectionSpotMapContentPreview() {
                 onLocationNoticeActionClick = {},
                 onTypeClick = {},
                 onSpotClick = {},
+                onSpotDetailDismiss = {},
                 onSpotFavoriteClick = {},
                 onBottomBarVisibilityChanged = {},
                 onRegionalGuideClick = {},
@@ -463,4 +520,10 @@ private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
             Settings.ACTION_LOCATION_SOURCE_SETTINGS,
         )
     }
+}
+
+private fun MapLocationNotice?.shouldRetryCurrentLocationSearchOnResume(): Boolean {
+    return this == MapLocationNotices.PermissionDenied ||
+        this == MapLocationNotices.LocationServiceDisabled ||
+        this == MapLocationNotices.CurrentLocationUnavailable
 }

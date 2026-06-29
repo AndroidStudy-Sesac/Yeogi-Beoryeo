@@ -6,6 +6,8 @@ import androidx.compose.ui.unit.dp
 internal object ItemSearchLayoutDefaults {
     val spacing = ItemSearchSpacingDefaults
     val size = ItemSearchSizeDefaults
+    val fraction = ItemSearchFractionDefaults
+    val alpha = ItemSearchAlphaDefaults
     val stroke = ItemSearchStrokeDefaults
     val elevation = ItemSearchElevationDefaults
 }
@@ -29,9 +31,24 @@ internal object ItemSearchSizeDefaults {
     val searchFieldHeight: Dp = 56.dp
     val categoryTile: Dp = 64.dp
     val categoryCell: Dp = 72.dp
+    val categorySelectionBadge: Dp = 18.dp
+    val categorySelectionBadgeIcon: Dp = 12.dp
+    val categorySelectionBadgeOffset: Dp = 4.dp
+    val usefulGuideBannerCardHeight: Dp = 136.dp
+    val usefulGuidePageIndicatorActiveWidth: Dp = 24.dp
+    val usefulGuidePageIndicatorInactiveSize: Dp = 8.dp
+    val usefulGuidePageIndicatorHeight: Dp = 8.dp
     val detailIconContainer: Dp = 88.dp
     val infoLabelMinWidth: Dp = 88.dp
     val infoLabelMaxWidth: Dp = 112.dp
+}
+
+internal object ItemSearchFractionDefaults {
+    const val usefulGuideBannerWidth = 0.94f
+}
+
+internal object ItemSearchAlphaDefaults {
+    const val usefulGuidePageIndicatorInactive = 0.32f
 }
 
 internal object ItemSearchStrokeDefaults {

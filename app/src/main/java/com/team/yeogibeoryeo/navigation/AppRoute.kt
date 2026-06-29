@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class MapRoute(
+    val initialSpotType: String? = null,
     val favoriteSpotRequestId: String? = null,
     val favoriteSpotTargetId: String? = null,
     val favoriteSpotName: String? = null,
@@ -19,7 +20,13 @@ data class RegionalGuideRoute(
     val initialKeyword: String? = null,
     val initialAddress: String? = null,
     val initialFavoriteTargetId: String? = null,
+    val entrySource: RegionalGuideEntrySource? = null,
 )
+
+@Serializable
+enum class RegionalGuideEntrySource {
+    FAVORITES,
+}
 
 internal fun String.toRegionalGuideAddressRouteOrNull(): RegionalGuideRoute? =
     trim()
@@ -32,6 +39,16 @@ data object FavoritesRoute
 @Serializable
 data class ItemSearchRoute(
     val initialQuery: String? = null,
+)
+
+@Serializable
+data class QuickCategorySettingsRoute(
+    val maxSelectedCount: Int,
+)
+
+@Serializable
+data class ItemUsefulGuideRoute(
+    val guideType: String,
 )
 
 @Serializable

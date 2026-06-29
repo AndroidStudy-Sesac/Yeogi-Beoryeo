@@ -24,3 +24,11 @@ internal val quickCategoryOrder =
         RepresentativeGuideCategory.HAZARDOUS,
         RepresentativeGuideCategory.OTHER,
     )
+
+internal fun orderedQuickCategories(
+    selectedCategories: List<RepresentativeGuideCategory>,
+): List<RepresentativeGuideCategory> {
+    val selected = selectedCategories.distinct().filter { it in quickCategoryOrder }
+
+    return selected + quickCategoryOrder.filterNot { it in selected }
+}

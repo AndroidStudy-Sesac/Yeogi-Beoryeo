@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,15 +33,23 @@ import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
+import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
+import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
 fun ItemSearchRoute(
     initialQuery: String? = null,
     onGuideSelected: (DisposalItemGuide) -> Unit,
+    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
+    onRegionalGuideSummaryClick: (String) -> Unit,
+    onQuickCategorySettingsClick: (Int) -> Unit,
     viewModel: ItemSearchViewModel = hiltViewModel(),
+    regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val regionalGuideSummaryState by
+        regionalGuideSummaryViewModel.uiState.collectAsStateWithLifecycle()
     val currentOnGuideSelected by rememberUpdatedState(onGuideSelected)
 
     val searchResultListState = rememberLazyListState()
@@ -80,10 +87,19 @@ fun ItemSearchRoute(
 
     ItemSearchScreen(
         uiState = uiState,
+        regionalGuideSummaryState = regionalGuideSummaryState,
         onQueryChange = viewModel::onQueryChange,
         onSearchClick = viewModel::search,
         onGuideClick = onGuideSelected,
+        onUsefulGuideClick = onUsefulGuideClick,
+        onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
+        onRegionalGuideSummaryRetryClick = regionalGuideSummaryViewModel::retry,
         onQuickCategoryClick = viewModel::openCategoryGuide,
+        onQuickCategoryMoreClick = viewModel::expandQuickCategory,
+        onQuickCategoryCollapseClick = viewModel::collapseQuickCategory,
+        onQuickCategoryViewportChanged =
+            viewModel::resetQuickCategoryFixedCollapsedItemCountIfCollapsed,
+        onQuickCategorySettingsClick = onQuickCategorySettingsClick,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
     )
@@ -97,6 +113,14 @@ fun ItemSearchScreen(
     onGuideClick: (DisposalItemGuide) -> Unit,
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
+    regionalGuideSummaryState: HomeRegionalGuideSummaryUiState = HomeRegionalGuideSummaryUiState.NoFavorite,
+    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
+    onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSummaryRetryClick: () -> Unit = {},
+    onQuickCategoryMoreClick: (Int, Int, Int) -> Unit = { _, _, _ -> },
+    onQuickCategoryCollapseClick: () -> Unit = {},
+    onQuickCategoryViewportChanged: () -> Unit = {},
+    onQuickCategorySettingsClick: (Int) -> Unit = {},
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
@@ -105,7 +129,23 @@ fun ItemSearchScreen(
             query = uiState.query,
             onQueryChange = onQueryChange,
             onSearchClick = onSearchClick,
+            onUsefulGuideClick = onUsefulGuideClick,
+            regionalGuideSummaryState = regionalGuideSummaryState,
+            onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
+            onRegionalGuideSummaryRetryClick = onRegionalGuideSummaryRetryClick,
             onQuickCategoryClick = onQuickCategoryClick,
+            onQuickCategorySettingsClick = onQuickCategorySettingsClick,
+            quickCategories = uiState.quickCategories,
+            selectedQuickCategories = uiState.homeQuickCategories.toSet(),
+            isQuickCategoryExpanded = uiState.isQuickCategoryExpanded,
+            quickCategoryFixedCollapsedItemCount =
+                uiState.quickCategoryFixedCollapsedItemCount,
+            quickCategoryScrollRestoreIndex = uiState.quickCategoryScrollRestoreIndex,
+            quickCategoryScrollRestoreOffset = uiState.quickCategoryScrollRestoreOffset,
+            quickCategoryScrollRestoreVersion = uiState.quickCategoryScrollRestoreVersion,
+            onQuickCategoryMoreClick = onQuickCategoryMoreClick,
+            onQuickCategoryCollapseClick = onQuickCategoryCollapseClick,
+            onQuickCategoryViewportChanged = onQuickCategoryViewportChanged,
             listState = categoryListState,
             modifier = modifier,
         )

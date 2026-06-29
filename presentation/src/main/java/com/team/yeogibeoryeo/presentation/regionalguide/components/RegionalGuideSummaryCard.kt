@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.takeIfRegionalGuideDisplayValue
 import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
@@ -78,14 +79,14 @@ fun RegionalGuideSummaryCard(
                 }
             }
 
-            guide.managementZoneName?.let { managementZoneName ->
+            guide.managementZoneName.takeIfRegionalGuideDisplayValue()?.let { managementZoneName ->
                 RegionalGuideInfoRow(
                     title = "관리구역",
                     value = managementZoneName
                 )
             }
 
-            guide.targetRegionName?.let { targetRegionName ->
+            guide.targetRegionName.takeIfRegionalGuideDisplayValue()?.let { targetRegionName ->
                 RegionalGuideInfoRow(
                     title = "대상지역",
                     value = targetRegionName
