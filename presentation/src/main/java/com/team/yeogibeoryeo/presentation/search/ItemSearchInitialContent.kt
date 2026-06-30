@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
@@ -40,6 +42,7 @@ import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryU
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun ItemSearchInitialContent(
@@ -63,6 +66,7 @@ fun ItemSearchInitialContent(
     onQuickCategoryMoreClick: (Int, Int, Int) -> Unit,
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
+    onSettingsClick: (() -> Unit)?,
     listState: LazyListState,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
@@ -112,7 +116,7 @@ fun ItemSearchInitialContent(
             verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
         ) {
             item {
-                ItemSearchHeader()
+                ItemSearchHeader(onSettingsClick = onSettingsClick)
             }
 
             item {
@@ -211,23 +215,39 @@ fun ItemSearchInitialContent(
 @Composable
 fun ItemSearchHeader(
     modifier: Modifier = Modifier,
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
 
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(spacing.xs),
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+        verticalAlignment = Alignment.Top,
     ) {
-        Text(
-            text = stringResource(R.string.item_search_title),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(R.string.item_search_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(spacing.xs),
+        ) {
+            Text(
+                text = stringResource(R.string.item_search_title),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.item_search_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (onSettingsClick != null) {
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    painter = painterResource(id = CommonR.drawable.ic_action_settings),
+                    contentDescription = stringResource(R.string.settings_action),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
     }
 }

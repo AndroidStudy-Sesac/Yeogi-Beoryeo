@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.navigation
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -35,6 +36,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.team.yeogibeoryeo.BuildConfig
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
@@ -44,11 +46,15 @@ import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchSc
 import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
+import com.team.yeogibeoryeo.presentation.settings.SettingsDetailRoute as SettingsDetailScreenRoute
+import com.team.yeogibeoryeo.presentation.settings.SettingsDetailType
+import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScreenRoute
 
 @Composable
 fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    onClearLocationCacheClick: () -> Unit = {},
 ) {
     val currentContext by rememberUpdatedState(LocalContext.current)
     val layoutDirection = LocalLayoutDirection.current
@@ -198,6 +204,9 @@ fun YeogiBeoryeoNavHost(
                             QuickCategorySettingsRoute(maxSelectedCount = maxSelectedCount),
                         )
                     },
+                    onSettingsClick = {
+                        navController.navigate(SettingsRoute)
+                    },
                 )
             }
 
@@ -206,6 +215,28 @@ fun YeogiBeoryeoNavHost(
                 QuickCategorySettingsScreenRoute(
                     maxSelectedCount = route.maxSelectedCount,
                     onBackClick = navController::popBackStack,
+                )
+            }
+
+            composable<SettingsRoute> {
+                SettingsScreenRoute(
+                    onBackClick = navController::popBackStack,
+                    onDetailClick = { detailType ->
+                        navController.navigate(SettingsDetailRoute(detailType.toRouteType()))
+                    },
+                )
+            }
+
+            composable<SettingsDetailRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<SettingsDetailRoute>()
+                SettingsDetailScreenRoute(
+                    detailType = route.detailType.toScreenType(),
+                    appVersionName = BuildConfig.VERSION_NAME,
+                    onBackClick = navController::popBackStack,
+                    onOpenAppSettingsClick = {
+                        currentContext.openAppSettings()
+                    },
+                    onClearLocationCacheClick = onClearLocationCacheClick,
                 )
             }
 
@@ -272,3 +303,33 @@ fun YeogiBeoryeoNavHost(
 }
 
 private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
+
+private fun SettingsDetailType.toRouteType(): SettingsDetailRouteType =
+    when (this) {
+        SettingsDetailType.Notice -> SettingsDetailRouteType.Notice
+        SettingsDetailType.Contact -> SettingsDetailRouteType.Contact
+        SettingsDetailType.AppInfo -> SettingsDetailRouteType.AppInfo
+        SettingsDetailType.LocationPermission -> SettingsDetailRouteType.LocationPermission
+        SettingsDetailType.Terms -> SettingsDetailRouteType.Terms
+        SettingsDetailType.Sources -> SettingsDetailRouteType.Sources
+        SettingsDetailType.Cache -> SettingsDetailRouteType.Cache
+    }
+
+private fun SettingsDetailRouteType.toScreenType(): SettingsDetailType =
+    when (this) {
+        SettingsDetailRouteType.Notice -> SettingsDetailType.Notice
+        SettingsDetailRouteType.Contact -> SettingsDetailType.Contact
+        SettingsDetailRouteType.AppInfo -> SettingsDetailType.AppInfo
+        SettingsDetailRouteType.LocationPermission -> SettingsDetailType.LocationPermission
+        SettingsDetailRouteType.Terms -> SettingsDetailType.Terms
+        SettingsDetailRouteType.Sources -> SettingsDetailType.Sources
+        SettingsDetailRouteType.Cache -> SettingsDetailType.Cache
+    }
+
+private fun android.content.Context.openAppSettings() {
+    val uri = Uri.fromParts("package", packageName, null)
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
+    runCatching {
+        startActivity(intent)
+    }
+}

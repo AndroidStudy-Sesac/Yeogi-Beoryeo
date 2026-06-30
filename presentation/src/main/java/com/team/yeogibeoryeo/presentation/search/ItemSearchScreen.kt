@@ -44,6 +44,7 @@ fun ItemSearchRoute(
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onRegionalGuideSummaryClick: (String) -> Unit,
     onQuickCategorySettingsClick: (Int) -> Unit,
+    onSettingsClick: () -> Unit,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -100,6 +101,7 @@ fun ItemSearchRoute(
         onQuickCategoryViewportChanged =
             viewModel::resetQuickCategoryFixedCollapsedItemCountIfCollapsed,
         onQuickCategorySettingsClick = onQuickCategorySettingsClick,
+        onSettingsClick = onSettingsClick,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
     )
@@ -121,6 +123,7 @@ fun ItemSearchScreen(
     onQuickCategoryCollapseClick: () -> Unit = {},
     onQuickCategoryViewportChanged: () -> Unit = {},
     onQuickCategorySettingsClick: (Int) -> Unit = {},
+    onSettingsClick: (() -> Unit)? = null,
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
@@ -146,6 +149,7 @@ fun ItemSearchScreen(
             onQuickCategoryMoreClick = onQuickCategoryMoreClick,
             onQuickCategoryCollapseClick = onQuickCategoryCollapseClick,
             onQuickCategoryViewportChanged = onQuickCategoryViewportChanged,
+            onSettingsClick = onSettingsClick,
             listState = categoryListState,
             modifier = modifier,
         )
