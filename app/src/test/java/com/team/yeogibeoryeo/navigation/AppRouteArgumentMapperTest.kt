@@ -5,7 +5,7 @@ import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class AppRouteTypeMapperTest {
+class AppRouteArgumentMapperTest {
     @Test
     fun `수거 장소 타입은 route 타입으로 변환한 뒤 다시 복원된다`() {
         CollectionSpotType.entries.forEach { type ->
