@@ -54,6 +54,7 @@ import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScre
 fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    onClearLocationCacheClick: () -> Unit = {},
 ) {
     val currentContext by rememberUpdatedState(LocalContext.current)
     val layoutDirection = LocalLayoutDirection.current
@@ -235,7 +236,7 @@ fun YeogiBeoryeoNavHost(
                     onOpenAppSettingsClick = {
                         currentContext.openAppSettings()
                     },
-                    onClearLocationCacheClick = ::clearLocationCache,
+                    onClearLocationCacheClick = onClearLocationCacheClick,
                 )
             }
 
@@ -332,5 +333,3 @@ private fun android.content.Context.openAppSettings() {
         startActivity(intent)
     }
 }
-
-private fun clearLocationCache() = Unit
