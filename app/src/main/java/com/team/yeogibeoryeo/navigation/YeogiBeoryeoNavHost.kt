@@ -190,7 +190,7 @@ fun YeogiBeoryeoNavHost(
                         )
                     },
                     onUsefulGuideClick = { guide ->
-                        navController.navigate(ItemUsefulGuideRoute(guide.type.name))
+                        navController.navigate(ItemUsefulGuideRoute(guide.type.toRouteType()))
                     },
                     onRegionalGuideSummaryClick = { targetId ->
                         navController.navigate(
@@ -243,10 +243,10 @@ fun YeogiBeoryeoNavHost(
             composable<ItemUsefulGuideRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<ItemUsefulGuideRoute>()
                 ItemUsefulGuideScreenRoute(
-                    guideType = ItemUsefulGuideType.valueOf(route.guideType),
+                    guideType = route.guideType.toItemUsefulGuideType(),
                     onBackClick = navController::popBackStack,
                     onSmallEWasteClick = { type ->
-                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                        navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
                             launchSingleTop = true
                             restoreState = false
                         }
@@ -286,7 +286,7 @@ fun YeogiBeoryeoNavHost(
                     guideId = route.guideId,
                     onBackClick = navController::popBackStack,
                     onCollectionSpotTypeClick = { type ->
-                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                        navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
                             launchSingleTop = true
                             restoreState = false
                         }
