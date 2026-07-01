@@ -21,9 +21,9 @@ import androidx.compose.ui.unit.dp
 fun RegionalGuideEmptyResult(
     title: String,
     message: String,
+    modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),

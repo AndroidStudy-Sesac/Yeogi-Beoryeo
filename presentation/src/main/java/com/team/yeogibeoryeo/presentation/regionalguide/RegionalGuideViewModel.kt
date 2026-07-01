@@ -19,12 +19,11 @@ import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCa
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -169,8 +168,8 @@ class RegionalGuideViewModel @Inject constructor(
         if (selectedSido.isNullOrBlank() || selectedSigungu.isNullOrBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
                 query = state.selectedRegionText.orEmpty(),
-                title = "지역을 선택해 주세요.",
-                message = "시도와 시군구를 선택한 뒤 조회해 주세요.",
+                titleResId = R.string.regional_guide_empty_select_region_title,
+                messageResId = R.string.regional_guide_empty_select_region_message,
                 action = selectRegionAction()
             )
             return
@@ -268,8 +267,8 @@ class RegionalGuideViewModel @Inject constructor(
         if (trimmedKeyword.isBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
                 query = trimmedKeyword,
-                title = "검색어를 입력해 주세요.",
-                message = "지역명이나 주소를 입력해 다시 검색해 주세요.",
+                titleResId = R.string.regional_guide_empty_blank_keyword_title,
+                messageResId = R.string.regional_guide_empty_blank_keyword_message,
                 action = searchAgainAction()
             )
             return
@@ -300,8 +299,8 @@ class RegionalGuideViewModel @Inject constructor(
                     ResolveRegionFromKeywordResult.NotFound -> {
                         _uiState.value = RegionalGuideUiState.Empty(
                             query = trimmedKeyword,
-                            title = "검색 결과를 찾지 못했어요.",
-                            message = "시/군/구까지 입력해 다시 검색해 주세요.",
+                            titleResId = R.string.regional_guide_empty_keyword_not_found_title,
+                            messageResId = R.string.regional_guide_empty_keyword_not_found_message,
                             action = searchAgainAction()
                         )
                     }
@@ -334,8 +333,8 @@ class RegionalGuideViewModel @Inject constructor(
         if (trimmedAddress.isBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
                 query = trimmedAddress,
-                title = "주소를 입력해 주세요.",
-                message = "시/군/구가 포함된 주소로 다시 검색해 주세요.",
+                titleResId = R.string.regional_guide_empty_blank_address_title,
+                messageResId = R.string.regional_guide_empty_blank_address_message,
                 action = searchAgainAction()
             )
             return
@@ -353,8 +352,8 @@ class RegionalGuideViewModel @Inject constructor(
                 if (region == null) {
                     _uiState.value = RegionalGuideUiState.Empty(
                         query = trimmedAddress,
-                        title = "입력한 주소에서 지역 정보를 찾지 못했어요.",
-                        message = "시/군/구가 포함된 주소로 다시 검색해 주세요.",
+                        titleResId = R.string.regional_guide_empty_address_parse_failed_title,
+                        messageResId = R.string.regional_guide_empty_address_parse_failed_message,
                         action = searchAgainAction()
                     )
                     return@launch
@@ -391,8 +390,8 @@ class RegionalGuideViewModel @Inject constructor(
                 if (snapshot == null) {
                     _uiState.value = RegionalGuideUiState.Empty(
                         query = "",
-                        title = "저장된 지역 정보를 다시 불러오지 못했어요.",
-                        message = "지역을 다시 선택해 주세요.",
+                        titleResId = R.string.regional_guide_empty_favorite_restore_failed_title,
+                        messageResId = R.string.regional_guide_empty_favorite_restore_failed_message,
                         action = selectRegionAction()
                     )
                     return@launch
@@ -415,17 +414,6 @@ class RegionalGuideViewModel @Inject constructor(
                 )
             }
         }
-    }
-
-    fun resetState() {
-        guideLookupJob?.cancel()
-        keywordSuggestionJob?.cancel()
-        sigunguOptionsJob?.cancel()
-        eupmyeondongOptionsJob?.cancel()
-        favoriteStateJob?.cancel()
-        lastRequest = null
-        currentRegionalGuideFavoriteSnapshot = null
-        _uiState.value = RegionalGuideUiState.Idle
     }
 
     private fun loadSidoOptions() {
@@ -683,8 +671,8 @@ class RegionalGuideViewModel @Inject constructor(
                 } else {
                     RegionalGuideUiState.Empty(
                         query = query,
-                        title = "해당 지역의 배출 가이드를 찾지 못했어요.",
-                        message = "다른 지역을 선택해 주세요.",
+                        titleResId = R.string.regional_guide_empty_info_not_found_title,
+                        messageResId = R.string.regional_guide_empty_info_not_found_message,
                         action = selectRegionAction()
                     )
                 }
@@ -695,8 +683,8 @@ class RegionalGuideViewModel @Inject constructor(
                 } else {
                     RegionalGuideUiState.Empty(
                         query = query,
-                        title = "선택한 읍면동 기준의 배출 가이드를 찾지 못했어요.",
-                        message = "지역을 다시 선택해 주세요.",
+                        titleResId = R.string.regional_guide_empty_candidate_not_found_title,
+                        messageResId = R.string.regional_guide_empty_candidate_not_found_message,
                         action = selectRegionAction()
                     )
                 }
@@ -724,20 +712,20 @@ class RegionalGuideViewModel @Inject constructor(
     private fun searchAgainAction(): RegionalGuideEmptyActionUiModel =
         RegionalGuideEmptyActionUiModel(
             type = RegionalGuideEmptyActionType.SEARCH_AGAIN,
-            label = "다시 검색하기"
+            labelResId = R.string.regional_guide_empty_action_search_again
         )
 
     private fun selectRegionAction(): RegionalGuideEmptyActionUiModel =
         RegionalGuideEmptyActionUiModel(
             type = RegionalGuideEmptyActionType.SELECT_REGION,
-            label = "지역 다시 선택하기"
+            labelResId = R.string.regional_guide_empty_action_select_region
         )
 
     private fun favoriteRestoreFailedEmptyState(query: String): RegionalGuideUiState.Empty =
         RegionalGuideUiState.Empty(
             query = query,
-            title = "저장된 지역 정보를 다시 불러오지 못했어요.",
-            message = "지역을 다시 선택해 주세요.",
+            titleResId = R.string.regional_guide_empty_favorite_restore_failed_title,
+            messageResId = R.string.regional_guide_empty_favorite_restore_failed_message,
             action = selectRegionAction()
         )
 

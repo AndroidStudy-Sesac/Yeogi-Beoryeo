@@ -29,11 +29,13 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionSelectorSection
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideAmbiguousResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideCandidateResult
@@ -305,14 +307,15 @@ private fun RegionalGuideContent(
         }
 
         is RegionalGuideUiState.Empty -> {
+            val action = uiState.action
             RegionalGuideEmptyResult(
-                title = uiState.title,
-                message = uiState.message,
-                actionLabel = uiState.action?.label,
-                onActionClick = uiState.action?.let { action ->
+                title = stringResource(id = uiState.titleResId),
+                message = stringResource(id = uiState.messageResId),
+                modifier = modifier,
+                actionLabel = action?.let { stringResource(id = it.labelResId) },
+                onActionClick = action?.let {
                     { onEmptyActionClick(action.type) }
                 },
-                modifier = modifier
             )
         }
 
@@ -552,7 +555,8 @@ private fun RegionalGuideScreenEmptyPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.Empty(
                 query = "없는 지역",
-                message = "해당 지역의 배출 가이드 정보가 없습니다."
+                titleResId = R.string.regional_guide_empty_info_not_found_title,
+                messageResId = R.string.regional_guide_empty_info_not_found_message,
             ),
             searchKeyword = "없는 지역",
             regionSelectorUiState = RegionSelectorUiState(

@@ -1,7 +1,9 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
+import androidx.annotation.StringRes
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 sealed interface RegionalGuideUiState {
@@ -19,8 +21,8 @@ sealed interface RegionalGuideUiState {
 
     data class Empty(
         val query: String,
-        val title: String = "조회 결과를 찾지 못했어요.",
-        val message: String = "조회된 지역별 배출 가이드가 없습니다.",
+        @param:StringRes val titleResId: Int = R.string.regional_guide_empty_default_title,
+        @param:StringRes val messageResId: Int = R.string.regional_guide_empty_default_message,
         val action: RegionalGuideEmptyActionUiModel? = null,
     ) : RegionalGuideUiState
 
@@ -44,7 +46,7 @@ sealed interface RegionalGuideUiState {
 
 data class RegionalGuideEmptyActionUiModel(
     val type: RegionalGuideEmptyActionType,
-    val label: String,
+    @param:StringRes val labelResId: Int,
 )
 
 enum class RegionalGuideEmptyActionType {

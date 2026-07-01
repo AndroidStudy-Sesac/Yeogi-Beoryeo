@@ -1,5 +1,6 @@
 ﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
+import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -252,10 +253,10 @@ class RegionalGuideSelectorViewModelTest {
 
         val state = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("해당 지역의 배출 가이드를 찾지 못했어요.", state.title)
-        assertEquals("다른 지역을 선택해 주세요.", state.message)
+        assertEquals(R.string.regional_guide_empty_info_not_found_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_info_not_found_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
-        assertEquals("지역 다시 선택하기", state.action?.label)
+        assertEquals(R.string.regional_guide_empty_action_select_region, state.action?.labelResId)
     }
 
     @Test
@@ -293,8 +294,8 @@ class RegionalGuideSelectorViewModelTest {
 
         val state = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("선택한 읍면동 기준의 배출 가이드를 찾지 못했어요.", state.title)
-        assertEquals("지역을 다시 선택해 주세요.", state.message)
+        assertEquals(R.string.regional_guide_empty_candidate_not_found_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_candidate_not_found_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
     }
 }

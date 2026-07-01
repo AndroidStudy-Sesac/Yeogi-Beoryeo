@@ -1,6 +1,7 @@
 ﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
@@ -145,10 +146,10 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals("중안구", viewModel.searchKeyword.value)
         val state = viewModel.uiState.value as RegionalGuideUiState.Empty
-        assertEquals("검색 결과를 찾지 못했어요.", state.title)
-        assertEquals("시/군/구까지 입력해 다시 검색해 주세요.", state.message)
+        assertEquals(R.string.regional_guide_empty_keyword_not_found_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_keyword_not_found_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SEARCH_AGAIN, state.action?.type)
-        assertEquals("다시 검색하기", state.action?.label)
+        assertEquals(R.string.regional_guide_empty_action_search_again, state.action?.labelResId)
     }
 
     @Test

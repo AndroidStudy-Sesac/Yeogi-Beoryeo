@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -156,7 +157,7 @@ class RegionalGuideFavoriteViewModelTest {
     }
 
     @Test
-    fun `missing favorite snapshot shows restore failed select region action`() = runTest {
+    fun `저장 후보 스냅샷이 없으면 복원 실패와 지역 다시 선택 action을 보여준다`() = runTest {
         val viewModel = createViewModel(
             regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository()
         )
@@ -167,14 +168,14 @@ class RegionalGuideFavoriteViewModelTest {
 
         val state = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("저장된 지역 정보를 다시 불러오지 못했어요.", state.title)
-        assertEquals("지역을 다시 선택해 주세요.", state.message)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
-        assertEquals("지역 다시 선택하기", state.action?.label)
+        assertEquals(R.string.regional_guide_empty_action_select_region, state.action?.labelResId)
     }
 
     @Test
-    fun `favorite target id that no longer matches info candidate shows restore failed action`() = runTest {
+    fun `저장 후보가 info 후보와 더 이상 일치하지 않으면 복원 실패 action을 보여준다`() = runTest {
         val savedGuide =
             RegionalDisposalGuide(
                 region = Region(sido = "대전광역시", sigungu = "유성구"),
@@ -201,8 +202,8 @@ class RegionalGuideFavoriteViewModelTest {
 
         val state = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("저장된 지역 정보를 다시 불러오지 못했어요.", state.title)
-        assertEquals("지역을 다시 선택해 주세요.", state.message)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
     }
 
