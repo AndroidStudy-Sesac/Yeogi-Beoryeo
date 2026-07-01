@@ -1,15 +1,9 @@
 package com.team.yeogibeoryeo.presentation.map
 
-import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
-import com.team.yeogibeoryeo.domain.favorite.model.Favorite
-import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
-import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
-import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
-import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
