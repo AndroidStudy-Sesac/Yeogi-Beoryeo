@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -153,6 +154,57 @@ class RegionalGuideFavoriteViewModelTest {
         assertEquals("반석동 일부지역", state.guide.targetRegionName)
         assertEquals("노은3동", state.guide.managementZoneName)
         assertEquals(true, state.isFavorite)
+    }
+
+    @Test
+    fun `저장 후보 스냅샷이 없으면 복원 실패와 지역 다시 선택 action을 보여준다`() = runTest {
+        val viewModel = createViewModel(
+            regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository()
+        )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId("missing-target-id")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_message, state.messageResId)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+        assertEquals(R.string.regional_guide_empty_action_select_region, state.action?.labelResId)
+    }
+
+    @Test
+    fun `저장 후보가 info 후보와 더 이상 일치하지 않으면 복원 실패 action을 보여준다`() = runTest {
+        val savedGuide =
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                targetRegionName = "반석동 일부지역",
+                managementZoneName = "노은3동",
+                schedules = emptyList(),
+            )
+        val snapshot = savedGuide.toFavoriteSnapshot()
+        val viewModel =
+            createViewModel(
+                regionalGuideRepository =
+                    FakeRegionalDisposalGuideRepository(
+                        candidates = listOf(
+                            savedGuide.copy(managementZoneName = "노은2동")
+                        )
+                    ),
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(snapshot.targetId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_message, state.messageResId)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
     }
 
     @Test

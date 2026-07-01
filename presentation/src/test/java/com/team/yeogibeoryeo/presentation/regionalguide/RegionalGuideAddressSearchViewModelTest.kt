@@ -1,6 +1,7 @@
 ﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -212,7 +213,11 @@ class RegionalGuideAddressSearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(address), regionRepository.extractedAddresses)
-        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+        assertEquals(R.string.regional_guide_empty_address_parse_failed_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_address_parse_failed_message, state.messageResId)
+        assertEquals(RegionalGuideEmptyActionType.SEARCH_AGAIN, state.action?.type)
+        assertEquals(R.string.regional_guide_empty_action_search_again, state.action?.labelResId)
         assertEquals(address, viewModel.searchKeyword.value)
 
         with(viewModel.regionSelectorUiState.value) {
@@ -282,7 +287,9 @@ class RegionalGuideAddressSearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals("중안구", viewModel.searchKeyword.value)
-        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+        assertEquals(R.string.regional_guide_empty_keyword_not_found_title, state.titleResId)
+        assertEquals(RegionalGuideEmptyActionType.SEARCH_AGAIN, state.action?.type)
 
         with(viewModel.regionSelectorUiState.value) {
             assertNull(selectedSido)
