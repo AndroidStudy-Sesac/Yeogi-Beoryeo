@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.navigation
 
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
+import com.team.yeogibeoryeo.presentation.settings.SettingsDetailType
 
 internal fun CollectionSpotType.toRouteType(): CollectionSpotRouteType =
     when (this) {
@@ -49,4 +50,26 @@ internal fun ItemUsefulGuideRouteType.toItemUsefulGuideType(): ItemUsefulGuideTy
         ItemUsefulGuideRouteType.REGIONAL_GUIDE -> ItemUsefulGuideType.REGIONAL_GUIDE
         ItemUsefulGuideRouteType.REPRESENTATIVE_CATEGORY -> ItemUsefulGuideType.REPRESENTATIVE_CATEGORY
         ItemUsefulGuideRouteType.ITEM_DICTIONARY -> ItemUsefulGuideType.ITEM_DICTIONARY
+    }
+
+internal fun SettingsDetailType.toRouteType(): SettingsDetailRouteType =
+    when (this) {
+        SettingsDetailType.Notice -> SettingsDetailRouteType.Notice
+        SettingsDetailType.Contact -> SettingsDetailRouteType.Contact
+        SettingsDetailType.AppInfo -> SettingsDetailRouteType.AppInfo
+        SettingsDetailType.LocationPermission -> SettingsDetailRouteType.LocationPermission
+        SettingsDetailType.Terms -> SettingsDetailRouteType.Terms
+        SettingsDetailType.Sources -> SettingsDetailRouteType.Sources
+        SettingsDetailType.Cache -> SettingsDetailRouteType.Cache
+    }
+
+internal fun SettingsDetailRouteType.toScreenType(): SettingsDetailType =
+    when (this) {
+        SettingsDetailRouteType.Notice -> SettingsDetailType.Notice
+        SettingsDetailRouteType.Contact -> SettingsDetailType.Contact
+        SettingsDetailRouteType.AppInfo -> SettingsDetailType.AppInfo
+        SettingsDetailRouteType.LocationPermission -> SettingsDetailType.LocationPermission
+        SettingsDetailRouteType.Terms -> SettingsDetailType.Terms
+        SettingsDetailRouteType.Sources -> SettingsDetailType.Sources
+        SettingsDetailRouteType.Cache -> SettingsDetailType.Cache
     }
