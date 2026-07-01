@@ -43,8 +43,8 @@ fun ItemGuideDetailRoute(
     guideId: String,
     onBackClick: () -> Unit,
     onCollectionSpotTypeClick: (CollectionSpotType) -> Unit,
-    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     viewModel: ItemGuideDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -135,13 +135,16 @@ fun ItemGuideDetailRoute(
 }
 
 @Composable
-private fun ItemGuideDetailSnackbarIcon(icon: ItemGuideDetailMessageIcon) {
+private fun ItemGuideDetailSnackbarIcon(
+    icon: ItemGuideDetailMessageIcon,
+    modifier: Modifier = Modifier,
+) {
     when (icon) {
         ItemGuideDetailMessageIcon.Favorite -> {
             Icon(
                 painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
                 contentDescription = null,
-                modifier = Modifier.size(SnackbarIconSize),
+                modifier = modifier.size(SnackbarIconSize),
                 tint = MaterialTheme.colorScheme.tertiary,
             )
         }
@@ -150,7 +153,7 @@ private fun ItemGuideDetailSnackbarIcon(icon: ItemGuideDetailMessageIcon) {
             Icon(
                 imageVector = Icons.Filled.ErrorOutline,
                 contentDescription = null,
-                modifier = Modifier.size(SnackbarIconSize),
+                modifier = modifier.size(SnackbarIconSize),
                 tint = MaterialTheme.colorScheme.tertiary,
             )
         }

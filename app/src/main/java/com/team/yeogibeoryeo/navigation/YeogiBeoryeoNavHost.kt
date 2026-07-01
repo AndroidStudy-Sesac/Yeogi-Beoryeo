@@ -46,7 +46,6 @@ import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGui
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
-import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import com.team.yeogibeoryeo.presentation.settings.SettingsDetailRoute as SettingsDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.settings.SettingsDetailType
 import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScreenRoute
