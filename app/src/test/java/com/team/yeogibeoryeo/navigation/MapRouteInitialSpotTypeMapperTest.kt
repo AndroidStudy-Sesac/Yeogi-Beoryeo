@@ -7,29 +7,22 @@ import org.junit.Test
 
 class MapRouteInitialSpotTypeMapperTest {
     @Test
-    fun `valid initial spot type is parsed`() {
-        val route = MapRoute(initialSpotType = CollectionSpotType.BATTERY_BIN.name)
+    fun `노출 대상 수거 장소 타입이면 초기 타입으로 변환한다`() {
+        val route = MapRoute(initialSpotType = CollectionSpotRouteType.BATTERY_BIN)
 
         assertEquals(CollectionSpotType.BATTERY_BIN, route.toInitialCollectionSpotTypeOrNull())
     }
 
     @Test
-    fun `new visible initial spot type is parsed`() {
-        val route = MapRoute(initialSpotType = CollectionSpotType.MEDICINE_DROP_BOX.name)
+    fun `새로 노출된 수거 장소 타입이면 초기 타입으로 변환한다`() {
+        val route = MapRoute(initialSpotType = CollectionSpotRouteType.MEDICINE_DROP_BOX)
 
         assertEquals(CollectionSpotType.MEDICINE_DROP_BOX, route.toInitialCollectionSpotTypeOrNull())
     }
 
     @Test
-    fun `invalid initial spot type is ignored`() {
-        val route = MapRoute(initialSpotType = "NOT_A_SPOT_TYPE")
-
-        assertNull(route.toInitialCollectionSpotTypeOrNull())
-    }
-
-    @Test
-    fun `blank initial spot type is ignored`() {
-        val route = MapRoute(initialSpotType = " ")
+    fun `초기 타입이 없으면 null을 반환한다`() {
+        val route = MapRoute(initialSpotType = null)
 
         assertNull(route.toInitialCollectionSpotTypeOrNull())
     }

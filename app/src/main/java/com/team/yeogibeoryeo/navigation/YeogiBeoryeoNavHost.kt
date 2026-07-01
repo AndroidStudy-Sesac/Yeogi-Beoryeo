@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
+import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.expandVertically
@@ -45,7 +46,6 @@ import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGui
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
-import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import com.team.yeogibeoryeo.presentation.settings.SettingsDetailRoute as SettingsDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.settings.SettingsDetailType
 import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScreenRoute
@@ -190,7 +190,7 @@ fun YeogiBeoryeoNavHost(
                         )
                     },
                     onUsefulGuideClick = { guide ->
-                        navController.navigate(ItemUsefulGuideRoute(guide.type.name))
+                        navController.navigate(ItemUsefulGuideRoute(guide.type.toRouteType()))
                     },
                     onRegionalGuideSummaryClick = { targetId ->
                         navController.navigate(
@@ -243,10 +243,10 @@ fun YeogiBeoryeoNavHost(
             composable<ItemUsefulGuideRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<ItemUsefulGuideRoute>()
                 ItemUsefulGuideScreenRoute(
-                    guideType = ItemUsefulGuideType.valueOf(route.guideType),
+                    guideType = route.guideType.toItemUsefulGuideType(),
                     onBackClick = navController::popBackStack,
                     onSmallEWasteClick = { type ->
-                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                        navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
                             launchSingleTop = true
                             restoreState = false
                         }
@@ -254,14 +254,14 @@ fun YeogiBeoryeoNavHost(
                     onFreePickupGuideClick = {
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(FreePickupGuideUrl)),
+                                Intent(Intent.ACTION_VIEW, FreePickupGuideUrl.toUri()),
                             )
                         }.isSuccess
                     },
                     onOfficialSiteClick = { url ->
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                                Intent(Intent.ACTION_VIEW, url.toUri()),
                             )
                         }.isSuccess
                     },
@@ -286,7 +286,7 @@ fun YeogiBeoryeoNavHost(
                     guideId = route.guideId,
                     onBackClick = navController::popBackStack,
                     onCollectionSpotTypeClick = { type ->
-                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                        navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
                             launchSingleTop = true
                             restoreState = false
                         }
