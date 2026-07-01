@@ -43,10 +43,10 @@ import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuide
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSearchBar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalWasteScheduleCard
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 @Composable
 fun RegionalGuideRoute(
@@ -352,12 +352,24 @@ private fun RegionalGuideLoadingContent(
         CircularProgressIndicator()
 
         Text(
-            text = "\"$query\" 배출 가이드를 불러오는 중입니다.",
+            text = query.loadingMessage(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
+
+@Composable
+private fun String.loadingMessage(): String =
+    trim()
+        .takeIf { it.isNotBlank() }
+        ?.let { query ->
+            stringResource(
+                id = R.string.regional_guide_loading_region_message,
+                query,
+            )
+        }
+        ?: stringResource(id = R.string.regional_guide_loading_default_message)
 
 @Composable
 private fun RegionalGuideSuccessContent(

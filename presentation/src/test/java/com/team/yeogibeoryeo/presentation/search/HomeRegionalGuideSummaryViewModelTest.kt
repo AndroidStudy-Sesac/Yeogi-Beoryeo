@@ -30,6 +30,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 
@@ -128,7 +129,46 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `unknown weekday shows schedule confirmation state`() =
+    fun `same favorite keeps previous summary while refreshing`() =
+        runTest {
+            val snapshot = sampleSnapshot(targetId = "regional-target")
+            val regionalRepository =
+                FakeRegionalDisposalGuideRepository(
+                    guides = listOf(sampleGuide(region = snapshot.region)),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    snapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            initialSnapshots = listOf(snapshot),
+                        ),
+                    regionalRepository = regionalRepository,
+                )
+            val states = mutableListOf<HomeRegionalGuideSummaryUiState>()
+            collectState(viewModel, states)
+            advanceUntilIdle()
+            states.clear()
+
+            viewModel.retry()
+            advanceUntilIdle()
+
+            assertFalse(states.any { state -> state is HomeRegionalGuideSummaryUiState.Loading })
+            assertEquals(2, regionalRepository.requestCount)
+        }
+
+    @Test
+    fun `unknown general waste days show summary with fallback disposal days`() =
         runTest {
             val snapshot = sampleSnapshot(targetId = "regional-target")
             val viewModel =
@@ -162,9 +202,13 @@ class HomeRegionalGuideSummaryViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                HomeRegionalGuideSummaryUiState.ScheduleNeedsConfirmation(
+                HomeRegionalGuideSummaryUiState.Summary(
                     targetId = "regional-target",
                     regionName = "Sido > Sigungu > Dong",
+                    disposalDays = null,
+                    disposalTime = null,
+                    hasDifferentDisposalDays = false,
+                    hasDifferentDisposalTime = false,
                 ),
                 viewModel.uiState.value,
             )
@@ -173,6 +217,15 @@ class HomeRegionalGuideSummaryViewModelTest {
     private fun TestScope.collectState(viewModel: HomeRegionalGuideSummaryViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect()
+        }
+    }
+
+    private fun TestScope.collectState(
+        viewModel: HomeRegionalGuideSummaryViewModel,
+        states: MutableList<HomeRegionalGuideSummaryUiState>,
+    ) {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect { state -> states += state }
         }
     }
 

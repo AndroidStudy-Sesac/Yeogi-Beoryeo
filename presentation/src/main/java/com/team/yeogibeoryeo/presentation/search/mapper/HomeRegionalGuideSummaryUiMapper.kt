@@ -5,15 +5,20 @@ import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryU
 
 fun HomeRegionalGuideSummaryResult.toUiState(): HomeRegionalGuideSummaryUiState =
     when (this) {
-        HomeRegionalGuideSummaryResult.Loading -> HomeRegionalGuideSummaryUiState.Loading
+        is HomeRegionalGuideSummaryResult.Loading ->
+            HomeRegionalGuideSummaryUiState.Loading(
+                targetId = targetId,
+                regionName = regionName,
+            )
         HomeRegionalGuideSummaryResult.NoFavorite -> HomeRegionalGuideSummaryUiState.NoFavorite
         is HomeRegionalGuideSummaryResult.Success ->
             HomeRegionalGuideSummaryUiState.Summary(
                 targetId = summary.targetId,
                 regionName = summary.regionName,
-                wasteTypesText = summary.wasteTypeNames.joinToString(", "),
                 disposalDays = summary.disposalDays,
                 disposalTime = summary.disposalTime,
+                hasDifferentDisposalDays = summary.hasDifferentDisposalDays,
+                hasDifferentDisposalTime = summary.hasDifferentDisposalTime,
             )
 
         is HomeRegionalGuideSummaryResult.NoTodaySchedule ->

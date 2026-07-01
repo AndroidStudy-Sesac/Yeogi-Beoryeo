@@ -10,9 +10,8 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavorit
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
@@ -115,6 +114,42 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
+    fun `favorite snapshot emits loading with region name before summary lookup completes`() =
+        runBlocking {
+            val snapshot = sampleSnapshot(targetId = "regional")
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(listOf(snapshot)),
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            candidates = listOf(sampleGuide(region = snapshot.region)),
+                        ),
+                )
+
+            val result = useCase().first()
+
+            assertEquals(
+                HomeRegionalGuideSummaryResult.Loading(
+                    targetId = "regional",
+                    regionName = "서울특별시 > 노원구 > 하계동",
+                ),
+                result,
+            )
+        }
+
+    @Test
     fun `multiple restored candidates are not selected arbitrarily`() =
         runBlocking {
             val snapshot = sampleSnapshot(targetId = "regional")
@@ -149,7 +184,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `no today schedule returns no today schedule`() =
+    fun `unclear schedule days return summary with fallback disposal days`() =
         runBlocking {
             val snapshot = sampleSnapshot(targetId = "regional")
             val favoriteRepository =
@@ -187,17 +222,17 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
 
             val result = useCase().drop(1).first()
 
-            assertEquals(
-                HomeRegionalGuideSummaryResult.NoTodaySchedule(
-                    targetId = "regional",
-                    regionName = "서울특별시 > 노원구 > 하계동",
-                ),
-                result,
-            )
+            require(result is HomeRegionalGuideSummaryResult.Success)
+            result.summary.run {
+                assertEquals("regional", targetId)
+                assertEquals("서울특별시 > 노원구 > 하계동", regionName)
+                assertEquals(null, disposalDays)
+                assertEquals(null, disposalTime)
+            }
         }
 
     @Test
-    fun `unknown weekday returns schedule needs confirmation`() =
+    fun `unknown general waste days return summary with fallback disposal days`() =
         runBlocking {
             val snapshot = sampleSnapshot(targetId = "regional")
             val favoriteRepository =
@@ -235,13 +270,13 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
 
             val result = useCase().drop(1).first()
 
-            assertEquals(
-                HomeRegionalGuideSummaryResult.ScheduleNeedsConfirmation(
-                    targetId = "regional",
-                    regionName = "서울특별시 > 노원구 > 하계동",
-                ),
-                result,
-            )
+            require(result is HomeRegionalGuideSummaryResult.Success)
+            result.summary.run {
+                assertEquals("regional", targetId)
+                assertEquals("서울특별시 > 노원구 > 하계동", regionName)
+                assertEquals(null, disposalDays)
+                assertEquals(null, disposalTime)
+            }
         }
 
     @Test
