@@ -47,7 +47,6 @@ import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchSc
 import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
 import com.team.yeogibeoryeo.presentation.settings.SettingsDetailRoute as SettingsDetailScreenRoute
-import com.team.yeogibeoryeo.presentation.settings.SettingsDetailType
 import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScreenRoute
 
 @Composable
@@ -303,28 +302,6 @@ fun YeogiBeoryeoNavHost(
 }
 
 private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
-
-private fun SettingsDetailType.toRouteType(): SettingsDetailRouteType =
-    when (this) {
-        SettingsDetailType.Notice -> SettingsDetailRouteType.Notice
-        SettingsDetailType.Contact -> SettingsDetailRouteType.Contact
-        SettingsDetailType.AppInfo -> SettingsDetailRouteType.AppInfo
-        SettingsDetailType.LocationPermission -> SettingsDetailRouteType.LocationPermission
-        SettingsDetailType.Terms -> SettingsDetailRouteType.Terms
-        SettingsDetailType.Sources -> SettingsDetailRouteType.Sources
-        SettingsDetailType.Cache -> SettingsDetailRouteType.Cache
-    }
-
-private fun SettingsDetailRouteType.toScreenType(): SettingsDetailType =
-    when (this) {
-        SettingsDetailRouteType.Notice -> SettingsDetailType.Notice
-        SettingsDetailRouteType.Contact -> SettingsDetailType.Contact
-        SettingsDetailRouteType.AppInfo -> SettingsDetailType.AppInfo
-        SettingsDetailRouteType.LocationPermission -> SettingsDetailType.LocationPermission
-        SettingsDetailRouteType.Terms -> SettingsDetailType.Terms
-        SettingsDetailRouteType.Sources -> SettingsDetailType.Sources
-        SettingsDetailRouteType.Cache -> SettingsDetailType.Cache
-    }
 
 private fun android.content.Context.openAppSettings() {
     val uri = Uri.fromParts("package", packageName, null)
