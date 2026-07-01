@@ -156,6 +156,57 @@ class RegionalGuideFavoriteViewModelTest {
     }
 
     @Test
+    fun `missing favorite snapshot shows restore failed select region action`() = runTest {
+        val viewModel = createViewModel(
+            regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository()
+        )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId("missing-target-id")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals("저장된 지역 정보를 다시 불러오지 못했어요.", state.title)
+        assertEquals("지역을 다시 선택해 주세요.", state.message)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+        assertEquals("지역 다시 선택하기", state.action?.label)
+    }
+
+    @Test
+    fun `favorite target id that no longer matches info candidate shows restore failed action`() = runTest {
+        val savedGuide =
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                targetRegionName = "반석동 일부지역",
+                managementZoneName = "노은3동",
+                schedules = emptyList(),
+            )
+        val snapshot = savedGuide.toFavoriteSnapshot()
+        val viewModel =
+            createViewModel(
+                regionalGuideRepository =
+                    FakeRegionalDisposalGuideRepository(
+                        candidates = listOf(
+                            savedGuide.copy(managementZoneName = "노은2동")
+                        )
+                    ),
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(snapshot.targetId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals("저장된 지역 정보를 다시 불러오지 못했어요.", state.title)
+        assertEquals("지역을 다시 선택해 주세요.", state.message)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+    }
+
+    @Test
     fun `favorite click after guide candidate selection keeps original none zone values in snapshot`() = runTest {
         val region = Region(sido = "경기도", sigungu = "성남시")
         val doorToDoorGuide =

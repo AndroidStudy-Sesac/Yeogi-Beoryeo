@@ -76,6 +76,7 @@ fun RegionalGuideRoute(
         onSearchKeywordChange = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchByKeyword,
         onRetryClick = viewModel::retryLastRequest,
+        onEmptySearchActionClick = viewModel::prepareSearchAgain,
         onSidoSelected = viewModel::onSidoSelected,
         onSigunguSelected = viewModel::onSigunguSelected,
         onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
@@ -98,6 +99,7 @@ fun RegionalGuideScreen(
     onSearchKeywordChange: (String) -> Unit,
     onSearchClick: (String) -> Unit,
     onRetryClick: () -> Unit,
+    onEmptySearchActionClick: () -> Unit,
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
@@ -137,6 +139,21 @@ fun RegionalGuideScreen(
     fun clearSearchFocus() {
         focusManager.clearFocus()
         keyboardController?.hide()
+    }
+
+    fun handleEmptyAction(actionType: RegionalGuideEmptyActionType) {
+        when (actionType) {
+            RegionalGuideEmptyActionType.SEARCH_AGAIN -> {
+                isRegionSelectorExpanded = false
+                onRegionSelectorDropdownDismissed()
+                onEmptySearchActionClick()
+            }
+
+            RegionalGuideEmptyActionType.SELECT_REGION -> {
+                isRegionSelectorExpanded = true
+                onRegionSelectorDropdownDismissed()
+            }
+        }
     }
 
     Column(
@@ -234,6 +251,7 @@ fun RegionalGuideScreen(
         RegionalGuideContent(
             uiState = uiState,
             onRetryClick = onRetryClick,
+            onEmptyActionClick = ::handleEmptyAction,
             onCandidateClick = onCandidateClick,
             onGuideCandidateClick = onGuideCandidateClick,
             onFavoriteClick = onFavoriteClick,
@@ -259,6 +277,7 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
 private fun RegionalGuideContent(
     uiState: RegionalGuideUiState,
     onRetryClick: () -> Unit,
+    onEmptyActionClick: (RegionalGuideEmptyActionType) -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     onFavoriteClick: () -> Unit,
@@ -287,7 +306,12 @@ private fun RegionalGuideContent(
 
         is RegionalGuideUiState.Empty -> {
             RegionalGuideEmptyResult(
+                title = uiState.title,
                 message = uiState.message,
+                actionLabel = uiState.action?.label,
+                onActionClick = uiState.action?.let { action ->
+                    { onEmptyActionClick(action.type) }
+                },
                 modifier = modifier
             )
         }
@@ -424,6 +448,7 @@ private fun RegionalGuideScreenIdlePreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -449,6 +474,7 @@ private fun RegionalGuideScreenLoadingPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -508,6 +534,7 @@ private fun RegionalGuideScreenSuccessPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -534,6 +561,7 @@ private fun RegionalGuideScreenEmptyPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -572,6 +600,7 @@ private fun RegionalGuideScreenAmbiguousPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -618,6 +647,7 @@ private fun RegionalGuideScreenGuideCandidatesPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -644,6 +674,7 @@ private fun RegionalGuideScreenErrorPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},

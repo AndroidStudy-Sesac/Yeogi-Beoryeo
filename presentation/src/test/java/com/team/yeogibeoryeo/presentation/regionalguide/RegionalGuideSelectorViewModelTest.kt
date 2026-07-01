@@ -228,6 +228,75 @@ class RegionalGuideSelectorViewModelTest {
         assertEquals(2, regionalGuideRepository.queries.size)
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
     }
+
+    @Test
+    fun `selected region search without info result shows api empty guide action`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("수원시")
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = emptyList()
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("경기도")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("수원시")
+        advanceUntilIdle()
+        viewModel.onRegionSelectionSearchClick()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals("해당 지역의 배출 가이드를 찾지 못했어요.", state.title)
+        assertEquals("다른 지역을 선택해 주세요.", state.message)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+        assertEquals("지역 다시 선택하기", state.action?.label)
+    }
+
+    @Test
+    fun `selected eupmyeondong without direct guide match does not expose fallback candidates`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("수원시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경기도" to mapOf(
+                        "수원시" to listOf("파장동")
+                    )
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "경기도",
+                        sigungu = "성남시",
+                        targetRegionName = "성남시 전체"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("경기도")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("수원시")
+        advanceUntilIdle()
+        viewModel.onEupmyeondongSelected("파장동")
+        viewModel.onRegionSelectionSearchClick()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals("선택한 읍면동 기준의 배출 가이드를 찾지 못했어요.", state.title)
+        assertEquals("지역을 다시 선택해 주세요.", state.message)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+    }
 }
 
 

@@ -19,7 +19,9 @@ sealed interface RegionalGuideUiState {
 
     data class Empty(
         val query: String,
-        val message: String = "조회된 지역별 배출 가이드가 없습니다."
+        val title: String = "조회 결과를 찾지 못했어요.",
+        val message: String = "조회된 지역별 배출 가이드가 없습니다.",
+        val action: RegionalGuideEmptyActionUiModel? = null,
     ) : RegionalGuideUiState
 
     data class Ambiguous(
@@ -38,4 +40,14 @@ sealed interface RegionalGuideUiState {
         val query: String,
         val message: String
     ) : RegionalGuideUiState
+}
+
+data class RegionalGuideEmptyActionUiModel(
+    val type: RegionalGuideEmptyActionType,
+    val label: String,
+)
+
+enum class RegionalGuideEmptyActionType {
+    SEARCH_AGAIN,
+    SELECT_REGION,
 }

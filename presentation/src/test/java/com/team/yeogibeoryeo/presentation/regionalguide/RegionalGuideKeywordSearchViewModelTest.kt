@@ -144,7 +144,40 @@ class RegionalGuideKeywordSearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals("중안구", viewModel.searchKeyword.value)
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+        assertEquals("검색 결과를 찾지 못했어요.", state.title)
+        assertEquals("시/군/구까지 입력해 다시 검색해 주세요.", state.message)
+        assertEquals(RegionalGuideEmptyActionType.SEARCH_AGAIN, state.action?.type)
+        assertEquals("다시 검색하기", state.action?.label)
+    }
+
+    @Test
+    fun `search again action clears empty result while keeping keyword`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중안구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중안구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+
+        viewModel.prepareSearchAgain()
+
+        assertEquals("중안구", viewModel.searchKeyword.value)
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
     }
 
     @Test

@@ -212,7 +212,11 @@ class RegionalGuideAddressSearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(address), regionRepository.extractedAddresses)
-        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+        assertEquals("입력한 주소에서 지역 정보를 찾지 못했어요.", state.title)
+        assertEquals("시/군/구가 포함된 주소로 다시 검색해 주세요.", state.message)
+        assertEquals(RegionalGuideEmptyActionType.SEARCH_AGAIN, state.action?.type)
+        assertEquals("다시 검색하기", state.action?.label)
         assertEquals(address, viewModel.searchKeyword.value)
 
         with(viewModel.regionSelectorUiState.value) {
@@ -282,7 +286,9 @@ class RegionalGuideAddressSearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals("중안구", viewModel.searchKeyword.value)
-        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+        assertEquals("검색 결과를 찾지 못했어요.", state.title)
+        assertEquals(RegionalGuideEmptyActionType.SEARCH_AGAIN, state.action?.type)
 
         with(viewModel.regionSelectorUiState.value) {
             assertNull(selectedSido)
