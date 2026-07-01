@@ -1,41 +1,192 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
-import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
-import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
-import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavoriteUseCase
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
-import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
-import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
-import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
-import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
-import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
-import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
-import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
-import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
-import com.team.yeogibeoryeo.domain.time.TimeProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
-import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
-import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
+import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Rule
 import org.junit.Test
 
-class CollectionSpotMapInitialEntryViewModelTest {
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+@OptIn(ExperimentalCoroutinesApi::class)
+class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTestFixture() {
+    @Test
+    fun `지도 진입 시 위치 권한이 있으면 현재 위치 검색을 자동 실행한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val expectedSpots = listOf(sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE))
+            val repository = FakeCollectionSpotRepository(locationSpots = expectedSpots)
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(currentCoordinate, repository.lastLocationCoordinate)
+            assertEquals(expectedSpots.withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `지도 진입 시 위치 권한이 없으면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = false,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
+            assertNull(viewModel.uiState.value.errorMessage)
+        }
+
+    @Test
+    fun `지도 진입 자동 현재 위치 검색은 여러 번 호출되어도 한 번만 실행된다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(1, repository.locationSearchCallCount)
+        }
+
+    @Test
+    fun `지도 진입 시 이미 검색 결과가 있으면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(keywordSpot),
+                locationSpots = listOf(sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(listOf(keywordSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `지도 진입 시 다른 검색이 로딩 중이면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(locationSpots = listOf(locationSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocation()
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            locationResult.complete(
+                CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(
+                listOf(locationSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                viewModel.uiState.value.spots,
+            )
+        }
+
+    @Test
+    fun `지도 진입 시 사용자가 검색어를 입력한 상태면 자동 현재 위치 검색을 실행하지 않는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+        }
+
+    @Test
+    fun `지도 진입 자동 현재 위치 검색 중 검색어를 입력하면 현재 위치 결과를 반영하지 않는다`() =
+        runTest {
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(locationSpots = listOf(locationSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            viewModel.onSearchKeywordChanged("문래동")
+            locationResult.complete(
+                CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals("문래동", viewModel.uiState.value.searchKeyword)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
 
     @Test
     fun `초기 타입으로 지도 진입 시 해당 타입을 선택하고 현재 위치 검색 결과를 필터링한다`() =
@@ -152,163 +303,4 @@ class CollectionSpotMapInitialEntryViewModelTest {
             assertFalse(viewModel.uiState.value.hasSearched)
         }
 
-    private fun createViewModel(
-        repository: FakeCollectionSpotRepository,
-        currentLocationResult: CurrentLocationResult,
-        hasFineLocationPermission: Boolean = true,
-    ): CollectionSpotMapViewModel {
-        val cacheRepository = FakeRecentCurrentLocationSpotCacheRepository()
-        val favoriteRepository = FakeFavoriteRepository()
-        return CollectionSpotMapViewModel(
-            searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(repository),
-            searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
-            filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
-            currentLocationProvider = FakeCurrentLocationProvider(currentLocationResult),
-            locationPermissionChecker = FakeLocationPermissionChecker(hasFineLocationPermission),
-            getFreshRecentCurrentLocationSpotsUseCase = GetFreshRecentCurrentLocationSpotsUseCase(
-                repository = cacheRepository,
-                timeProvider = FakeTimeProvider(),
-            ),
-            saveRecentCurrentLocationSpotsUseCase = SaveRecentCurrentLocationSpotsUseCase(
-                repository = cacheRepository,
-                timeProvider = FakeTimeProvider(),
-            ),
-            observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
-            toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
-                collectionSpotFavoriteRepository = FakeCollectionSpotFavoriteRepository(favoriteRepository),
-            ),
-            calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
-        )
-    }
-
-    private fun sampleSpot(
-        id: String,
-        type: CollectionSpotType,
-    ): CollectionSpot {
-        return CollectionSpot(
-            id = id,
-            name = "수거 장소 $id",
-            type = type,
-            address = "서울시 중구",
-            detailLocation = null,
-            coordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
-        )
-    }
-
-    private fun List<CollectionSpot>.withDistanceFrom(
-        coordinate: Coordinate,
-    ): List<CollectionSpot> {
-        val calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase()
-
-        return map { spot ->
-            val spotCoordinate = spot.coordinate ?: return@map spot
-
-            spot.copy(
-                distanceMeter = calculateDistanceMeterUseCase(
-                    from = coordinate,
-                    to = spotCoordinate,
-                ),
-            )
-        }
-    }
-
-    private class FakeCurrentLocationProvider(
-        private val result: CurrentLocationResult,
-    ) : CurrentLocationProvider {
-        override suspend fun getCurrentLocation(): CurrentLocationResult = result
-    }
-
-    private class FakeLocationPermissionChecker(
-        private val hasFineLocationPermission: Boolean,
-    ) : LocationPermissionChecker {
-        override fun hasFineLocationPermission(): Boolean = hasFineLocationPermission
-    }
-
-    private class FakeTimeProvider : TimeProvider {
-        override fun currentTimeMillis(): Long = TEST_NOW_MILLIS
-    }
-
-    private class FakeRecentCurrentLocationSpotCacheRepository :
-        RecentCurrentLocationSpotCacheRepository {
-        override suspend fun getRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheEntry? = null
-
-        override suspend fun saveRecentCurrentLocationSpots(entry: RecentCurrentLocationSpotCacheEntry) = Unit
-
-        override suspend fun clearRecentCurrentLocationSpots() = Unit
-    }
-
-    private class FakeCollectionSpotRepository(
-        private val locationSpots: List<CollectionSpot> = emptyList(),
-    ) : CollectionSpotRepository {
-        var locationSearchCallCount = 0
-            private set
-        var lastLocationCoordinate: Coordinate? = null
-            private set
-
-        override suspend fun searchByKeyword(
-            keyword: String,
-            types: Set<CollectionSpotType>,
-        ): List<CollectionSpot> = emptyList()
-
-        override suspend fun searchByLocation(
-            coordinate: Coordinate,
-            radiusMeter: Int,
-            types: Set<CollectionSpotType>,
-        ): List<CollectionSpot> {
-            locationSearchCallCount += 1
-            lastLocationCoordinate = coordinate
-            return locationSpots
-        }
-
-        override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot = spot
-    }
-
-    private class FakeFavoriteRepository : FavoriteRepository {
-        private val favorites = MutableStateFlow(emptyList<Favorite>())
-
-        override fun observeFavorites(): Flow<List<Favorite>> = favorites
-
-        override fun observeFavorite(
-            type: FavoriteTargetType,
-            targetId: String,
-        ): Flow<Boolean> =
-            favorites.map { items ->
-                items.any { favorite -> favorite.type == type && favorite.targetId == targetId }
-            }
-
-        override suspend fun isFavorite(
-            type: FavoriteTargetType,
-            targetId: String,
-        ): Boolean = false
-
-        override suspend fun toggleFavorite(favorite: Favorite): Boolean = false
-
-        override suspend fun addFavorite(favorite: Favorite) = Unit
-
-        override suspend fun removeFavorite(
-            type: FavoriteTargetType,
-            targetId: String,
-        ) = Unit
-    }
-
-    private class FakeCollectionSpotFavoriteRepository(
-        private val favoriteRepository: FakeFavoriteRepository,
-    ) : CollectionSpotFavoriteRepository {
-        override suspend fun toggleFavorite(spot: CollectionSpot): Boolean =
-            favoriteRepository.toggleFavorite(
-                Favorite(
-                    type = FavoriteTargetType.COLLECTION_SPOT,
-                    targetId = spot.id,
-                    savedAtMillis = TEST_NOW_MILLIS,
-                ),
-            )
-
-        override suspend fun removeFavorite(targetId: String) {
-            favoriteRepository.removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId)
-        }
-    }
-
-    private companion object {
-        const val TEST_NOW_MILLIS = 20 * 60 * 1_000L
-    }
 }
