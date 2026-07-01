@@ -1,19 +1,38 @@
+@file:OptIn(InternalSerializationApi::class)
+
 package com.team.yeogibeoryeo.navigation
 
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class MapRoute(
-    val initialSpotType: String? = null,
+    val initialSpotType: CollectionSpotRouteType? = null,
     val favoriteSpotRequestId: String? = null,
     val favoriteSpotTargetId: String? = null,
     val favoriteSpotName: String? = null,
-    val favoriteSpotType: String? = null,
+    val favoriteSpotType: CollectionSpotRouteType? = null,
     val favoriteSpotAddress: String? = null,
     val favoriteSpotDetailLocation: String? = null,
     val favoriteSpotLatitude: Double? = null,
     val favoriteSpotLongitude: Double? = null,
 )
+
+@Serializable
+enum class CollectionSpotRouteType {
+    SMALL_E_WASTE_BIN,
+    BATTERY_BIN,
+    PHONE_DROP_OFF,
+    RECYCLING_CENTER,
+    STANDARD_BAG_STORE,
+    MEDICINE_DROP_BOX,
+    FLUORESCENT_LAMP_BIN,
+    CLOTHING_BIN,
+    ICE_PACK_BIN,
+    WASTE_COOKING_OIL_BIN,
+    HAZARDOUS_WASTE_BIN,
+    OTHER,
+}
 
 @Serializable
 data class RegionalGuideRoute(
@@ -67,8 +86,16 @@ enum class SettingsDetailRouteType {
 
 @Serializable
 data class ItemUsefulGuideRoute(
-    val guideType: String,
+    val guideType: ItemUsefulGuideRouteType,
 )
+
+@Serializable
+enum class ItemUsefulGuideRouteType {
+    SMALL_E_WASTE,
+    REGIONAL_GUIDE,
+    REPRESENTATIVE_CATEGORY,
+    ITEM_DICTIONARY,
+}
 
 @Serializable
 data class ItemGuideDetailRoute(

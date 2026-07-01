@@ -1,0 +1,340 @@
+package com.team.yeogibeoryeo.presentation.map
+
+import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.model.Favorite
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
+import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
+import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavoriteUseCase
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
+import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
+import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
+import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
+import com.team.yeogibeoryeo.domain.time.TimeProvider
+import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
+import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
+import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
+import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
+import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import org.junit.Rule
+
+abstract class CollectionSpotMapViewModelTestFixture {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+}
+
+internal fun createViewModel(
+    repository: FakeCollectionSpotRepository,
+    currentLocationResult: CurrentLocationResult,
+    hasFineLocationPermission: Boolean = true,
+    recentCurrentLocationSpotCacheRepository: RecentCurrentLocationSpotCacheRepository =
+        FakeRecentCurrentLocationSpotCacheRepository(),
+    timeProvider: TimeProvider = FakeTimeProvider(),
+    favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+    snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
+        FakeCollectionSpotFavoriteSnapshotRepository(),
+): CollectionSpotMapViewModel {
+    return createViewModel(
+        repository = repository,
+        currentLocationProvider = FakeCurrentLocationProvider(currentLocationResult),
+        hasFineLocationPermission = hasFineLocationPermission,
+        recentCurrentLocationSpotCacheRepository = recentCurrentLocationSpotCacheRepository,
+        timeProvider = timeProvider,
+        favoriteRepository = favoriteRepository,
+        snapshotRepository = snapshotRepository,
+    )
+}
+
+internal fun createViewModel(
+    repository: FakeCollectionSpotRepository,
+    currentLocationProvider: CurrentLocationProvider,
+    hasFineLocationPermission: Boolean = true,
+    recentCurrentLocationSpotCacheRepository: RecentCurrentLocationSpotCacheRepository =
+        FakeRecentCurrentLocationSpotCacheRepository(),
+    timeProvider: TimeProvider = FakeTimeProvider(),
+    favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+    snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
+        FakeCollectionSpotFavoriteSnapshotRepository(),
+): CollectionSpotMapViewModel {
+    return CollectionSpotMapViewModel(
+        searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(repository),
+        searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
+        filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
+        currentLocationProvider = currentLocationProvider,
+        locationPermissionChecker = FakeLocationPermissionChecker(hasFineLocationPermission),
+        getFreshRecentCurrentLocationSpotsUseCase = GetFreshRecentCurrentLocationSpotsUseCase(
+            repository = recentCurrentLocationSpotCacheRepository,
+            timeProvider = timeProvider,
+        ),
+        saveRecentCurrentLocationSpotsUseCase = SaveRecentCurrentLocationSpotsUseCase(
+            repository = recentCurrentLocationSpotCacheRepository,
+            timeProvider = timeProvider,
+        ),
+        observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
+        toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
+            collectionSpotFavoriteRepository =
+                FakeCollectionSpotFavoriteRepository(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = snapshotRepository,
+                ),
+        ),
+        calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
+    )
+}
+
+internal fun freshCacheEntry(
+    spots: List<CollectionSpot>,
+): RecentCurrentLocationSpotCacheEntry {
+    return RecentCurrentLocationSpotCacheEntry(
+        spots = spots,
+        savedAtMillis = TEST_NOW_MILLIS,
+    )
+}
+
+internal fun sampleSpot(
+    id: String,
+    type: CollectionSpotType,
+): CollectionSpot {
+    return CollectionSpot(
+        id = id,
+        name = "수거 장소 $id",
+        type = type,
+        address = "서울시 중구",
+        detailLocation = null,
+        coordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+    )
+}
+
+internal fun List<CollectionSpot>.withDistanceFrom(
+    coordinate: Coordinate,
+): List<CollectionSpot> {
+    val calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase()
+
+    return map { spot ->
+        val spotCoordinate = spot.coordinate ?: return@map spot
+
+        spot.copy(
+            distanceMeter = calculateDistanceMeterUseCase(
+                from = coordinate,
+                to = spotCoordinate,
+            ),
+        )
+    }
+}
+
+internal fun sampleFavoriteSpotMapMoveRequest(
+    requestId: String = "request-1",
+): FavoriteSpotMapMoveRequest {
+    return FavoriteSpotMapMoveRequest(
+        requestId = requestId,
+        targetId = "favorite-spot",
+        name = "폐건전지 수거함",
+        type = CollectionSpotType.BATTERY_BIN,
+        address = "서울특별시 영등포구 문래동",
+        detailLocation = "주민센터 앞",
+        coordinate = Coordinate(latitude = 37.5, longitude = 126.9),
+    )
+}
+
+internal class FakeCurrentLocationProvider(
+    internal val resultProvider: suspend () -> CurrentLocationResult,
+) : CurrentLocationProvider {
+
+    constructor(result: CurrentLocationResult) : this({ result })
+
+    override suspend fun getCurrentLocation(): CurrentLocationResult = resultProvider()
+}
+
+internal class FakeLocationPermissionChecker(
+    internal val hasFineLocationPermission: Boolean,
+) : LocationPermissionChecker {
+    override fun hasFineLocationPermission(): Boolean = hasFineLocationPermission
+}
+
+internal class FakeTimeProvider(
+    internal val nowMillis: Long = TEST_NOW_MILLIS,
+) : TimeProvider {
+    override fun currentTimeMillis(): Long = nowMillis
+}
+
+internal class FakeRecentCurrentLocationSpotCacheRepository(
+    var entry: RecentCurrentLocationSpotCacheEntry? = null,
+) : RecentCurrentLocationSpotCacheRepository {
+    var getCallCount = 0
+        private set
+    var saveCallCount = 0
+        private set
+    var clearCallCount = 0
+        private set
+
+    override suspend fun getRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheEntry? {
+        getCallCount += 1
+        return entry
+    }
+
+    override suspend fun saveRecentCurrentLocationSpots(entry: RecentCurrentLocationSpotCacheEntry) {
+        saveCallCount += 1
+        this.entry = entry
+    }
+
+    override suspend fun clearRecentCurrentLocationSpots() {
+        clearCallCount += 1
+        entry = null
+    }
+}
+
+internal class FakeCollectionSpotRepository(
+    internal val keywordSpots: List<CollectionSpot> = emptyList(),
+    internal val locationSpots: List<CollectionSpot> = emptyList(),
+    internal val keywordSearchThrowable: Throwable? = null,
+    internal val locationSearchThrowable: Throwable? = null,
+    internal val locationSearchResultProvider: (suspend () -> List<CollectionSpot>)? = null,
+) : CollectionSpotRepository {
+    val keywords = mutableListOf<String>()
+    var locationSearchCallCount = 0
+    var lastLocationCoordinate: Coordinate? = null
+    var lastRadiusMeter: Int? = null
+
+    override suspend fun searchByKeyword(
+        keyword: String,
+        types: Set<CollectionSpotType>,
+    ): List<CollectionSpot> {
+        keywords += keyword
+        keywordSearchThrowable?.let { throw it }
+        return keywordSpots
+    }
+
+    override suspend fun searchByLocation(
+        coordinate: Coordinate,
+        radiusMeter: Int,
+        types: Set<CollectionSpotType>,
+    ): List<CollectionSpot> {
+        locationSearchCallCount += 1
+        lastLocationCoordinate = coordinate
+        lastRadiusMeter = radiusMeter
+        locationSearchThrowable?.let { throw it }
+        locationSearchResultProvider?.let { provider -> return provider() }
+        return locationSpots
+    }
+
+    override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot = spot
+}
+
+internal fun collectionSpotFavorite(targetId: String): Favorite =
+    Favorite(
+        type = FavoriteTargetType.COLLECTION_SPOT,
+        targetId = targetId,
+        savedAtMillis = 1L,
+    )
+
+internal class FakeFavoriteRepository(
+    initialFavorites: List<Favorite> = emptyList(),
+) : FavoriteRepository {
+    internal val favorites = MutableStateFlow(initialFavorites)
+
+    override fun observeFavorites(): Flow<List<Favorite>> = favorites
+
+    override fun observeFavorite(
+        type: FavoriteTargetType,
+        targetId: String,
+    ): Flow<Boolean> =
+        favorites.map { items ->
+            items.any { favorite -> favorite.type == type && favorite.targetId == targetId }
+        }
+
+    override suspend fun isFavorite(
+        type: FavoriteTargetType,
+        targetId: String,
+    ): Boolean =
+        favorites.value.any { favorite -> favorite.type == type && favorite.targetId == targetId }
+
+    override suspend fun toggleFavorite(favorite: Favorite): Boolean {
+        return if (isFavorite(favorite.type, favorite.targetId)) {
+            removeFavorite(favorite.type, favorite.targetId)
+            false
+        } else {
+            addFavorite(favorite)
+            true
+        }
+    }
+
+    override suspend fun addFavorite(favorite: Favorite) {
+        favorites.value =
+            favorites.value
+                .filterNot { it.type == favorite.type && it.targetId == favorite.targetId } + favorite
+    }
+
+    override suspend fun removeFavorite(
+        type: FavoriteTargetType,
+        targetId: String,
+    ) {
+        favorites.value =
+            favorites.value.filterNot { it.type == type && it.targetId == targetId }
+    }
+}
+
+internal class FakeCollectionSpotFavoriteSnapshotRepository(
+    initialSnapshots: List<CollectionSpotFavoriteSnapshot> = emptyList(),
+) : CollectionSpotFavoriteSnapshotRepository {
+    val snapshots = MutableStateFlow(initialSnapshots)
+
+    override fun observeSnapshots(): Flow<List<CollectionSpotFavoriteSnapshot>> = snapshots
+
+    override suspend fun getSnapshot(targetId: String): CollectionSpotFavoriteSnapshot? =
+        snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+
+    override suspend fun upsertSnapshot(snapshot: CollectionSpotFavoriteSnapshot) {
+        snapshots.value =
+            snapshots.value
+                .filterNot { it.targetId == snapshot.targetId } + snapshot
+    }
+
+    override suspend fun deleteSnapshot(targetId: String) {
+        snapshots.value = snapshots.value.filterNot { it.targetId == targetId }
+    }
+}
+
+internal class FakeCollectionSpotFavoriteRepository(
+    internal val favoriteRepository: FakeFavoriteRepository,
+    internal val snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository,
+) : CollectionSpotFavoriteRepository {
+    override suspend fun toggleFavorite(spot: CollectionSpot): Boolean {
+        val isFavorite =
+            favoriteRepository.toggleFavorite(
+                Favorite(
+                    type = FavoriteTargetType.COLLECTION_SPOT,
+                    targetId = spot.id,
+                    savedAtMillis = TEST_NOW_MILLIS,
+                ),
+            )
+
+        if (isFavorite) {
+            snapshotRepository.upsertSnapshot(spot.toFavoriteSnapshot())
+        } else {
+            snapshotRepository.deleteSnapshot(spot.id)
+        }
+
+        return isFavorite
+    }
+
+    override suspend fun removeFavorite(targetId: String) {
+        favoriteRepository.removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId)
+        snapshotRepository.deleteSnapshot(targetId)
+    }
+}
+
+internal const val TEST_NOW_MILLIS = 20 * 60 * 1_000L

@@ -1,11 +1,11 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.core.net.toUri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Button
@@ -43,8 +43,8 @@ fun ItemGuideDetailRoute(
     guideId: String,
     onBackClick: () -> Unit,
     onCollectionSpotTypeClick: (CollectionSpotType) -> Unit,
-    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     viewModel: ItemGuideDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -99,7 +99,7 @@ fun ItemGuideDetailRoute(
                     onOfficialGuideClick = { url ->
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                                Intent(Intent.ACTION_VIEW, url.toUri()),
                             )
                         }.onFailure {
                             viewModel.showOfficialGuideOpenFailedMessage()
@@ -135,13 +135,16 @@ fun ItemGuideDetailRoute(
 }
 
 @Composable
-private fun ItemGuideDetailSnackbarIcon(icon: ItemGuideDetailMessageIcon) {
+private fun ItemGuideDetailSnackbarIcon(
+    icon: ItemGuideDetailMessageIcon,
+    modifier: Modifier = Modifier,
+) {
     when (icon) {
         ItemGuideDetailMessageIcon.Favorite -> {
             Icon(
                 painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
                 contentDescription = null,
-                modifier = Modifier.size(SnackbarIconSize),
+                modifier = modifier.size(SnackbarIconSize),
                 tint = MaterialTheme.colorScheme.tertiary,
             )
         }
@@ -150,7 +153,7 @@ private fun ItemGuideDetailSnackbarIcon(icon: ItemGuideDetailMessageIcon) {
             Icon(
                 imageVector = Icons.Filled.ErrorOutline,
                 contentDescription = null,
-                modifier = Modifier.size(SnackbarIconSize),
+                modifier = modifier.size(SnackbarIconSize),
                 tint = MaterialTheme.colorScheme.tertiary,
             )
         }
