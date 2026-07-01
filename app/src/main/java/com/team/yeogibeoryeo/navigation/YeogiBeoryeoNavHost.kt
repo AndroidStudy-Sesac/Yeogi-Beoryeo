@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
+import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.expandVertically
@@ -254,14 +255,14 @@ fun YeogiBeoryeoNavHost(
                     onFreePickupGuideClick = {
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(FreePickupGuideUrl)),
+                                Intent(Intent.ACTION_VIEW, FreePickupGuideUrl.toUri()),
                             )
                         }.isSuccess
                     },
                     onOfficialSiteClick = { url ->
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                                Intent(Intent.ACTION_VIEW, url.toUri()),
                             )
                         }.isSuccess
                     },

@@ -1,11 +1,11 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.core.net.toUri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Button
@@ -99,7 +99,7 @@ fun ItemGuideDetailRoute(
                     onOfficialGuideClick = { url ->
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                                Intent(Intent.ACTION_VIEW, url.toUri()),
                             )
                         }.onFailure {
                             viewModel.showOfficialGuideOpenFailedMessage()
