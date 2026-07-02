@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
@@ -37,6 +38,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val locationPermissionChecker: LocationPermissionChecker,
     private val getFreshRecentCurrentLocationSpotsUseCase: GetFreshRecentCurrentLocationSpotsUseCase,
     private val saveRecentCurrentLocationSpotsUseCase: SaveRecentCurrentLocationSpotsUseCase,
+    private val clearRecentCurrentLocationSpotsUseCase: ClearRecentCurrentLocationSpotsUseCase,
     private val observeFavoritesUseCase: ObserveFavoritesUseCase,
     private val toggleCollectionSpotFavoriteUseCase: ToggleCollectionSpotFavoriteUseCase,
     private val calculateDistanceMeterUseCase: CalculateDistanceMeterUseCase,
@@ -171,6 +173,11 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationRefreshJob?.cancel()
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
+            if (!locationPermissionChecker.hasFineLocationPermission()) {
+                onLocationPermissionDenied()
+                return@launch
+            }
+
             val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
 
             if (cachedEntry != null) {
@@ -320,6 +327,25 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onLocationPermissionDenied() {
+        clearRecentCurrentLocationCache()
+        showLocationPermissionDeniedNotice()
+    }
+
+    fun onLocationPermissionRevoked() {
+        clearRecentCurrentLocationCache()
+
+        if (uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION) {
+            showLocationPermissionDeniedNotice()
+        }
+    }
+
+    private fun clearRecentCurrentLocationCache() {
+        viewModelScope.launch {
+            clearRecentCurrentLocationSpotsUseCase()
+        }
+    }
+
+    private fun showLocationPermissionDeniedNotice() {
         originalSpots = emptyList()
 
         _uiState.update {
@@ -565,9 +591,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             }
 
             CurrentLocationResult.PermissionDenied -> {
-                if (!preservePreviousResultOnFailure) {
-                    onLocationPermissionDenied()
-                }
+                onLocationPermissionDenied()
             }
         }
     }
