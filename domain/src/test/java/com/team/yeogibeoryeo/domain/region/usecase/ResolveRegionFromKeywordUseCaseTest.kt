@@ -450,5 +450,9 @@ class ResolveRegionFromKeywordUseCaseTest {
         override suspend fun normalizeRegionForRegionalGuide(
             region: Region
         ): Region = region
+
+        override suspend fun findAdminDongCandidatesForLegalDong(
+            region: Region
+        ): List<Region> = emptyList()
     }
 }

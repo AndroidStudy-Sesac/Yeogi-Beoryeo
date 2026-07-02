@@ -313,6 +313,141 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     }
 
     @Test
+    fun `법정동 매핑 후보와 일치하는 행정동 후보가 여러 개면 후보 목록을 반환한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    managementZoneName = "하계1동",
+                    targetRegionName = "하계1동"
+                ),
+                regionalDisposalGuide(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    managementZoneName = "하계2동",
+                    targetRegionName = "하계2동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    eupmyeondong = "하계동"
+                ),
+                sigunguQuery = "노원구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계1동"),
+                Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계2동")
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals("하계1동", candidates[0].managementZoneName)
+        assertEquals("하계2동", candidates[1].managementZoneName)
+    }
+
+    @Test
+    fun `기존 직접 매칭 후보가 있으면 법정동 매핑 후보보다 우선한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    managementZoneName = "하계동",
+                    targetRegionName = "하계동"
+                ),
+                regionalDisposalGuide(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    managementZoneName = "하계1동",
+                    targetRegionName = "하계1동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    eupmyeondong = "하계동"
+                ),
+                sigunguQuery = "노원구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계1동")
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("하계동", guide.managementZoneName)
+    }
+
+    @Test
+    fun `법정동 매핑 후보와 일치하는 행정동 후보가 하나면 해당 후보를 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    managementZoneName = "상계1동",
+                    targetRegionName = "상계1동"
+                ),
+                regionalDisposalGuide(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    managementZoneName = "하계1동",
+                    targetRegionName = "하계1동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    eupmyeondong = "하계동"
+                ),
+                sigunguQuery = "노원구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계1동")
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("하계1동", guide.managementZoneName)
+    }
+
+    @Test
+    fun `법정동 매핑 후보가 있어도 info 후보와 교집합이 없으면 기존 CandidateNotFound 흐름을 유지한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    managementZoneName = "상계1동",
+                    targetRegionName = "상계1동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "서울특별시",
+                    sigungu = "노원구",
+                    eupmyeondong = "하계동"
+                ),
+                sigunguQuery = "노원구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계1동")
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
     fun `대상지역명과 관리구역명 기준에서 서로 다른 후보가 잡히면 후보 목록을 반환한다`() {
         val result = useCase(
             candidates = listOf(
