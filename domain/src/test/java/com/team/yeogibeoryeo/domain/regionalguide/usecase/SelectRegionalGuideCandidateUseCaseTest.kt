@@ -316,20 +316,20 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     fun `법정동 매핑 후보와 일치하는 행정동 후보가 여러 개면 후보 목록을 반환한다`() {
         val result = useCase(
             candidates = listOf(
-                guide(
+                regionalDisposalGuide(
                     sido = "서울특별시",
                     sigungu = "노원구",
                     managementZoneName = "하계1동",
                     targetRegionName = "하계1동"
                 ),
-                guide(
+                regionalDisposalGuide(
                     sido = "서울특별시",
                     sigungu = "노원구",
                     managementZoneName = "하계2동",
                     targetRegionName = "하계2동"
                 )
             ),
-            query = query(
+            query = regionalGuideQuery(
                 displayRegion = Region(
                     sido = "서울특별시",
                     sigungu = "노원구",
@@ -354,20 +354,20 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     fun `기존 직접 매칭 후보가 있으면 법정동 매핑 후보보다 우선한다`() {
         val result = useCase(
             candidates = listOf(
-                guide(
+                regionalDisposalGuide(
                     sido = "서울특별시",
                     sigungu = "노원구",
                     managementZoneName = "하계동",
                     targetRegionName = "하계동"
                 ),
-                guide(
+                regionalDisposalGuide(
                     sido = "서울특별시",
                     sigungu = "노원구",
                     managementZoneName = "하계1동",
                     targetRegionName = "하계1동"
                 )
             ),
-            query = query(
+            query = regionalGuideQuery(
                 displayRegion = Region(
                     sido = "서울특별시",
                     sigungu = "노원구",
@@ -389,20 +389,20 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     fun `법정동 매핑 후보와 일치하는 행정동 후보가 하나면 해당 후보를 선택한다`() {
         val result = useCase(
             candidates = listOf(
-                guide(
+                regionalDisposalGuide(
                     sido = "서울특별시",
                     sigungu = "노원구",
                     managementZoneName = "상계1동",
                     targetRegionName = "상계1동"
                 ),
-                guide(
+                regionalDisposalGuide(
                     sido = "서울특별시",
                     sigungu = "노원구",
                     managementZoneName = "하계1동",
                     targetRegionName = "하계1동"
                 )
             ),
-            query = query(
+            query = regionalGuideQuery(
                 displayRegion = Region(
                     sido = "서울특별시",
                     sigungu = "노원구",
@@ -424,14 +424,14 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     fun `법정동 매핑 후보가 있어도 info 후보와 교집합이 없으면 기존 CandidateNotFound 흐름을 유지한다`() {
         val result = useCase(
             candidates = listOf(
-                guide(
+                regionalDisposalGuide(
                     sido = "서울특별시",
                     sigungu = "노원구",
                     managementZoneName = "상계1동",
                     targetRegionName = "상계1동"
                 )
             ),
-            query = query(
+            query = regionalGuideQuery(
                 displayRegion = Region(
                     sido = "서울특별시",
                     sigungu = "노원구",

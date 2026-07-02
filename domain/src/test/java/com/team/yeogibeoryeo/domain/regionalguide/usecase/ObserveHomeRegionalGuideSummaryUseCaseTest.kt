@@ -8,6 +8,8 @@ import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSna
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
+import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
@@ -382,6 +384,8 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                     repository = regionalRepository,
                     normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
                     selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(),
+                    findAdminDongCandidatesForLegalDongUseCase =
+                        FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                 ),
             getTodayRegionalWasteSummaryUseCase = GetTodayRegionalWasteSummaryUseCase(),
         )
@@ -505,5 +509,27 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
             requestedSigungu += query.sigunguQuery
             return result ?: Result.success(candidates.filter { it.region.sigungu == query.sigunguQuery })
         }
+    }
+
+    private class FakeRegionOptionsRepository : RegionOptionsRepository {
+        override suspend fun getSidoOptions(): List<String> = emptyList()
+
+        override suspend fun getSigunguOptions(sido: String): List<String> = emptyList()
+
+        override suspend fun getEupmyeondongOptions(
+            sido: String,
+            sigungu: String,
+        ): List<String> = emptyList()
+
+        override suspend fun findRegionsByEupmyeondongKeyword(keyword: String): List<Region> =
+            emptyList()
+
+        override suspend fun findRegionsBySigunguKeyword(keyword: String): List<Region> =
+            emptyList()
+
+        override suspend fun normalizeRegionForRegionalGuide(region: Region): Region = region
+
+        override suspend fun findAdminDongCandidatesForLegalDong(region: Region): List<Region> =
+            emptyList()
     }
 }
