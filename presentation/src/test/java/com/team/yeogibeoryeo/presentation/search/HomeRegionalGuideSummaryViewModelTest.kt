@@ -40,7 +40,7 @@ class HomeRegionalGuideSummaryViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `no regional guide favorite shows no favorite state`() =
+    fun `지역 가이드 즐겨찾기가 없으면 즐겨찾기 없음 상태를 보여준다`() =
         runTest {
             val viewModel = createViewModel()
             collectState(viewModel)
@@ -53,7 +53,7 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `latest regional guide favorite summary is shown`() =
+    fun `가장 최근 지역 가이드 즐겨찾기 요약을 보여준다`() =
         runTest {
             val snapshot =
                 sampleSnapshot(
@@ -93,7 +93,7 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `retry restarts latest info lookup`() =
+    fun `재시도하면 마지막 지역 가이드 조회를 다시 실행한다`() =
         runTest {
             val snapshot = sampleSnapshot(targetId = "regional-target")
             val regionalRepository =
@@ -129,7 +129,7 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `same favorite keeps previous summary while refreshing`() =
+    fun `같은 즐겨찾기 갱신 중에는 이전 요약을 유지한다`() =
         runTest {
             val snapshot = sampleSnapshot(targetId = "regional-target")
             val regionalRepository =
@@ -168,7 +168,7 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `unknown general waste days show summary with fallback disposal days`() =
+    fun `일반쓰레기 요일이 미지정이면 대체 요일이 적용된 요약을 보여준다`() =
         runTest {
             val snapshot = sampleSnapshot(targetId = "regional-target")
             val viewModel =

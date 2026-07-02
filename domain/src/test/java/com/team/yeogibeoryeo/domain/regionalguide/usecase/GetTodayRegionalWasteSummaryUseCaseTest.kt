@@ -15,7 +15,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     private val useCase = GetTodayRegionalWasteSummaryUseCase()
 
     @Test
-    fun `regional guide schedules are summarized with general waste representative`() {
+    fun `지역 가이드 일정을 일반쓰레기 대표값 기준으로 요약한다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -58,7 +58,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `general waste schedule is selected as representative when waste schedules differ`() {
+    fun `품목별 일정이 다르면 일반쓰레기 일정을 대표값으로 선택한다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -95,7 +95,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `different flags are false when waste schedules have same days and time`() {
+    fun `품목별 요일과 시간이 같으면 품목별 다름 상태가 꺼져 있다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -138,7 +138,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `general waste schedule is selected as representative even when other waste has different days`() {
+    fun `다른 품목의 요일이 달라도 일반쓰레기 일정을 대표값으로 선택한다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -180,7 +180,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `missing general waste schedule is not replaced with other waste representative`() {
+    fun `일반쓰레기 일정이 없으면 다른 품목 값을 대표값으로 대체하지 않는다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -209,7 +209,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `unclear general waste days are not used as representative days`() {
+    fun `일반쓰레기 요일이 불명확하면 대표 요일로 사용하지 않는다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -242,7 +242,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `general waste days are shown without today weekday matching`() {
+    fun `일반쓰레기 요일은 오늘 요일 매칭 없이 표시한다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -269,7 +269,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `blank general waste days use fallback representative days`() {
+    fun `일반쓰레기 요일이 공백이면 대표 요일 대체 문구를 사용한다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -296,7 +296,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `not applicable general waste days use fallback representative days`() {
+    fun `일반쓰레기 요일이 해당없음이면 대표 요일 대체 문구를 사용한다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -324,7 +324,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `unknown general waste days use fallback representative days`() {
+    fun `일반쓰레기 요일이 미지정이면 대표 요일 대체 문구를 사용한다`() {
         val guide =
             sampleGuide(
                 schedules =
