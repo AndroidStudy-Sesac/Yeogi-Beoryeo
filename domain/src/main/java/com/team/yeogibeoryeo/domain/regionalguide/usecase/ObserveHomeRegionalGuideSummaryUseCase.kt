@@ -9,12 +9,12 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.TodayRegionalWasteSummaryResult
-import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
 
 class ObserveHomeRegionalGuideSummaryUseCase
     @Inject
@@ -45,7 +45,12 @@ class ObserveHomeRegionalGuideSummaryUseCase
                             return@flow
                         }
 
-                        emit(HomeRegionalGuideSummaryResult.Loading)
+                        emit(
+                            HomeRegionalGuideSummaryResult.Loading(
+                                targetId = snapshot.targetId,
+                                regionName = snapshot.region.displayName(),
+                            ),
+                        )
                         emit(loadSummary(snapshot))
                     }
                 }

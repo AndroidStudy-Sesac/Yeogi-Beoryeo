@@ -4,8 +4,10 @@ data class HomeRegionalGuideSummary(
     val targetId: String,
     val regionName: String,
     val wasteTypeNames: List<String>,
-    val disposalDays: String,
+    val disposalDays: String?,
     val disposalTime: String?,
+    val hasDifferentDisposalDays: Boolean,
+    val hasDifferentDisposalTime: Boolean,
 )
 
 sealed interface TodayRegionalWasteSummaryResult {
@@ -19,7 +21,10 @@ sealed interface TodayRegionalWasteSummaryResult {
 }
 
 sealed interface HomeRegionalGuideSummaryResult {
-    data object Loading : HomeRegionalGuideSummaryResult
+    data class Loading(
+        val targetId: String? = null,
+        val regionName: String? = null,
+    ) : HomeRegionalGuideSummaryResult
 
     data object NoFavorite : HomeRegionalGuideSummaryResult
 

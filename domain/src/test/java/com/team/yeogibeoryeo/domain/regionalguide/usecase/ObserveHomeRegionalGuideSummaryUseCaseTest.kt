@@ -10,9 +10,8 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavorit
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
@@ -29,7 +28,7 @@ import org.junit.Test
 
 class ObserveHomeRegionalGuideSummaryUseCaseTest {
     @Test
-    fun `no regional guide favorite returns no favorite`() =
+    fun `지역 가이드 즐겨찾기가 없으면 즐겨찾기 없음 상태를 반환한다`() =
         runBlocking {
             val favoriteRepository =
                 FakeFavoriteRepository(
@@ -48,7 +47,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `latest regional guide favorite is selected`() =
+    fun `가장 최근 지역 가이드 즐겨찾기를 선택한다`() =
         runBlocking {
             val oldSnapshot = sampleSnapshot(targetId = "old", sigungu = "중구")
             val latestSnapshot = sampleSnapshot(targetId = "latest", sigungu = "노원구")
@@ -94,7 +93,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `missing snapshot returns favorite restore failed`() =
+    fun `스냅샷이 없으면 즐겨찾기 복원 실패를 반환한다`() =
         runBlocking {
             val favoriteRepository =
                 FakeFavoriteRepository(
@@ -115,7 +114,43 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `multiple restored candidates are not selected arbitrarily`() =
+    fun `스냅샷이 있으면 요약 조회 전 지역명 로딩 상태를 먼저 방출한다`() =
+        runBlocking {
+            val snapshot = sampleSnapshot(targetId = "regional")
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(listOf(snapshot)),
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            candidates = listOf(sampleGuide(region = snapshot.region)),
+                        ),
+                )
+
+            val result = useCase().first()
+
+            assertEquals(
+                HomeRegionalGuideSummaryResult.Loading(
+                    targetId = "regional",
+                    regionName = "서울특별시 > 노원구 > 하계동",
+                ),
+                result,
+            )
+        }
+
+    @Test
+    fun `복원된 후보가 여러 개면 임의로 선택하지 않는다`() =
         runBlocking {
             val snapshot = sampleSnapshot(targetId = "regional")
             val favoriteRepository =
@@ -149,7 +184,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `no today schedule returns no today schedule`() =
+    fun `일정 요일이 불명확하면 대표 요일 대체 문구가 적용된 요약을 반환한다`() =
         runBlocking {
             val snapshot = sampleSnapshot(targetId = "regional")
             val favoriteRepository =
@@ -187,17 +222,17 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
 
             val result = useCase().drop(1).first()
 
-            assertEquals(
-                HomeRegionalGuideSummaryResult.NoTodaySchedule(
-                    targetId = "regional",
-                    regionName = "서울특별시 > 노원구 > 하계동",
-                ),
-                result,
-            )
+            require(result is HomeRegionalGuideSummaryResult.Success)
+            result.summary.run {
+                assertEquals("regional", targetId)
+                assertEquals("서울특별시 > 노원구 > 하계동", regionName)
+                assertEquals(null, disposalDays)
+                assertEquals(null, disposalTime)
+            }
         }
 
     @Test
-    fun `unknown weekday returns schedule needs confirmation`() =
+    fun `일반쓰레기 요일이 미지정이면 대표 요일 대체 문구가 적용된 요약을 반환한다`() =
         runBlocking {
             val snapshot = sampleSnapshot(targetId = "regional")
             val favoriteRepository =
@@ -235,17 +270,17 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
 
             val result = useCase().drop(1).first()
 
-            assertEquals(
-                HomeRegionalGuideSummaryResult.ScheduleNeedsConfirmation(
-                    targetId = "regional",
-                    regionName = "서울특별시 > 노원구 > 하계동",
-                ),
-                result,
-            )
+            require(result is HomeRegionalGuideSummaryResult.Success)
+            result.summary.run {
+                assertEquals("regional", targetId)
+                assertEquals("서울특별시 > 노원구 > 하계동", regionName)
+                assertEquals(null, disposalDays)
+                assertEquals(null, disposalTime)
+            }
         }
 
     @Test
-    fun `repository failure returns failure state`() =
+    fun `저장소 실패 시 실패 상태를 반환한다`() =
         runBlocking {
             val snapshot = sampleSnapshot(targetId = "regional")
             val favoriteRepository =
@@ -287,7 +322,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `favorite changes refresh summary`() =
+    fun `즐겨찾기 변경 시 요약을 갱신한다`() =
         runBlocking {
             val firstSnapshot = sampleSnapshot(targetId = "first", sigungu = "중구")
             val secondSnapshot = sampleSnapshot(targetId = "second", sigungu = "노원구")
