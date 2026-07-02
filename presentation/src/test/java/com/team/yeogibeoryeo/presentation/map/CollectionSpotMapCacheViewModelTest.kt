@@ -219,6 +219,11 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             advanceUntilIdle()
 
             assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(1, cache.clearCallCount)
+            assertEquals(
+                listOf(expectedSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                cache.entry?.spots,
+            )
             assertEquals(
                 listOf(expectedSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
                 viewModel.uiState.value.spots,

@@ -16,6 +16,7 @@ import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEnt
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
@@ -83,6 +84,9 @@ internal fun createViewModel(
         saveRecentCurrentLocationSpotsUseCase = SaveRecentCurrentLocationSpotsUseCase(
             repository = recentCurrentLocationSpotCacheRepository,
             timeProvider = timeProvider,
+        ),
+        clearRecentCurrentLocationSpotsUseCase = ClearRecentCurrentLocationSpotsUseCase(
+            repository = recentCurrentLocationSpotCacheRepository,
         ),
         observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
         toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(

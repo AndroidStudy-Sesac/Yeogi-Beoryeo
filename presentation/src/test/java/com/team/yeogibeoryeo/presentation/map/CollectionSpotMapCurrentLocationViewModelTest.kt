@@ -43,6 +43,115 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
         }
 
     @Test
+    fun `위치 권한이 없으면 수동 현재 위치 검색 시 캐시를 표시하지 않고 삭제한다`() =
+        runTest {
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = freshCacheEntry(listOf(cachedSpot)),
+            )
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                hasFineLocationPermission = false,
+                recentCurrentLocationSpotCacheRepository = cache,
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            assertEquals(0, cache.getCallCount)
+            assertEquals(1, cache.clearCallCount)
+            assertNull(cache.entry)
+            assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+        }
+
+    @Test
+    fun `캐시 표시 후 권한 거부 결과를 받으면 캐시와 현재 위치 결과를 정리한다`() =
+        runTest {
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = freshCacheEntry(listOf(cachedSpot)),
+            )
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.PermissionDenied,
+                hasFineLocationPermission = true,
+                recentCurrentLocationSpotCacheRepository = cache,
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            assertEquals(1, cache.getCallCount)
+            assertEquals(1, cache.clearCallCount)
+            assertNull(cache.entry)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+        }
+
+    @Test
+    fun `권한 철회 시 현재 위치 캐시와 현재 위치 결과를 정리한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository()
+            val repository = FakeCollectionSpotRepository(locationSpots = listOf(locationSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                recentCurrentLocationSpotCacheRepository = cache,
+            )
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            viewModel.onLocationPermissionRevoked()
+            advanceUntilIdle()
+
+            assertEquals(1, cache.clearCallCount)
+            assertNull(cache.entry)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+        }
+
+    @Test
+    fun `권한 철회 시 키워드 검색 결과는 유지하고 현재 위치 캐시만 삭제한다`() =
+        runTest {
+            val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = freshCacheEntry(listOf(cachedSpot)),
+            )
+            val repository = FakeCollectionSpotRepository(keywordSpots = listOf(keywordSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                recentCurrentLocationSpotCacheRepository = cache,
+            )
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.onLocationPermissionRevoked()
+            advanceUntilIdle()
+
+            assertEquals(1, cache.clearCallCount)
+            assertNull(cache.entry)
+            assertEquals(listOf(keywordSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertNull(viewModel.uiState.value.locationNotice)
+            assertNull(viewModel.uiState.value.locationNoticeMessage)
+        }
+
+    @Test
     fun `최근 위치 캐시가 없으면 현재 위치 조회 실패 안내를 표시한다`() =
         runTest {
             val repository = FakeCollectionSpotRepository()
