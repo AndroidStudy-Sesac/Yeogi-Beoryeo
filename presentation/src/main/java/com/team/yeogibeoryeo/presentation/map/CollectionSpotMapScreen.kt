@@ -80,6 +80,9 @@ fun CollectionSpotMapScreen(
     LaunchedEffect(hasFineLocationPermission) {
         if (!hasFineLocationPermission) {
             hasGrantedLocationPermissionInSession = false
+            if (previousFineLocationPermission) {
+                viewModel.onLocationPermissionRevoked()
+            }
         } else if (!previousFineLocationPermission) {
             hasGrantedLocationPermissionInSession = true
             locationTrackingMode = LocationTrackingMode.NoFollow

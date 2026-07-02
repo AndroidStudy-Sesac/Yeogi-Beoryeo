@@ -49,6 +49,8 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val result = useCase()
 
             assertNull(result)
+            assertNull(repository.entry)
+            assertEquals(1, repository.clearCallCount)
         }
 
     @Test
@@ -68,6 +70,8 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val result = useCase()
 
             assertNull(result)
+            assertNull(repository.entry)
+            assertEquals(1, repository.clearCallCount)
         }
 
     @Test
@@ -102,6 +106,9 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
     private class FakeRecentCurrentLocationSpotCacheRepository(
         var entry: RecentCurrentLocationSpotCacheEntry? = null,
     ) : RecentCurrentLocationSpotCacheRepository {
+        var clearCallCount = 0
+            private set
+
         override suspend fun getRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheEntry? {
             return entry
         }
@@ -111,6 +118,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
         }
 
         override suspend fun clearRecentCurrentLocationSpots() {
+            clearCallCount += 1
             entry = null
         }
     }

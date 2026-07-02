@@ -12,8 +12,11 @@ class GetFreshRecentCurrentLocationSpotsUseCase @Inject constructor(
     suspend operator fun invoke(): RecentCurrentLocationSpotCacheEntry? {
         val entry = repository.getRecentCurrentLocationSpots() ?: return null
 
-        return entry.takeIf {
-            it.isFresh(nowMillis = timeProvider.currentTimeMillis())
+        if (entry.isFresh(nowMillis = timeProvider.currentTimeMillis())) {
+            return entry
         }
+
+        repository.clearRecentCurrentLocationSpots()
+        return null
     }
 }
