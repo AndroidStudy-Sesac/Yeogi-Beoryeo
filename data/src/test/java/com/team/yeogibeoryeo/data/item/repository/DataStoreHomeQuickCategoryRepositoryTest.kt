@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -72,8 +73,11 @@ class DataStoreHomeQuickCategoryRepositoryTest {
     private suspend fun withRepository(
         block: suspend (DataStoreHomeQuickCategoryRepository) -> Unit,
     ) {
-        val file = File.createTempFile("home-quick-category", ".preferences_pb")
-        file.delete()
+        val file = withContext(Dispatchers.IO) {
+            File.createTempFile("home-quick-category", ".preferences_pb").apply {
+                delete()
+            }
+        }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val dataStore =
             PreferenceDataStoreFactory.create(
@@ -86,7 +90,9 @@ class DataStoreHomeQuickCategoryRepositoryTest {
             block(repository)
         } finally {
             scope.cancel()
-            file.delete()
+            withContext(Dispatchers.IO) {
+                file.delete()
+            }
         }
     }
 }
