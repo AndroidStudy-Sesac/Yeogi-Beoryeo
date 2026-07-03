@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
-import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalCategoryGuidesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.LimitHomeQuickCategoriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.ObserveHomeQuickCategoriesUseCase
@@ -158,8 +157,8 @@ constructor(
                             guides.firstOrNull { it.name == category.representativeGuideName }
                                 ?: guides.firstOrNull()
 
-                        if (representativeGuide != null) {
-                            _events.emit(ItemSearchEvent.NavigateToGuide(representativeGuide))
+                        representativeGuide?.let {
+                            _events.emit(ItemSearchEvent.NavigateToGuide(it))
                         }
                     }
                     .onFailure {
