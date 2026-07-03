@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -15,6 +16,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSp
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
@@ -100,9 +102,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 } else {
                     it.hasSearched
                 },
-                errorMessage = null,
+                errorMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = if (shouldCancelSpotSearch) {
                     MapSearchMode.KEYWORD
@@ -127,9 +128,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                     selectedSpot = null,
                     isLoading = false,
                     hasSearched = false,
-                    errorMessage = "검색어를 입력해주세요.",
+                    errorMessageResId = R.string.map_search_blank_keyword_message,
                     locationNotice = null,
-                    locationNoticeMessage = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
                 )
@@ -143,9 +143,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
-                    errorMessage = null,
+                    errorMessageResId = null,
                     locationNotice = null,
-                    locationNoticeMessage = null,
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
@@ -163,7 +162,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 if (throwable is CancellationException) throw throwable
 
                 updateSpotFailure(
-                    message = MapLocationNotices.SpotSearchFailureMessage,
+                    messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
                 )
             }
         }
@@ -201,9 +200,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
-                    errorMessage = null,
+                    errorMessageResId = null,
                     locationNotice = null,
-                    locationNoticeMessage = null,
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.MAP_CENTER,
@@ -222,7 +220,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 if (throwable is CancellationException) throw throwable
 
                 updateSpotFailure(
-                    message = MapLocationNotices.SpotSearchFailureMessage,
+                    messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
                 )
             }
         }
@@ -250,7 +248,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             if (!preservePreviousResultOnFailure) {
                 updateSpotFailure(
-                    message = MapLocationNotices.CurrentLocationSpotSearchFailureMessage,
+                    messageResId = MapLocationNotices.CurrentLocationSpotSearchFailureMessageResId,
                 )
             }
         }
@@ -308,9 +306,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                     isBookmarked = request.targetId in favoriteSpotIds,
                 ),
                 isLoading = false,
-                errorMessage = null,
+                errorMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
                 favoriteSpotMoveRequestId = request.targetId,
                 favoriteSpotMoveRequestSequence = it.favoriteSpotMoveRequestSequence + 1,
                 isFavoriteSpotNearbyLoading = true,
@@ -360,9 +357,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
-                errorMessage = null,
+                errorMessageResId = null,
                 locationNotice = MapLocationNotices.PermissionDenied,
-                locationNoticeMessage = MapLocationNotices.PermissionDenied.message,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -439,9 +435,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
-                errorMessage = null,
+                errorMessageResId = null,
                 locationNotice = MapLocationNotices.CurrentLocationUnavailable,
-                locationNoticeMessage = MapLocationNotices.CurrentLocationUnavailable.message,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -457,9 +452,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
-                errorMessage = null,
+                errorMessageResId = null,
                 locationNotice = MapLocationNotices.LocationServiceDisabled,
-                locationNoticeMessage = MapLocationNotices.LocationServiceDisabled.message,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -468,7 +462,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     fun clearErrorMessage() {
         _uiState.update {
-            it.copy(errorMessage = null)
+            it.copy(errorMessageResId = null)
         }
     }
 
@@ -486,9 +480,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = true,
-                errorMessage = null,
+                errorMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
                 isFavoriteSpotNearbyLoading = false,
             )
         }
@@ -524,9 +517,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                         isLoading = false,
                         isFavoriteSpotNearbyLoading = false,
                         hasSearched = true,
-                        errorMessage = null,
+                        errorMessageResId = null,
                         locationNotice = null,
-                        locationNoticeMessage = null,
                         searchMode = MapSearchMode.CURRENT_LOCATION,
                     )
                 }
@@ -540,7 +532,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    private fun updateSpotFailure(message: String) {
+    private fun updateSpotFailure(@StringRes messageResId: Int) {
         originalSpots = emptyList()
 
         _uiState.update {
@@ -549,9 +541,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = true,
-                errorMessage = message,
+                errorMessageResId = messageResId,
                 locationNotice = null,
-                locationNoticeMessage = null,
                 isFavoriteSpotNearbyLoading = false,
             )
         }
@@ -566,9 +557,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
-                    errorMessage = null,
+                    errorMessageResId = null,
                     locationNotice = null,
-                    locationNoticeMessage = null,
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.CURRENT_LOCATION,
@@ -616,9 +606,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = true,
-                errorMessage = null,
+                errorMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
             )

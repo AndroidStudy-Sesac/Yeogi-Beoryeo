@@ -51,8 +51,7 @@ class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTes
 
             assertEquals(0, repository.locationSearchCallCount)
             assertFalse(viewModel.uiState.value.hasSearched)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
-            assertNull(viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
     @Test
@@ -224,8 +223,7 @@ class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTes
             assertEquals(0, repository.locationSearchCallCount)
             assertFalse(viewModel.uiState.value.hasSearched)
             assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
-            assertNull(viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
     @Test

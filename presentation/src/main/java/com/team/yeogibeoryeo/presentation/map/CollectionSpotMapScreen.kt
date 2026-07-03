@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -192,8 +193,7 @@ private fun CollectionSpotMapContent(
     val selectedSpot = uiState.selectedSpot
     val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
     val hasNoticeOrError = uiState.locationNotice != null ||
-        uiState.locationNoticeMessage != null ||
-        uiState.errorMessage != null
+        uiState.errorMessageResId != null
     val mapLocationTrackingMode = when {
         !isLocationPermissionGranted -> LocationTrackingMode.None
         locationTrackingMode == LocationTrackingMode.None -> LocationTrackingMode.NoFollow
@@ -222,9 +222,8 @@ private fun CollectionSpotMapContent(
         uiState.hasSearched,
         uiState.isLoading,
         uiState.searchMode,
-        uiState.errorMessage,
+        uiState.errorMessageResId,
         uiState.locationNotice,
-        uiState.locationNoticeMessage,
     ) {
         when {
             isSpotSearchLoading -> {
@@ -284,6 +283,9 @@ private fun CollectionSpotMapContent(
         val navigationBarBottomPadding = with(density) {
             WindowInsets.navigationBars.getBottom(density).toDp()
         }
+        val searchBarTopPadding = with(density) {
+            WindowInsets.statusBars.getTop(density).toDp()
+        } + MapOverlayControlsTopPadding
 
         CollectionSpotNaverMap(
             spots = uiState.spots,
@@ -332,6 +334,7 @@ private fun CollectionSpotMapContent(
                     sheetLevel = MapSheetLevel.Peek
                     onSearchClick()
                 },
+                topPadding = searchBarTopPadding,
             )
         }
 
@@ -420,8 +423,7 @@ private fun CollectionSpotMapContent(
                             hasSearched = uiState.hasSearched,
                             selectedTypes = uiState.selectedTypes,
                             locationNotice = uiState.locationNotice,
-                            locationNoticeMessage = uiState.locationNoticeMessage,
-                            errorMessage = uiState.errorMessage,
+                            errorMessageResId = uiState.errorMessageResId,
                             onTypeClick = onTypeClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,
                             onSpotFavoriteClick = onSpotFavoriteClick,
@@ -444,8 +446,7 @@ private fun CollectionSpotMapContent(
 private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
     get() = isLoading ||
         locationNotice != null ||
-        locationNoticeMessage != null ||
-        errorMessage != null ||
+        errorMessageResId != null ||
         hasSearched ||
         spots.isNotEmpty() ||
         selectedSpot != null
@@ -512,6 +513,7 @@ private fun MapSearchMode.toLoadingDescriptionResId(): Int {
 
 private val MyLocationButtonHorizontalPadding = 16.dp
 private val MyLocationButtonBottomPadding = 16.dp
+private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
 
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
