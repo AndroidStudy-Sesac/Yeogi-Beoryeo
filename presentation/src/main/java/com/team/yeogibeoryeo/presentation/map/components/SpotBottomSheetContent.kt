@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
 import androidx.compose.foundation.clickable
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,11 +19,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.MapLocationNotice
 import com.team.yeogibeoryeo.presentation.map.MapLocationNoticeAction
 
@@ -73,7 +76,7 @@ fun SpotBottomSheetContent(
                 EmptySpotResult(
                     title = locationNotice.title,
                     description = locationNotice.message,
-                    actionLabel = locationNotice.action?.toActionLabel(),
+                    actionLabel = locationNotice.action?.let { stringResource(it.toActionLabelResId()) },
                     onActionClick = locationNotice.action?.let { action ->
                         { onLocationNoticeActionClick(action) }
                     },
@@ -82,14 +85,14 @@ fun SpotBottomSheetContent(
 
             locationNoticeMessage != null -> {
                 EmptySpotResult(
-                    title = "현재 위치 검색 안내",
+                    title = stringResource(R.string.map_current_location_notice_title),
                     description = locationNoticeMessage,
                 )
             }
 
             errorMessage != null -> {
                 EmptySpotResult(
-                    title = "수거 장소를 불러오지 못했습니다.",
+                    title = stringResource(R.string.map_search_failed_title),
                     description = errorMessage,
                 )
             }
@@ -125,9 +128,9 @@ fun SpotBottomSheetHeader(
     ) {
         Text(
             text = if (hasSearched) {
-                "검색 결과 ${resultCount}개"
+                stringResource(R.string.map_spot_result_count, resultCount)
             } else {
-                "수거 장소 검색"
+                stringResource(R.string.map_spot_search_title)
             },
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
             style = MaterialTheme.typography.titleMedium,
@@ -157,11 +160,11 @@ private fun SpotBottomSheetLoading(
 @Composable
 fun SpotDetailBottomSheetContent(
     spot: CollectionSpot,
+    modifier: Modifier = Modifier,
     isNearbyLoading: Boolean = false,
     onFavoriteClick: (CollectionSpot) -> Unit,
     onRegionalGuideClick: (String) -> Unit = {},
     onCloseClick: () -> Unit,
-    modifier: Modifier = Modifier,
     bottomContentPadding: Dp = 0.dp,
 ) {
     Column(
@@ -185,7 +188,7 @@ fun SpotDetailBottomSheetContent(
                     .fillMaxWidth()
                     .padding(top = 12.dp),
             ) {
-                Text(text = "이 지역 배출 정보 보기")
+                Text(text = stringResource(R.string.map_regional_guide_action))
             }
         }
 
@@ -203,7 +206,7 @@ fun SpotDetailBottomSheetContent(
                     strokeWidth = 2.dp,
                 )
                 Text(
-                    text = "주변 목록 준비 중",
+                    text = stringResource(R.string.map_nearby_list_loading),
                     modifier = Modifier.padding(end = 12.dp),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -211,7 +214,7 @@ fun SpotDetailBottomSheetContent(
             }
 
             Text(
-                text = "목록으로",
+                text = stringResource(R.string.map_spot_detail_back_to_list),
                 modifier = Modifier
                     .clickable(onClick = onCloseClick),
                 style = MaterialTheme.typography.labelLarge,
@@ -352,9 +355,10 @@ private fun sampleSpotBottomSheetSpots(): List<CollectionSpot> {
     )
 }
 
-private fun MapLocationNoticeAction.toActionLabel(): String {
+@StringRes
+private fun MapLocationNoticeAction.toActionLabelResId(): Int {
     return when (this) {
-        MapLocationNoticeAction.OpenAppSettings -> "앱 설정 열기"
-        MapLocationNoticeAction.OpenLocationSettings -> "위치 설정 열기"
+        MapLocationNoticeAction.OpenAppSettings -> R.string.map_location_notice_open_app_settings
+        MapLocationNoticeAction.OpenLocationSettings -> R.string.map_location_notice_open_location_settings
     }
 }

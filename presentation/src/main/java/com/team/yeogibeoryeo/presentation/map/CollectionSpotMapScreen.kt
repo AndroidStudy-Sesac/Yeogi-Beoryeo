@@ -4,7 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -24,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,6 +38,7 @@ import com.naver.maps.map.compose.LocationTrackingMode
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.components.CollectionSpotNaverMap
 import com.team.yeogibeoryeo.presentation.map.components.MapSearchLoadingOverlay
 import com.team.yeogibeoryeo.presentation.map.components.MapCenterSearchButton
@@ -52,11 +56,11 @@ import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 
 @Composable
 fun CollectionSpotMapScreen(
+    modifier: Modifier = Modifier,
     initialSpotType: CollectionSpotType? = null,
     favoriteSpotMoveRequest: FavoriteSpotMapMoveRequest? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onRegionalGuideClick: (String) -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -84,7 +88,6 @@ fun CollectionSpotMapScreen(
                 viewModel.onLocationPermissionRevoked()
             }
         } else if (!previousFineLocationPermission) {
-            hasGrantedLocationPermissionInSession = true
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.searchByCurrentLocation()
         }
@@ -98,7 +101,6 @@ fun CollectionSpotMapScreen(
                 currentHasFineLocationPermission &&
                 currentLocationNotice.shouldRetryCurrentLocationSearchOnResume()
             ) {
-                hasGrantedLocationPermissionInSession = true
                 previousFineLocationPermission = true
                 locationTrackingMode = LocationTrackingMode.NoFollow
                 viewModel.searchByCurrentLocation()
@@ -184,7 +186,7 @@ private fun CollectionSpotMapContent(
     val shouldShowBottomSheet = uiState.shouldShowBottomSheet && !isSpotSearchLoading
     var mapUiMode by remember { mutableStateOf(MapUiMode.Browsing) }
     var sheetLevel by remember { mutableStateOf(MapSheetLevel.Hidden) }
-    var sheetRevealRequest by remember { mutableStateOf(0) }
+    var sheetRevealRequest by remember { mutableIntStateOf(0) }
     var mapCenterCoordinate by remember { mutableStateOf<Coordinate?>(null) }
     var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
     val selectedSpot = uiState.selectedSpot
@@ -275,7 +277,7 @@ private fun CollectionSpotMapContent(
         onBottomBarVisibilityChanged(!shouldHideBottomBar)
     }
 
-    BoxWithConstraints(
+    Box(
         modifier = modifier.fillMaxSize(),
     ) {
         val density = LocalDensity.current
@@ -381,7 +383,7 @@ private fun CollectionSpotMapContent(
 
         if (isSpotSearchLoading) {
             MapSearchLoadingOverlay(
-                description = uiState.searchMode.toLoadingDescription(),
+                description = stringResource(uiState.searchMode.toLoadingDescriptionResId()),
             )
         }
 
@@ -499,11 +501,12 @@ private fun CollectionSpotMapContentPreview() {
 
 }
 
-private fun MapSearchMode.toLoadingDescription(): String {
+@StringRes
+private fun MapSearchMode.toLoadingDescriptionResId(): Int {
     return when (this) {
-        MapSearchMode.KEYWORD -> "입력한 동네 주변을 찾고 있어요"
-        MapSearchMode.CURRENT_LOCATION -> "현재 위치 주변을 찾고 있어요"
-        MapSearchMode.MAP_CENTER -> "현 지도 주변을 찾고 있어요"
+        MapSearchMode.KEYWORD -> R.string.map_search_loading_keyword
+        MapSearchMode.CURRENT_LOCATION -> R.string.map_search_loading_current_location
+        MapSearchMode.MAP_CENTER -> R.string.map_search_loading_map_center
     }
 }
 

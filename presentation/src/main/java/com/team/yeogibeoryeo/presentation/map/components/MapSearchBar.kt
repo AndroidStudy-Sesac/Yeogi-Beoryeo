@@ -43,7 +43,7 @@ fun MapSearchBar(
         onSearch = {
             submitSearch()
         },
-        placeholder = "동네 또는 주소를 검색해주세요.",
+        placeholder = stringResource(R.string.map_search_placeholder),
         trailingContent = { isFocused ->
             val searchIconColor = when {
                 keyword.isNotBlank() || isFocused -> MaterialTheme.colorScheme.primary

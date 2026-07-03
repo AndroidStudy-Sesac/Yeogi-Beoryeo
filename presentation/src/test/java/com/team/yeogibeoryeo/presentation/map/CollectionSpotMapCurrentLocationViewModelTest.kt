@@ -31,10 +31,10 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
-                "현재 위치 검색은 정확한 위치 권한을 허용하면 사용할 수 있어요. 직접 동네나 주소를 검색할 수도 있습니다.",
+                MapLocationNotices.PermissionDenied.message,
                 viewModel.uiState.value.locationNoticeMessage,
             )
-            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
             assertEquals(
                 viewModel.uiState.value.locationNotice?.message,
                 viewModel.uiState.value.locationNoticeMessage,
@@ -68,7 +68,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(0, repository.locationSearchCallCount)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
-            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
         }
 
     @Test
@@ -94,7 +94,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertNull(cache.entry)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
-            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
         }
 
     @Test
@@ -119,7 +119,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertNull(cache.entry)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
-            assertEquals("위치 권한이 필요합니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
         }
 
     @Test
@@ -167,10 +167,13 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
-                "현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도하거나 직접 동네명/주소를 검색해 주세요.",
+                MapLocationNotices.CurrentLocationUnavailable.message,
                 viewModel.uiState.value.locationNoticeMessage,
             )
-            assertEquals("현재 위치를 확인하지 못했습니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(
+                MapLocationNotices.CurrentLocationUnavailable.title,
+                viewModel.uiState.value.locationNotice?.title,
+            )
             assertEquals(
                 viewModel.uiState.value.locationNotice?.message,
                 viewModel.uiState.value.locationNoticeMessage,
@@ -194,10 +197,13 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
-                "기기의 위치 서비스가 꺼져 있어 현재 위치를 확인할 수 없어요. 위치 서비스를 켠 뒤 다시 시도하거나 직접 동네명/주소를 검색해 주세요.",
+                MapLocationNotices.LocationServiceDisabled.message,
                 viewModel.uiState.value.locationNoticeMessage,
             )
-            assertEquals("위치 서비스가 꺼져 있습니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(
+                MapLocationNotices.LocationServiceDisabled.title,
+                viewModel.uiState.value.locationNotice?.title,
+            )
             assertEquals(
                 viewModel.uiState.value.locationNotice?.message,
                 viewModel.uiState.value.locationNoticeMessage,
@@ -250,7 +256,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(
-                "네트워크 연결을 확인한 뒤 다시 시도하거나 직접 동네명/주소를 검색해 주세요.",
+                MapLocationNotices.CurrentLocationSpotSearchFailureMessage,
                 viewModel.uiState.value.errorMessage,
             )
             assertNull(viewModel.uiState.value.locationNotice)
@@ -337,7 +343,10 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             secondResult.complete(CurrentLocationResult.LocationServiceDisabled)
             advanceUntilIdle()
 
-            assertEquals("위치 서비스가 꺼져 있습니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(
+                MapLocationNotices.LocationServiceDisabled.title,
+                viewModel.uiState.value.locationNotice?.title,
+            )
             assertEquals(MapLocationNoticeAction.OpenLocationSettings, viewModel.uiState.value.locationNotice?.action)
             assertEquals(
                 viewModel.uiState.value.locationNotice?.message,
@@ -365,7 +374,10 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             viewModel.searchByCurrentLocation()
             advanceUntilIdle()
 
-            assertEquals("위치 서비스가 꺼져 있습니다.", viewModel.uiState.value.locationNotice?.title)
+            assertEquals(
+                MapLocationNotices.LocationServiceDisabled.title,
+                viewModel.uiState.value.locationNotice?.title,
+            )
 
             currentLocationResult = CurrentLocationResult.Found(currentCoordinate)
             viewModel.searchByCurrentLocation()
