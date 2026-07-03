@@ -11,17 +11,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
 
 @Composable
 fun EmptySpotResult(
     modifier: Modifier = Modifier,
-    title: String = "검색 결과가 없습니다.",
-    description: String = "동/읍/면 이름으로 다시 검색해 주세요.\n예: 문래동, 역삼동",
+    title: String? = null,
+    description: String? = null,
     actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null,
 ) {
+    val displayTitle = title ?: stringResource(R.string.map_empty_spot_result_title)
+    val displayDescription = description ?: stringResource(R.string.map_empty_spot_result_description)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -30,13 +35,13 @@ fun EmptySpotResult(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = title,
+            text = displayTitle,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
 
         Text(
-            text = description,
+            text = displayDescription,
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -118,7 +118,7 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(
-                "잠시 후 다시 시도하거나 네트워크 연결을 확인해 주세요.",
+                MapLocationNotices.SpotSearchFailureMessage,
                 viewModel.uiState.value.errorMessage,
             )
             assertNull(viewModel.uiState.value.locationNotice)
