@@ -174,6 +174,79 @@ class RegionalGuideCandidateUiModelTest {
         )
     }
 
+    @Test
+    fun `동일한 표시명 후보가 여러 개이고 배출장소가 다르면 배출장소로 구분한다`() {
+        val candidates = listOf(
+            candidate(
+                sido = "대전광역시",
+                sigungu = "서구",
+                managementZoneName = "대전광역시",
+                targetRegionName = "서구",
+                disposalPlaceType = "문전수거"
+            ),
+            candidate(
+                sido = "대전광역시",
+                sigungu = "서구",
+                managementZoneName = "대전광역시",
+                targetRegionName = "서구",
+                disposalPlaceType = "기타"
+            )
+        ).withDuplicateDisplayDisambiguation()
+
+        assertEquals(
+            listOf("대전광역시 / 서구 / 문전수거", "대전광역시 / 서구 / 기타"),
+            candidates.map { candidate -> candidate.displayText }
+        )
+    }
+
+    @Test
+    fun `동일한 표시명 후보의 배출장소가 같으면 보조 문구를 추가하지 않는다`() {
+        val candidates = listOf(
+            candidate(
+                sido = "대전광역시",
+                sigungu = "서구",
+                managementZoneName = "대전광역시",
+                targetRegionName = "서구",
+                disposalPlaceType = "문전수거"
+            ),
+            candidate(
+                sido = "대전광역시",
+                sigungu = "서구",
+                managementZoneName = "대전광역시",
+                targetRegionName = "서구",
+                disposalPlaceType = "문전수거"
+            )
+        ).withDuplicateDisplayDisambiguation()
+
+        assertEquals(
+            listOf("대전광역시 / 서구", "대전광역시 / 서구"),
+            candidates.map { candidate -> candidate.displayText }
+        )
+    }
+
+    @Test
+    fun `동일한 표시명 후보의 배출장소가 없으면 기존 표시를 유지한다`() {
+        val candidates = listOf(
+            candidate(
+                sido = "대전광역시",
+                sigungu = "서구",
+                managementZoneName = "대전광역시",
+                targetRegionName = "서구"
+            ),
+            candidate(
+                sido = "대전광역시",
+                sigungu = "서구",
+                managementZoneName = "대전광역시",
+                targetRegionName = "서구"
+            )
+        ).withDuplicateDisplayDisambiguation()
+
+        assertEquals(
+            listOf("대전광역시 / 서구", "대전광역시 / 서구"),
+            candidates.map { candidate -> candidate.displayText }
+        )
+    }
+
     private fun candidate(
         regionName: String = "대전광역시 유성구",
         sido: String = "대전광역시",

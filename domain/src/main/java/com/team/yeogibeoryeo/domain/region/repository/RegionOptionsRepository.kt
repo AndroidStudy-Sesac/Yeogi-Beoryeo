@@ -26,4 +26,8 @@ interface RegionOptionsRepository {
     suspend fun normalizeRegionForRegionalGuide(
         region: Region
     ): Region
+
+    suspend fun findAdminDongCandidatesForLegalDong(
+        region: Region
+    ): List<Region>
 }

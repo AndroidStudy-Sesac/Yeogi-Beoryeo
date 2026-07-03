@@ -4,11 +4,12 @@ data class RegionalGuideCandidateUiModel(
     val guide: RegionalGuideUiModel,
     val sido: String?,
     val sigungu: String?,
-    val eupmyeondong: String?
+    val eupmyeondong: String?,
+    internal val disambiguationText: String? = null
 ) {
     val displayText: String =
-        primaryDisplayParts()
-            .ifEmpty { fallbackDisplayParts() }
+        baseDisplayParts()
+            .appendDisambiguation()
             .distinct()
             .joinToString(CANDIDATE_LABEL_SEPARATOR)
 
@@ -27,15 +28,25 @@ data class RegionalGuideCandidateUiModel(
             guide.targetRegionName.takeIfRegionalGuideDisplayValue()
         )
 
+    private fun baseDisplayParts(): List<String> =
+        primaryDisplayParts()
+            .ifEmpty { fallbackDisplayParts() }
+
     private fun fallbackDisplayParts(): List<String> =
         listOfNotNull(
             regionalGuideRegionFallbackText(sido, sigungu, eupmyeondong),
-            guide.disposalPlaceType.takeIfRegionalGuideDisplayValue()
-                ?: guide.disposalPlaceDescription.takeIfRegionalGuideDisplayValue()
-                ?: guide.schedules.firstNotNullOfOrNull { schedule ->
-                    schedule.toCandidateSummary()
-                },
+            candidateDisambiguationText(),
         )
+
+    internal fun candidateDisambiguationText(): String? =
+        guide.disposalPlaceType.takeIfRegionalGuideDisplayValue()
+            ?: guide.disposalPlaceDescription.takeIfRegionalGuideDisplayValue()
+            ?: guide.schedules.firstNotNullOfOrNull { schedule ->
+                schedule.toCandidateSummary()
+            }
+
+    private fun List<String>.appendDisambiguation(): List<String> =
+        this + listOfNotNull(disambiguationText.takeIfRegionalGuideDisplayValue())
 
     private fun RegionalWasteScheduleUiModel.toCandidateSummary(): String? {
         val criterion =
@@ -54,6 +65,29 @@ data class RegionalGuideCandidateUiModel(
     private companion object {
         const val CANDIDATE_LABEL_SEPARATOR = " / "
         const val SCHEDULE_SUMMARY_SEPARATOR = " "
+    }
+}
+
+internal fun List<RegionalGuideCandidateUiModel>.withDuplicateDisplayDisambiguation():
+    List<RegionalGuideCandidateUiModel> {
+    val disambiguationByDisplayText = groupBy { candidate -> candidate.displayText }
+        .filterValues { candidates -> candidates.size > 1 }
+        .mapValues { (_, candidates) ->
+            candidates
+                .map { candidate -> candidate.candidateDisambiguationText() }
+                .filterNotNull()
+                .distinct()
+        }
+        .filterValues { disambiguationTexts -> disambiguationTexts.size > 1 }
+
+    if (disambiguationByDisplayText.isEmpty()) return this
+
+    return map { candidate ->
+        if (candidate.displayText in disambiguationByDisplayText) {
+            candidate.copy(disambiguationText = candidate.candidateDisambiguationText())
+        } else {
+            candidate
+        }
     }
 }
 

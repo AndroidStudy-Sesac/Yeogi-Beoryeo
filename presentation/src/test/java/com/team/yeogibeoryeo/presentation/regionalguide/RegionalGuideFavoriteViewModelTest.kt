@@ -2,7 +2,6 @@
 
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
@@ -262,22 +261,16 @@ class RegionalGuideFavoriteViewModelTest {
 
     @Test
     fun `legacy regional guide favorite key is observed and removed with current snapshot`() = runTest {
-        val region = Region(sido = "Sido", sigungu = "Sigungu", eupmyeondong = "Dong")
+        val region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계동")
         val guide =
             RegionalDisposalGuide(
                 region = region,
-                targetRegionName = "Target",
-                managementZoneName = "Management",
+                targetRegionName = "하계1동",
+                managementZoneName = "6권역",
                 schedules = emptyList(),
             )
         val currentSnapshot = guide.toFavoriteSnapshot()
-        val legacyTargetId =
-            RegionalGuideFavoriteKey(
-                sido = region.sido,
-                sigungu = region.sigungu,
-                eupmyeondong = region.eupmyeondong,
-                targetRegionName = guide.targetRegionName,
-            ).encodeLegacy()
+        val legacyTargetId = currentSnapshot.legacyTargetId.orEmpty()
         val legacySnapshot = currentSnapshot.copy(targetId = legacyTargetId, managementZoneName = null)
         val favoriteRepository =
             FakeFavoriteRepository(
@@ -294,7 +287,9 @@ class RegionalGuideFavoriteViewModelTest {
             FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(legacySnapshot))
         val viewModel =
             createViewModel(
-                regionRepository = FakeRegionRepository(resolvedRegion = region),
+                regionRepository = FakeRegionRepository(
+                    resolvedRegion = region.copy(eupmyeondong = null)
+                ),
                 regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide)),
                 favoriteRepository = favoriteRepository,
                 regionalGuideSnapshotRepository = snapshotRepository,
@@ -306,8 +301,7 @@ class RegionalGuideFavoriteViewModelTest {
             )
         advanceUntilIdle()
 
-        viewModel.onSearchKeywordChanged("Sigungu")
-        viewModel.searchCurrentKeyword()
+        viewModel.loadByFavoriteTargetId(legacyTargetId)
         advanceUntilIdle()
 
         assertEquals(true, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)

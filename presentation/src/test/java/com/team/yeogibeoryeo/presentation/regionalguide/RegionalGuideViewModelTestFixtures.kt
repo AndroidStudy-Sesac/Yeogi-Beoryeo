@@ -15,6 +15,7 @@ import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.region.repository.RegionRepository
 import com.team.yeogibeoryeo.domain.region.usecase.ClassifyRegionSearchInputUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCase
+import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
@@ -63,7 +64,10 @@ internal fun createViewModel(
         getRegionalDisposalGuideUseCase = GetRegionalDisposalGuideUseCase(
             repository = regionalGuideRepository,
             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
-            selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase()
+            selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(),
+            findAdminDongCandidatesForLegalDongUseCase = FindAdminDongCandidatesForLegalDongUseCase(
+                regionOptionsRepository
+            )
         ),
         getSidoOptionsUseCase = GetSidoOptionsUseCase(regionOptionsRepository),
         getSigunguOptionsUseCase = GetSigunguOptionsUseCase(regionOptionsRepository),
@@ -122,6 +126,7 @@ internal class FakeRegionOptionsRepository(
     private val eupmyeondongOptionsByRegion: Map<String, Map<String, List<String>>> = emptyMap(),
     private val delayedSigunguOptionsBySido: Map<String, CompletableDeferred<List<String>>> = emptyMap(),
     private val keywordRegions: List<Region> = emptyList(),
+    private val adminDongCandidates: List<Region> = emptyList(),
 ) : RegionOptionsRepository {
 
     override suspend fun getSidoOptions(): List<String> = sidoOptions
@@ -192,6 +197,10 @@ internal class FakeRegionOptionsRepository(
             sigungu = selectedSigungu
         )
     }
+
+    override suspend fun findAdminDongCandidatesForLegalDong(
+        region: Region
+    ): List<Region> = adminDongCandidates
 }
 
 internal class FakeRegionalDisposalGuideRepository(

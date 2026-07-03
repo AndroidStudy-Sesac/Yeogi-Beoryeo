@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
+import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
@@ -22,11 +23,13 @@ internal object RegionOptionsMapper {
         sido: String
     ): List<String> {
         return regionalGuideRegions
+            .asSequence()
             .filter { region -> region.sidoName == sido }
             .map { region -> region.toDisplaySigunguName() }
             .filter { sigungu -> sigungu.isNotBlank() }
             .distinct()
             .sorted()
+            .toList()
     }
 
     fun getEupmyeondongOptions(
@@ -35,6 +38,7 @@ internal object RegionOptionsMapper {
         sigungu: String
     ): List<String> {
         return administrativeRegions
+            .asSequence()
             .filter { region ->
                 region.sidoName == sido &&
                     region.toInfoSigunguOptionName().isSameGuideSigunguName(sigungu)
@@ -43,6 +47,7 @@ internal object RegionOptionsMapper {
             .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
             .distinct()
             .sorted()
+            .toList()
     }
 
     fun findSigunguRegions(
@@ -99,6 +104,35 @@ internal object RegionOptionsMapper {
             sido = sido,
             sigungu = regionalGuideRegion.toDisplaySigunguName()
         )
+    }
+
+    fun findAdminDongCandidatesForLegalDong(
+        mappings: List<LegalAdminDongMappingDto>,
+        region: Region
+    ): List<Region> {
+        val sido = region.sido.trimToNull() ?: return emptyList()
+        val sigungu = region.sigungu.trimToNull().orEmpty()
+        val legalDongName = region.eupmyeondong.trimToNull() ?: return emptyList()
+
+        return mappings
+            .filter { mapping ->
+                mapping.sidoName.trim() == sido &&
+                    mapping.sigunguName.trim() == sigungu &&
+                    mapping.legalDongName.trim() == legalDongName
+            }
+            .mapNotNull { mapping ->
+                val adminDongName = mapping.adminDongName.trimToNull() ?: return@mapNotNull null
+
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = mapping.sidoName.trim(),
+                        sigungu = mapping.sigunguName.trimToNull(),
+                        eupmyeondong = adminDongName
+                    )
+                )
+            }
+            .distinct()
+            .sortedWith(REGION_NAME_COMPARATOR)
     }
 
     private fun RegionalGuideRegionDto.toDisplaySigunguName(): String {
@@ -201,6 +235,11 @@ internal object RegionOptionsMapper {
             )
         }
     }
+
+    private fun String?.trimToNull(): String? =
+        this
+            ?.trim()
+            ?.takeIf { value -> value.isNotBlank() }
 
     private val REGION_NAME_COMPARATOR = compareBy<Region>(
         { region -> region.sido.orEmpty() },

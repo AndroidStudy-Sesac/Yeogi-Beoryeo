@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
+import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
@@ -359,6 +360,111 @@ class RegionOptionsMapperTest {
         )
     }
 
+    @Test
+    fun `legal dong lookup returns mapped admin dongs by exact sido sigungu and legal dong`() {
+        val regions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+            mappings = listOf(
+                legalAdminMapping(
+                    sidoName = "서울특별시",
+                    sigunguName = "노원구",
+                    legalDongName = "하계동",
+                    adminDongName = "하계1동"
+                ),
+                legalAdminMapping(
+                    sidoName = "서울특별시",
+                    sigunguName = "노원구",
+                    legalDongName = "하계동",
+                    adminDongName = "하계2동"
+                ),
+                legalAdminMapping(
+                    sidoName = "서울특별시",
+                    sigunguName = "중구",
+                    legalDongName = "하계동",
+                    adminDongName = "다른동"
+                ),
+                legalAdminMapping(
+                    sidoName = "부산광역시",
+                    sigunguName = "사하구",
+                    legalDongName = "하계동",
+                    adminDongName = "부산하계동"
+                )
+            ),
+            region = Region(
+                sido = "서울특별시",
+                sigungu = "노원구",
+                eupmyeondong = "하계동"
+            )
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계1동"),
+                Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계2동")
+            ),
+            regions
+        )
+    }
+
+    @Test
+    fun `legal dong lookup keeps one to many and many to one relationships without suffix inference`() {
+        val mappings = listOf(
+            legalAdminMapping(
+                sidoName = "서울특별시",
+                sigunguName = "노원구",
+                legalDongName = "하계동",
+                adminDongName = "하계1동"
+            ),
+            legalAdminMapping(
+                sidoName = "서울특별시",
+                sigunguName = "노원구",
+                legalDongName = "하계동",
+                adminDongName = "하계2동"
+            ),
+            legalAdminMapping(
+                sidoName = "서울특별시",
+                sigunguName = "노원구",
+                legalDongName = "공릉동",
+                adminDongName = "하계1동"
+            )
+        )
+
+        val haggyeRegions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+            mappings = mappings,
+            region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계동")
+        )
+        val gongneungRegions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+            mappings = mappings,
+            region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "공릉동")
+        )
+
+        assertEquals(2, haggyeRegions.size)
+        assertEquals(
+            listOf(Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계1동")),
+            gongneungRegions
+        )
+    }
+
+    @Test
+    fun `legal dong lookup returns empty list when exact mapping is absent`() {
+        val regions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+            mappings = listOf(
+                legalAdminMapping(
+                    sidoName = "서울특별시",
+                    sigunguName = "노원구",
+                    legalDongName = "하계동",
+                    adminDongName = "하계1동"
+                )
+            ),
+            region = Region(
+                sido = "서울특별시",
+                sigungu = "노원구",
+                eupmyeondong = "하계"
+            )
+        )
+
+        assertEquals(emptyList<Region>(), regions)
+    }
+
     private fun administrativeRegion(
         sidoName: String,
         sigunguName: String,
@@ -378,6 +484,24 @@ class RegionOptionsMapperTest {
             sigunguName = sigunguName,
             eupmyeondongName = eupmyeondongName,
             fullName = fullName
+        )
+    }
+
+    private fun legalAdminMapping(
+        sidoName: String,
+        sigunguName: String,
+        legalDongName: String,
+        adminDongName: String
+    ): LegalAdminDongMappingDto {
+        return LegalAdminDongMappingDto(
+            legalCode = "",
+            legalDongName = legalDongName,
+            adminCode = "",
+            sidoName = sidoName,
+            sigunguName = sigunguName,
+            adminDongName = adminDongName,
+            adminFullName = listOf(sidoName, sigunguName, adminDongName).joinToString(" "),
+            legalFullName = listOf(sidoName, sigunguName, legalDongName).joinToString(" ")
         )
     }
 }
