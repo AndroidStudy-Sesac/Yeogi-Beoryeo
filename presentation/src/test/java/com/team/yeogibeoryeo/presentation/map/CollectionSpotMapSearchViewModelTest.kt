@@ -117,7 +117,10 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertEquals(listOf("용답동"), repository.keywords)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
-            assertEquals("네트워크 연결을 확인한 뒤 다시 시도해 주세요.", viewModel.uiState.value.errorMessage)
+            assertEquals(
+                "잠시 후 다시 시도하거나 네트워크 연결을 확인해 주세요.",
+                viewModel.uiState.value.errorMessage,
+            )
             assertNull(viewModel.uiState.value.locationNotice)
             assertNull(viewModel.uiState.value.locationNoticeMessage)
         }

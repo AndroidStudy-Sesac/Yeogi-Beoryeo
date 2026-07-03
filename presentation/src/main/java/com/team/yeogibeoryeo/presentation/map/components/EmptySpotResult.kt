@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 fun EmptySpotResult(
     modifier: Modifier = Modifier,
     title: String = "검색 결과가 없습니다.",
-    description: String = "다른 동네명이나 주소로 다시 검색해 주세요.",
+    description: String = "동/읍/면 이름으로 다시 검색해 주세요.\n예: 문래동, 역삼동",
     actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null,
 ) {

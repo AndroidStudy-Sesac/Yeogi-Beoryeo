@@ -501,7 +501,7 @@ private fun CollectionSpotMapContentPreview() {
 
 private fun MapSearchMode.toLoadingDescription(): String {
     return when (this) {
-        MapSearchMode.KEYWORD -> "입력한 동네 주변을 찾고 있어요"
+        MapSearchMode.KEYWORD -> "입력한 동/읍/면 주변을 찾고 있어요"
         MapSearchMode.CURRENT_LOCATION -> "현재 위치 주변을 찾고 있어요"
         MapSearchMode.MAP_CENTER -> "현 지도 주변을 찾고 있어요"
     }
