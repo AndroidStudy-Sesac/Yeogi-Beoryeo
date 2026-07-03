@@ -1,4 +1,4 @@
-package com.team.yeogibeoryeo.presentation.search
+package com.team.yeogibeoryeo.presentation.common.effects
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
@@ -20,12 +20,11 @@ internal fun BottomBarVisibilityOnScrollEffect(
         onBottomBarVisibilityChangedState(true)
 
         snapshotFlow { scrollState.value to scrollState.maxValue }
-            .collect { (currentOffset, maxOffset) ->
-                val isAtBottom = maxOffset > 0 && currentOffset >= maxOffset
+            .collect { (currentOffset, _) ->
                 when {
                     currentOffset == 0 -> onBottomBarVisibilityChangedState(true)
                     currentOffset > previousOffset -> onBottomBarVisibilityChangedState(false)
-                    currentOffset < previousOffset && !isAtBottom -> {
+                    currentOffset < previousOffset -> {
                         onBottomBarVisibilityChangedState(true)
                     }
                 }
@@ -46,18 +45,14 @@ internal fun BottomBarVisibilityOnScrollEffect(
         onBottomBarVisibilityChangedState(true)
 
         snapshotFlow {
-            val layoutInfo = listState.layoutInfo
-            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val lastIndex = layoutInfo.totalItemsCount - 1
-            val isAtBottom = lastIndex >= 0 && lastVisibleIndex >= lastIndex
             val position = listState.firstVisibleItemIndex.toLong() * ScrollPositionItemMultiplier +
                 listState.firstVisibleItemScrollOffset
-            Triple(position, listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0, isAtBottom)
-        }.collect { (currentPosition, isAtTop, isAtBottom) ->
+            position to (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0)
+        }.collect { (currentPosition, isAtTop) ->
             when {
                 isAtTop -> onBottomBarVisibilityChangedState(true)
                 currentPosition > previousPosition -> onBottomBarVisibilityChangedState(false)
-                currentPosition < previousPosition && !isAtBottom -> {
+                currentPosition < previousPosition -> {
                     onBottomBarVisibilityChangedState(true)
                 }
             }

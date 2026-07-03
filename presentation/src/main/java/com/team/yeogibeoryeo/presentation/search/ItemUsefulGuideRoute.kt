@@ -34,6 +34,7 @@ import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.MessageSnackbar
+import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
@@ -50,8 +51,8 @@ fun ItemUsefulGuideRoute(
     onOfficialSiteClick: (String) -> Boolean,
     onRegionalGuideClick: () -> Unit,
     onItemSearchClick: () -> Unit,
-    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val content = guideType.toUsefulGuideContent()
     val spacing = ItemSearchLayoutDefaults.spacing

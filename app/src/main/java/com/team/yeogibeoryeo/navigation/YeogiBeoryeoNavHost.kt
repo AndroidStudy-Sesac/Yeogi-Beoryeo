@@ -4,8 +4,11 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedVisibility
@@ -62,7 +65,8 @@ fun YeogiBeoryeoNavHost(
     val isMapScreen = currentDestination?.hasRoute<MapRoute>() == true
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
     val isUsefulGuideScreen = currentDestination?.hasRoute<ItemUsefulGuideRoute>() == true
-    val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen
+    val isSettingsDetailScreen = currentDestination?.hasRoute<SettingsDetailRoute>() == true
+    val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen || isSettingsDetailScreen
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(currentBackStackEntry) {
@@ -100,15 +104,24 @@ fun YeogiBeoryeoNavHost(
             }
         },
     ) { innerPadding ->
-        val navHostPadding = if (isMapScreen && !isBottomBarVisible) {
-            PaddingValues(
-                start = innerPadding.calculateStartPadding(layoutDirection),
-                top = 0.dp,
-                end = innerPadding.calculateEndPadding(layoutDirection),
-                bottom = 0.dp,
-            )
-        } else {
-            innerPadding
+        val navHostPadding = when {
+            isMapScreen && !isBottomBarVisible -> {
+                PaddingValues(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    top = 0.dp,
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                    bottom = 0.dp,
+                )
+            }
+            hidesBottomBarOnScroll && !isBottomBarVisible -> {
+                PaddingValues(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+                )
+            }
+            else -> innerPadding
         }
 
         NavHost(
@@ -236,6 +249,11 @@ fun YeogiBeoryeoNavHost(
                         currentContext.openAppSettings()
                     },
                     onClearLocationCacheClick = onClearLocationCacheClick,
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (isSettingsDetailScreen) {
+                            isBottomBarVisible = isVisible
+                        }
+                    },
                 )
             }
 
