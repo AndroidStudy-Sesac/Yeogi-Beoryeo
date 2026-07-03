@@ -381,6 +381,12 @@ class RegionOptionsMapperTest {
                     sigunguName = "중구",
                     legalDongName = "하계동",
                     adminDongName = "다른동"
+                ),
+                legalAdminMapping(
+                    sidoName = "부산광역시",
+                    sigunguName = "사하구",
+                    legalDongName = "하계동",
+                    adminDongName = "부산하계동"
                 )
             ),
             region = Region(

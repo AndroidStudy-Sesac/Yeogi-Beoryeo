@@ -15,19 +15,19 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
+import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
+import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
+import com.team.yeogibeoryeo.presentation.regionalguide.model.withDuplicateDisplayDisambiguation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class RegionalGuideViewModel @Inject constructor(
@@ -662,7 +663,9 @@ class RegionalGuideViewModel @Inject constructor(
                         sigungu = guide.region.sigungu,
                         eupmyeondong = guide.region.eupmyeondong
                     )
-                }.sortedWith(regionalGuideCandidateDisplayComparator)
+                }
+                    .withDuplicateDisplayDisambiguation()
+                    .sortedWith(regionalGuideCandidateDisplayComparator)
             )
 
             RegionalGuideLookupResult.NotFound ->

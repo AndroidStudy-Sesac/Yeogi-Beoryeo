@@ -261,12 +261,12 @@ class RegionalGuideFavoriteViewModelTest {
 
     @Test
     fun `legacy regional guide favorite key is observed and removed with current snapshot`() = runTest {
-        val region = Region(sido = "Sido", sigungu = "Sigungu", eupmyeondong = "Dong")
+        val region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계동")
         val guide =
             RegionalDisposalGuide(
                 region = region,
-                targetRegionName = "Target",
-                managementZoneName = "Management",
+                targetRegionName = "하계1동",
+                managementZoneName = "6권역",
                 schedules = emptyList(),
             )
         val currentSnapshot = guide.toFavoriteSnapshot()

@@ -23,11 +23,13 @@ internal object RegionOptionsMapper {
         sido: String
     ): List<String> {
         return regionalGuideRegions
+            .asSequence()
             .filter { region -> region.sidoName == sido }
             .map { region -> region.toDisplaySigunguName() }
             .filter { sigungu -> sigungu.isNotBlank() }
             .distinct()
             .sorted()
+            .toList()
     }
 
     fun getEupmyeondongOptions(
@@ -36,6 +38,7 @@ internal object RegionOptionsMapper {
         sigungu: String
     ): List<String> {
         return administrativeRegions
+            .asSequence()
             .filter { region ->
                 region.sidoName == sido &&
                     region.toInfoSigunguOptionName().isSameGuideSigunguName(sigungu)
@@ -44,6 +47,7 @@ internal object RegionOptionsMapper {
             .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
             .distinct()
             .sorted()
+            .toList()
     }
 
     fun findSigunguRegions(

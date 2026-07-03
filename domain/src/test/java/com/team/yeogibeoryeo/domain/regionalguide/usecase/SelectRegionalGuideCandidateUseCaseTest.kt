@@ -421,6 +421,450 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     }
 
     @Test
+    fun `제 표기가 있는 행정동 매핑 후보는 숫자 범위 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "괴정 1~3동, 하단 1~2동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "괴정동"
+                ),
+                sigunguQuery = "사하구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "괴정제1동")
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("괴정 1~3동, 하단 1~2동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `제 표기가 있는 행정동 매핑 후보는 쉼표 묶음 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡1,4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡동"
+                ),
+                sigunguQuery = "금정구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "부산광역시", sigungu = "금정구", eupmyeondong = "부곡제1동")
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("부곡1,4동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `제 표기가 있는 행정동 매핑 후보는 공백이 있는 쉼표 묶음 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡 1, 4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡동"
+                ),
+                sigunguQuery = "금정구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "부산광역시", sigungu = "금정구", eupmyeondong = "부곡제4동")
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("부곡 1, 4동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `제 표기가 있는 행정동 매핑 후보는 공백이 있는 숫자 범위 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "2권역",
+                    targetRegionName = "다대 1~2동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "다대동"
+                ),
+                sigunguQuery = "사하구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "다대제1동")
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("다대 1~2동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `숫자 범위 밖 행정동 매핑 후보는 축약 후보와 매칭되지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "괴정 1~3동, 하단 1~2동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "괴정동"
+                ),
+                sigunguQuery = "사하구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "괴정제4동")
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `쉼표 묶음 밖 행정동 매핑 후보는 축약 후보와 매칭되지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡1,4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡동"
+                ),
+                sigunguQuery = "금정구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "부산광역시", sigungu = "금정구", eupmyeondong = "부곡제2동")
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `직접 선택한 괴정제1동은 숫자 범위 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "괴정 1~3동, 하단 1~2동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "괴정제1동"
+                ),
+                sigunguQuery = "사하구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("괴정제1동", guide.region.eupmyeondong)
+        assertEquals("괴정 1~3동, 하단 1~2동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `직접 선택한 부곡제1동은 쉼표 묶음 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡1,4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡제1동"
+                ),
+                sigunguQuery = "금정구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("부곡제1동", guide.region.eupmyeondong)
+        assertEquals("부곡1,4동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `직접 선택한 부곡제4동은 쉼표 묶음 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡1,4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡제4동"
+                ),
+                sigunguQuery = "금정구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("부곡제4동", guide.region.eupmyeondong)
+        assertEquals("부곡1,4동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `직접 선택한 부곡제1동은 공백이 있는 쉼표 묶음 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡 1, 4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡제1동"
+                ),
+                sigunguQuery = "금정구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("부곡제1동", guide.region.eupmyeondong)
+        assertEquals("부곡 1, 4동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `직접 선택한 부곡제2동은 쉼표 묶음 축약 후보와 매칭되지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡1,4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡제2동"
+                ),
+                sigunguQuery = "금정구"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `직접 선택한 부곡제3동은 쉼표 묶음 축약 후보와 매칭되지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "부곡1,4동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "금정구",
+                    eupmyeondong = "부곡제3동"
+                ),
+                sigunguQuery = "금정구"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `직접 선택한 다대제1동은 공백이 있는 숫자 범위 축약 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "2권역",
+                    targetRegionName = "다대 1~2동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "다대제1동"
+                ),
+                sigunguQuery = "사하구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("다대제1동", guide.region.eupmyeondong)
+        assertEquals("다대 1~2동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `직접 선택한 괴정제4동은 숫자 범위 밖 축약 후보와 매칭되지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "괴정 1~3동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "괴정제4동"
+                ),
+                sigunguQuery = "사하구"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `정확 매칭 후보가 있으면 축약 정규화 후보보다 우선한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "직접관리",
+                    targetRegionName = "괴정제1동"
+                ),
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "괴정 1~3동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "괴정제1동"
+                ),
+                sigunguQuery = "사하구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("직접관리", guide.managementZoneName)
+        assertEquals("괴정제1동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `직접 선택한 행정동이 여러 축약 후보와 매칭되면 후보 목록을 반환한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "괴정 1~3동"
+                ),
+                regionalDisposalGuide(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    managementZoneName = "별도관리",
+                    targetRegionName = "괴정1동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "부산광역시",
+                    sigungu = "사하구",
+                    eupmyeondong = "괴정제1동"
+                ),
+                sigunguQuery = "사하구"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals("1권역", candidates[0].managementZoneName)
+        assertEquals("별도관리", candidates[1].managementZoneName)
+    }
+
+    @Test
     fun `법정동 매핑 후보가 있어도 info 후보와 교집합이 없으면 기존 CandidateNotFound 흐름을 유지한다`() {
         val result = useCase(
             candidates = listOf(

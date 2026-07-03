@@ -1,13 +1,12 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
-import java.io.File
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class LegalAdminDongMappingAssetTest {
 

@@ -3,12 +3,11 @@ package com.team.yeogibeoryeo.data.region.local
 import android.content.Context
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class RegionOptionsLocalDataSource @Inject constructor(

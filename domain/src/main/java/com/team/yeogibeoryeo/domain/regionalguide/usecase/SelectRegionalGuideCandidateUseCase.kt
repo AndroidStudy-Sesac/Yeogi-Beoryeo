@@ -112,11 +112,20 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     private fun List<RegionalDisposalGuide>.filterByRequestedEupmyeondong(
         eupmyeondong: String
     ): List<RegionalDisposalGuide> {
+        val exactMatches = filter { guide ->
+            guide.targetRegionName.isExactRegionName(eupmyeondong) ||
+                guide.managementZoneName.isExactRegionName(eupmyeondong)
+        }
+
+        if (exactMatches.isNotEmpty()) {
+            return exactMatches.mergeDuplicateCandidateRows()
+        }
+
         val targetRegionMatches = filter { guide ->
             guide.targetRegionName.matchesEupmyeondong(eupmyeondong)
         }
         val managementZoneMatches = filter { guide ->
-            guide.managementZoneName.isExactRegionName(eupmyeondong)
+            guide.managementZoneName.matchesEupmyeondong(eupmyeondong)
         }
 
         return (targetRegionMatches + managementZoneMatches)
@@ -127,7 +136,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         mappedAdminDongCandidates: List<Region>
     ): List<RegionalDisposalGuide> {
         val adminDongNames = mappedAdminDongCandidates
-            .mapNotNull { region -> region.eupmyeondong.normalizeRegionName() }
+            .flatMap { region -> region.eupmyeondong.toComparableAdminDongNames() }
             .toSet()
 
         if (adminDongNames.isEmpty()) return emptyList()
@@ -236,12 +245,28 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return true
         }
 
+        val requestedDongNames = eupmyeondong.toComparableAdminDongNames()
+        val targetDongNames = targetRegionName.toComparableAdminDongNames()
+        if (
+            requestedDongNames.isNotEmpty() &&
+            targetDongNames.any { dongName -> dongName in requestedDongNames }
+        ) {
+            return true
+        }
+
         val normalizedEupmyeondong = eupmyeondong.removeAdministrativeSuffix()
+        val allowSuffixlessTokenMatch = !targetRegionName.hasCondensedAdminDongExpression()
 
         return targetRegionName
             .split(TARGET_REGION_DELIMITER)
-            .map { token -> token.trim().removeAdministrativeSuffix() }
-            .any { token -> token == normalizedEupmyeondong }
+            .map { token -> token.trim() }
+            .any { token ->
+                token == eupmyeondong ||
+                    token.hasAdministrativeSuffix() &&
+                    token.removeAdministrativeSuffix() == normalizedEupmyeondong ||
+                    allowSuffixlessTokenMatch &&
+                    token == normalizedEupmyeondong
+            }
     }
 
     private fun String?.isExactRegionName(
@@ -252,13 +277,8 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     private fun String?.matchesExactMappedAdminDong(
         adminDongNames: Set<String>
     ): Boolean {
-        val value = normalizeRegionName() ?: return false
-
-        return value in adminDongNames ||
-            value
-                .split(TARGET_REGION_DELIMITER)
-                .mapNotNull { token -> token.normalizeRegionName() }
-                .any { token -> token in adminDongNames }
+        return toComparableAdminDongNames()
+            .any { dongName -> dongName in adminDongNames }
     }
 
     private fun String?.normalizeRegionName(): String? =
@@ -266,10 +286,128 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             ?.trim()
             ?.takeIf { value -> value.isNotBlank() }
 
+    private fun String?.toComparableAdminDongNames(): Set<String> {
+        val value = normalizeRegionName() ?: return emptySet()
+
+        return value.expandAdminDongNames()
+    }
+
+    private fun String.expandAdminDongNames(): Set<String> {
+        val value = replace(WHITESPACE_REGEX, "")
+            .replace(ADMIN_DONG_NUMBER_MARKER_REGEX, "")
+            .normalizeRegionName()
+            ?: return emptySet()
+
+        value.expandSingleCondensedAdminDongName()?.let { names ->
+            return names
+        }
+
+        val condensedMatches = ADMIN_DONG_CONDENSED_REGEXES
+            .flatMap { regex -> regex.findAll(value).toList() }
+            .sortedBy { match -> match.range.first }
+
+        if (condensedMatches.isNotEmpty()) {
+            val condensedNames = condensedMatches
+                .flatMap { match -> match.value.expandAdminDongNames() }
+            val remainingValue = value.removeCondensedAdminDongExpressions(condensedMatches)
+            val remainingNames = remainingValue
+                .split(TARGET_REGION_GROUP_DELIMITER)
+                .filter { token -> token.isNotBlank() }
+                .flatMap { token -> token.expandAdminDongNames() }
+
+            return (condensedNames + remainingNames)
+                .toSet()
+        }
+
+        val splitTokens = value
+            .split(TARGET_REGION_GROUP_DELIMITER)
+            .filter { token -> token.isNotBlank() }
+
+        if (splitTokens.size > 1) {
+            return splitTokens
+                .flatMap { token -> token.expandAdminDongNames() }
+                .toSet()
+        }
+
+        return setOf(value)
+    }
+
+    private fun String.expandSingleCondensedAdminDongName(): Set<String>? {
+        ADMIN_DONG_RANGE_REGEX.matchEntire(this)?.let { match ->
+            val prefix = match.groupValues[1]
+            val start = match.groupValues[2].toIntOrNull() ?: return setOf(this)
+            val end = match.groupValues[3].toIntOrNull() ?: return setOf(this)
+            val suffix = match.groupValues[4]
+
+            if (start > end) return setOf(this)
+
+            return (start..end)
+                .map { number -> "$prefix$number$suffix" }
+                .toSet()
+        }
+
+        ADMIN_DONG_GROUP_REGEX.matchEntire(this)?.let { match ->
+            val prefix = match.groupValues[1]
+            val numbers = match.groupValues[2]
+                .split(GROUPED_NUMBER_DELIMITER)
+                .mapNotNull { number -> number.toIntOrNull() }
+            val suffix = match.groupValues[3]
+
+            if (numbers.isEmpty()) return setOf(this)
+
+            return numbers
+                .map { number -> "$prefix$number$suffix" }
+                .toSet()
+        }
+
+        return null
+    }
+
+    private fun String.removeCondensedAdminDongExpressions(
+        matches: List<MatchResult>
+    ): String {
+        val builder = StringBuilder()
+        var cursor = 0
+
+        matches.forEach { match ->
+            if (match.range.first < cursor) return@forEach
+
+            builder.append(substring(cursor, match.range.first))
+            builder.append(GROUPED_NUMBER_DELIMITER)
+            cursor = match.range.last + 1
+        }
+
+        builder.append(substring(cursor))
+
+        return builder.toString()
+    }
+
+    private fun String.hasCondensedAdminDongExpression(): Boolean {
+        val value = replace(WHITESPACE_REGEX, "")
+            .replace(ADMIN_DONG_NUMBER_MARKER_REGEX, "")
+
+        if (
+            ADMIN_DONG_RANGE_REGEX.matches(value) ||
+            ADMIN_DONG_GROUP_REGEX.matches(value)
+        ) {
+            return true
+        }
+
+        return value
+            .split(TARGET_REGION_GROUP_DELIMITER)
+            .any { token ->
+                ADMIN_DONG_RANGE_REGEX.matches(token) ||
+                    ADMIN_DONG_GROUP_REGEX.matches(token)
+            }
+    }
+
     private fun String.removeAdministrativeSuffix(): String =
         removeSuffix(EUP)
             .removeSuffix(MYEON)
             .removeSuffix(DONG)
+
+    private fun String.hasAdministrativeSuffix(): Boolean =
+        endsWith(EUP) || endsWith(MYEON) || endsWith(DONG)
 
     private fun RegionalDisposalGuide.withDisplayRegion(
         displayRegion: Region
@@ -325,6 +463,18 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         const val DONG = "동"
 
         val TARGET_REGION_DELIMITER = Regex("[,+/\\s]+")
+        val WHITESPACE_REGEX = Regex("\\s+")
+        val ADMIN_DONG_NUMBER_MARKER_REGEX = Regex("제(?=\\d)")
+        val ADMIN_DONG_RANGE_REGEX = Regex("^([^\\d,+/~～-]+?)(\\d+)\\s*[~～-]\\s*(\\d+)([읍면동])$")
+        val ADMIN_DONG_GROUP_REGEX = Regex("^([^\\d,+/~～-]+?)(\\d+(?:,\\d+)+)([읍면동])$")
+        val ADMIN_DONG_RANGE_EXPRESSION_REGEX = Regex("([^\\d,+/~～-]+?)(\\d+)\\s*[~～-]\\s*(\\d+)([읍면동])")
+        val ADMIN_DONG_GROUP_EXPRESSION_REGEX = Regex("([^\\d,+/~～-]+?)(\\d+(?:,\\d+)+)([읍면동])")
+        val ADMIN_DONG_CONDENSED_REGEXES = listOf(
+            ADMIN_DONG_RANGE_EXPRESSION_REGEX,
+            ADMIN_DONG_GROUP_EXPRESSION_REGEX,
+        )
+        const val GROUPED_NUMBER_DELIMITER = ","
+        val TARGET_REGION_GROUP_DELIMITER = Regex("[,+/]+")
 
         val SEJONG_DONG_AREA_NAMES = setOf(
             "한솔동",
