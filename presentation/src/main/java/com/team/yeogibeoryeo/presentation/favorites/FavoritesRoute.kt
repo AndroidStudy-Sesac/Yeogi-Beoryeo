@@ -1,10 +1,11 @@
 package com.team.yeogibeoryeo.presentation.favorites
 
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.Modifier
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 
 @Composable
@@ -25,6 +26,6 @@ fun FavoritesRoute(
         onRegionalGuideClick = onRegionalGuideClick,
         onCollectionSpotFavoriteRemoveClick = viewModel::removeCollectionSpotFavorite,
         onRegionalGuideFavoriteRemoveClick = viewModel::removeRegionalGuideFavorite,
-        modifier = modifier,
+        modifier = modifier.statusBarsPadding(),
     )
 }

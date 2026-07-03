@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -39,12 +40,13 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 
 @Composable
 fun ItemSearchRoute(
-    initialQuery: String? = null,
     onGuideSelected: (DisposalItemGuide) -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onRegionalGuideSummaryClick: (String) -> Unit,
     onQuickCategorySettingsClick: (Int) -> Unit,
     onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    initialQuery: String? = null,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -104,6 +106,7 @@ fun ItemSearchRoute(
         onSettingsClick = onSettingsClick,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
+        modifier = modifier.statusBarsPadding(),
     )
 }
 

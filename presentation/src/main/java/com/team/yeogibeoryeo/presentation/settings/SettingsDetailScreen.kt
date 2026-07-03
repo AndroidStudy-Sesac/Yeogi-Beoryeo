@@ -46,8 +46,10 @@ internal fun SettingsDetailScreen(
                 .background(MaterialTheme.colorScheme.background),
             state = listState,
             contentPadding = PaddingValues(
-                horizontal = SettingsLayoutDefaults.detailHorizontalPadding,
-                vertical = SettingsLayoutDefaults.detailVerticalPadding,
+                start = SettingsLayoutDefaults.detailHorizontalPadding,
+                top = SettingsLayoutDefaults.detailTopPadding,
+                end = SettingsLayoutDefaults.detailHorizontalPadding,
+                bottom = SettingsLayoutDefaults.detailVerticalPadding,
             ),
             verticalArrangement = Arrangement.spacedBy(SettingsLayoutDefaults.detailItemSpacing),
         ) {

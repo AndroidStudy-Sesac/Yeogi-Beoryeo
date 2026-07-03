@@ -18,16 +18,12 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,8 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
+import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.search.components.containerColor
 import com.team.yeogibeoryeo.presentation.search.components.iconResId
 import com.team.yeogibeoryeo.presentation.search.components.iconTint
@@ -77,7 +74,6 @@ fun QuickCategorySettingsRoute(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuickCategorySettingsScreen(
     selectedCategories: Set<RepresentativeGuideCategory>,
@@ -99,7 +95,10 @@ private fun QuickCategorySettingsScreen(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
-            TopAppBar(
+            AppTopBar(
+                navigationIcon = {
+                    AppBackButton(onClick = onBackClick)
+                },
                 title = {
                     Text(
                         text = stringResource(R.string.quick_category_settings_title),
@@ -107,17 +106,6 @@ private fun QuickCategorySettingsScreen(
                         fontWeight = FontWeight.Bold,
                     )
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            painter = painterResource(id = CommonR.drawable.ic_action_back),
-                            contentDescription = stringResource(R.string.back_action),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
             )
         },
     ) { innerPadding ->
