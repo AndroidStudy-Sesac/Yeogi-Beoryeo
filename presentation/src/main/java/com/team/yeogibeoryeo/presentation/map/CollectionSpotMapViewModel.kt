@@ -173,7 +173,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
             if (!locationPermissionChecker.hasFineLocationPermission()) {
-                onLocationPermissionDenied()
+                handleLocationPermissionDenied()
                 return@launch
             }
 
@@ -324,10 +324,8 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onLocationPermissionDenied() {
-        showLocationPermissionDeniedNotice()
-
         viewModelScope.launch {
-            clearRecentCurrentLocationCache()
+            handleLocationPermissionDenied()
         }
     }
 
@@ -343,6 +341,11 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private suspend fun clearRecentCurrentLocationCache() {
         clearRecentCurrentLocationSpotsUseCase()
+    }
+
+    private suspend fun handleLocationPermissionDenied() {
+        clearRecentCurrentLocationCache()
+        showLocationPermissionDeniedNotice()
     }
 
     private fun showLocationPermissionDeniedNotice() {
@@ -582,7 +585,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             }
 
             CurrentLocationResult.PermissionDenied -> {
-                onLocationPermissionDenied()
+                handleLocationPermissionDenied()
             }
         }
     }
