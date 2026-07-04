@@ -46,7 +46,7 @@ internal object RegionOptionsMapper {
             .map { region -> region.eupmyeondongName }
             .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
             .distinct()
-            .sorted()
+            .sortedWith(REGION_OPTION_NAME_COMPARATOR)
             .toList()
     }
 
@@ -246,6 +246,71 @@ internal object RegionOptionsMapper {
         { region -> region.sigungu.orEmpty() },
         { region -> region.eupmyeondong.orEmpty() }
     )
+
+    private val REGION_OPTION_NAME_COMPARATOR = Comparator<String> { first, second ->
+        compareNaturalRegionName(first, second)
+    }
+
+    private fun compareNaturalRegionName(
+        first: String,
+        second: String
+    ): Int {
+        var firstIndex = 0
+        var secondIndex = 0
+
+        while (firstIndex < first.length && secondIndex < second.length) {
+            val firstChar = first[firstIndex]
+            val secondChar = second[secondIndex]
+
+            if (firstChar.isDigit() && secondChar.isDigit()) {
+                val firstNumberEnd = first.findNumberEndIndex(firstIndex)
+                val secondNumberEnd = second.findNumberEndIndex(secondIndex)
+                val numberComparison = compareNaturalNumberText(
+                    first.substring(firstIndex, firstNumberEnd),
+                    second.substring(secondIndex, secondNumberEnd)
+                )
+
+                if (numberComparison != 0) return numberComparison
+
+                firstIndex = firstNumberEnd
+                secondIndex = secondNumberEnd
+            } else {
+                val charComparison = firstChar.compareTo(secondChar)
+                if (charComparison != 0) return charComparison
+
+                firstIndex += 1
+                secondIndex += 1
+            }
+        }
+
+        return first.length.compareTo(second.length)
+    }
+
+    private fun String.findNumberEndIndex(
+        startIndex: Int
+    ): Int {
+        var endIndex = startIndex
+
+        while (endIndex < length && this[endIndex].isDigit()) {
+            endIndex += 1
+        }
+
+        return endIndex
+    }
+
+    private fun compareNaturalNumberText(
+        first: String,
+        second: String
+    ): Int {
+        val normalizedFirst = first.trimStart('0').ifEmpty { "0" }
+        val normalizedSecond = second.trimStart('0').ifEmpty { "0" }
+
+        return normalizedFirst.length.compareTo(normalizedSecond.length)
+            .takeIf { comparison -> comparison != 0 }
+            ?: normalizedFirst.compareTo(normalizedSecond)
+                .takeIf { comparison -> comparison != 0 }
+            ?: first.length.compareTo(second.length)
+    }
 
     private const val SEJONG_SIDO = "세종특별자치시"
     private const val NO_SIGUNGU_NAME = "없음"

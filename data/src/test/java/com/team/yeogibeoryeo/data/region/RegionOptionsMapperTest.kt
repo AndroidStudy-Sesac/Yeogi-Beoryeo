@@ -279,6 +279,73 @@ class RegionOptionsMapperTest {
     }
 
     @Test
+    fun `eupmyeondong options are sorted by korean name and natural number order`() {
+        val options = RegionOptionsMapper.getEupmyeondongOptions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "경상북도",
+                    sigunguName = "성주군",
+                    eupmyeondongName = "월곡10리"
+                ),
+                administrativeRegion(
+                    sidoName = "경상북도",
+                    sigunguName = "성주군",
+                    eupmyeondongName = "고산리"
+                ),
+                administrativeRegion(
+                    sidoName = "경상북도",
+                    sigunguName = "성주군",
+                    eupmyeondongName = "월곡2리"
+                ),
+                administrativeRegion(
+                    sidoName = "경상북도",
+                    sigunguName = "성주군",
+                    eupmyeondongName = "월곡1리"
+                ),
+                administrativeRegion(
+                    sidoName = "경상북도",
+                    sigunguName = "성주군",
+                    eupmyeondongName = "문덕2리"
+                )
+            ),
+            sido = "경상북도",
+            sigungu = "성주군"
+        )
+
+        assertEquals(
+            listOf("고산리", "문덕2리", "월곡1리", "월곡2리", "월곡10리"),
+            options
+        )
+    }
+
+    @Test
+    fun `eupmyeondong options sort numeric dong names by natural number order`() {
+        val options = RegionOptionsMapper.getEupmyeondongOptions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "서울특별시",
+                    sigunguName = "중구",
+                    eupmyeondongName = "10동"
+                ),
+                administrativeRegion(
+                    sidoName = "서울특별시",
+                    sigunguName = "중구",
+                    eupmyeondongName = "2동"
+                ),
+                administrativeRegion(
+                    sidoName = "서울특별시",
+                    sigunguName = "중구",
+                    eupmyeondongName = "1동"
+                )
+            ),
+            sido = "서울특별시",
+            sigungu = "중구"
+        )
+
+        assertEquals(listOf("1동", "2동", "10동"), options)
+    }
+
+    @Test
     fun `sigungu keyword search maps official city keyword to info key without city suffix`() {
         val regions = RegionOptionsMapper.findSigunguRegions(
             administrativeRegions = listOf(
