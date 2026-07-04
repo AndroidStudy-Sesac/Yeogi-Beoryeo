@@ -1,8 +1,10 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import androidx.annotation.StringRes
+
 data class MapLocationNotice(
-    val title: String,
-    val message: String,
+    @param:StringRes val titleResId: Int,
+    @param:StringRes val messageResId: Int,
     val action: MapLocationNoticeAction? = null,
 )
 

@@ -105,12 +105,16 @@ fun YeogiBeoryeoNavHost(
         },
     ) { innerPadding ->
         val navHostPadding = when {
-            isMapScreen && !isBottomBarVisible -> {
+            isMapScreen -> {
                 PaddingValues(
                     start = innerPadding.calculateStartPadding(layoutDirection),
                     top = 0.dp,
                     end = innerPadding.calculateEndPadding(layoutDirection),
-                    bottom = 0.dp,
+                    bottom = if (isBottomBarVisible) {
+                        innerPadding.calculateBottomPadding()
+                    } else {
+                        0.dp
+                    },
                 )
             }
             hidesBottomBarOnScroll && !isBottomBarVisible -> {

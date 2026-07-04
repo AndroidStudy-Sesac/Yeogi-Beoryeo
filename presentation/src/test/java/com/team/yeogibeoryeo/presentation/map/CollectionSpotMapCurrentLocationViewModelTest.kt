@@ -30,14 +30,10 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertEquals(MapLocationNotices.PermissionDenied.titleResId, viewModel.uiState.value.locationNotice?.titleResId)
             assertEquals(
-                MapLocationNotices.PermissionDenied.message,
-                viewModel.uiState.value.locationNoticeMessage,
-            )
-            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
-            assertEquals(
-                viewModel.uiState.value.locationNotice?.message,
-                viewModel.uiState.value.locationNoticeMessage,
+                MapLocationNotices.PermissionDenied.messageResId,
+                viewModel.uiState.value.locationNotice?.messageResId,
             )
             assertEquals(MapLocationNoticeAction.OpenAppSettings, viewModel.uiState.value.locationNotice?.action)
         }
@@ -68,7 +64,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(0, repository.locationSearchCallCount)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
-            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNotices.PermissionDenied.titleResId, viewModel.uiState.value.locationNotice?.titleResId)
         }
 
     @Test
@@ -94,7 +90,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertNull(cache.entry)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
-            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNotices.PermissionDenied.titleResId, viewModel.uiState.value.locationNotice?.titleResId)
         }
 
     @Test
@@ -119,7 +115,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertNull(cache.entry)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
-            assertEquals(MapLocationNotices.PermissionDenied.title, viewModel.uiState.value.locationNotice?.title)
+            assertEquals(MapLocationNotices.PermissionDenied.titleResId, viewModel.uiState.value.locationNotice?.titleResId)
         }
 
     @Test
@@ -148,7 +144,6 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(listOf(keywordSpot), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
         }
 
     @Test
@@ -167,16 +162,12 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
-                MapLocationNotices.CurrentLocationUnavailable.message,
-                viewModel.uiState.value.locationNoticeMessage,
+                MapLocationNotices.CurrentLocationUnavailable.titleResId,
+                viewModel.uiState.value.locationNotice?.titleResId,
             )
             assertEquals(
-                MapLocationNotices.CurrentLocationUnavailable.title,
-                viewModel.uiState.value.locationNotice?.title,
-            )
-            assertEquals(
-                viewModel.uiState.value.locationNotice?.message,
-                viewModel.uiState.value.locationNoticeMessage,
+                MapLocationNotices.CurrentLocationUnavailable.messageResId,
+                viewModel.uiState.value.locationNotice?.messageResId,
             )
             assertNull(viewModel.uiState.value.locationNotice?.action)
         }
@@ -197,16 +188,12 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertEquals(
-                MapLocationNotices.LocationServiceDisabled.message,
-                viewModel.uiState.value.locationNoticeMessage,
+                MapLocationNotices.LocationServiceDisabled.titleResId,
+                viewModel.uiState.value.locationNotice?.titleResId,
             )
             assertEquals(
-                MapLocationNotices.LocationServiceDisabled.title,
-                viewModel.uiState.value.locationNotice?.title,
-            )
-            assertEquals(
-                viewModel.uiState.value.locationNotice?.message,
-                viewModel.uiState.value.locationNoticeMessage,
+                MapLocationNotices.LocationServiceDisabled.messageResId,
+                viewModel.uiState.value.locationNotice?.messageResId,
             )
             assertEquals(MapLocationNoticeAction.OpenLocationSettings, viewModel.uiState.value.locationNotice?.action)
         }
@@ -230,8 +217,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(500, repository.lastRadiusMeter)
             assertEquals(expectedSpots.withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
-            assertNull(viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessageResId)
             assertFalse(viewModel.uiState.value.isLoading)
         }
 
@@ -256,11 +242,10 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(
-                MapLocationNotices.CurrentLocationSpotSearchFailureMessage,
-                viewModel.uiState.value.errorMessage,
+                MapLocationNotices.CurrentLocationSpotSearchFailureMessageResId,
+                viewModel.uiState.value.errorMessageResId,
             )
             assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
         }
 
     @Test
@@ -313,8 +298,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(listOf(expectedSpot), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
-            assertNull(viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
     @Test
@@ -344,15 +328,15 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             advanceUntilIdle()
 
             assertEquals(
-                MapLocationNotices.LocationServiceDisabled.title,
-                viewModel.uiState.value.locationNotice?.title,
+                MapLocationNotices.LocationServiceDisabled.titleResId,
+                viewModel.uiState.value.locationNotice?.titleResId,
             )
             assertEquals(MapLocationNoticeAction.OpenLocationSettings, viewModel.uiState.value.locationNotice?.action)
             assertEquals(
-                viewModel.uiState.value.locationNotice?.message,
-                viewModel.uiState.value.locationNoticeMessage,
+                MapLocationNotices.LocationServiceDisabled.messageResId,
+                viewModel.uiState.value.locationNotice?.messageResId,
             )
-            assertNull(viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
     @Test
@@ -375,8 +359,8 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             advanceUntilIdle()
 
             assertEquals(
-                MapLocationNotices.LocationServiceDisabled.title,
-                viewModel.uiState.value.locationNotice?.title,
+                MapLocationNotices.LocationServiceDisabled.titleResId,
+                viewModel.uiState.value.locationNotice?.titleResId,
             )
 
             currentLocationResult = CurrentLocationResult.Found(currentCoordinate)
@@ -386,8 +370,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(listOf(locationSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
-            assertNull(viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessageResId)
             assertFalse(viewModel.uiState.value.isLoading)
         }
 

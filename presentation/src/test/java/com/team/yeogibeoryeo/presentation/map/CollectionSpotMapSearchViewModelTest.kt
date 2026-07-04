@@ -118,11 +118,10 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(
-                MapLocationNotices.SpotSearchFailureMessage,
-                viewModel.uiState.value.errorMessage,
+                MapLocationNotices.SpotSearchFailureMessageResId,
+                viewModel.uiState.value.errorMessageResId,
             )
             assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
         }
 
 }
