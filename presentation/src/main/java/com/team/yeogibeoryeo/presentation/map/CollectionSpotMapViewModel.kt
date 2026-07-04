@@ -173,7 +173,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
             if (!locationPermissionChecker.hasFineLocationPermission()) {
-                handleLocationPermissionDenied()
+                onLocationPermissionDenied()
                 return@launch
             }
 
@@ -324,8 +324,10 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onLocationPermissionDenied() {
+        showLocationPermissionDeniedNotice()
+
         viewModelScope.launch {
-            handleLocationPermissionDenied()
+            clearRecentCurrentLocationCache()
         }
     }
 
@@ -337,11 +339,6 @@ class CollectionSpotMapViewModel @Inject constructor(
                 showLocationPermissionDeniedNotice()
             }
         }
-    }
-
-    private suspend fun handleLocationPermissionDenied() {
-        clearRecentCurrentLocationCache()
-        showLocationPermissionDeniedNotice()
     }
 
     private suspend fun clearRecentCurrentLocationCache() {
@@ -383,9 +380,13 @@ class CollectionSpotMapViewModel @Inject constructor(
         if (
             currentState.hasSearched ||
             currentState.isLoading ||
-            currentState.searchKeyword.isNotBlank() ||
-            !locationPermissionChecker.hasFineLocationPermission()
+            currentState.searchKeyword.isNotBlank()
         ) {
+            return
+        }
+
+        if (!locationPermissionChecker.hasFineLocationPermission()) {
+            onLocationPermissionDenied()
             return
         }
 
@@ -457,12 +458,6 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
-        }
-    }
-
-    fun clearErrorMessage() {
-        _uiState.update {
-            it.copy(errorMessageResId = null)
         }
     }
 
@@ -587,7 +582,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             }
 
             CurrentLocationResult.PermissionDenied -> {
-                handleLocationPermissionDenied()
+                onLocationPermissionDenied()
             }
         }
     }

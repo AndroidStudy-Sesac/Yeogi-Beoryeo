@@ -251,7 +251,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             assertEquals(0, cache.getCallCount)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.hasSearched)
-            assertNull(viewModel.uiState.value.locationNotice)
+            assertEquals(MapLocationNotices.PermissionDenied, viewModel.uiState.value.locationNotice)
             assertEquals(0, repository.locationSearchCallCount)
         }
 

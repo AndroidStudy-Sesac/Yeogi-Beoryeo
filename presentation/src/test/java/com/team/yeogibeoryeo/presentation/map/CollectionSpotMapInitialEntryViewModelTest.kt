@@ -36,7 +36,7 @@ class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTes
         }
 
     @Test
-    fun `지도 진입 시 위치 권한이 없으면 자동 현재 위치 검색을 실행하지 않는다`() =
+    fun `지도 진입 시 위치 권한이 없으면 자동 현재 위치 검색을 실행하지 않고 권한 안내를 표시한다`() =
         runTest {
             val repository = FakeCollectionSpotRepository()
             val viewModel = createViewModel(
@@ -52,6 +52,7 @@ class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTes
             assertEquals(0, repository.locationSearchCallCount)
             assertFalse(viewModel.uiState.value.hasSearched)
             assertNull(viewModel.uiState.value.errorMessageResId)
+            assertEquals(MapLocationNotices.PermissionDenied, viewModel.uiState.value.locationNotice)
         }
 
     @Test
@@ -206,7 +207,7 @@ class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTes
         }
 
     @Test
-    fun `초기 타입으로 지도 진입 시 위치 권한이 없으면 타입만 선택하고 자동 권한 요청 상태를 만들지 않는다`() =
+    fun `초기 타입으로 지도 진입 시 위치 권한이 없으면 타입을 선택하고 권한 안내를 표시한다`() =
         runTest {
             val repository = FakeCollectionSpotRepository()
             val viewModel = createViewModel(
@@ -222,7 +223,7 @@ class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTes
             assertEquals(setOf(CollectionSpotType.FLUORESCENT_LAMP_BIN), viewModel.uiState.value.selectedTypes)
             assertEquals(0, repository.locationSearchCallCount)
             assertFalse(viewModel.uiState.value.hasSearched)
-            assertNull(viewModel.uiState.value.locationNotice)
+            assertEquals(MapLocationNotices.PermissionDenied, viewModel.uiState.value.locationNotice)
             assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
