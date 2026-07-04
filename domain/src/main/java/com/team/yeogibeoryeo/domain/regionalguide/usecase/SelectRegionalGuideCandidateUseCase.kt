@@ -171,11 +171,9 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     }
 
     private fun List<RegionalDisposalGuide>.selectUnmatchedSelectorFallbackCandidates(): List<RegionalDisposalGuide> {
-        if (size <= 1) return emptyList()
+        val broadCandidates = filter { guide -> !guide.hasExplicitEupmyeondongTarget() }
 
-        return takeIf { candidates ->
-            candidates.all { guide -> !guide.hasExplicitEupmyeondongTarget() }
-        }.orEmpty()
+        return broadCandidates.takeIf { candidates -> candidates.size > 1 }.orEmpty()
     }
 
     private fun List<RegionalDisposalGuide>.toCandidateResultOrNotFound(

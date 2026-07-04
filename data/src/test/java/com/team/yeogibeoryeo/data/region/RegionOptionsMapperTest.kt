@@ -279,7 +279,7 @@ class RegionOptionsMapperTest {
     }
 
     @Test
-    fun `eupmyeondong options are sorted by korean name and natural number order`() {
+    fun `읍면동 옵션은 가나다순과 숫자 자연 순서로 정렬한다`() {
         val options = RegionOptionsMapper.getEupmyeondongOptions(
             administrativeRegions = listOf(
                 administrativeRegion(
@@ -319,7 +319,7 @@ class RegionOptionsMapperTest {
     }
 
     @Test
-    fun `eupmyeondong options sort numeric dong names by natural number order`() {
+    fun `숫자로 시작하는 동 이름도 자연 순서로 정렬한다`() {
         val options = RegionOptionsMapper.getEupmyeondongOptions(
             administrativeRegions = listOf(
                 administrativeRegion(

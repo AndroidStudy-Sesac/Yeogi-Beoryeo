@@ -460,7 +460,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
                     targetRegionName = "부곡1,4동"
                 )
             ),
-            query = regionalGuideQurkryery(
+            query = regionalGuideQuery(
                 displayRegion = Region(
                     sido = "부산광역시",
                     sigungu = "금정구",
@@ -960,6 +960,79 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
         assertEquals("사천면", candidates[0].region.eupmyeondong)
         assertEquals("문전수거", candidates[0].disposalPlaceType)
         assertEquals("거점수거", candidates[1].disposalPlaceType)
+    }
+
+    @Test
+    fun `직접 매칭 실패 후 같은 시군구 후보와 다른 읍면동 후보가 섞이면 시군구 후보만 반환한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "강릉시",
+                    managementZoneName = "문전수거 지역",
+                    targetRegionName = "문전수거 지역",
+                    disposalPlaceType = "문전수거"
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "강릉시",
+                    managementZoneName = "거점수거 지역",
+                    targetRegionName = "거점수거 지역",
+                    disposalPlaceType = "거점수거"
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "강릉시",
+                    managementZoneName = "교1동",
+                    targetRegionName = "교1동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "강원특별자치도",
+                    sigungu = "강릉시",
+                    eupmyeondong = "사천면"
+                ),
+                sigunguQuery = "강릉시"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals(listOf("문전수거", "거점수거"), candidates.map { guide -> guide.disposalPlaceType })
+        assertEquals(listOf("문전수거 지역", "거점수거 지역"), candidates.map { guide -> guide.managementZoneName })
+    }
+
+    @Test
+    fun `직접 매칭 실패 후 같은 시군구 후보가 하나만 남으면 자동 선택하지 않고 실패 흐름을 유지한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "강릉시",
+                    managementZoneName = "문전수거 지역",
+                    targetRegionName = "문전수거 지역",
+                    disposalPlaceType = "문전수거"
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "강릉시",
+                    managementZoneName = "교1동",
+                    targetRegionName = "교1동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "강원특별자치도",
+                    sigungu = "강릉시",
+                    eupmyeondong = "사천면"
+                ),
+                sigunguQuery = "강릉시"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
     }
 
     @Test
