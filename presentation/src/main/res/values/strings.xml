@@ -177,8 +177,8 @@
     <string name="settings_source_household_api_title">공공데이터포털 Open API</string>
     <string name="settings_source_household_api_description">행정안전부 생활쓰레기배출정보 조회서비스</string>
     <string name="settings_source_admin_region_title">행정안전부 행정구역 데이터</string>
-    <string name="settings_source_admin_region_description">지역 검색과 지역별 안내 매칭</string>
-    <string name="settings_sources_usage_condition_description">앱에서 사용하는 정보의 출처는 각 제공기관의 이용 조건에 따라 표시합니다.</string>
+    <string name="settings_source_admin_region_description">행정기관 및 관할구역 코드 자료를 기준으로 행정구역과 법정동-행정동 매핑 정보를 앱 사용 목적에 맞게 가공했습니다.\n기준일: 2026-03-25</string>
+    <string name="settings_sources_usage_condition_description">앱에서 사용하는 정보의 출처는 각 제공기관의 이용 조건에 따라 표시합니다. 자세한 데이터 출처와 가공 여부는 저장소 문서에서 확인할 수 있습니다.</string>
     <string name="settings_open_source_title">오픈소스 라이선스</string>
     <string name="settings_tabler_icons_title">Tabler Icons</string>
     <string name="settings_tabler_usage_title">MIT License</string>
