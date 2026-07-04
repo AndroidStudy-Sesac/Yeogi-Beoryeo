@@ -1,24 +1,30 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import androidx.annotation.StringRes
+import com.team.yeogibeoryeo.presentation.R
+
 object MapLocationNotices {
-    const val SpotSearchFailureMessage = "잠시 후 다시 시도하거나 네트워크 연결을 확인해 주세요."
-    const val CurrentLocationSpotSearchFailureMessage =
-        "네트워크 연결을 확인한 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요."
+    @StringRes
+    val SpotSearchFailureMessageResId: Int = R.string.map_spot_search_failure_message
+
+    @StringRes
+    val CurrentLocationSpotSearchFailureMessageResId: Int =
+        R.string.map_current_location_spot_search_failure_message
 
     val PermissionDenied = MapLocationNotice(
-        title = "위치 권한이 필요합니다.",
-        message = "현재 위치 검색은 정확한 위치 권한을 허용하면 사용할 수 있어요. 직접 동/읍/면을 검색할 수도 있습니다.",
+        titleResId = R.string.map_location_permission_denied_title,
+        messageResId = R.string.map_location_permission_denied_message,
         action = MapLocationNoticeAction.OpenAppSettings,
     )
 
     val LocationServiceDisabled = MapLocationNotice(
-        title = "위치 서비스가 꺼져 있습니다.",
-        message = "기기의 위치 서비스가 꺼져 있어 현재 위치를 확인할 수 없어요. 위치 서비스를 켠 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요.",
+        titleResId = R.string.map_location_service_disabled_title,
+        messageResId = R.string.map_location_service_disabled_message,
         action = MapLocationNoticeAction.OpenLocationSettings,
     )
 
     val CurrentLocationUnavailable = MapLocationNotice(
-        title = "현재 위치를 확인하지 못했습니다.",
-        message = "현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도하거나 직접 동/읍/면을 검색해 주세요.",
+        titleResId = R.string.map_current_location_unavailable_title,
+        messageResId = R.string.map_current_location_unavailable_message,
     )
 }

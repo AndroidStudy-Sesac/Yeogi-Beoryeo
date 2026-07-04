@@ -37,8 +37,7 @@ fun SpotBottomSheetContent(
     hasSearched: Boolean,
     selectedTypes: Set<CollectionSpotType>,
     locationNotice: MapLocationNotice?,
-    locationNoticeMessage: String?,
-    errorMessage: String?,
+    @StringRes errorMessageResId: Int?,
     onTypeClick: (CollectionSpotType) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
@@ -47,8 +46,7 @@ fun SpotBottomSheetContent(
     bottomContentPadding: Dp = 0.dp,
 ) {
     val hasNoticeOrError = locationNotice != null ||
-        locationNoticeMessage != null ||
-        errorMessage != null
+        errorMessageResId != null
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -74,8 +72,8 @@ fun SpotBottomSheetContent(
 
             locationNotice != null -> {
                 EmptySpotResult(
-                    title = locationNotice.title,
-                    description = locationNotice.message,
+                    title = stringResource(locationNotice.titleResId),
+                    description = stringResource(locationNotice.messageResId),
                     actionLabel = locationNotice.action?.let { stringResource(it.toActionLabelResId()) },
                     onActionClick = locationNotice.action?.let { action ->
                         { onLocationNoticeActionClick(action) }
@@ -83,17 +81,10 @@ fun SpotBottomSheetContent(
                 )
             }
 
-            locationNoticeMessage != null -> {
-                EmptySpotResult(
-                    title = stringResource(R.string.map_current_location_notice_title),
-                    description = locationNoticeMessage,
-                )
-            }
-
-            errorMessage != null -> {
+            errorMessageResId != null -> {
                 EmptySpotResult(
                     title = stringResource(R.string.map_search_failed_title),
-                    description = errorMessage,
+                    description = stringResource(errorMessageResId),
                 )
             }
 
@@ -236,8 +227,7 @@ private fun SpotBottomSheetContentPreview() {
                 hasSearched = true,
                 selectedTypes = setOf(CollectionSpotType.BATTERY_BIN),
                 locationNotice = null,
-                locationNoticeMessage = null,
-                errorMessage = null,
+                errorMessageResId = null,
                 onTypeClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
@@ -259,8 +249,7 @@ private fun SpotBottomSheetContentLoadingPreview() {
                 hasSearched = true,
                 selectedTypes = emptySet(),
                 locationNotice = null,
-                locationNoticeMessage = null,
-                errorMessage = null,
+                errorMessageResId = null,
                 onTypeClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
@@ -282,8 +271,7 @@ private fun SpotBottomSheetContentEmptyPreview() {
                 hasSearched = true,
                 selectedTypes = emptySet(),
                 locationNotice = null,
-                locationNoticeMessage = null,
-                errorMessage = null,
+                errorMessageResId = null,
                 onTypeClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},

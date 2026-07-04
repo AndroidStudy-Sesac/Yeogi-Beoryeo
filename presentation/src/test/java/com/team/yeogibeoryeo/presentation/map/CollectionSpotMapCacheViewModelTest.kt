@@ -165,8 +165,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)
             assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
-            assertNull(viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.errorMessageResId)
             assertEquals(0, repository.locationSearchCallCount)
             assertEquals(0, cache.saveCallCount)
         }
@@ -252,8 +251,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             assertEquals(0, cache.getCallCount)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.hasSearched)
-            assertNull(viewModel.uiState.value.locationNotice)
-            assertNull(viewModel.uiState.value.locationNoticeMessage)
+            assertEquals(MapLocationNotices.PermissionDenied, viewModel.uiState.value.locationNotice)
             assertEquals(0, repository.locationSearchCallCount)
         }
 

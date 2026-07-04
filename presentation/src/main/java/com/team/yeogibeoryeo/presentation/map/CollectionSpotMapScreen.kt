@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -123,12 +124,11 @@ fun CollectionSpotMapScreen(
         onDenied = viewModel::onLocationPermissionDenied,
     )
     LaunchedEffect(favoriteSpotMoveRequest, initialSpotType) {
-        val request = favoriteSpotMoveRequest
-        if (request == null) {
-            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(initialSpotType)
-        } else {
+        favoriteSpotMoveRequest?.let { request ->
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.showFavoriteSpot(request)
+        } ?: run {
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(initialSpotType)
         }
     }
 
@@ -192,8 +192,10 @@ private fun CollectionSpotMapContent(
     val selectedSpot = uiState.selectedSpot
     val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
     val hasNoticeOrError = uiState.locationNotice != null ||
-        uiState.locationNoticeMessage != null ||
-        uiState.errorMessage != null
+        uiState.errorMessageResId != null
+    val isNoticeOrErrorOnly = hasNoticeOrError &&
+        uiState.spots.isEmpty() &&
+        selectedSpot == null
     val mapLocationTrackingMode = when {
         !isLocationPermissionGranted -> LocationTrackingMode.None
         locationTrackingMode == LocationTrackingMode.None -> LocationTrackingMode.NoFollow
@@ -222,9 +224,8 @@ private fun CollectionSpotMapContent(
         uiState.hasSearched,
         uiState.isLoading,
         uiState.searchMode,
-        uiState.errorMessage,
+        uiState.errorMessageResId,
         uiState.locationNotice,
-        uiState.locationNoticeMessage,
     ) {
         when {
             isSpotSearchLoading -> {
@@ -268,11 +269,12 @@ private fun CollectionSpotMapContent(
         }
     }
 
-    LaunchedEffect(shouldShowBottomSheet, sheetLevel, mapUiMode) {
+    LaunchedEffect(shouldShowBottomSheet, sheetLevel, mapUiMode, isNoticeOrErrorOnly) {
         val shouldHideBottomBar =
             shouldShowBottomSheet &&
                 sheetLevel != MapSheetLevel.Hidden &&
-                mapUiMode != MapUiMode.Browsing
+                mapUiMode != MapUiMode.Browsing &&
+                !isNoticeOrErrorOnly
 
         onBottomBarVisibilityChanged(!shouldHideBottomBar)
     }
@@ -284,6 +286,9 @@ private fun CollectionSpotMapContent(
         val navigationBarBottomPadding = with(density) {
             WindowInsets.navigationBars.getBottom(density).toDp()
         }
+        val searchBarTopPadding = with(density) {
+            WindowInsets.statusBars.getTop(density).toDp()
+        } + MapOverlayControlsTopPadding
 
         CollectionSpotNaverMap(
             spots = uiState.spots,
@@ -299,13 +304,19 @@ private fun CollectionSpotMapContent(
             },
             onMapClick = {
                 onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                if (mapUiMode == MapUiMode.Browsing) {
-                    mapUiMode = MapUiMode.ResultList.takeIf { shouldShowBottomSheet } ?: MapUiMode.Browsing
-                    sheetLevel = MapSheetLevel.Peek.takeIf { shouldShowBottomSheet } ?: MapSheetLevel.Hidden
-                } else {
-                    mapUiMode = MapUiMode.Browsing
-                    sheetLevel = MapSheetLevel.Hidden
-                    onBottomBarVisibilityChanged(true)
+                when (mapUiMode) {
+                    MapUiMode.Browsing -> {
+                        mapUiMode = MapUiMode.ResultList.takeIf { shouldShowBottomSheet } ?: MapUiMode.Browsing
+                        sheetLevel = MapSheetLevel.Peek.takeIf { shouldShowBottomSheet } ?: MapSheetLevel.Hidden
+                    }
+
+                    MapUiMode.ResultList,
+                    MapUiMode.SpotDetail,
+                    -> {
+                        mapUiMode = MapUiMode.Browsing
+                        sheetLevel = MapSheetLevel.Hidden
+                        onBottomBarVisibilityChanged(true)
+                    }
                 }
             },
             onCameraCenterChanged = { coordinate ->
@@ -332,6 +343,7 @@ private fun CollectionSpotMapContent(
                     sheetLevel = MapSheetLevel.Peek
                     onSearchClick()
                 },
+                topPadding = searchBarTopPadding,
             )
         }
 
@@ -396,23 +408,25 @@ private fun CollectionSpotMapContent(
                 },
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                when {
-                    mapUiMode == MapUiMode.SpotDetail && selectedSpot != null -> {
-                        SpotDetailBottomSheetContent(
-                            spot = selectedSpot,
-                            isNearbyLoading = uiState.isFavoriteSpotNearbyLoading,
-                            onFavoriteClick = onSpotFavoriteClick,
-                            onRegionalGuideClick = onRegionalGuideClick,
-                            onCloseClick = {
-                                onSpotDetailDismiss()
-                                mapUiMode = MapUiMode.ResultList
-                                sheetLevel = MapSheetLevel.Peek
-                            },
-                            bottomContentPadding = navigationBarBottomPadding,
-                        )
+                when (mapUiMode) {
+                    MapUiMode.SpotDetail -> {
+                        if (selectedSpot != null) {
+                            SpotDetailBottomSheetContent(
+                                spot = selectedSpot,
+                                isNearbyLoading = uiState.isFavoriteSpotNearbyLoading,
+                                onFavoriteClick = onSpotFavoriteClick,
+                                onRegionalGuideClick = onRegionalGuideClick,
+                                onCloseClick = {
+                                    onSpotDetailDismiss()
+                                    mapUiMode = MapUiMode.ResultList
+                                    sheetLevel = MapSheetLevel.Peek
+                                },
+                                bottomContentPadding = navigationBarBottomPadding,
+                            )
+                        }
                     }
 
-                    mapUiMode == MapUiMode.ResultList -> {
+                    MapUiMode.ResultList -> {
                         SpotBottomSheetContent(
                             spots = uiState.spots,
                             selectedSpot = selectedSpot,
@@ -420,8 +434,7 @@ private fun CollectionSpotMapContent(
                             hasSearched = uiState.hasSearched,
                             selectedTypes = uiState.selectedTypes,
                             locationNotice = uiState.locationNotice,
-                            locationNoticeMessage = uiState.locationNoticeMessage,
-                            errorMessage = uiState.errorMessage,
+                            errorMessageResId = uiState.errorMessageResId,
                             onTypeClick = onTypeClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,
                             onSpotFavoriteClick = onSpotFavoriteClick,
@@ -435,6 +448,8 @@ private fun CollectionSpotMapContent(
                             bottomContentPadding = navigationBarBottomPadding,
                         )
                     }
+
+                    MapUiMode.Browsing -> Unit
                 }
             }
         }
@@ -444,8 +459,7 @@ private fun CollectionSpotMapContent(
 private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
     get() = isLoading ||
         locationNotice != null ||
-        locationNoticeMessage != null ||
-        errorMessage != null ||
+        errorMessageResId != null ||
         hasSearched ||
         spots.isNotEmpty() ||
         selectedSpot != null
@@ -512,6 +526,7 @@ private fun MapSearchMode.toLoadingDescriptionResId(): Int {
 
 private val MyLocationButtonHorizontalPadding = 16.dp
 private val MyLocationButtonBottomPadding = 16.dp
+private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
 
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
