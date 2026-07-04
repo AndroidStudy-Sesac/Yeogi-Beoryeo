@@ -222,8 +222,9 @@ private fun QuickCategoryDisplayRow(
                 value = isSelected,
                 enabled = enabled,
                 role = Role.Checkbox,
-                onValueChange = { onClick() },
-            ),
+            ) {
+                onClick()
+            },
         shape = MaterialTheme.shapes.large,
         color =
             if (isSelected) {

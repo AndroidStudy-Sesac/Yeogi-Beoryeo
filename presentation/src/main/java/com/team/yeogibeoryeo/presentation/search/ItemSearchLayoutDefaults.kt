@@ -44,11 +44,11 @@ internal object ItemSearchSizeDefaults {
 }
 
 internal object ItemSearchFractionDefaults {
-    const val usefulGuideBannerWidth = 0.94f
+    const val USEFUL_GUIDE_BANNER_WIDTH = 0.94f
 }
 
 internal object ItemSearchAlphaDefaults {
-    const val usefulGuidePageIndicatorInactive = 0.32f
+    const val USEFUL_GUIDE_PAGE_INDICATOR_INACTIVE = 0.32f
 }
 
 internal object ItemSearchStrokeDefaults {

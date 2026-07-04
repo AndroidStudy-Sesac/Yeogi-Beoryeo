@@ -38,7 +38,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
@@ -83,7 +82,7 @@ fun ItemUsefulGuideBannerRow(
                     guide = guide,
                     onClick = { onGuideClick(guide) },
                     modifier = Modifier
-                        .fillParentMaxWidth(fraction.usefulGuideBannerWidth)
+                        .fillParentMaxWidth(fraction.USEFUL_GUIDE_BANNER_WIDTH)
                         .height(size.usefulGuideBannerCardHeight),
                 )
             }
@@ -104,7 +103,6 @@ private fun ItemUsefulGuideBannerCard(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
-    val alpha = ItemSearchLayoutDefaults.alpha
 
     Card(
         modifier = modifier
@@ -193,7 +191,7 @@ private fun ItemUsefulGuidePageIndicator(
             val targetColor = if (isSelected) {
                 MaterialTheme.colorScheme.primary
             } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha.usefulGuidePageIndicatorInactive)
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha.USEFUL_GUIDE_PAGE_INDICATOR_INACTIVE)
             }
             val color by animateColorAsState(targetValue = targetColor)
             val width by animateDpAsState(
@@ -201,7 +199,7 @@ private fun ItemUsefulGuidePageIndicator(
                     size.usefulGuidePageIndicatorActiveWidth
                 } else {
                     size.usefulGuidePageIndicatorInactiveSize
-                }
+                },
             )
             Box(
                 modifier = Modifier

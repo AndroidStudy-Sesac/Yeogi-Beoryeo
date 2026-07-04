@@ -210,13 +210,13 @@ fun ItemSearchScreen(
                     else -> {
                         val searchResultCountText = stringResource(
                             R.string.search_results_count,
-                            uiState.guides.size
+                            uiState.guides.size,
                         )
                         KoreanLineBreakText(
                             text = searchResultCountText,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             ),
                         )
                         LazyColumn(

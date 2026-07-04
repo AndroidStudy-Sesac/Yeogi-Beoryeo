@@ -560,11 +560,11 @@ class ItemSearchViewModelTest {
         ) {
             toggledHomeQuickCategories += category
             if (category in categories.value) {
-                categories.value = categories.value - category
+                categories.value -= category
             } else if (categories.value.size >= maxSelectedCount.coerceAtLeast(0)) {
                 return
             } else {
-                categories.value = categories.value + category
+                categories.value += category
             }
         }
 

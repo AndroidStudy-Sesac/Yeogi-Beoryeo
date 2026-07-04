@@ -21,7 +21,7 @@ internal fun BottomBarVisibilityOnScrollEffect(
 
         snapshotFlow { scrollState.value to scrollState.maxValue }
             .collect { (currentOffset, maxOffset) ->
-                val isAtBottom = maxOffset > 0 && currentOffset >= maxOffset
+                val isAtBottom = maxOffset > 0 && currentOffset in maxOffset..Int.MAX_VALUE
                 when {
                     currentOffset == 0 -> onBottomBarVisibilityChangedState(true)
                     currentOffset > previousOffset -> onBottomBarVisibilityChangedState(false)
@@ -49,8 +49,8 @@ internal fun BottomBarVisibilityOnScrollEffect(
             val layoutInfo = listState.layoutInfo
             val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val lastIndex = layoutInfo.totalItemsCount - 1
-            val isAtBottom = lastIndex >= 0 && lastVisibleIndex >= lastIndex
-            val position = listState.firstVisibleItemIndex.toLong() * ScrollPositionItemMultiplier +
+            val isAtBottom = lastIndex >= 0 && lastVisibleIndex in lastIndex..Int.MAX_VALUE
+            val position = listState.firstVisibleItemIndex.toLong() * SCROLL_POSITION_ITEM_MULTIPLIER +
                 listState.firstVisibleItemScrollOffset
             Triple(position, listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0, isAtBottom)
         }.collect { (currentPosition, isAtTop, isAtBottom) ->
@@ -66,4 +66,4 @@ internal fun BottomBarVisibilityOnScrollEffect(
     }
 }
 
-private const val ScrollPositionItemMultiplier = 1_000_000L
+private const val SCROLL_POSITION_ITEM_MULTIPLIER = 1_000_000L

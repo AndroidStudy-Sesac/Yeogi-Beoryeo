@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
@@ -142,18 +141,17 @@ fun QuickCategoryGrid(
                     collapseLayout.showsMore -> add(
                         QuickCategoryGridItem.Toggle(
                             labelResId = R.string.quick_category_more_action,
-                            onClick = {
-                                shouldBringExpandedGridIntoView = true
-                                onMoreClick(collapseLayout.collapsedItemCount)
-                            },
-                        )
+                        ) {
+                            shouldBringExpandedGridIntoView = true
+                            onMoreClick(collapseLayout.collapsedItemCount)
+                        },
                     )
 
                     collapseLayout.showsCollapse -> add(
                         QuickCategoryGridItem.Toggle(
                             labelResId = R.string.quick_category_collapse_action,
                             onClick = onCollapseClick,
-                        )
+                        ),
                     )
                 }
             }
