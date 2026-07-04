@@ -19,8 +19,8 @@ internal fun BottomBarVisibilityOnScrollEffect(
         var previousOffset = 0
         onBottomBarVisibilityChangedState(true)
 
-        snapshotFlow { scrollState.value to scrollState.maxValue }
-            .collect { (currentOffset, _) ->
+        snapshotFlow { scrollState.value }
+            .collect { currentOffset ->
                 when {
                     currentOffset == 0 -> onBottomBarVisibilityChangedState(true)
                     currentOffset > previousOffset -> onBottomBarVisibilityChangedState(false)
@@ -45,7 +45,7 @@ internal fun BottomBarVisibilityOnScrollEffect(
         onBottomBarVisibilityChangedState(true)
 
         snapshotFlow {
-            val position = listState.firstVisibleItemIndex.toLong() * ScrollPositionItemMultiplier +
+            val position = listState.firstVisibleItemIndex.toLong() * SCROLL_POSITION_ITEM_MULTIPLIER +
                 listState.firstVisibleItemScrollOffset
             position to (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0)
         }.collect { (currentPosition, isAtTop) ->
@@ -61,4 +61,4 @@ internal fun BottomBarVisibilityOnScrollEffect(
     }
 }
 
-private const val ScrollPositionItemMultiplier = 1_000_000L
+private const val SCROLL_POSITION_ITEM_MULTIPLIER = 1_000_000L

@@ -50,8 +50,8 @@ class HomeRegionalGuideSummaryViewModel
         ): HomeRegionalGuideSummaryUiState {
             return if (
                 previous is HomeRegionalGuideSummaryUiState.Summary &&
-                next is HomeRegionalGuideSummaryUiState.Loading &&
-                previous.targetId == next.targetId
+                    next is HomeRegionalGuideSummaryUiState.Loading &&
+                    previous.targetId == next.targetId
             ) {
                 previous
             } else {

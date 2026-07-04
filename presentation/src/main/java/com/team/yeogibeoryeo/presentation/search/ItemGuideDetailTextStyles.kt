@@ -7,7 +7,7 @@ import androidx.compose.ui.text.TextStyle
 
 @Composable
 internal fun itemGuideDetailTextStyles(): ItemGuideDetailTextStyles {
-    val useLargeFontLayout = LocalDensity.current.fontScale >= ItemGuideDetailTypographyBreakpoints.LargeFontScale
+    val useLargeFontLayout = LocalDensity.current.fontScale >= ItemGuideDetailTypographyBreakpoints.LARGE_FONT_SCALE
 
     return if (useLargeFontLayout) {
         ItemGuideDetailTextStyles(
@@ -40,5 +40,5 @@ internal data class ItemGuideDetailTextStyles(
 )
 
 private object ItemGuideDetailTypographyBreakpoints {
-    const val LargeFontScale = 1.3f
+    const val LARGE_FONT_SCALE = 1.3f
 }

@@ -51,9 +51,6 @@ fun ItemSearchInitialContent(
     onSearchClick: () -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     regionalGuideSummaryState: HomeRegionalGuideSummaryUiState,
-    modifier: Modifier = Modifier,
-    onRegionalGuideSummaryClick: (String) -> Unit = {},
-    onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     onQuickCategorySettingsClick: (Int) -> Unit,
     quickCategories: List<RepresentativeGuideCategory>,
@@ -68,6 +65,9 @@ fun ItemSearchInitialContent(
     onQuickCategoryViewportChanged: () -> Unit,
     onSettingsClick: (() -> Unit)?,
     listState: LazyListState,
+    modifier: Modifier = Modifier,
+    onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSummaryRetryClick: () -> Unit = {},
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
@@ -166,7 +166,7 @@ fun ItemSearchInitialContent(
                             text = quickCategoriesTitle,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             ),
                         )
                         AssistChip(
@@ -240,8 +240,8 @@ fun ItemSearchHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (onSettingsClick != null) {
-            IconButton(onClick = onSettingsClick) {
+        onSettingsClick?.let {
+            IconButton(onClick = it) {
                 Icon(
                     painter = painterResource(id = CommonR.drawable.ic_action_settings),
                     contentDescription = stringResource(R.string.settings_action),
