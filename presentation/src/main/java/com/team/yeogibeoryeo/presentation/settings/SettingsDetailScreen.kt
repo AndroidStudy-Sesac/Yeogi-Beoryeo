@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -27,17 +28,23 @@ internal fun SettingsDetailScreen(
     onOpenAppSettingsClick: () -> Unit,
     onClearLocationCacheClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
 ) {
+    val listState = rememberLazyListState()
+
     SettingsScaffold(
         title = stringResource(detailType.titleResId),
         onBackClick = onBackClick,
         modifier = modifier,
+        listState = listState,
+        onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
     ) { contentPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
                 .background(MaterialTheme.colorScheme.background),
+            state = listState,
             contentPadding = PaddingValues(
                 horizontal = SettingsLayoutDefaults.detailHorizontalPadding,
                 vertical = SettingsLayoutDefaults.detailVerticalPadding,

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton

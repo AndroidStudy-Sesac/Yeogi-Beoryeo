@@ -24,6 +24,7 @@ fun SettingsDetailRoute(
     onOpenAppSettingsClick: () -> Unit,
     onClearLocationCacheClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     SettingsDetailScreen(
         detailType = detailType,
@@ -32,5 +33,6 @@ fun SettingsDetailRoute(
         onOpenAppSettingsClick = onOpenAppSettingsClick,
         onClearLocationCacheClick = onClearLocationCacheClick,
         modifier = modifier,
+        onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
     )
 }

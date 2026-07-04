@@ -1,6 +1,8 @@
 package com.team.yeogibeoryeo.presentation.settings.components
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,10 +26,20 @@ internal fun SettingsScaffold(
     title: String,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    listState: LazyListState? = null,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    if (listState != null) {
+        BottomBarVisibilityOnScrollEffect(
+            listState = listState,
+            onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+        )
+    }
+
     Scaffold(
         modifier = modifier,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = {
@@ -44,6 +57,7 @@ internal fun SettingsScaffold(
                         )
                     }
                 },
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
