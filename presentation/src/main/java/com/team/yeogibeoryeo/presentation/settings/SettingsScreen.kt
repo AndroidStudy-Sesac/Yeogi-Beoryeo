@@ -31,8 +31,10 @@ internal fun SettingsScreen(
                 .padding(contentPadding)
                 .background(MaterialTheme.colorScheme.background),
             contentPadding = PaddingValues(
-                horizontal = SettingsLayoutDefaults.listHorizontalPadding,
-                vertical = SettingsLayoutDefaults.listVerticalPadding,
+                start = SettingsLayoutDefaults.listHorizontalPadding,
+                top = SettingsLayoutDefaults.listTopPadding,
+                end = SettingsLayoutDefaults.listHorizontalPadding,
+                bottom = SettingsLayoutDefaults.listVerticalPadding,
             ),
         ) {
             items(SettingsMenuItems) { item ->
