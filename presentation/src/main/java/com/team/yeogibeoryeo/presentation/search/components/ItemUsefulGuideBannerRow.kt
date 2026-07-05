@@ -39,7 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
@@ -50,7 +49,7 @@ fun ItemUsefulGuideBannerRow(
     guides: List<ItemUsefulGuideContent>,
     onGuideClick: (ItemUsefulGuideContent) -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 0.dp),
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
