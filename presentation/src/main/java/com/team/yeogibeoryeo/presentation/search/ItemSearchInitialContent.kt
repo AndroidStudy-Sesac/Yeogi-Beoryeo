@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
@@ -118,7 +119,8 @@ fun ItemSearchInitialContent(
         ) {
             item {
                 ItemSearchHeader(
-                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalPadding = metrics.horizontalPadding,
                     onSettingsClick = onSettingsClick,
                 )
             }
@@ -230,6 +232,7 @@ fun ItemSearchInitialContent(
 @Composable
 fun ItemSearchHeader(
     modifier: Modifier = Modifier,
+    horizontalPadding: Dp = ItemSearchLayoutDefaults.spacing.xl,
     onSettingsClick: (() -> Unit)? = null,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
@@ -239,7 +242,12 @@ fun ItemSearchHeader(
         verticalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = horizontalPadding,
+                    end = AppTopBarDefaults.horizontalPadding,
+                ),
             horizontalArrangement = Arrangement.spacedBy(spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -266,6 +274,7 @@ fun ItemSearchHeader(
         }
         KoreanLineBreakText(
             text = stringResource(R.string.item_search_description),
+            modifier = Modifier.padding(horizontal = horizontalPadding),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
