@@ -76,9 +76,8 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
         val hasSelectedSigungu = selectedSigungu == null ||
             selectedSigungu in tokens ||
             selectedSigunguParts.all { sigunguPart -> sigunguPart in tokens }
-        if (hasAnySigungu && !hasSelectedSigungu) return false
 
-        return true
+        return !hasAnySigungu || hasSelectedSigungu
     }
 
     private companion object {

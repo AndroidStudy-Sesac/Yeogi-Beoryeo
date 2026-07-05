@@ -257,6 +257,7 @@ internal class FakeCollectionSpotRepository(
 internal class FakeMapRegionOptionsRepository(
     private val eupmyeondongCandidates: Map<String, List<Region>> = emptyMap(),
     private val legalDongKeywords: Map<String, List<String>> = emptyMap(),
+    private val eupmyeondongCandidateProvider: (suspend (String) -> List<Region>)? = null,
 ) : RegionOptionsRepository {
     val eupmyeondongKeywords = mutableListOf<String>()
 
@@ -271,6 +272,7 @@ internal class FakeMapRegionOptionsRepository(
 
     override suspend fun findRegionsByEupmyeondongKeyword(keyword: String): List<Region> {
         eupmyeondongKeywords += keyword
+        eupmyeondongCandidateProvider?.let { provider -> return provider(keyword) }
         return eupmyeondongCandidates[keyword].orEmpty()
     }
 

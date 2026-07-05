@@ -272,6 +272,48 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `지역 후보 조회 중 검색어를 수정하면 이전 후보 조회를 취소한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val candidateSearchResult = CompletableDeferred<List<Region>>()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidateProvider = { keyword ->
+                    if (keyword == "명동") {
+                        candidateSearchResult.await()
+                    } else {
+                        emptyList()
+                    }
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(true, viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+
+            viewModel.onSearchKeywordChanged("명동1가")
+            candidateSearchResult.complete(
+                listOf(
+                    Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                    Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals("명동1가", viewModel.uiState.value.searchKeyword)
+            assertEquals(emptyList<MapRegionSearchCandidate>(), viewModel.uiState.value.regionSearchCandidates)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+            assertEquals(false, viewModel.uiState.value.hasSearched)
+        }
+
+    @Test
     fun `지도 중심 검색은 전달된 카메라 중심 좌표로 수거 장소를 검색한다`() =
         runTest {
             val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)

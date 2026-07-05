@@ -144,6 +144,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
 
         spotSearchJob?.cancel()
+        startKeywordSearchLoading()
         spotSearchJob = viewModelScope.launch {
             when (val candidateResult = resolveMapRegionSearchCandidateUseCase(keyword)) {
                 is MapRegionSearchCandidateResult.NeedSelection -> {
@@ -171,43 +172,41 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    fun clearRegionSearchCandidates() {
-        _uiState.update {
-            it.copy(regionSearchCandidates = emptyList())
-        }
-    }
-
     private suspend fun searchByKeywordInternal(
         keyword: String,
         selectedRegionCandidate: MapRegionSearchCandidate?,
     ) {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    hasSearched = true,
-                    errorMessageResId = null,
-                    locationNotice = null,
-                    regionSearchCandidates = emptyList(),
-                    selectedSpot = null,
-                    isFavoriteSpotNearbyLoading = false,
-                    searchMode = MapSearchMode.KEYWORD,
-                )
-            }
+        startKeywordSearchLoading()
 
-            runCatching {
-                searchByCandidateKeywords(
-                    keyword = keyword,
-                    selectedRegionCandidate = selectedRegionCandidate,
-                )
-            }.onSuccess { spots ->
-                updateSpotResult(spots)
-            }.onFailure { throwable ->
-                if (throwable is CancellationException) throw throwable
+        runCatching {
+            searchByCandidateKeywords(
+                keyword = keyword,
+                selectedRegionCandidate = selectedRegionCandidate,
+            )
+        }.onSuccess { spots ->
+            updateSpotResult(spots)
+        }.onFailure { throwable ->
+            if (throwable is CancellationException) throw throwable
 
-                updateSpotFailure(
-                    messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
-                )
-            }
+            updateSpotFailure(
+                messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
+            )
+        }
+    }
+
+    private fun startKeywordSearchLoading() {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                hasSearched = true,
+                errorMessageResId = null,
+                locationNotice = null,
+                regionSearchCandidates = emptyList(),
+                selectedSpot = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+            )
+        }
     }
 
     private suspend fun searchByCandidateKeywords(

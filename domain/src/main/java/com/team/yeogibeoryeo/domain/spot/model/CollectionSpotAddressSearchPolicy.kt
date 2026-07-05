@@ -42,9 +42,9 @@ object CollectionSpotAddressSearchPolicy {
         token.hasEupMyeonDongShape()
 
     fun normalizedSidoName(token: String): String? =
-        when {
-            token in SIDO_NAMES -> SIDO_ALIASES[token] ?: token
-            token in SIDO_ALIASES -> SIDO_ALIASES[token]
+        when (token) {
+            in SIDO_NAMES -> SIDO_ALIASES[token] ?: token
+            in SIDO_ALIASES -> SIDO_ALIASES[token]
             else -> null
         }
 
