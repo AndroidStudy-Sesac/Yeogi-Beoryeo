@@ -29,8 +29,8 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
-import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryDisplayRow
-import com.team.yeogibeoryeo.presentation.search.components.SelectedCategorySummary
+import com.team.yeogibeoryeo.presentation.search.components.QuickCategorySettingsDisplayRow
+import com.team.yeogibeoryeo.presentation.search.components.QuickCategorySettingsSelectedCategorySummary
 import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
@@ -102,7 +102,7 @@ internal fun QuickCategorySettingsScreen(
                             )
                         },
                     )
-                    SelectedCategorySummary(
+                    QuickCategorySettingsSelectedCategorySummary(
                         selectedCount = selectedCategories.size,
                         maxSelectedCount = maxSelectedCount,
                     )
@@ -113,7 +113,7 @@ internal fun QuickCategorySettingsScreen(
                 val isSelected = category in selectedCategories
                 val canSelect = isSelected || selectedCategories.size < maxSelectedCount
 
-                QuickCategoryDisplayRow(
+                QuickCategorySettingsDisplayRow(
                     category = category,
                     isSelected = isSelected,
                     enabled = canSelect,

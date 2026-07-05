@@ -24,7 +24,7 @@ import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsDefaults
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 @Composable
-internal fun QuickCategoryDisplayRow(
+internal fun QuickCategorySettingsDisplayRow(
     category: RepresentativeGuideCategory,
     isSelected: Boolean,
     enabled: Boolean,

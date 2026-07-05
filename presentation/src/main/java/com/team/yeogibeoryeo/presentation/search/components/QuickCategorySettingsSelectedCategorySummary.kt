@@ -13,7 +13,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
-internal fun SelectedCategorySummary(
+internal fun QuickCategorySettingsSelectedCategorySummary(
     selectedCount: Int,
     maxSelectedCount: Int,
     modifier: Modifier = Modifier,
