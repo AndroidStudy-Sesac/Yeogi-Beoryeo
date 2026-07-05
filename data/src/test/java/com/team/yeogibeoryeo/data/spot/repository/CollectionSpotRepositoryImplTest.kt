@@ -149,6 +149,36 @@ class CollectionSpotRepositoryImplTest {
     }
 
     @Test
+    fun `괄호가 포함된 도로명 주소는 괄호를 제거한 주소로 geocoding한다`() = runBlocking {
+        val apiService = FakeSpotApiService(
+            response = createParenthesizedRoadAddressResponse(),
+        )
+        val spotGeocoder = FakeSpotGeocoder(
+            coordinatesByAddress = mapOf(
+                "서울특별시 성동구 행당로 35" to Coordinate(
+                    latitude = 37.5570,
+                    longitude = 127.0332,
+                ),
+            ),
+        )
+        val repository = createRepository(
+            apiService = apiService,
+            spotGeocoder = spotGeocoder,
+        )
+
+        val result = repository.searchByKeyword(
+            keyword = "금호동",
+        )
+
+        assertEquals(
+            listOf("서울특별시 성동구 행당로 35"),
+            spotGeocoder.requestedAddresses,
+        )
+        assertEquals(37.5570, result.first().coordinate?.latitude)
+        assertEquals(127.0332, result.first().coordinate?.longitude)
+    }
+
+    @Test
     fun `공백 주소는 geocoding하지 않고 좌표 없이 유지한다`() = runBlocking {
         val apiService = FakeSpotApiService(
             response = createBlankAddressResponse(),
@@ -326,6 +356,28 @@ class CollectionSpotRepositoryImplTest {
                                     spotNm = "재활용센터",
                                     addrBase = "서울특별시 구로구 구로동",
                                     addrDtl = "센터 입구",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        }
+
+        fun createParenthesizedRoadAddressResponse(): SpotResponseDto {
+            return SpotResponseDto(
+                response = SpotResponseBodyDto(
+                    header = SpotHeaderDto(
+                        resultCode = "00",
+                        resultMsg = "NORMAL SERVICE",
+                    ),
+                    body = SpotBodyDto(
+                        items = SpotItemsDto(
+                            item = listOf(
+                                SpotItemDto(
+                                    spotNm = "종량제봉투 판매소",
+                                    addrBase = "서울특별시 성동구 행당로 35 (금호동1가, 금북빌딩)",
+                                    addrDtl = "103호, 105호",
                                 ),
                             ),
                         ),
