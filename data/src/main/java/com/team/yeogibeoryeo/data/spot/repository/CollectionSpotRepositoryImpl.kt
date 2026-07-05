@@ -62,7 +62,9 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     override suspend fun geocodeSpot(
         spot: CollectionSpot,
     ): CollectionSpot {
-        val coordinate = spotGeocoder.geocode(spot.address)
+        val coordinate = spot.address.toGeocodeKey()?.let { address ->
+            spotGeocoder.geocode(address)
+        }
 
         return spot.copy(
             coordinate = coordinate,
@@ -129,10 +131,15 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     }
 
     private fun String.toGeocodeKey(): String? {
-        return trim().takeIf { it.isNotBlank() }
+        return replace(PARENTHESIZED_TEXT_REGEX, " ")
+            .trim()
+            .replace(WHITESPACE_REGEX, " ")
+            .takeIf { it.isNotBlank() }
     }
 
     private companion object {
         const val MAX_CONCURRENT_GEOCODING_COUNT = 3
+        val PARENTHESIZED_TEXT_REGEX = "\\([^)]*\\)".toRegex()
+        val WHITESPACE_REGEX = "\\s+".toRegex()
     }
 }

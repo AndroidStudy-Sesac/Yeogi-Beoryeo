@@ -1,8 +1,10 @@
 package com.team.yeogibeoryeo.domain.spot.usecase
 
+import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -103,6 +105,58 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
             val result = useCase(keyword = "명동")
 
             assertEquals(emptyList<CollectionSpot>(), result)
+        }
+
+    @Test
+    fun `선택한 지역 후보와 명확히 다른 시도 결과는 제외한다`() =
+        runSuspendTest {
+            val seoulSpot = collectionSpot(
+                id = "seoul-myeongdong",
+                address = "서울특별시 중구 명동길 3",
+            )
+            val jecheonSpot = collectionSpot(
+                id = "jecheon-myeongdong",
+                address = "충청북도 제천시 명동 1",
+            )
+            repository.keywordSpots = listOf(seoulSpot, jecheonSpot)
+
+            val result = useCase(
+                keyword = "명동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "서울특별시",
+                        sigungu = "중구",
+                        eupmyeondong = "명동",
+                    ),
+                    searchKeyword = "명동",
+                ),
+            )
+
+            assertEquals(listOf(seoulSpot), result)
+        }
+
+    @Test
+    fun `선택 지역 후보가 있어도 지역 범위가 불명확한 도로명 주소 결과는 유지한다`() =
+        runSuspendTest {
+            val roadAddressSpot = collectionSpot(
+                id = "road-address",
+                address = "명동길 3",
+            )
+            repository.keywordSpots = listOf(roadAddressSpot)
+
+            val result = useCase(
+                keyword = "명동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "서울특별시",
+                        sigungu = "중구",
+                        eupmyeondong = "명동",
+                    ),
+                    searchKeyword = "명동",
+                ),
+            )
+
+            assertEquals(listOf(roadAddressSpot), result)
         }
 
     private fun runSuspendTest(block: suspend () -> Unit) {

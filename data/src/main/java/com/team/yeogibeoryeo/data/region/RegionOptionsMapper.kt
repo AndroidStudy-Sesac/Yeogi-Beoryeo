@@ -75,6 +75,68 @@ internal object RegionOptionsMapper {
             .sortedWith(REGION_NAME_COMPARATOR)
     }
 
+    fun findEupmyeondongRegions(
+        administrativeRegions: List<AdministrativeRegionDto>,
+        legalAdminDongMappings: List<LegalAdminDongMappingDto>,
+        keyword: String
+    ): List<Region> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val administrativeMatches = administrativeRegions
+            .filter { region -> region.eupmyeondongName == targetKeyword }
+            .map { region ->
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = region.sidoName,
+                        sigungu = region.sigunguName.ifBlank { null },
+                        eupmyeondong = region.eupmyeondongName
+                    )
+                )
+            }
+
+        val legalMatches = legalAdminDongMappings
+            .filter { mapping -> mapping.legalDongName.trim().matchesLegalDongKeyword(targetKeyword) }
+            .map { mapping ->
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = mapping.sidoName.trim(),
+                        sigungu = mapping.sigunguName.trimToNull(),
+                        eupmyeondong = targetKeyword
+                    )
+                )
+            }
+
+        return (administrativeMatches + legalMatches)
+            .distinctByRegionWithEupmyeondong()
+            .sortedWith(REGION_NAME_COMPARATOR)
+    }
+
+    fun findLegalDongKeywordsByRegion(
+        mappings: List<LegalAdminDongMappingDto>,
+        region: Region,
+        keyword: String
+    ): List<String> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val sido = region.sido.trimToNull()
+        val sigungu = region.sigungu.trimToNull()
+
+        return mappings
+            .asSequence()
+            .filter { mapping ->
+                (sido == null || mapping.sidoName.trim() == sido) &&
+                    (sigungu == null || mapping.sigunguName.trim() == sigungu) &&
+                    mapping.legalDongName.trim().matchesLegalDongKeyword(targetKeyword)
+            }
+            .map { mapping -> mapping.legalDongName.trim() }
+            .filter { legalDongName -> legalDongName.isNotBlank() }
+            .distinct()
+            .sorted()
+            .toList()
+    }
+
     fun normalizeRegionForRegionalGuide(
         region: Region,
         regionalGuideRegions: List<RegionalGuideRegionDto>
@@ -236,6 +298,21 @@ internal object RegionOptionsMapper {
         }
     }
 
+    private fun List<Region>.distinctByRegionWithEupmyeondong(): List<Region> {
+        return distinctBy { region ->
+            listOf(
+                region.sido.orEmpty(),
+                region.sigungu.orEmpty(),
+                region.eupmyeondong.orEmpty()
+            )
+        }
+    }
+
+    private fun String.matchesLegalDongKeyword(targetKeyword: String): Boolean {
+        return this == targetKeyword ||
+            (startsWith(targetKeyword) && LEGAL_DONG_GA_REGEX.matches(this))
+    }
+
     private fun String?.trimToNull(): String? =
         this
             ?.trim()
@@ -250,4 +327,5 @@ internal object RegionOptionsMapper {
     private const val SEJONG_SIDO = "세종특별자치시"
     private const val NO_SIGUNGU_NAME = "없음"
     private const val CITY_SUFFIX = "시"
+    private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()
 }

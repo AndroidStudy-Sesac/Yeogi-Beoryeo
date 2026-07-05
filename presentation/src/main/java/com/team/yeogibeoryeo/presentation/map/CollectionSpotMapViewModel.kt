@@ -9,10 +9,13 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavorit
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidateResult
 import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.ResolveMapRegionSearchCandidateUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
@@ -33,6 +36,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class CollectionSpotMapViewModel @Inject constructor(
+    private val resolveMapRegionSearchCandidateUseCase: ResolveMapRegionSearchCandidateUseCase,
     private val searchCollectionSpotsByKeywordUseCase: SearchCollectionSpotsByKeywordUseCase,
     private val searchCollectionSpotsByLocationUseCase: SearchCollectionSpotsByLocationUseCase,
     private val filterCollectionSpotsUseCase: FilterCollectionSpotsUseCase,
@@ -87,6 +91,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 } else {
                     it.spots
                 },
+                regionSearchCandidates = emptyList(),
                 selectedSpot = if (shouldCancelSpotSearch) {
                     null
                 } else {
@@ -130,6 +135,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     hasSearched = false,
                     errorMessageResId = R.string.map_search_blank_keyword_message,
                     locationNotice = null,
+                    regionSearchCandidates = emptyList(),
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
                 )
@@ -138,33 +144,106 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
 
         spotSearchJob?.cancel()
+        startKeywordSearchLoading()
         spotSearchJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    hasSearched = true,
-                    errorMessageResId = null,
-                    locationNotice = null,
-                    selectedSpot = null,
-                    isFavoriteSpotNearbyLoading = false,
-                    searchMode = MapSearchMode.KEYWORD,
-                )
-            }
+            when (val candidateResult = resolveMapRegionSearchCandidateUseCase(keyword)) {
+                is MapRegionSearchCandidateResult.NeedSelection -> {
+                    showRegionSearchCandidates(candidateResult.candidates)
+                }
 
-            runCatching {
+                is MapRegionSearchCandidateResult.ReadyToSearch -> {
+                    searchByKeywordInternal(
+                        keyword = candidateResult.searchKeyword,
+                        selectedRegionCandidate = candidateResult.selectedCandidate,
+                    )
+                }
+            }
+        }
+    }
+
+    fun onRegionSearchCandidateClick(candidate: MapRegionSearchCandidate) {
+        currentLocationRefreshJob?.cancel()
+        spotSearchJob?.cancel()
+        spotSearchJob = viewModelScope.launch {
+            searchByKeywordInternal(
+                keyword = candidate.searchKeyword,
+                selectedRegionCandidate = candidate,
+            )
+        }
+    }
+
+    private suspend fun searchByKeywordInternal(
+        keyword: String,
+        selectedRegionCandidate: MapRegionSearchCandidate?,
+    ) {
+        startKeywordSearchLoading()
+
+        runCatching {
+            searchByCandidateKeywords(
+                keyword = keyword,
+                selectedRegionCandidate = selectedRegionCandidate,
+            )
+        }.onSuccess { spots ->
+            updateSpotResult(spots)
+        }.onFailure { throwable ->
+            if (throwable is CancellationException) throw throwable
+
+            updateSpotFailure(
+                messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
+            )
+        }
+    }
+
+    private fun startKeywordSearchLoading() {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                hasSearched = true,
+                errorMessageResId = null,
+                locationNotice = null,
+                regionSearchCandidates = emptyList(),
+                selectedSpot = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+            )
+        }
+    }
+
+    private suspend fun searchByCandidateKeywords(
+        keyword: String,
+        selectedRegionCandidate: MapRegionSearchCandidate?,
+    ): List<CollectionSpot> {
+        val searchKeywords = selectedRegionCandidate
+            ?.searchKeywords
+            ?.takeIf { keywords -> keywords.isNotEmpty() }
+            ?: listOf(keyword)
+
+        return searchKeywords
+            .flatMap { searchKeyword ->
                 searchCollectionSpotsByKeywordUseCase(
-                    keyword = keyword,
+                    keyword = searchKeyword,
                     types = emptySet(),
-                )
-            }.onSuccess { spots ->
-                updateSpotResult(spots)
-            }.onFailure { throwable ->
-                if (throwable is CancellationException) throw throwable
-
-                updateSpotFailure(
-                    messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
+                    selectedRegionCandidate = selectedRegionCandidate,
                 )
             }
+            .distinctBy { spot -> spot.id }
+    }
+
+    private fun showRegionSearchCandidates(candidates: List<MapRegionSearchCandidate>) {
+        originalSpots = emptyList()
+
+        _uiState.update {
+            it.copy(
+                spots = emptyList(),
+                regionSearchCandidates = candidates,
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                errorMessageResId = null,
+                locationNotice = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+            )
         }
     }
 
@@ -202,6 +281,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     hasSearched = true,
                     errorMessageResId = null,
                     locationNotice = null,
+                    regionSearchCandidates = emptyList(),
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.MAP_CENTER,
@@ -308,6 +388,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 errorMessageResId = null,
                 locationNotice = null,
+                regionSearchCandidates = emptyList(),
                 favoriteSpotMoveRequestId = request.targetId,
                 favoriteSpotMoveRequestSequence = it.favoriteSpotMoveRequestSequence + 1,
                 isFavoriteSpotNearbyLoading = true,
@@ -359,6 +440,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = false,
                 errorMessageResId = null,
                 locationNotice = MapLocationNotices.PermissionDenied,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -441,6 +523,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = false,
                 errorMessageResId = null,
                 locationNotice = MapLocationNotices.CurrentLocationUnavailable,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -458,6 +541,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = false,
                 errorMessageResId = null,
                 locationNotice = MapLocationNotices.LocationServiceDisabled,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -480,6 +564,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = true,
                 errorMessageResId = null,
                 locationNotice = null,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
             )
         }
@@ -517,6 +602,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                         hasSearched = true,
                         errorMessageResId = null,
                         locationNotice = null,
+                        regionSearchCandidates = emptyList(),
                         searchMode = MapSearchMode.CURRENT_LOCATION,
                     )
                 }
@@ -541,6 +627,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = true,
                 errorMessageResId = messageResId,
                 locationNotice = null,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
             )
         }
@@ -557,6 +644,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     hasSearched = true,
                     errorMessageResId = null,
                     locationNotice = null,
+                    regionSearchCandidates = emptyList(),
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.CURRENT_LOCATION,
@@ -606,6 +694,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = true,
                 errorMessageResId = null,
                 locationNotice = null,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
             )

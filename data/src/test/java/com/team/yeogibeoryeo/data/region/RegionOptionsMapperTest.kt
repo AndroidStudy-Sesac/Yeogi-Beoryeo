@@ -465,6 +465,85 @@ class RegionOptionsMapperTest {
         assertEquals(emptyList<Region>(), regions)
     }
 
+    @Test
+    fun `eupmyeondong lookup includes legal dong candidates with admin dong suffixes`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "전라남도",
+                    sigunguName = "광양시",
+                    eupmyeondongName = "금호동"
+                )
+            ),
+            legalAdminDongMappings = listOf(
+                legalAdminMapping(
+                    sidoName = "광주광역시",
+                    sigunguName = "서구",
+                    legalDongName = "금호동",
+                    adminDongName = "금호1동"
+                ),
+                legalAdminMapping(
+                    sidoName = "광주광역시",
+                    sigunguName = "서구",
+                    legalDongName = "금호동",
+                    adminDongName = "금호2동"
+                ),
+                legalAdminMapping(
+                    sidoName = "서울특별시",
+                    sigunguName = "성동구",
+                    legalDongName = "금호동1가",
+                    adminDongName = "금호1가동"
+                ),
+                legalAdminMapping(
+                    sidoName = "전라남도",
+                    sigunguName = "보성군",
+                    legalDongName = "금호리",
+                    adminDongName = "노동면"
+                )
+            ),
+            keyword = "금호동"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "광주광역시", sigungu = "서구", eupmyeondong = "금호동"),
+                Region(sido = "서울특별시", sigungu = "성동구", eupmyeondong = "금호동"),
+                Region(sido = "전라남도", sigungu = "광양시", eupmyeondong = "금호동")
+            ),
+            regions
+        )
+    }
+
+    @Test
+    fun `legal dong keyword lookup returns ga aliases but excludes ri aliases`() {
+        val keywords = RegionOptionsMapper.findLegalDongKeywordsByRegion(
+            mappings = listOf(
+                legalAdminMapping(
+                    sidoName = "서울특별시",
+                    sigunguName = "중구",
+                    legalDongName = "명동1가",
+                    adminDongName = "명동"
+                ),
+                legalAdminMapping(
+                    sidoName = "서울특별시",
+                    sigunguName = "중구",
+                    legalDongName = "명동2가",
+                    adminDongName = "명동"
+                ),
+                legalAdminMapping(
+                    sidoName = "경상남도",
+                    sigunguName = "김해시",
+                    legalDongName = "명동리",
+                    adminDongName = "한림면"
+                )
+            ),
+            region = Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+            keyword = "명동"
+        )
+
+        assertEquals(listOf("명동1가", "명동2가"), keywords)
+    }
+
     private fun administrativeRegion(
         sidoName: String,
         sigunguName: String,

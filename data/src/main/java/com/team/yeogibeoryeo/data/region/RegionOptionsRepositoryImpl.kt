@@ -3,7 +3,6 @@ package com.team.yeogibeoryeo.data.region
 import com.team.yeogibeoryeo.data.region.local.RegionOptionsLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.LegalAdminDongMappingLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.RegionalGuideRegionOptionsLocalDataSource
-import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import javax.inject.Inject
@@ -43,23 +42,22 @@ class RegionOptionsRepositoryImpl @Inject constructor(
     override suspend fun findRegionsByEupmyeondongKeyword(
         keyword: String
     ): List<Region> {
-        val targetKeyword = keyword.trim()
-        if (targetKeyword.isBlank()) return emptyList()
+        return RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = localDataSource.getRegions(),
+            legalAdminDongMappings = legalAdminDongMappingLocalDataSource.getMappings(),
+            keyword = keyword
+        )
+    }
 
-        val regions = localDataSource.getRegions()
-        val exactMatches = regions
-            .filter { region -> region.eupmyeondongName == targetKeyword }
-
-        val matchedRegions = exactMatches.ifEmpty {
-            regions.filter { region ->
-                region.eupmyeondongName.startsWith(targetKeyword)
-            }
-        }
-
-        return matchedRegions
-            .mapToRegion()
-            .distinct()
-            .sortedWith(REGION_NAME_COMPARATOR)
+    override suspend fun findLegalDongKeywordsByRegion(
+        region: Region,
+        keyword: String
+    ): List<String> {
+        return RegionOptionsMapper.findLegalDongKeywordsByRegion(
+            mappings = legalAdminDongMappingLocalDataSource.getMappings(),
+            region = region,
+            keyword = keyword
+        )
     }
 
     override suspend fun findRegionsBySigunguKeyword(
@@ -90,23 +88,4 @@ class RegionOptionsRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun List<AdministrativeRegionDto>.mapToRegion(): List<Region> {
-        return map { region ->
-            RegionNormalizer.normalize(
-                Region(
-                    sido = region.sidoName,
-                    sigungu = region.sigunguName.ifBlank { null },
-                    eupmyeondong = region.eupmyeondongName
-                )
-            )
-        }
-    }
-
-    private companion object {
-        private val REGION_NAME_COMPARATOR = compareBy<Region>(
-            { region -> region.sido.orEmpty() },
-            { region -> region.sigungu.orEmpty() },
-            { region -> region.eupmyeondong.orEmpty() }
-        )
-    }
 }
