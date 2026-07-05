@@ -16,6 +16,121 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixture() {
     @Test
+    fun `성동구 금호동 입력 시 금호동으로 보정해 키워드 검색을 요청한다`() =
+        runTest {
+            val expectedSpots = listOf(sampleSpot("geumho", CollectionSpotType.BATTERY_BIN))
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = expectedSpots,
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("성동구 금호동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("금호동"), repository.keywords)
+            assertEquals("성동구 금호동", viewModel.uiState.value.searchKeyword)
+            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `서울 성동구 금호동 입력 시 금호동으로 보정해 키워드 검색을 요청한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("서울 성동구 금호동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("금호동"), repository.keywords)
+            assertEquals("서울 성동구 금호동", viewModel.uiState.value.searchKeyword)
+        }
+
+    @Test
+    fun `기존 동 단독 검색어는 그대로 키워드 검색을 요청한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("금호동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("금호동"), repository.keywords)
+        }
+
+    @Test
+    fun `도로명 주소 입력은 동 검색어로 보정하지 않고 원문으로 검색한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("서울 성동구 독서당로 303-5")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("서울 성동구 독서당로 303-5"), repository.keywords)
+        }
+
+    @Test
+    fun `검색 결과 주소가 입력 동명을 포함하지 않아도 결과를 유지한다`() =
+        runTest {
+            val roadAddressSpot = sampleSpot("road-address", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "서울특별시 성동구 독서당로 303-5")
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(roadAddressSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("성동구 금호동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("금호동"), repository.keywords)
+            assertEquals(listOf(roadAddressSpot), viewModel.uiState.value.spots)
+    }
+
+    @Test
+    fun `명동 검색 결과에서 봉명동 주소는 제외한다`() =
+        runTest {
+            val myeongDongSpot = sampleSpot("myeongdong", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "서울특별시 중구 명동길 26 (명동)")
+            val bongMyeongDongSpot = sampleSpot("bongmyeongdong", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "충청북도 청주시 흥덕구 봉명동 1순환로584번길 59")
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(myeongDongSpot, bongMyeongDongSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("명동"), repository.keywords)
+            assertEquals(listOf(myeongDongSpot), viewModel.uiState.value.spots)
+        }
+
+    @Test
     fun `지도 중심 검색은 전달된 카메라 중심 좌표로 수거 장소를 검색한다`() =
         runTest {
             val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)

@@ -19,6 +19,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.NormalizeCollectionSpotSearchKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
@@ -72,7 +73,10 @@ internal fun createViewModel(
         FakeCollectionSpotFavoriteSnapshotRepository(),
 ): CollectionSpotMapViewModel {
     return CollectionSpotMapViewModel(
-        searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(repository),
+        searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(
+            repository = repository,
+            normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase(),
+        ),
         searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
         filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
         currentLocationProvider = currentLocationProvider,
