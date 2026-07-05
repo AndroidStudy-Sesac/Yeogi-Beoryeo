@@ -72,7 +72,7 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
     private companion object {
         private val PARENTHESIZED_TEXT_REGEX = "\\(([^)]+)\\)".toRegex()
         private val REGION_TOKEN_DELIMITER_REGEX = "[,\\s]+".toRegex()
-        private val EUP_MYEON_DONG_REGEX = """[가-힣]+\d*(동|읍|면)""".toRegex()
+        private val EUP_MYEON_DONG_REGEX = """[가-힣]+\d*[동읍면]""".toRegex()
         private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()
     }
 }

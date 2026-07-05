@@ -41,7 +41,7 @@ class NormalizeCollectionSpotSearchKeywordUseCase @Inject constructor() {
         private val WHITESPACE_REGEX = "\\s+".toRegex()
         private val DIGIT_REGEX = "\\d+".toRegex()
         private val ADDRESS_NUMBER_REGEX = """\d+(-\d+)?""".toRegex()
-        private val EUP_MYEON_DONG_REGEX = """[가-힣]+\d*(동|읍|면)""".toRegex()
+        private val EUP_MYEON_DONG_REGEX = """[가-힣]+\d*[동읍면]""".toRegex()
         private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()
     }
 }
