@@ -34,12 +34,12 @@ fun AppTopBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
-            .height(AppTopBarHeight)
-            .padding(horizontal = AppTopBarHorizontalPadding),
+            .height(AppTopBarDefaults.height)
+            .padding(horizontal = AppTopBarDefaults.horizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier.size(AppTopBarButtonSize),
+            modifier = Modifier.size(AppTopBarDefaults.buttonSize),
             contentAlignment = Alignment.Center,
         ) {
             navigationIcon()
@@ -48,7 +48,7 @@ fun AppTopBar(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = AppTopBarTitleStartPadding),
+                .padding(start = AppTopBarDefaults.titleStartPadding),
             contentAlignment = Alignment.CenterStart,
         ) {
             title()
@@ -73,12 +73,16 @@ fun AppBackButton(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = stringResource(R.string.back_action),
+            modifier = Modifier.size(AppTopBarDefaults.iconSize),
             tint = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
 
-private val AppTopBarHeight = 64.dp
-private val AppTopBarHorizontalPadding = 12.dp
-private val AppTopBarButtonSize = 48.dp
-private val AppTopBarTitleStartPadding = 8.dp
+internal object AppTopBarDefaults {
+    val height = 64.dp
+    val horizontalPadding = 12.dp
+    val buttonSize = 48.dp
+    val iconSize = 24.dp
+    val titleStartPadding = 8.dp
+}
