@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,6 +49,7 @@ fun ItemUsefulGuideBannerRow(
     guides: List<ItemUsefulGuideContent>,
     onGuideClick: (ItemUsefulGuideContent) -> Unit,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
@@ -75,6 +77,7 @@ fun ItemUsefulGuideBannerRow(
         LazyRow(
             state = listState,
             flingBehavior = flingBehavior,
+            contentPadding = contentPadding,
             horizontalArrangement = Arrangement.spacedBy(spacing.sm),
         ) {
             items(guides, key = { it.type }) { guide ->

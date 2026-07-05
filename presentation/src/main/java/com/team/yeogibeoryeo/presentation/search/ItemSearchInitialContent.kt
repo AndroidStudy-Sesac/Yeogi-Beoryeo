@@ -102,7 +102,6 @@ fun ItemSearchInitialContent(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = metrics.horizontalPadding)
                 .padding(top = metrics.topPadding)
                 .onGloballyPositioned { coordinates ->
                     val measuredViewportBottomInRootPx =
@@ -116,21 +115,29 @@ fun ItemSearchInitialContent(
             verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
         ) {
             item {
-                ItemSearchHeader(onSettingsClick = onSettingsClick)
+                ItemSearchHeader(
+                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                    onSettingsClick = onSettingsClick,
+                )
             }
 
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
+                ) {
                     KoreanLineBreakText(
                         text = stringResource(R.string.item_useful_guide_section_title),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
+                        modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                     )
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
                         onGuideClick = onUsefulGuideClick,
+                        contentPadding = PaddingValues(horizontal = metrics.horizontalPadding),
                     )
                 }
             }
@@ -140,6 +147,7 @@ fun ItemSearchInitialContent(
                     state = regionalGuideSummaryState,
                     onClick = onRegionalGuideSummaryClick,
                     onRetryClick = onRegionalGuideSummaryRetryClick,
+                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                 )
             }
 
@@ -149,13 +157,18 @@ fun ItemSearchInitialContent(
                     onKeywordChange = onQueryChange,
                     onSearchClick = onSearchClick,
                     placeholder = stringResource(R.string.item_search_query_label),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = metrics.horizontalPadding),
                     iconSize = metrics.searchIconSize,
                 )
             }
 
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
+                Column(
+                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                    verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
+                ) {
                     val quickCategoriesTitle = stringResource(R.string.quick_categories)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
