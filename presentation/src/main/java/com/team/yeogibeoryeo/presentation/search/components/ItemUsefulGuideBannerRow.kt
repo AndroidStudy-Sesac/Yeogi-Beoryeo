@@ -106,15 +106,17 @@ private fun ItemUsefulGuideBannerCard(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
+    val shape = MaterialTheme.shapes.medium
 
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clip(shape)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
-        shape = MaterialTheme.shapes.medium,
+        shape = shape,
     ) {
         Row(
             modifier = Modifier.padding(spacing.md),

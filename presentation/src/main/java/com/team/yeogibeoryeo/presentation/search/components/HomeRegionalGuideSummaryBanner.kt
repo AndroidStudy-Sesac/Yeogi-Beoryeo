@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -39,6 +40,7 @@ fun HomeRegionalGuideSummaryBanner(
         stringResource(id = R.string.home_regional_guide_summary_disposal_days_label)
     val disposalTimeLabel =
         stringResource(id = R.string.home_regional_guide_summary_disposal_time_label)
+    val shape = RoundedCornerShape(8.dp)
     Card(
         modifier =
             modifier
@@ -46,13 +48,13 @@ fun HomeRegionalGuideSummaryBanner(
                 .then(
                     when {
                         content.retryable ->
-                            Modifier.clickable(
+                            Modifier.clip(shape).clickable(
                                 onClickLabel = content.actionLabel,
                                 role = Role.Button,
                                 onClick = onRetryClick,
                             )
                         content.targetId != null ->
-                            Modifier.clickable(
+                            Modifier.clip(shape).clickable(
                                 onClickLabel = content.actionLabel,
                                 role = Role.Button,
                                 onClick = { onClick(content.targetId) },
@@ -64,7 +66,7 @@ fun HomeRegionalGuideSummaryBanner(
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             ),
-        shape = RoundedCornerShape(8.dp),
+        shape = shape,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),

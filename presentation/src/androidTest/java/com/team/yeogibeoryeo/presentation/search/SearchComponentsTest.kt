@@ -197,7 +197,7 @@ class SearchComponentsTest {
         }
 
         composeTestRule.onNodeWithText("종이").assertIsDisplayed()
-        composeTestRule.onNodeWithText("비닐류").performClick()
+        composeTestRule.onNodeWithContentDescription("비닐류").performClick()
 
         assertEquals(RepresentativeGuideCategory.VINYL, clickedCategory)
     }
