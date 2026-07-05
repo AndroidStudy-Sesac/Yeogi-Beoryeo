@@ -84,8 +84,7 @@ internal fun List<RegionalGuideCandidateUiModel>.withDuplicateDisplayDisambiguat
         .filterValues { candidates -> candidates.size > 1 }
         .mapValues { (_, candidates) ->
             candidates
-                .map { candidate -> candidate.candidateDisambiguationText() }
-                .filterNotNull()
+                .mapNotNull { candidate -> candidate.candidateDisambiguationText() }
                 .distinct()
         }
         .filterValues { disambiguationTexts -> disambiguationTexts.size > 1 }
