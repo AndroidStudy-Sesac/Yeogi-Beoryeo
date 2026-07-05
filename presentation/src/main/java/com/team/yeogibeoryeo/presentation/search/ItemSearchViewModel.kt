@@ -40,6 +40,7 @@ constructor(
     private val _events = MutableSharedFlow<ItemSearchEvent>()
     val events: SharedFlow<ItemSearchEvent> = _events.asSharedFlow()
     private var searchJob: Job? = null
+    private var handledInitialQuery: String? = null
 
     init {
         viewModelScope.launch {
@@ -143,6 +144,14 @@ constructor(
                         }
                     }
             }
+    }
+
+    fun searchInitialQueryIfNeeded(query: String?) {
+        val trimmedQuery = query?.trim().orEmpty()
+        if (trimmedQuery.isBlank() || handledInitialQuery == trimmedQuery) return
+
+        handledInitialQuery = trimmedQuery
+        search(trimmedQuery)
     }
 
     fun openCategoryGuide(category: RepresentativeGuideCategory) {
