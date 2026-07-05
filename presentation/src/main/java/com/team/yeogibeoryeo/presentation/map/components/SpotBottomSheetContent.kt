@@ -1,7 +1,7 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
-import androidx.compose.foundation.clickable
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -23,8 +25,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.MapLocationNotice
 import com.team.yeogibeoryeo.presentation.map.MapLocationNoticeAction
@@ -36,9 +40,11 @@ fun SpotBottomSheetContent(
     isLoading: Boolean,
     hasSearched: Boolean,
     selectedTypes: Set<CollectionSpotType>,
+    regionSearchCandidates: List<MapRegionSearchCandidate>,
     locationNotice: MapLocationNotice?,
     @StringRes errorMessageResId: Int?,
     onTypeClick: (CollectionSpotType) -> Unit,
+    onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
@@ -56,7 +62,12 @@ fun SpotBottomSheetContent(
             hasSearched = hasSearched,
         )
 
-        if (hasSearched && !isLoading && !hasNoticeOrError) {
+        if (
+            hasSearched &&
+            !isLoading &&
+            !hasNoticeOrError &&
+            regionSearchCandidates.isEmpty()
+        ) {
             SpotFilterChipRow(
                 types = MapSpotFilterChipPolicy.visibleTypes,
                 selectedTypes = selectedTypes,
@@ -68,6 +79,16 @@ fun SpotBottomSheetContent(
         when {
             isLoading -> {
                 SpotBottomSheetLoading()
+            }
+
+            regionSearchCandidates.isNotEmpty() -> {
+                MapRegionCandidateSelection(
+                    candidates = regionSearchCandidates,
+                    onCandidateClick = onRegionCandidateClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
             }
 
             locationNotice != null -> {
@@ -105,6 +126,72 @@ fun SpotBottomSheetContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun MapRegionCandidateSelection(
+    candidates: List<MapRegionSearchCandidate>,
+    onCandidateClick: (MapRegionSearchCandidate) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(top = 18.dp, bottom = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.map_region_candidate_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = stringResource(R.string.map_region_candidate_description),
+            modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false),
+        ) {
+            items(
+                items = candidates,
+                key = { candidate -> candidate.displayName },
+            ) { candidate ->
+                RegionCandidateRow(
+                    candidate = candidate,
+                    onClick = { onCandidateClick(candidate) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegionCandidateRow(
+    candidate: MapRegionSearchCandidate,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+    ) {
+        Text(
+            text = candidate.displayName,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 14.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
     }
 }
 
@@ -226,9 +313,11 @@ private fun SpotBottomSheetContentPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = setOf(CollectionSpotType.BATTERY_BIN),
+                regionSearchCandidates = emptyList(),
                 locationNotice = null,
                 errorMessageResId = null,
                 onTypeClick = {},
+                onRegionCandidateClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
                 onSpotFavoriteClick = {},
@@ -248,9 +337,11 @@ private fun SpotBottomSheetContentLoadingPreview() {
                 isLoading = true,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                regionSearchCandidates = emptyList(),
                 locationNotice = null,
                 errorMessageResId = null,
                 onTypeClick = {},
+                onRegionCandidateClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
                 onSpotFavoriteClick = {},
@@ -270,9 +361,60 @@ private fun SpotBottomSheetContentEmptyPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                regionSearchCandidates = emptyList(),
                 locationNotice = null,
                 errorMessageResId = null,
                 onTypeClick = {},
+                onRegionCandidateClick = {},
+                onLocationNoticeActionClick = {},
+                onSpotClick = {},
+                onSpotFavoriteClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SpotBottomSheetContentRegionCandidatePreview() {
+    MaterialTheme {
+        Surface {
+            SpotBottomSheetContent(
+                spots = emptyList(),
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                selectedTypes = emptySet(),
+                regionSearchCandidates = listOf(
+                    MapRegionSearchCandidate(
+                        region = Region(
+                            sido = "서울특별시",
+                            sigungu = "중구",
+                            eupmyeondong = "명동",
+                        ),
+                        searchKeyword = "명동",
+                    ),
+                    MapRegionSearchCandidate(
+                        region = Region(
+                            sido = "충청북도",
+                            sigungu = "제천시",
+                            eupmyeondong = "명동",
+                        ),
+                        searchKeyword = "명동",
+                    ),
+                    MapRegionSearchCandidate(
+                        region = Region(
+                            sido = "경상남도",
+                            sigungu = "창원시 진해구",
+                            eupmyeondong = "명동",
+                        ),
+                        searchKeyword = "명동",
+                    ),
+                ),
+                locationNotice = null,
+                errorMessageResId = null,
+                onTypeClick = {},
+                onRegionCandidateClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
                 onSpotFavoriteClick = {},

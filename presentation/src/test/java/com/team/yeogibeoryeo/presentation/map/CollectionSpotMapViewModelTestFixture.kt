@@ -9,6 +9,8 @@ import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSn
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavoriteUseCase
+import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
@@ -20,6 +22,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpots
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.NormalizeCollectionSpotSearchKeywordUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.ResolveMapRegionSearchCandidateUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
@@ -47,6 +50,7 @@ internal fun createViewModel(
         FakeRecentCurrentLocationSpotCacheRepository(),
     timeProvider: TimeProvider = FakeTimeProvider(),
     favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+    regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
 ): CollectionSpotMapViewModel {
@@ -57,6 +61,7 @@ internal fun createViewModel(
         recentCurrentLocationSpotCacheRepository = recentCurrentLocationSpotCacheRepository,
         timeProvider = timeProvider,
         favoriteRepository = favoriteRepository,
+        regionOptionsRepository = regionOptionsRepository,
         snapshotRepository = snapshotRepository,
     )
 }
@@ -69,13 +74,20 @@ internal fun createViewModel(
         FakeRecentCurrentLocationSpotCacheRepository(),
     timeProvider: TimeProvider = FakeTimeProvider(),
     favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
+    regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
 ): CollectionSpotMapViewModel {
+    val normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase()
+
     return CollectionSpotMapViewModel(
+        resolveMapRegionSearchCandidateUseCase = ResolveMapRegionSearchCandidateUseCase(
+            regionOptionsRepository = regionOptionsRepository,
+            normalizeKeywordUseCase = normalizeKeywordUseCase,
+        ),
         searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(
             repository = repository,
-            normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase(),
+            normalizeKeywordUseCase = normalizeKeywordUseCase,
         ),
         searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
         filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
@@ -240,6 +252,47 @@ internal class FakeCollectionSpotRepository(
     }
 
     override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot = spot
+}
+
+internal class FakeMapRegionOptionsRepository(
+    private val eupmyeondongCandidates: Map<String, List<Region>> = emptyMap(),
+    private val legalDongKeywords: Map<String, List<String>> = emptyMap(),
+) : RegionOptionsRepository {
+    val eupmyeondongKeywords = mutableListOf<String>()
+
+    override suspend fun getSidoOptions(): List<String> = emptyList()
+
+    override suspend fun getSigunguOptions(sido: String): List<String> = emptyList()
+
+    override suspend fun getEupmyeondongOptions(
+        sido: String,
+        sigungu: String,
+    ): List<String> = emptyList()
+
+    override suspend fun findRegionsByEupmyeondongKeyword(keyword: String): List<Region> {
+        eupmyeondongKeywords += keyword
+        return eupmyeondongCandidates[keyword].orEmpty()
+    }
+
+    override suspend fun findLegalDongKeywordsByRegion(
+        region: Region,
+        keyword: String,
+    ): List<String> {
+        return legalDongKeywords[
+            listOf(
+                region.sido.orEmpty(),
+                region.sigungu.orEmpty(),
+                region.eupmyeondong.orEmpty(),
+                keyword,
+            ).joinToString("|")
+        ].orEmpty()
+    }
+
+    override suspend fun findRegionsBySigunguKeyword(keyword: String): List<Region> = emptyList()
+
+    override suspend fun normalizeRegionForRegionalGuide(region: Region): Region = region
+
+    override suspend fun findAdminDongCandidatesForLegalDong(region: Region): List<Region> = emptyList()
 }
 
 internal fun collectionSpotFavorite(targetId: String): Favorite =

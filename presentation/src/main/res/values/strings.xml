@@ -216,6 +216,8 @@ SOFTWARE.]]></string>
     <string name="map_current_location_spot_search_failure_message">네트워크 연결을 확인한 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
     <string name="map_spot_search_title">수거 장소 검색</string>
     <string name="map_spot_result_count">검색 결과 %1$d개</string>
+    <string name="map_region_candidate_title">지역을 선택해주세요</string>
+    <string name="map_region_candidate_description">같은 이름의 지역이 여러 곳 있어요.</string>
     <string name="map_empty_spot_result_title">검색 결과가 없습니다.</string>
     <string name="map_empty_spot_result_description">동/읍/면 이름으로 다시 검색해 주세요.\n예: 문래동, 역삼동</string>
     <string name="map_location_permission_denied_title">위치 권한이 필요합니다.</string>

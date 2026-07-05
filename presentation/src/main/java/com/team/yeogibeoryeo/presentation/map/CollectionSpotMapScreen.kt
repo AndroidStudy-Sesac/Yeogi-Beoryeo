@@ -39,6 +39,7 @@ import com.naver.maps.map.compose.LocationTrackingMode
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.components.CollectionSpotNaverMap
 import com.team.yeogibeoryeo.presentation.map.components.MapSearchLoadingOverlay
@@ -141,6 +142,7 @@ fun CollectionSpotMapScreen(
         },
         onKeywordChanged = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchByKeyword,
+        onRegionCandidateClick = viewModel::onRegionSearchCandidateClick,
         onCurrentLocationClick = {
             requestCurrentLocationSearch()
         },
@@ -166,6 +168,7 @@ private fun CollectionSpotMapContent(
     onLocationTrackingModeChange: (LocationTrackingMode) -> Unit,
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
+    onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
     onCurrentLocationClick: () -> Unit,
     onMapCenterSearchClick: (Coordinate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
@@ -193,6 +196,7 @@ private fun CollectionSpotMapContent(
     val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
     val hasNoticeOrError = uiState.locationNotice != null ||
         uiState.errorMessageResId != null
+    val hasRegionCandidates = uiState.regionSearchCandidates.isNotEmpty()
     val isNoticeOrErrorOnly = hasNoticeOrError &&
         uiState.spots.isEmpty() &&
         selectedSpot == null
@@ -201,7 +205,9 @@ private fun CollectionSpotMapContent(
         locationTrackingMode == LocationTrackingMode.None -> LocationTrackingMode.NoFollow
         else -> locationTrackingMode
     }
-    val hasResultListToReturn = uiState.hasSearched || uiState.spots.isNotEmpty()
+    val hasResultListToReturn = uiState.hasSearched ||
+        uiState.spots.isNotEmpty() ||
+        hasRegionCandidates
 
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
@@ -226,8 +232,14 @@ private fun CollectionSpotMapContent(
         uiState.searchMode,
         uiState.errorMessageResId,
         uiState.locationNotice,
+        uiState.regionSearchCandidates,
     ) {
         when {
+            hasRegionCandidates -> {
+                mapUiMode = MapUiMode.ResultList
+                sheetLevel = MapSheetLevel.Half
+            }
+
             isSpotSearchLoading -> {
                 mapUiMode = MapUiMode.Browsing
                 sheetLevel = MapSheetLevel.Hidden
@@ -433,9 +445,11 @@ private fun CollectionSpotMapContent(
                             isLoading = uiState.isLoading || uiState.isFavoriteSpotNearbyLoading,
                             hasSearched = uiState.hasSearched,
                             selectedTypes = uiState.selectedTypes,
+                            regionSearchCandidates = uiState.regionSearchCandidates,
                             locationNotice = uiState.locationNotice,
                             errorMessageResId = uiState.errorMessageResId,
                             onTypeClick = onTypeClick,
+                            onRegionCandidateClick = onRegionCandidateClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,
                             onSpotFavoriteClick = onSpotFavoriteClick,
                             onSpotClick = { spot ->
@@ -460,6 +474,7 @@ private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
     get() = isLoading ||
         locationNotice != null ||
         errorMessageResId != null ||
+        regionSearchCandidates.isNotEmpty() ||
         hasSearched ||
         spots.isNotEmpty() ||
         selectedSpot != null
@@ -500,6 +515,7 @@ private fun CollectionSpotMapContentPreview() {
                 onLocationTrackingModeChange = {},
                 onKeywordChanged = {},
                 onSearchClick = {},
+                onRegionCandidateClick = {},
                 onCurrentLocationClick = {},
                 onMapCenterSearchClick = {},
                 onLocationNoticeActionClick = {},

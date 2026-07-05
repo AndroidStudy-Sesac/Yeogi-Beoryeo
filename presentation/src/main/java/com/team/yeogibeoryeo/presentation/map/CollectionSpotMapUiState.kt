@@ -3,11 +3,13 @@ package com.team.yeogibeoryeo.presentation.map
 import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 
 data class CollectionSpotMapUiState(
     val searchKeyword: String = "",
     val searchMode: MapSearchMode = MapSearchMode.KEYWORD,
     val spots: List<CollectionSpot> = emptyList(),
+    val regionSearchCandidates: List<MapRegionSearchCandidate> = emptyList(),
     val selectedSpot: CollectionSpot? = null,
     val selectedTypes: Set<CollectionSpotType> = emptySet(),
     val isLoading: Boolean = false,

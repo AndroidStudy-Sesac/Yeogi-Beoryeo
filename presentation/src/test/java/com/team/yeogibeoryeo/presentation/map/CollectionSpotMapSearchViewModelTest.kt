@@ -1,8 +1,10 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,7 +20,10 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
     @Test
     fun `성동구 금호동 입력 시 금호동으로 보정해 키워드 검색을 요청한다`() =
         runTest {
-            val expectedSpots = listOf(sampleSpot("geumho", CollectionSpotType.BATTERY_BIN))
+            val expectedSpots = listOf(
+                sampleSpot("geumho", CollectionSpotType.BATTERY_BIN)
+                    .copy(address = "서울특별시 성동구 금호동")
+            )
             val repository = FakeCollectionSpotRepository(
                 keywordSpots = expectedSpots,
             )
@@ -128,6 +133,142 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
 
             assertEquals(listOf("명동"), repository.keywords)
             assertEquals(listOf(myeongDongSpot), viewModel.uiState.value.spots)
+        }
+
+    @Test
+    fun `동 단독 검색어에 여러 지역 후보가 있으면 검색 대신 후보 목록을 표시한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+                legalDongKeywords = mapOf(
+                    "서울특별시|중구|명동|명동" to listOf("명동1가", "명동2가"),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(emptyList<String>(), repository.keywords)
+            assertEquals(
+                listOf("서울특별시 중구 명동", "충청북도 제천시 명동"),
+                viewModel.uiState.value.regionSearchCandidates.map { candidate -> candidate.displayName },
+            )
+            assertFalse(viewModel.uiState.value.hasSearched)
+        }
+
+    @Test
+    fun `지역 후보를 선택하면 선택한 동 검색어로 검색을 요청한다`() =
+        runTest {
+            val seoulSpot = sampleSpot("seoul-myeongdong", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "서울특별시 중구 명동길 3")
+            val jecheonSpot = sampleSpot("jecheon-myeongdong", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "충청북도 제천시 명동 1")
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(seoulSpot, jecheonSpot),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+                legalDongKeywords = mapOf(
+                    "서울특별시|중구|명동|명동" to listOf("명동1가", "명동2가"),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            advanceUntilIdle()
+
+            assertEquals(listOf("명동", "명동1가", "명동2가"), repository.keywords)
+            assertEquals(emptyList<MapRegionSearchCandidate>(), viewModel.uiState.value.regionSearchCandidates)
+            assertEquals(listOf(seoulSpot), viewModel.uiState.value.spots)
+            assertEquals("명동", viewModel.uiState.value.searchKeyword)
+        }
+
+    @Test
+    fun `지역 범위가 포함된 동 검색어는 후보를 좁혀 바로 검색한다`() =
+        runTest {
+            val expectedSpot = sampleSpot("seoul-myeongdong", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "서울특별시 중구 명동길 3")
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(expectedSpot),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+                legalDongKeywords = mapOf(
+                    "서울특별시|중구|명동|명동" to listOf("명동1가", "명동2가"),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("서울 중구 명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("명동", "명동1가", "명동2가"), repository.keywords)
+            assertEquals(emptyList<MapRegionSearchCandidate>(), viewModel.uiState.value.regionSearchCandidates)
+            assertEquals(expectedSpot, viewModel.uiState.value.spots.single())
+        }
+
+    @Test
+    fun `검색어를 수정하면 표시 중인 지역 후보 목록을 닫는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.onSearchKeywordChanged("명동1가")
+
+            assertEquals(emptyList<MapRegionSearchCandidate>(), viewModel.uiState.value.regionSearchCandidates)
+            assertEquals("명동1가", viewModel.uiState.value.searchKeyword)
         }
 
     @Test
