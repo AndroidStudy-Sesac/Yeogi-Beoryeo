@@ -12,6 +12,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavorit
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
@@ -220,6 +221,7 @@ internal class FakeRecentCurrentLocationSpotCacheRepository(
 internal class FakeCollectionSpotRepository(
     internal val keywordSpots: List<CollectionSpot> = emptyList(),
     internal val locationSpots: List<CollectionSpot> = emptyList(),
+    internal val isKeywordSearchPartial: Boolean = false,
     internal val keywordSearchThrowable: Throwable? = null,
     internal val locationSearchThrowable: Throwable? = null,
     internal val locationSearchResultProvider: (suspend () -> List<CollectionSpot>)? = null,
@@ -236,6 +238,19 @@ internal class FakeCollectionSpotRepository(
         keywords += keyword
         keywordSearchThrowable?.let { throw it }
         return keywordSpots
+    }
+
+    override suspend fun searchByKeywordResult(
+        keyword: String,
+        types: Set<CollectionSpotType>,
+    ): CollectionSpotSearchResult {
+        return CollectionSpotSearchResult(
+            spots = searchByKeyword(
+                keyword = keyword,
+                types = types,
+            ),
+            isPartial = isKeywordSearchPartial,
+        )
     }
 
     override suspend fun searchByLocation(

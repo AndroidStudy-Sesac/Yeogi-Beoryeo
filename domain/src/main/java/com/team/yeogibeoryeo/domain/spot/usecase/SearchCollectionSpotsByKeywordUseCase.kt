@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.domain.spot.usecase
 
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotAddressSearchPolicy
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
@@ -16,14 +17,30 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
         types: Set<CollectionSpotType> = emptySet(),
         selectedRegionCandidate: MapRegionSearchCandidate? = null,
     ): List<CollectionSpot> {
-        val normalizedKeyword = normalizeKeywordUseCase(keyword)
+        return searchWithResult(
+            keyword = keyword,
+            types = types,
+            selectedRegionCandidate = selectedRegionCandidate,
+        ).spots
+    }
 
-        return repository.searchByKeyword(
+    suspend fun searchWithResult(
+        keyword: String,
+        types: Set<CollectionSpotType> = emptySet(),
+        selectedRegionCandidate: MapRegionSearchCandidate? = null,
+    ): CollectionSpotSearchResult {
+        val normalizedKeyword = normalizeKeywordUseCase(keyword)
+        val result = repository.searchByKeywordResult(
             keyword = normalizedKeyword,
             types = types,
         )
-            .filterByExplicitRegionKeyword(normalizedKeyword)
-            .filterBySelectedRegionCandidate(selectedRegionCandidate)
+
+        return CollectionSpotSearchResult(
+            spots = result.spots
+                .filterByExplicitRegionKeyword(normalizedKeyword)
+                .filterBySelectedRegionCandidate(selectedRegionCandidate),
+            isPartial = result.isPartial,
+        )
     }
 
     private fun List<CollectionSpot>.filterByExplicitRegionKeyword(

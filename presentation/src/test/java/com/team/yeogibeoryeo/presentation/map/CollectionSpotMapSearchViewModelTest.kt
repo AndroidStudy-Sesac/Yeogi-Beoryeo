@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -466,6 +467,31 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
                 viewModel.uiState.value.errorMessageResId,
             )
             assertNull(viewModel.uiState.value.locationNotice)
+        }
+
+    @Test
+    fun `키워드 검색이 일부 실패하면 조회된 결과와 일부 실패 안내를 함께 표시한다`() =
+        runTest {
+            val expectedSpots = listOf(sampleSpot("partial", CollectionSpotType.BATTERY_BIN))
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = expectedSpots,
+                isKeywordSearchPartial = true,
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("상동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(
+                R.string.map_spot_search_partial_failure_message,
+                viewModel.uiState.value.partialWarningMessageResId,
+            )
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
 }

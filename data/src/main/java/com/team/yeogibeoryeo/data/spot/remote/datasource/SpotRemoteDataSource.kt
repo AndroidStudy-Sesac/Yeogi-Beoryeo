@@ -16,6 +16,20 @@ class SpotRemoteDataSource @Inject constructor(
         pageNo: Int = 1,
         numOfRows: Int = 100,
     ): List<SpotItemDto> {
+        return searchByKeywordResult(
+            serviceKey = serviceKey,
+            keyword = keyword,
+            pageNo = pageNo,
+            numOfRows = numOfRows,
+        ).items
+    }
+
+    suspend fun searchByKeywordResult(
+        serviceKey: String,
+        keyword: String,
+        pageNo: Int = 1,
+        numOfRows: Int = 100,
+    ): SpotKeywordSearchResult {
         val firstPage = fetchKeywordPage(
             serviceKey = serviceKey,
             keyword = keyword,
@@ -31,8 +45,9 @@ class SpotRemoteDataSource @Inject constructor(
             ((totalCount + effectiveNumOfRows - 1) / effectiveNumOfRows)
                 .coerceAtLeast(currentPageNo)
         }
-        val lastPage = totalPages.coerceAtMost(currentPageNo + MAX_ADDR_SEARCH_PAGE_COUNT - 1)
+        val lastPage = totalPages
         val mergedItems = firstPage.items.toMutableList()
+        var isPartial = false
 
         for (nextPageNo in (currentPageNo + 1)..lastPage) {
             val nextPage = try {
@@ -45,19 +60,23 @@ class SpotRemoteDataSource @Inject constructor(
             } catch (exception: Throwable) {
                 if (exception is CancellationException) throw exception
 
+                isPartial = true
                 break
             }
 
             mergedItems += nextPage.items
         }
 
-        return mergedItems.distinctBy { item ->
-            listOf(
-                item.spotNm.orEmpty().trim(),
-                item.addrBase.orEmpty().trim(),
-                item.addrDtl.orEmpty().trim(),
-            )
-        }
+        return SpotKeywordSearchResult(
+            items = mergedItems.distinctBy { item ->
+                listOf(
+                    item.spotNm.orEmpty().trim(),
+                    item.addrBase.orEmpty().trim(),
+                    item.addrDtl.orEmpty().trim(),
+                )
+            },
+            isPartial = isPartial,
+        )
     }
 
     suspend fun searchByLocation(
@@ -131,6 +150,10 @@ class SpotRemoteDataSource @Inject constructor(
 
     private companion object {
         const val RESULT_CODE_NO_DATA = "03"
-        const val MAX_ADDR_SEARCH_PAGE_COUNT = 5
     }
 }
+
+data class SpotKeywordSearchResult(
+    val items: List<SpotItemDto>,
+    val isPartial: Boolean,
+)

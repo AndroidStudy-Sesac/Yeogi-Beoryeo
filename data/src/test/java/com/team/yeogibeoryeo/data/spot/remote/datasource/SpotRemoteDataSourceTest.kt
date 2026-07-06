@@ -205,6 +205,41 @@ class SpotRemoteDataSourceTest {
     }
 
     @Test
+    fun `검색어 기반 조회는 5페이지를 초과해도 전체 페이지를 조회한다`() = runBlocking {
+        val apiService = FakeSpotApiService(
+            response = createResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 12,
+                items = listOf(spotItem("1페이지 수거함", "서울특별시 영등포구 문래동", "1")),
+            ),
+            responsesByPage = (2..6).associateWith { pageNo ->
+                createResponse(
+                    pageNo = pageNo,
+                    numOfRows = 2,
+                    totalCount = 12,
+                    items = listOf(
+                        spotItem("${pageNo}페이지 수거함", "서울특별시 영등포구 문래동", pageNo.toString()),
+                    ),
+                )
+            },
+        )
+        val dataSource = SpotRemoteDataSource(apiService)
+
+        val result = dataSource.searchByKeyword(
+            serviceKey = TEST_SERVICE_KEY,
+            keyword = "상동",
+            numOfRows = 2,
+        )
+
+        assertEquals(listOf(1, 2, 3, 4, 5, 6), apiService.requestedPageNos)
+        assertEquals(
+            listOf("1페이지 수거함", "2페이지 수거함", "3페이지 수거함", "4페이지 수거함", "5페이지 수거함", "6페이지 수거함"),
+            result.map { item -> item.spotNm },
+        )
+    }
+
+    @Test
     fun `검색어 기반 추가 페이지 실패 시 조회된 페이지 결과를 반환한다`() = runBlocking {
         val apiService = FakeSpotApiService(
             response = createResponse(
@@ -219,14 +254,15 @@ class SpotRemoteDataSourceTest {
         )
         val dataSource = SpotRemoteDataSource(apiService)
 
-        val result = dataSource.searchByKeyword(
+        val result = dataSource.searchByKeywordResult(
             serviceKey = TEST_SERVICE_KEY,
             keyword = "문래동",
             numOfRows = 2,
         )
 
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
-        assertEquals(listOf("1페이지 수거함"), result.map { item -> item.spotNm })
+        assertEquals(listOf("1페이지 수거함"), result.items.map { item -> item.spotNm })
+        assertEquals(true, result.isPartial)
     }
 
     @Test

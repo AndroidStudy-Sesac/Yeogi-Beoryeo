@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.data.spot.geocoder.SpotGeocoder
 import com.team.yeogibeoryeo.data.spot.mapper.SpotMapper
 import com.team.yeogibeoryeo.data.spot.remote.datasource.SpotRemoteDataSource
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
@@ -28,16 +29,29 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         keyword: String,
         types: Set<CollectionSpotType>,
     ): List<CollectionSpot> {
-        val spots = remoteDataSource.searchByKeyword(
+        return searchByKeywordResult(
+            keyword = keyword,
+            types = types,
+        ).spots
+    }
+
+    override suspend fun searchByKeywordResult(
+        keyword: String,
+        types: Set<CollectionSpotType>,
+    ): CollectionSpotSearchResult {
+        val result = remoteDataSource.searchByKeywordResult(
             serviceKey = publicDataKeyProvider.publicDataServiceKey,
             keyword = keyword,
-        ).let { dtoList ->
-            spotMapper.mapToDomainList(dtoList)
-        }
+        )
 
-        return spots
+        val spots = spotMapper.mapToDomainList(result.items)
             .filterByTypes(types)
             .geocodeAll()
+
+        return CollectionSpotSearchResult(
+            spots = spots,
+            isPartial = result.isPartial,
+        )
     }
 
     override suspend fun searchByLocation(
