@@ -74,9 +74,7 @@ constructor(
         _uiState.update {
             it.copy(
                 query = query,
-                guides = emptyList(),
                 isLoading = false,
-                hasSearched = false,
                 errorMessageResId = null,
             )
         }

@@ -142,7 +142,7 @@ class ItemSearchViewModelTest {
         }
 
     @Test
-    fun `검색어 변경 시 이전 결과를 초기화하고 초기 상태로 돌아간다`() =
+    fun `검색 결과 화면에서 검색어를 수정해도 이전 결과와 검색 상태를 유지한다`() =
         runTest {
             val repository = FakeRepository(onSearch = { listOf(sampleGuide("유리병")) })
             val viewModel = createViewModel(repository)
@@ -152,8 +152,8 @@ class ItemSearchViewModelTest {
             viewModel.onQueryChange("비닐")
 
             assertEquals("비닐", viewModel.uiState.value.query)
-            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
-            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals(listOf("유리병"), viewModel.uiState.value.guides.map { it.name })
+            assertEquals(true, viewModel.uiState.value.hasSearched)
             assertFalse(viewModel.uiState.value.isLoading)
         }
 
