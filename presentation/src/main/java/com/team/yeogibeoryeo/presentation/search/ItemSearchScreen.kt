@@ -71,9 +71,7 @@ fun ItemSearchRoute(
     }
 
     LaunchedEffect(initialQuery) {
-        if (!initialQuery.isNullOrBlank()) {
-            viewModel.search(initialQuery)
-        }
+        viewModel.searchInitialQueryIfNeeded(initialQuery)
     }
 
     LaunchedEffect(viewModel.events) {
