@@ -8,6 +8,7 @@ import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -31,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -38,6 +41,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -199,20 +204,12 @@ private fun QuickCategoryToggleItem(
                 minHeight = size.minTouchTarget,
             )
             .width(metrics.cellSize)
-            .clickable(
-                onClickLabel = label,
-                role = Role.Button,
-                onClick = onClick,
-            )
     ) {
-        Box(
-            modifier = Modifier
-                .size(metrics.tileSize)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = MaterialTheme.shapes.large,
-                ),
-            contentAlignment = Alignment.Center,
+        QuickCategoryTile(
+            contentDescription = label,
+            onClickLabel = label,
+            onClick = onClick,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Icon(
                 imageVector = Icons.Filled.MoreHoriz,
@@ -309,6 +306,43 @@ private sealed interface QuickCategoryGridItem {
 }
 
 @Composable
+private fun QuickCategoryTile(
+    contentDescription: String,
+    onClickLabel: String,
+    onClick: () -> Unit,
+    containerColor: Color,
+    badge: @Composable BoxScope.() -> Unit = {},
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val metrics = LocalQuickCategoryGridMetrics.current
+    val shape = MaterialTheme.shapes.large
+
+    Box(
+        modifier = Modifier.size(metrics.tileSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(metrics.tileSize)
+                .clip(shape)
+                .background(
+                    color = containerColor,
+                    shape = shape
+                )
+                .semantics { this.contentDescription = contentDescription }
+                .clickable(
+                    onClickLabel = onClickLabel,
+                    role = Role.Button,
+                    onClick = onClick,
+                ),
+            contentAlignment = Alignment.Center,
+            content = content,
+        )
+        badge()
+    }
+}
+
+@Composable
 internal fun QuickCategoryItem(
     category: RepresentativeGuideCategory,
     name: String,
@@ -329,20 +363,40 @@ internal fun QuickCategoryItem(
                 minHeight = size.minTouchTarget,
             )
             .width(metrics.cellSize)
-            .clickable(
-                onClickLabel = clickActionLabel,
-                role = Role.Button,
-                onClick = onClick,
-            )
     ) {
-        Box(
-            modifier = Modifier
-                .size(metrics.tileSize)
-                .background(
-                    color = category.containerColor(),
-                    shape = MaterialTheme.shapes.large
-                ),
-            contentAlignment = Alignment.Center
+        QuickCategoryTile(
+            contentDescription = category.displayName,
+            onClickLabel = clickActionLabel,
+            onClick = onClick,
+            containerColor = category.containerColor(),
+            badge = {
+                if (isSelected) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(
+                                x = size.categorySelectionBadgeOffset,
+                                y = -size.categorySelectionBadgeOffset,
+                            )
+                            .size(size.categorySelectionBadge),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = BorderStroke(
+                            width = ItemSearchLayoutDefaults.stroke.outline,
+                            color = MaterialTheme.colorScheme.primary,
+                        ),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(size.categorySelectionBadgeIcon),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            },
         ) {
             Icon(
                 painter = painterResource(id = category.iconResId),
@@ -351,32 +405,6 @@ internal fun QuickCategoryItem(
                 modifier = Modifier.size(metrics.iconSize),
                 tint = category.iconTint()
             )
-            if (isSelected) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(
-                            x = size.categorySelectionBadgeOffset,
-                            y = -size.categorySelectionBadgeOffset,
-                        )
-                        .size(size.categorySelectionBadge),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    border = BorderStroke(
-                        width = ItemSearchLayoutDefaults.stroke.outline,
-                        color = MaterialTheme.colorScheme.primary,
-                    ),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(size.categorySelectionBadgeIcon),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            }
         }
         Text(
             text = name.withKoreanLineBreakOpportunities(),
