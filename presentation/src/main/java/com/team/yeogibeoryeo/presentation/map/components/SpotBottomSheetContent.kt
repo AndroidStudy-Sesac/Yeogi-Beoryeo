@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -18,11 +21,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.MapLocationNotice
 import com.team.yeogibeoryeo.presentation.map.MapLocationNoticeAction
 
@@ -33,10 +40,12 @@ fun SpotBottomSheetContent(
     isLoading: Boolean,
     hasSearched: Boolean,
     selectedTypes: Set<CollectionSpotType>,
+    regionSearchCandidates: List<MapRegionSearchCandidate>,
     locationNotice: MapLocationNotice?,
-    locationNoticeMessage: String?,
-    errorMessage: String?,
+    @StringRes errorMessageResId: Int?,
+    @StringRes partialWarningMessageResId: Int? = null,
     onTypeClick: (CollectionSpotType) -> Unit,
+    onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
@@ -44,8 +53,12 @@ fun SpotBottomSheetContent(
     bottomContentPadding: Dp = 0.dp,
 ) {
     val hasNoticeOrError = locationNotice != null ||
-        locationNoticeMessage != null ||
-        errorMessage != null
+        errorMessageResId != null
+    val shouldShowPartialWarning = partialWarningMessageResId != null &&
+        spots.isNotEmpty() &&
+        !isLoading &&
+        !hasNoticeOrError &&
+        regionSearchCandidates.isEmpty()
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -55,7 +68,21 @@ fun SpotBottomSheetContent(
             hasSearched = hasSearched,
         )
 
-        if (hasSearched && !isLoading && !hasNoticeOrError) {
+        if (shouldShowPartialWarning) {
+            Text(
+                text = stringResource(partialWarningMessageResId),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        if (
+            hasSearched &&
+            !isLoading &&
+            !hasNoticeOrError &&
+            regionSearchCandidates.isEmpty()
+        ) {
             SpotFilterChipRow(
                 types = MapSpotFilterChipPolicy.visibleTypes,
                 selectedTypes = selectedTypes,
@@ -69,28 +96,31 @@ fun SpotBottomSheetContent(
                 SpotBottomSheetLoading()
             }
 
+            regionSearchCandidates.isNotEmpty() -> {
+                MapRegionCandidateSelection(
+                    candidates = regionSearchCandidates,
+                    onCandidateClick = onRegionCandidateClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+            }
+
             locationNotice != null -> {
                 EmptySpotResult(
-                    title = locationNotice.title,
-                    description = locationNotice.message,
-                    actionLabel = locationNotice.action?.toActionLabel(),
+                    title = stringResource(locationNotice.titleResId),
+                    description = stringResource(locationNotice.messageResId),
+                    actionLabel = locationNotice.action?.let { stringResource(it.toActionLabelResId()) },
                     onActionClick = locationNotice.action?.let { action ->
                         { onLocationNoticeActionClick(action) }
                     },
                 )
             }
 
-            locationNoticeMessage != null -> {
+            errorMessageResId != null -> {
                 EmptySpotResult(
-                    title = "현재 위치 검색 안내",
-                    description = locationNoticeMessage,
-                )
-            }
-
-            errorMessage != null -> {
-                EmptySpotResult(
-                    title = "수거 장소를 불러오지 못했습니다.",
-                    description = errorMessage,
+                    title = stringResource(R.string.map_search_failed_title),
+                    description = stringResource(errorMessageResId),
                 )
             }
 
@@ -115,6 +145,72 @@ fun SpotBottomSheetContent(
 }
 
 @Composable
+private fun MapRegionCandidateSelection(
+    candidates: List<MapRegionSearchCandidate>,
+    onCandidateClick: (MapRegionSearchCandidate) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(top = 18.dp, bottom = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.map_region_candidate_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = stringResource(R.string.map_region_candidate_description),
+            modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false),
+        ) {
+            items(
+                items = candidates,
+                key = { candidate -> candidate.displayName },
+            ) { candidate ->
+                RegionCandidateRow(
+                    candidate = candidate,
+                    onClick = { onCandidateClick(candidate) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegionCandidateRow(
+    candidate: MapRegionSearchCandidate,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+    ) {
+        Text(
+            text = candidate.displayName,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 14.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
+}
+
+@Composable
 fun SpotBottomSheetHeader(
     resultCount: Int,
     hasSearched: Boolean,
@@ -125,9 +221,9 @@ fun SpotBottomSheetHeader(
     ) {
         Text(
             text = if (hasSearched) {
-                "검색 결과 ${resultCount}개"
+                stringResource(R.string.map_spot_result_count, resultCount)
             } else {
-                "수거 장소 검색"
+                stringResource(R.string.map_spot_search_title)
             },
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
             style = MaterialTheme.typography.titleMedium,
@@ -157,11 +253,11 @@ private fun SpotBottomSheetLoading(
 @Composable
 fun SpotDetailBottomSheetContent(
     spot: CollectionSpot,
+    modifier: Modifier = Modifier,
     isNearbyLoading: Boolean = false,
     onFavoriteClick: (CollectionSpot) -> Unit,
     onRegionalGuideClick: (String) -> Unit = {},
     onCloseClick: () -> Unit,
-    modifier: Modifier = Modifier,
     bottomContentPadding: Dp = 0.dp,
 ) {
     Column(
@@ -185,7 +281,7 @@ fun SpotDetailBottomSheetContent(
                     .fillMaxWidth()
                     .padding(top = 12.dp),
             ) {
-                Text(text = "이 지역 배출 정보 보기")
+                Text(text = stringResource(R.string.map_regional_guide_action))
             }
         }
 
@@ -203,7 +299,7 @@ fun SpotDetailBottomSheetContent(
                     strokeWidth = 2.dp,
                 )
                 Text(
-                    text = "주변 목록 준비 중",
+                    text = stringResource(R.string.map_nearby_list_loading),
                     modifier = Modifier.padding(end = 12.dp),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -211,7 +307,7 @@ fun SpotDetailBottomSheetContent(
             }
 
             Text(
-                text = "목록으로",
+                text = stringResource(R.string.map_spot_detail_back_to_list),
                 modifier = Modifier
                     .clickable(onClick = onCloseClick),
                 style = MaterialTheme.typography.labelLarge,
@@ -232,10 +328,11 @@ private fun SpotBottomSheetContentPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = setOf(CollectionSpotType.BATTERY_BIN),
+                regionSearchCandidates = emptyList(),
                 locationNotice = null,
-                locationNoticeMessage = null,
-                errorMessage = null,
+                errorMessageResId = null,
                 onTypeClick = {},
+                onRegionCandidateClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
                 onSpotFavoriteClick = {},
@@ -255,10 +352,11 @@ private fun SpotBottomSheetContentLoadingPreview() {
                 isLoading = true,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                regionSearchCandidates = emptyList(),
                 locationNotice = null,
-                locationNoticeMessage = null,
-                errorMessage = null,
+                errorMessageResId = null,
                 onTypeClick = {},
+                onRegionCandidateClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
                 onSpotFavoriteClick = {},
@@ -278,10 +376,60 @@ private fun SpotBottomSheetContentEmptyPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                regionSearchCandidates = emptyList(),
                 locationNotice = null,
-                locationNoticeMessage = null,
-                errorMessage = null,
+                errorMessageResId = null,
                 onTypeClick = {},
+                onRegionCandidateClick = {},
+                onLocationNoticeActionClick = {},
+                onSpotClick = {},
+                onSpotFavoriteClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SpotBottomSheetContentRegionCandidatePreview() {
+    MaterialTheme {
+        Surface {
+            SpotBottomSheetContent(
+                spots = emptyList(),
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                selectedTypes = emptySet(),
+                regionSearchCandidates = listOf(
+                    MapRegionSearchCandidate(
+                        region = Region(
+                            sido = "서울특별시",
+                            sigungu = "중구",
+                            eupmyeondong = "명동",
+                        ),
+                        searchKeyword = "명동",
+                    ),
+                    MapRegionSearchCandidate(
+                        region = Region(
+                            sido = "충청북도",
+                            sigungu = "제천시",
+                            eupmyeondong = "명동",
+                        ),
+                        searchKeyword = "명동",
+                    ),
+                    MapRegionSearchCandidate(
+                        region = Region(
+                            sido = "경상남도",
+                            sigungu = "창원시 진해구",
+                            eupmyeondong = "명동",
+                        ),
+                        searchKeyword = "명동",
+                    ),
+                ),
+                locationNotice = null,
+                errorMessageResId = null,
+                onTypeClick = {},
+                onRegionCandidateClick = {},
                 onLocationNoticeActionClick = {},
                 onSpotClick = {},
                 onSpotFavoriteClick = {},
@@ -352,9 +500,10 @@ private fun sampleSpotBottomSheetSpots(): List<CollectionSpot> {
     )
 }
 
-private fun MapLocationNoticeAction.toActionLabel(): String {
+@StringRes
+private fun MapLocationNoticeAction.toActionLabelResId(): Int {
     return when (this) {
-        MapLocationNoticeAction.OpenAppSettings -> "앱 설정 열기"
-        MapLocationNoticeAction.OpenLocationSettings -> "위치 설정 열기"
+        MapLocationNoticeAction.OpenAppSettings -> R.string.map_location_notice_open_app_settings
+        MapLocationNoticeAction.OpenLocationSettings -> R.string.map_location_notice_open_location_settings
     }
 }

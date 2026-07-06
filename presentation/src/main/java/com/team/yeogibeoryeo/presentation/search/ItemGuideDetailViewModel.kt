@@ -64,7 +64,7 @@ constructor(
                     }
                 } catch (exception: CancellationException) {
                     throw exception
-                } catch (exception: Throwable) {
+                } catch (_: Throwable) {
                     _uiState.value =
                         ItemGuideDetailUiState.Error(
                             R.string.item_guide_detail_load_failed_message,

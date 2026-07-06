@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="item_search_query_label">무엇을 버리시나요?</string>
     <string name="item_search_title">여기 버려</string>
     <string name="item_search_description">품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.</string>
@@ -58,6 +58,21 @@
     <string name="item_useful_guide_site_pickup_locations">폐휴대폰·폐가전 수거회수처 찾기</string>
     <string name="item_useful_guide_site_dictionary">공식 품목사전 보기</string>
     <string name="item_useful_guide_site_faq">분리배출 자주 묻는 질문 보기</string>
+    <string name="home_regional_guide_summary_label">지역별 배출 가이드</string>
+    <string name="home_regional_guide_summary_loading_description">즐겨찾기한 지역의 배출 기준을 불러오는 중입니다.</string>
+    <string name="home_regional_guide_summary_no_favorite_description">지역 가이드를 즐겨찾기하면 배출 기준을 여기에서 확인할 수 있어요.</string>
+    <string name="home_regional_guide_summary_disposal_days_label">배출 요일</string>
+    <string name="home_regional_guide_summary_disposal_time_label">배출 시간</string>
+    <string name="home_regional_guide_summary_detail_required">상세 확인</string>
+    <string name="home_regional_guide_summary_open_detail_action">지역 가이드 상세 보기</string>
+    <string name="home_regional_guide_summary_different_by_waste_type_notice">품목별 다름</string>
+    <string name="home_regional_guide_summary_general_waste_basis_detail">일반쓰레기 기준입니다.\n상세 안내에서 확인해 주세요.</string>
+    <string name="home_regional_guide_summary_no_today_schedule_detail">배출 기준 확인이 필요해요.\n상세 안내에서 확인해 주세요.</string>
+    <string name="home_regional_guide_summary_schedule_needs_confirmation_detail">배출 요일 정보 확인이 필요해요.\n상세 안내에서 배출 기준을 확인해 주세요.</string>
+    <string name="home_regional_guide_summary_restore_failed_description">저장된 지역 정보를 다시 확인해 주세요.</string>
+    <string name="home_regional_guide_summary_load_failed_description">최신 배출 정보를 불러오지 못했어요.</string>
+    <string name="home_regional_guide_summary_retry_detail">눌러서 다시 시도해 주세요.</string>
+    <string name="home_regional_guide_summary_retry_action">배출 정보 다시 불러오기</string>
     <string name="no_search_results_title">검색 결과가 없어요.</string>
     <string name="no_search_results_description">다른 이름으로 다시 검색해보세요.</string>
     <string name="search_results_count">검색 결과 %1$d건</string>
@@ -69,6 +84,28 @@
     <string name="tip_title">재활용·처리 정보</string>
     <string name="local_disposal_notice_title">지역별 배출 기준 안내</string>
     <string name="local_disposal_notice">배출방법은 지역별로 차이가 있을 수 있으니, 해당 지방자치단체에서 정하는 방법이 있는 경우에는 해당 방법에 따라 배출하시기 바랍니다.</string>
+    <string name="regional_guide_empty_default_title">조회 결과를 찾지 못했어요.</string>
+    <string name="regional_guide_empty_default_message">조회된 지역별 배출 가이드가 없습니다.</string>
+    <string name="regional_guide_empty_select_region_title">지역을 선택해 주세요.</string>
+    <string name="regional_guide_empty_select_region_message">시도와 시군구를 선택한 뒤 조회해 주세요.</string>
+    <string name="regional_guide_empty_blank_keyword_title">검색어를 입력해 주세요.</string>
+    <string name="regional_guide_empty_blank_keyword_message">지역명이나 주소를 입력해 다시 검색해 주세요.</string>
+    <string name="regional_guide_empty_keyword_not_found_title">검색 결과를 찾지 못했어요.</string>
+    <string name="regional_guide_empty_keyword_not_found_message">시/군/구까지 입력해 다시 검색해 주세요.</string>
+    <string name="regional_guide_empty_blank_address_title">주소를 입력해 주세요.</string>
+    <string name="regional_guide_empty_blank_address_message">시/군/구가 포함된 주소로 다시 검색해 주세요.</string>
+    <string name="regional_guide_empty_address_parse_failed_title">입력한 주소에서 지역 정보를 찾지 못했어요.</string>
+    <string name="regional_guide_empty_address_parse_failed_message">시/군/구가 포함된 주소로 다시 검색해 주세요.</string>
+    <string name="regional_guide_empty_favorite_restore_failed_title">저장된 지역 정보를 다시 불러오지 못했어요.</string>
+    <string name="regional_guide_empty_favorite_restore_failed_message">지역을 다시 선택해 주세요.</string>
+    <string name="regional_guide_empty_info_not_found_title">해당 지역의 배출 가이드를 찾지 못했어요.</string>
+    <string name="regional_guide_empty_info_not_found_message">다른 지역을 선택해 주세요.</string>
+    <string name="regional_guide_empty_candidate_not_found_title">선택한 읍면동 기준의 배출 가이드를 찾지 못했어요.</string>
+    <string name="regional_guide_empty_candidate_not_found_message">지역을 다시 선택해 주세요.</string>
+    <string name="regional_guide_empty_action_search_again">다시 검색하기</string>
+    <string name="regional_guide_empty_action_select_region">지역 다시 선택하기</string>
+    <string name="regional_guide_loading_default_message">배출 가이드를 불러오는 중입니다.</string>
+    <string name="regional_guide_loading_region_message">\"%1$s\" 배출 가이드를 불러오는 중입니다.</string>
     <string name="item_guide_detail_not_found_title">품목 가이드를 찾을 수 없습니다</string>
     <string name="item_guide_detail_select_again_message">다시 검색해서 품목을 선택해주세요.</string>
     <string name="item_guide_detail_load_failed_message">품목 정보를 불러오는 중 오류가 발생했습니다.</string>
@@ -104,4 +141,96 @@
     <string name="item_card_favorite_saved_state">즐겨찾기됨</string>
     <string name="item_card_favorite_not_saved_state">즐겨찾기 안 됨</string>
     <string name="quick_category_click_action">배출 방법 보기</string>
+    <string name="settings_action">설정</string>
+    <string name="settings_title">설정</string>
+    <string name="settings_notice_title">공지사항</string>
+    <string name="settings_contact_title">문의하기</string>
+    <string name="settings_app_info_title">앱 정보</string>
+    <string name="settings_location_permission_title">위치 권한</string>
+    <string name="settings_terms_title">이용약관</string>
+    <string name="settings_sources_title">출처 및 이용조건</string>
+    <string name="settings_cache_title">캐시 삭제</string>
+    <string name="settings_cache_detail_title">위치 캐시 삭제</string>
+    <string name="settings_notice_empty_title">등록된 공지사항이 없습니다</string>
+    <string name="settings_notice_empty_description">서비스 변경, 데이터 업데이트, 주요 오류 안내가 생기면 이곳에 표시됩니다.</string>
+    <string name="settings_contact_email_label">문의할 이메일 주소:</string>
+    <string name="settings_app_info_description">내 위치 기반 맞춤형 분리수거 가이드와 수거 장소 안내 서비스입니다.</string>
+    <string name="settings_app_info_version_label">버전</string>
+    <string name="settings_app_info_features_label">제공 기능</string>
+    <string name="settings_app_info_features">품목별 배출 방법 검색, 즐겨찾기, 근처 수거 장소 찾기, 지역별 배출 안내를 제공합니다.</string>
+    <string name="settings_location_permission_description">현재 위치를 기준으로 가까운 수거 장소를 찾을 때 위치 권한을 사용합니다.</string>
+    <string name="settings_location_permission_used_permissions_label">사용 권한</string>
+    <string name="settings_location_permission_used_permissions">정확한 위치, 대략적인 위치</string>
+    <string name="settings_location_permission_stored_info_label">저장 정보</string>
+    <string name="settings_location_permission_stored_info">위치 권한 상태와 지도 검색에 필요한 임시 위치 캐시만 사용합니다.</string>
+    <string name="settings_open_app_settings">앱 설정 열기</string>
+    <string name="settings_terms_service_description">여기버려는 생활폐기물 분리배출 정보를 더 쉽게 확인할 수 있도록 돕는 안내 서비스입니다.</string>
+    <string name="settings_terms_info">앱에서 제공하는 품목 정보와 지역별 안내는 공공데이터와 공식 안내를 바탕으로 구성됩니다.</string>
+    <string name="settings_terms_location">위치 기반 기능은 사용자가 가까운 수거 장소를 찾을 때만 사용됩니다.</string>
+    <string name="settings_terms_responsibility">지역별 배출 기준은 지방자치단체 정책에 따라 달라질 수 있습니다. 실제 배출 전에는 해당 지자체 안내를 함께 확인해 주세요.</string>
+    <string name="settings_terms_privacy">앱은 문의 화면에서 별도의 입력 정보를 수집하지 않습니다.</string>
+    <string name="settings_sources_data_description">앱의 안내 정보는 공공데이터포털 Open API와 공식 분리배출 안내 자료를 바탕으로 제공합니다.</string>
+    <string name="settings_source_disposal_home_title">생활폐기물 분리배출 누리집</string>
+    <string name="settings_source_disposal_home_description">품목별 배출 방법, 대표 분류별 안내</string>
+    <string name="settings_source_recycling_api_title">공공데이터포털 Open API</string>
+    <string name="settings_source_recycling_api_description">기후에너지환경부 분리배출 정보조회 서비스</string>
+    <string name="settings_source_household_api_title">공공데이터포털 Open API</string>
+    <string name="settings_source_household_api_description">행정안전부 생활쓰레기배출정보 조회서비스</string>
+    <string name="settings_source_admin_region_title">행정안전부 행정구역 데이터</string>
+    <string name="settings_source_admin_region_description">원본 자료명: 행정안전부 행정기관 및 관할구역 코드 자료\n기준일: 2026-03-25\n가공 여부: JSON 형태로 가공\n문서 위치: GitHub 저장소의 DATA_SOURCES.md</string>
+    <string name="settings_sources_usage_condition_description">앱에서 사용하는 정보의 출처, 기준일, 가공 여부는 GitHub 저장소의 DATA_SOURCES.md에 정리되어 있습니다.</string>
+    <string name="settings_open_source_title">오픈소스 라이선스</string>
+    <string name="settings_tabler_icons_title">Tabler Icons</string>
+    <string name="settings_tabler_usage_title">MIT License</string>
+    <string name="settings_tabler_usage_description">앱의 일부 아이콘은 Tabler Icons를 바탕으로 사용했습니다.</string>
+    <string name="settings_tabler_license_text" tools:ignore="TypographyOther"><![CDATA[MIT License
+
+Copyright (c) 2020-2026 Paweł Kuna
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.]]></string>
+    <string name="settings_cache_confirm_description">현재 위치로 주변 수거 장소를 찾았을 때 임시 저장된 위치 캐시를 삭제합니다. 즐겨찾기와 품목 검색 기록은 삭제되지 않습니다.</string>
+    <string name="settings_cache_delete_action">삭제</string>
+    <string name="map_search_placeholder">동/읍/면을 검색해주세요.</string>
+    <string name="map_search_loading_title">검색중</string>
+    <string name="map_search_loading_keyword">입력한 동/읍/면 주변을 찾고 있어요</string>
+    <string name="map_search_loading_current_location">현재 위치 주변을 찾고 있어요</string>
+    <string name="map_search_loading_map_center">현 지도 주변을 찾고 있어요</string>
+    <string name="map_search_blank_keyword_message">검색어를 입력해주세요.</string>
+    <string name="map_spot_search_failure_message">잠시 후 다시 시도하거나 네트워크 연결을 확인해 주세요.</string>
+    <string name="map_spot_search_partial_failure_message">일부 결과를 불러오지 못했어요. 다시 검색해 주세요.</string>
+    <string name="map_current_location_spot_search_failure_message">네트워크 연결을 확인한 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
+    <string name="map_spot_search_title">수거 장소 검색</string>
+    <string name="map_spot_result_count">검색 결과 %1$d개</string>
+    <string name="map_region_candidate_title">지역을 선택해주세요</string>
+    <string name="map_region_candidate_description">같은 이름의 지역이 여러 곳 있어요.</string>
+    <string name="map_empty_spot_result_title">검색 결과가 없습니다.</string>
+    <string name="map_empty_spot_result_description">동/읍/면 이름으로 다시 검색해 주세요.\n예: 문래동, 역삼동</string>
+    <string name="map_location_permission_denied_title">위치 권한이 필요합니다.</string>
+    <string name="map_location_permission_denied_message">현재 위치 검색은 정확한 위치 권한을 허용하면 사용할 수 있어요. 직접 동/읍/면을 검색할 수도 있습니다.</string>
+    <string name="map_location_service_disabled_title">위치 서비스가 꺼져 있습니다.</string>
+    <string name="map_location_service_disabled_message">기기의 위치 서비스가 꺼져 있어 현재 위치를 확인할 수 없어요. 위치 서비스를 켠 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
+    <string name="map_current_location_unavailable_title">현재 위치를 확인하지 못했습니다.</string>
+    <string name="map_current_location_unavailable_message">현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
+    <string name="map_search_failed_title">검색에 실패했습니다.</string>
+    <string name="map_location_notice_open_app_settings">앱 설정 열기</string>
+    <string name="map_location_notice_open_location_settings">위치 설정 열기</string>
+    <string name="map_regional_guide_action">이 지역 배출 정보 보기</string>
+    <string name="map_nearby_list_loading">주변 목록 준비 중</string>
+    <string name="map_spot_detail_back_to_list">목록으로</string>
 </resources>

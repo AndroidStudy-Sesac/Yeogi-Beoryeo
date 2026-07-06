@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,9 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.HomeRegionalGuideSummaryBanner
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
@@ -40,6 +45,7 @@ import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryU
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun ItemSearchInitialContent(
@@ -48,9 +54,6 @@ fun ItemSearchInitialContent(
     onSearchClick: () -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     regionalGuideSummaryState: HomeRegionalGuideSummaryUiState,
-    modifier: Modifier = Modifier,
-    onRegionalGuideSummaryClick: (String) -> Unit = {},
-    onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     onQuickCategorySettingsClick: (Int) -> Unit,
     quickCategories: List<RepresentativeGuideCategory>,
@@ -63,7 +66,11 @@ fun ItemSearchInitialContent(
     onQuickCategoryMoreClick: (Int, Int, Int) -> Unit,
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
+    onSettingsClick: (() -> Unit)?,
     listState: LazyListState,
+    modifier: Modifier = Modifier,
+    onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSummaryRetryClick: () -> Unit = {},
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
@@ -98,8 +105,7 @@ fun ItemSearchInitialContent(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = metrics.horizontalPadding)
-                .padding(top = metrics.topPadding)
+                .padding(top = metrics.homeHeaderTopPadding)
                 .onGloballyPositioned { coordinates ->
                     val measuredViewportBottomInRootPx =
                         coordinates.positionInRoot().y.toInt() + coordinates.size.height
@@ -112,21 +118,30 @@ fun ItemSearchInitialContent(
             verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
         ) {
             item {
-                ItemSearchHeader()
+                ItemSearchHeader(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalPadding = metrics.horizontalPadding,
+                    onSettingsClick = onSettingsClick,
+                )
             }
 
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
+                ) {
                     KoreanLineBreakText(
                         text = stringResource(R.string.item_useful_guide_section_title),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
+                        modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                     )
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
                         onGuideClick = onUsefulGuideClick,
+                        contentPadding = PaddingValues(horizontal = metrics.horizontalPadding),
                     )
                 }
             }
@@ -136,6 +151,7 @@ fun ItemSearchInitialContent(
                     state = regionalGuideSummaryState,
                     onClick = onRegionalGuideSummaryClick,
                     onRetryClick = onRegionalGuideSummaryRetryClick,
+                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                 )
             }
 
@@ -145,13 +161,18 @@ fun ItemSearchInitialContent(
                     onKeywordChange = onQueryChange,
                     onSearchClick = onSearchClick,
                     placeholder = stringResource(R.string.item_search_query_label),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = metrics.horizontalPadding),
                     iconSize = metrics.searchIconSize,
                 )
             }
 
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace)) {
+                Column(
+                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                    verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
+                ) {
                     val quickCategoriesTitle = stringResource(R.string.quick_categories)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -162,7 +183,7 @@ fun ItemSearchInitialContent(
                             text = quickCategoriesTitle,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             ),
                         )
                         AssistChip(
@@ -211,21 +232,49 @@ fun ItemSearchInitialContent(
 @Composable
 fun ItemSearchHeader(
     modifier: Modifier = Modifier,
+    horizontalPadding: Dp = ItemSearchLayoutDefaults.spacing.xl,
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
 
     Column(
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
-        Text(
-            text = stringResource(R.string.item_search_title),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = horizontalPadding,
+                    end = AppTopBarDefaults.horizontalPadding,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.item_search_title),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            onSettingsClick?.let {
+                IconButton(
+                    onClick = it,
+                    modifier = Modifier.size(AppTopBarDefaults.buttonSize),
+                ) {
+                    Icon(
+                        painter = painterResource(id = CommonR.drawable.ic_action_settings),
+                        contentDescription = stringResource(R.string.settings_action),
+                        modifier = Modifier.size(AppTopBarDefaults.iconSize),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+        KoreanLineBreakText(
             text = stringResource(R.string.item_search_description),
+            modifier = Modifier.padding(horizontal = horizontalPadding),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

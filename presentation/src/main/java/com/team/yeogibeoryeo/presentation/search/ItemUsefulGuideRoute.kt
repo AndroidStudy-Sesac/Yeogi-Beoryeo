@@ -11,18 +11,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,14 +28,16 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
+import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.common.components.MessageSnackbar
+import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import com.team.yeogibeoryeo.presentation.search.model.toUsefulGuideContent
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemUsefulGuideRoute(
     guideType: ItemUsefulGuideType,
@@ -50,8 +47,8 @@ fun ItemUsefulGuideRoute(
     onOfficialSiteClick: (String) -> Boolean,
     onRegionalGuideClick: () -> Unit,
     onItemSearchClick: () -> Unit,
-    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val content = guideType.toUsefulGuideContent()
     val spacing = ItemSearchLayoutDefaults.spacing
@@ -117,7 +114,10 @@ fun ItemUsefulGuideRoute(
             }
         },
         topBar = {
-            TopAppBar(
+            AppTopBar(
+                navigationIcon = {
+                    AppBackButton(onClick = onBackClick)
+                },
                 title = {
                     Text(
                         text = stringResource(content.titleResId),
@@ -125,17 +125,6 @@ fun ItemUsefulGuideRoute(
                         fontWeight = FontWeight.Bold,
                     )
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back_action),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
             )
         },
     ) { innerPadding ->

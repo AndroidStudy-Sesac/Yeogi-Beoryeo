@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,19 +15,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
-import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
+import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
-import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
-import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
+import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
+import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
@@ -37,18 +39,19 @@ import com.team.yeogibeoryeo.presentation.search.components.iconResId
 import com.team.yeogibeoryeo.presentation.search.components.iconTint
 import com.team.yeogibeoryeo.presentation.search.model.ItemGuideDetailAction
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun ItemGuideDetailScreen(
     guide: DisposalItemGuide,
-    actions: List<ItemGuideDetailAction> = emptyList(),
     isFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: List<ItemGuideDetailAction> = emptyList(),
     onCollectionSpotTypeClick: (CollectionSpotType) -> Unit = {},
     onOfficialGuideClick: (String) -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
@@ -60,7 +63,147 @@ fun ItemGuideDetailScreen(
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
     )
 
-    val backActionDescription = stringResource(R.string.back_action)
+    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
+    val isRepresentativeGuide = matchedRepresentativeCategory != null
+    val representativeCategory =
+        matchedRepresentativeCategory
+            ?: RepresentativeGuideCategory.fromDisposalCategory(guide.category)
+
+    Scaffold(
+        modifier = modifier,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            ItemGuideDetailTopBar(
+                isFavorite = isFavorite,
+                onBackClick = onBackClick,
+                onFavoriteClick = onFavoriteClick,
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(innerPadding)
+                .verticalScroll(scrollState)
+                .padding(
+                    start = spacing.md,
+                    top = 0.dp,
+                    end = spacing.md,
+                    bottom = spacing.xl,
+                ),
+            verticalArrangement = Arrangement.spacedBy(spacing.md),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(size.detailIconContainer)
+                        .background(
+                            color = representativeCategory.containerColor(),
+                            shape = MaterialTheme.shapes.extraLarge
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = representativeCategory.iconResId),
+                        // 옆의 품목명과 metadata chip이 의미를 제공하므로 아이콘은 중복 읽기를 피합니다.
+                        contentDescription = null,
+                        modifier = Modifier.size(size.iconProminent),
+                        tint = representativeCategory.iconTint()
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                ) {
+                    KoreanLineBreakText(
+                        text = guide.name,
+                        style = textStyles.title.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+
+                    DisposalGuideMetadataChips(
+                        guide = guide,
+                        showCategoryChip = !isRepresentativeGuide,
+                    )
+                }
+            }
+
+            if (actions.isNotEmpty()) {
+                ItemGuideActionButtons(
+                    actions = actions,
+                    onCollectionSpotTypeClick = onCollectionSpotTypeClick,
+                    onOfficialGuideClick = onOfficialGuideClick,
+                )
+            }
+
+            if (guide.detailSections.isNotEmpty()) {
+                guide.detailSections.forEach { section ->
+                    SectionCard(
+                        title = section.title,
+                        lines = section.lines,
+                        rows = section.rows,
+                    )
+                }
+            } else {
+                if (guide.steps.isNotEmpty()) {
+                    SectionCard(
+                        title = stringResource(R.string.disposal_steps_title),
+                        lines = guide.steps,
+                        numbered = true,
+                    )
+                }
+
+                if (guide.cautions.isNotEmpty()) {
+                    SectionCard(
+                        title = stringResource(R.string.cautions_title),
+                        lines = guide.cautions,
+                    )
+                }
+
+                if (guide.subGuides.isNotEmpty()) {
+                    SubGuideSection(
+                        title = stringResource(R.string.sub_guides_title),
+                        subGuides = guide.subGuides,
+                    )
+                }
+
+                if (guide.features.isNotEmpty()) {
+                    SectionCard(
+                        title = stringResource(R.string.features_title),
+                        lines = guide.features,
+                    )
+                }
+
+                guide.tip?.let {
+                    SectionCard(
+                        title = stringResource(R.string.tip_title),
+                        lines = listOf(it),
+                    )
+                }
+            }
+
+            SectionCard(
+                title = stringResource(R.string.local_disposal_notice_title),
+                lines = listOf(stringResource(R.string.local_disposal_notice)),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItemGuideDetailTopBar(
+    isFavorite: Boolean,
+    onBackClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+) {
     val favoriteActionDescription =
         stringResource(
             if (isFavorite) {
@@ -69,38 +212,12 @@ fun ItemGuideDetailScreen(
                 R.string.favorite_add_action
             },
         )
-    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
-    val isRepresentativeGuide = matchedRepresentativeCategory != null
-    val representativeCategory =
-        matchedRepresentativeCategory
-            ?: RepresentativeGuideCategory.fromDisposalCategory(guide.category)
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(scrollState)
-            .padding(
-                start = spacing.xl,
-                top = spacing.md,
-                end = spacing.xl,
-                bottom = spacing.xl,
-            ),
-        verticalArrangement = Arrangement.spacedBy(spacing.md),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    painter = painterResource(id = CommonR.drawable.ic_action_back),
-                    contentDescription = backActionDescription,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-
+    AppTopBar(
+        navigationIcon = {
+            AppBackButton(onClick = onBackClick)
+        },
+        actions = {
             IconButton(onClick = onFavoriteClick) {
                 Icon(
                     painter = painterResource(
@@ -118,109 +235,8 @@ fun ItemGuideDetailScreen(
                     },
                 )
             }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(size.detailIconContainer)
-                    .background(
-                        color = representativeCategory.containerColor(),
-                        shape = MaterialTheme.shapes.extraLarge
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = representativeCategory.iconResId),
-                    // 옆의 품목명과 metadata chip이 의미를 제공하므로 아이콘은 중복 읽기를 피합니다.
-                    contentDescription = null,
-                    modifier = Modifier.size(size.iconProminent),
-                    tint = representativeCategory.iconTint()
-                )
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.sm),
-            ) {
-                KoreanLineBreakText(
-                    text = guide.name,
-                    style = textStyles.title.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                )
-
-                DisposalGuideMetadataChips(
-                    guide = guide,
-                    showCategoryChip = !isRepresentativeGuide,
-                )
-            }
-        }
-
-        if (actions.isNotEmpty()) {
-            ItemGuideActionButtons(
-                actions = actions,
-                onCollectionSpotTypeClick = onCollectionSpotTypeClick,
-                onOfficialGuideClick = onOfficialGuideClick,
-            )
-        }
-
-        if (guide.detailSections.isNotEmpty()) {
-            guide.detailSections.forEach { section ->
-                SectionCard(
-                    title = section.title,
-                    lines = section.lines,
-                    rows = section.rows,
-                )
-            }
-        } else {
-            if (guide.steps.isNotEmpty()) {
-                SectionCard(
-                    title = stringResource(R.string.disposal_steps_title),
-                    lines = guide.steps,
-                    numbered = true,
-                )
-            }
-
-            if (guide.cautions.isNotEmpty()) {
-                SectionCard(
-                    title = stringResource(R.string.cautions_title),
-                    lines = guide.cautions,
-                )
-            }
-
-            if (guide.subGuides.isNotEmpty()) {
-                SubGuideSection(
-                    title = stringResource(R.string.sub_guides_title),
-                    subGuides = guide.subGuides,
-                )
-            }
-
-            if (guide.features.isNotEmpty()) {
-                SectionCard(
-                    title = stringResource(R.string.features_title),
-                    lines = guide.features,
-                )
-            }
-
-            guide.tip?.let {
-                SectionCard(
-                    title = stringResource(R.string.tip_title),
-                    lines = listOf(it),
-                )
-            }
-        }
-
-        SectionCard(
-            title = stringResource(R.string.local_disposal_notice_title),
-            lines = listOf(stringResource(R.string.local_disposal_notice)),
-        )
-    }
+        },
+    )
 }
 
 @Composable

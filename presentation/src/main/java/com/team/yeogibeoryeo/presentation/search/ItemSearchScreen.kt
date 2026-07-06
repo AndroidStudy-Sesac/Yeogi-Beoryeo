@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -39,11 +40,13 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 
 @Composable
 fun ItemSearchRoute(
-    initialQuery: String? = null,
     onGuideSelected: (DisposalItemGuide) -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onRegionalGuideSummaryClick: (String) -> Unit,
     onQuickCategorySettingsClick: (Int) -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    initialQuery: String? = null,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -68,9 +71,7 @@ fun ItemSearchRoute(
     }
 
     LaunchedEffect(initialQuery) {
-        if (!initialQuery.isNullOrBlank()) {
-            viewModel.search(initialQuery)
-        }
+        viewModel.searchInitialQueryIfNeeded(initialQuery)
     }
 
     LaunchedEffect(viewModel.events) {
@@ -100,8 +101,10 @@ fun ItemSearchRoute(
         onQuickCategoryViewportChanged =
             viewModel::resetQuickCategoryFixedCollapsedItemCountIfCollapsed,
         onQuickCategorySettingsClick = onQuickCategorySettingsClick,
+        onSettingsClick = onSettingsClick,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
+        modifier = modifier.statusBarsPadding(),
     )
 }
 
@@ -121,6 +124,7 @@ fun ItemSearchScreen(
     onQuickCategoryCollapseClick: () -> Unit = {},
     onQuickCategoryViewportChanged: () -> Unit = {},
     onQuickCategorySettingsClick: (Int) -> Unit = {},
+    onSettingsClick: (() -> Unit)? = null,
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
 ) {
@@ -146,6 +150,7 @@ fun ItemSearchScreen(
             onQuickCategoryMoreClick = onQuickCategoryMoreClick,
             onQuickCategoryCollapseClick = onQuickCategoryCollapseClick,
             onQuickCategoryViewportChanged = onQuickCategoryViewportChanged,
+            onSettingsClick = onSettingsClick,
             listState = categoryListState,
             modifier = modifier,
         )
@@ -206,13 +211,13 @@ fun ItemSearchScreen(
                     else -> {
                         val searchResultCountText = stringResource(
                             R.string.search_results_count,
-                            uiState.guides.size
+                            uiState.guides.size,
                         )
                         KoreanLineBreakText(
                             text = searchResultCountText,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             ),
                         )
                         LazyColumn(

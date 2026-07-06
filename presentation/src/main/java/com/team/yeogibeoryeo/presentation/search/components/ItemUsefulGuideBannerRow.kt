@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,7 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
@@ -49,6 +49,7 @@ fun ItemUsefulGuideBannerRow(
     guides: List<ItemUsefulGuideContent>,
     onGuideClick: (ItemUsefulGuideContent) -> Unit,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
@@ -76,6 +77,7 @@ fun ItemUsefulGuideBannerRow(
         LazyRow(
             state = listState,
             flingBehavior = flingBehavior,
+            contentPadding = contentPadding,
             horizontalArrangement = Arrangement.spacedBy(spacing.sm),
         ) {
             items(guides, key = { it.type }) { guide ->
@@ -83,7 +85,7 @@ fun ItemUsefulGuideBannerRow(
                     guide = guide,
                     onClick = { onGuideClick(guide) },
                     modifier = Modifier
-                        .fillParentMaxWidth(fraction.usefulGuideBannerWidth)
+                        .fillParentMaxWidth(fraction.USEFUL_GUIDE_BANNER_WIDTH)
                         .height(size.usefulGuideBannerCardHeight),
                 )
             }
@@ -104,16 +106,17 @@ private fun ItemUsefulGuideBannerCard(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
-    val alpha = ItemSearchLayoutDefaults.alpha
+    val shape = MaterialTheme.shapes.medium
 
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clip(shape)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
-        shape = MaterialTheme.shapes.medium,
+        shape = shape,
     ) {
         Row(
             modifier = Modifier.padding(spacing.md),
@@ -193,7 +196,7 @@ private fun ItemUsefulGuidePageIndicator(
             val targetColor = if (isSelected) {
                 MaterialTheme.colorScheme.primary
             } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha.usefulGuidePageIndicatorInactive)
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha.USEFUL_GUIDE_PAGE_INDICATOR_INACTIVE)
             }
             val color by animateColorAsState(targetValue = targetColor)
             val width by animateDpAsState(
@@ -201,7 +204,7 @@ private fun ItemUsefulGuidePageIndicator(
                     size.usefulGuidePageIndicatorActiveWidth
                 } else {
                     size.usefulGuidePageIndicatorInactiveSize
-                }
+                },
             )
             Box(
                 modifier = Modifier

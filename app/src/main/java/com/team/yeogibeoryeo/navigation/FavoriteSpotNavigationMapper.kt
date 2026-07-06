@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.navigation
 
-import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
@@ -11,7 +10,7 @@ internal fun FavoriteCollectionSpotMapMoveRequest.toMapRoute(): MapRoute =
         favoriteSpotRequestId = UUID.randomUUID().toString(),
         favoriteSpotTargetId = targetId,
         favoriteSpotName = name,
-        favoriteSpotType = type.name,
+        favoriteSpotType = type.toRouteType(),
         favoriteSpotAddress = address,
         favoriteSpotDetailLocation = detailLocation,
         favoriteSpotLatitude = latitude,
@@ -21,14 +20,10 @@ internal fun FavoriteCollectionSpotMapMoveRequest.toMapRoute(): MapRoute =
 internal fun MapRoute.toFavoriteSpotMapMoveRequest(): FavoriteSpotMapMoveRequest? {
     val targetId = favoriteSpotTargetId ?: return null
     val name = favoriteSpotName ?: return null
-    val typeName = favoriteSpotType ?: return null
+    val type = favoriteSpotType?.toCollectionSpotType() ?: return null
     val address = favoriteSpotAddress ?: return null
     val latitude = favoriteSpotLatitude ?: return null
     val longitude = favoriteSpotLongitude ?: return null
-    val type =
-        runCatching {
-            CollectionSpotType.valueOf(typeName)
-        }.getOrNull() ?: return null
 
     return FavoriteSpotMapMoveRequest(
         requestId = favoriteSpotRequestId ?: targetId,

@@ -1,6 +1,7 @@
 ﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
@@ -144,7 +145,40 @@ class RegionalGuideKeywordSearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals("중안구", viewModel.searchKeyword.value)
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+        assertEquals(R.string.regional_guide_empty_keyword_not_found_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_keyword_not_found_message, state.messageResId)
+        assertEquals(RegionalGuideEmptyActionType.SEARCH_AGAIN, state.action?.type)
+        assertEquals(R.string.regional_guide_empty_action_search_again, state.action?.labelResId)
+    }
+
+    @Test
+    fun `search again action clears empty result while keeping keyword`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "중안구")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경기도",
+                        sigungu = "수원시 장안구"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중안구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+
+        viewModel.prepareSearchAgain()
+
+        assertEquals("중안구", viewModel.searchKeyword.value)
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
     }
 
     @Test

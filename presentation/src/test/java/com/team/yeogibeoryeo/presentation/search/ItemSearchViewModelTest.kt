@@ -70,6 +70,33 @@ class ItemSearchViewModelTest {
         }
 
     @Test
+    fun `초기 검색어는 같은 값으로 다시 소비하지 않는다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide(it)) })
+            val viewModel = createViewModel(repository)
+
+            viewModel.searchInitialQueryIfNeeded("유리")
+            viewModel.searchInitialQueryIfNeeded("유리")
+
+            assertEquals(listOf("유리"), repository.queries)
+            assertEquals(listOf("유리"), viewModel.uiState.value.guides.map { it.name })
+        }
+
+    @Test
+    fun `초기 검색어는 앞뒤 공백을 제거한 값 기준으로 다시 소비하지 않는다`() =
+        runTest {
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide(it)) })
+            val viewModel = createViewModel(repository)
+
+            viewModel.searchInitialQueryIfNeeded(" 유리 ")
+            viewModel.searchInitialQueryIfNeeded("유리")
+
+            assertEquals(listOf("유리"), repository.queries)
+            assertEquals("유리", viewModel.uiState.value.query)
+            assertEquals(listOf("유리"), viewModel.uiState.value.guides.map { it.name })
+        }
+
+    @Test
     fun `검색 성공 시 검색 결과 버전을 증가시킨다`() =
         runTest {
             val repository = FakeRepository(onSearch = { listOf(sampleGuide(it)) })
@@ -560,11 +587,11 @@ class ItemSearchViewModelTest {
         ) {
             toggledHomeQuickCategories += category
             if (category in categories.value) {
-                categories.value = categories.value - category
+                categories.value -= category
             } else if (categories.value.size >= maxSelectedCount.coerceAtLeast(0)) {
                 return
             } else {
-                categories.value = categories.value + category
+                categories.value += category
             }
         }
 

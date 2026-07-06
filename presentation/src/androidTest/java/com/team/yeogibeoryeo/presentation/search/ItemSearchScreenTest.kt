@@ -252,7 +252,7 @@ class ItemSearchScreenTest {
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchScreen(
-                    uiState = ItemSearchUiState(),
+                    uiState = ItemSearchUiState(isQuickCategoryExpanded = true),
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
@@ -261,7 +261,7 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText(RepresentativeGuideCategory.PLASTIC.displayName)
+        composeTestRule.onNodeWithContentDescription(RepresentativeGuideCategory.PLASTIC.displayName)
             .performScrollTo()
             .performClick()
 
@@ -299,7 +299,7 @@ class ItemSearchScreenTest {
         composeTestRule.onAllNodesWithText(RepresentativeGuideCategory.METAL.displayName)
             .assertCountEquals(0)
 
-        composeTestRule.onNodeWithText("더보기")
+        composeTestRule.onNodeWithContentDescription("더보기")
             .performScrollTo()
             .performClick()
 
@@ -310,7 +310,7 @@ class ItemSearchScreenTest {
             .performScrollTo()
             .assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("접기").performClick()
+        composeTestRule.onNodeWithContentDescription("접기").performClick()
 
         composeTestRule.onAllNodesWithText(RepresentativeGuideCategory.METAL.displayName)
             .assertCountEquals(0)
@@ -339,10 +339,10 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("더보기")
+        composeTestRule.onNodeWithContentDescription("더보기")
             .performScrollTo()
             .performClick()
-        composeTestRule.onNodeWithText(RepresentativeGuideCategory.METAL.displayName)
+        composeTestRule.onNodeWithContentDescription(RepresentativeGuideCategory.METAL.displayName)
             .performScrollTo()
             .performClick()
 

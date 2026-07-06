@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
+import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
@@ -22,11 +23,13 @@ internal object RegionOptionsMapper {
         sido: String
     ): List<String> {
         return regionalGuideRegions
+            .asSequence()
             .filter { region -> region.sidoName == sido }
             .map { region -> region.toDisplaySigunguName() }
             .filter { sigungu -> sigungu.isNotBlank() }
             .distinct()
             .sorted()
+            .toList()
     }
 
     fun getEupmyeondongOptions(
@@ -35,6 +38,7 @@ internal object RegionOptionsMapper {
         sigungu: String
     ): List<String> {
         return administrativeRegions
+            .asSequence()
             .filter { region ->
                 region.sidoName == sido &&
                     region.toInfoSigunguOptionName().isSameGuideSigunguName(sigungu)
@@ -42,7 +46,8 @@ internal object RegionOptionsMapper {
             .map { region -> region.eupmyeondongName }
             .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
             .distinct()
-            .sorted()
+            .sortedWith(REGION_OPTION_NAME_COMPARATOR)
+            .toList()
     }
 
     fun findSigunguRegions(
@@ -68,6 +73,68 @@ internal object RegionOptionsMapper {
             .map { region -> region.toSigunguRegion() }
             .distinctByRegion()
             .sortedWith(REGION_NAME_COMPARATOR)
+    }
+
+    fun findEupmyeondongRegions(
+        administrativeRegions: List<AdministrativeRegionDto>,
+        legalAdminDongMappings: List<LegalAdminDongMappingDto>,
+        keyword: String
+    ): List<Region> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val administrativeMatches = administrativeRegions
+            .filter { region -> region.eupmyeondongName == targetKeyword }
+            .map { region ->
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = region.sidoName,
+                        sigungu = region.sigunguName.ifBlank { null },
+                        eupmyeondong = region.eupmyeondongName
+                    )
+                )
+            }
+
+        val legalMatches = legalAdminDongMappings
+            .filter { mapping -> mapping.legalDongName.trim().matchesLegalDongKeyword(targetKeyword) }
+            .map { mapping ->
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = mapping.sidoName.trim(),
+                        sigungu = mapping.sigunguName.trimToNull(),
+                        eupmyeondong = targetKeyword
+                    )
+                )
+            }
+
+        return (administrativeMatches + legalMatches)
+            .distinctByRegionWithEupmyeondong()
+            .sortedWith(REGION_NAME_COMPARATOR)
+    }
+
+    fun findLegalDongKeywordsByRegion(
+        mappings: List<LegalAdminDongMappingDto>,
+        region: Region,
+        keyword: String
+    ): List<String> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val sido = region.sido.trimToNull()
+        val sigungu = region.sigungu.trimToNull()
+
+        return mappings
+            .asSequence()
+            .filter { mapping ->
+                (sido == null || mapping.sidoName.trim() == sido) &&
+                    (sigungu == null || mapping.sigunguName.trim() == sigungu) &&
+                    mapping.legalDongName.trim().matchesLegalDongKeyword(targetKeyword)
+            }
+            .map { mapping -> mapping.legalDongName.trim() }
+            .filter { legalDongName -> legalDongName.isNotBlank() }
+            .distinct()
+            .sorted()
+            .toList()
     }
 
     fun normalizeRegionForRegionalGuide(
@@ -99,6 +166,35 @@ internal object RegionOptionsMapper {
             sido = sido,
             sigungu = regionalGuideRegion.toDisplaySigunguName()
         )
+    }
+
+    fun findAdminDongCandidatesForLegalDong(
+        mappings: List<LegalAdminDongMappingDto>,
+        region: Region
+    ): List<Region> {
+        val sido = region.sido.trimToNull() ?: return emptyList()
+        val sigungu = region.sigungu.trimToNull().orEmpty()
+        val legalDongName = region.eupmyeondong.trimToNull() ?: return emptyList()
+
+        return mappings
+            .filter { mapping ->
+                mapping.sidoName.trim() == sido &&
+                    mapping.sigunguName.trim() == sigungu &&
+                    mapping.legalDongName.trim() == legalDongName
+            }
+            .mapNotNull { mapping ->
+                val adminDongName = mapping.adminDongName.trimToNull() ?: return@mapNotNull null
+
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = mapping.sidoName.trim(),
+                        sigungu = mapping.sigunguName.trimToNull(),
+                        eupmyeondong = adminDongName
+                    )
+                )
+            }
+            .distinct()
+            .sortedWith(REGION_NAME_COMPARATOR)
     }
 
     private fun RegionalGuideRegionDto.toDisplaySigunguName(): String {
@@ -202,13 +298,99 @@ internal object RegionOptionsMapper {
         }
     }
 
+    private fun List<Region>.distinctByRegionWithEupmyeondong(): List<Region> {
+        return distinctBy { region ->
+            listOf(
+                region.sido.orEmpty(),
+                region.sigungu.orEmpty(),
+                region.eupmyeondong.orEmpty()
+            )
+        }
+    }
+
+    private fun String.matchesLegalDongKeyword(targetKeyword: String): Boolean {
+        return this == targetKeyword ||
+            (startsWith(targetKeyword) && LEGAL_DONG_GA_REGEX.matches(this))
+    }
+
+    private fun String?.trimToNull(): String? =
+        this
+            ?.trim()
+            ?.takeIf { value -> value.isNotBlank() }
+
     private val REGION_NAME_COMPARATOR = compareBy<Region>(
         { region -> region.sido.orEmpty() },
         { region -> region.sigungu.orEmpty() },
         { region -> region.eupmyeondong.orEmpty() }
     )
 
+    private val REGION_OPTION_NAME_COMPARATOR = Comparator<String> { first, second ->
+        compareNaturalRegionName(first, second)
+    }
+
+    private fun compareNaturalRegionName(
+        first: String,
+        second: String
+    ): Int {
+        var firstIndex = 0
+        var secondIndex = 0
+
+        while (firstIndex < first.length && secondIndex < second.length) {
+            val firstChar = first[firstIndex]
+            val secondChar = second[secondIndex]
+
+            if (firstChar.isDigit() && secondChar.isDigit()) {
+                val firstNumberEnd = first.findNumberEndIndex(firstIndex)
+                val secondNumberEnd = second.findNumberEndIndex(secondIndex)
+                val numberComparison = compareNaturalNumberText(
+                    first.substring(firstIndex, firstNumberEnd),
+                    second.substring(secondIndex, secondNumberEnd)
+                )
+
+                if (numberComparison != 0) return numberComparison
+
+                firstIndex = firstNumberEnd
+                secondIndex = secondNumberEnd
+            } else {
+                val charComparison = firstChar.compareTo(secondChar)
+                if (charComparison != 0) return charComparison
+
+                firstIndex += 1
+                secondIndex += 1
+            }
+        }
+
+        return first.length.compareTo(second.length)
+    }
+
+    private fun String.findNumberEndIndex(
+        startIndex: Int
+    ): Int {
+        var endIndex = startIndex
+
+        while (endIndex < length && this[endIndex].isDigit()) {
+            endIndex += 1
+        }
+
+        return endIndex
+    }
+
+    private fun compareNaturalNumberText(
+        first: String,
+        second: String
+    ): Int {
+        val normalizedFirst = first.trimStart('0').ifEmpty { "0" }
+        val normalizedSecond = second.trimStart('0').ifEmpty { "0" }
+
+        return normalizedFirst.length.compareTo(normalizedSecond.length)
+            .takeIf { comparison -> comparison != 0 }
+            ?: normalizedFirst.compareTo(normalizedSecond)
+                .takeIf { comparison -> comparison != 0 }
+            ?: first.length.compareTo(second.length)
+    }
+
     private const val SEJONG_SIDO = "세종특별자치시"
     private const val NO_SIGUNGU_NAME = "없음"
     private const val CITY_SUFFIX = "시"
+    private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()
 }

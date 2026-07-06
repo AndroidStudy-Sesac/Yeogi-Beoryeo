@@ -1,5 +1,7 @@
 package com.team.yeogibeoryeo.navigation
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -10,6 +12,7 @@ import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.common.navigation.BottomNavigationItem
 import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
 
+@Composable
 internal fun NavHostController.createBottomNavigationItems(
     currentBackStackEntry: NavBackStackEntry?,
     currentDestination: NavDestination?,
@@ -17,7 +20,7 @@ internal fun NavHostController.createBottomNavigationItems(
 ): List<BottomNavigationItem> =
     listOf(
         BottomNavigationItem(
-            label = "품목",
+            label = stringResource(AppR.string.bottom_tab_item_search),
             iconResId = CommonR.drawable.ic_symbol_recycle,
             selected = currentBackStackEntry.isItemSearchSelected(),
             onClick = {
@@ -25,7 +28,7 @@ internal fun NavHostController.createBottomNavigationItems(
             },
         ),
         BottomNavigationItem(
-            label = "지도",
+            label = stringResource(AppR.string.bottom_tab_map),
             iconResId = AppR.drawable.ic_navigation_map,
             selected = currentDestination?.hasRoute<MapRoute>() == true,
             onClick = {
@@ -36,7 +39,7 @@ internal fun NavHostController.createBottomNavigationItems(
             },
         ),
         BottomNavigationItem(
-            label = "안내",
+            label = stringResource(AppR.string.bottom_tab_regional_guide),
             iconResId = AppR.drawable.ic_navigation_guide,
             selected = currentBackStackEntry.isRegionalGuideSelected(),
             onClick = {
@@ -44,7 +47,7 @@ internal fun NavHostController.createBottomNavigationItems(
             },
         ),
         BottomNavigationItem(
-            label = "저장",
+            label = stringResource(AppR.string.bottom_tab_favorites),
             iconResId = CommonR.drawable.ic_favorite,
             selected = currentBackStackEntry.isFavoritesSelected(),
             onClick = {
@@ -58,6 +61,8 @@ internal fun NavHostController.createBottomNavigationItems(
 private fun NavBackStackEntry?.isItemSearchSelected(): Boolean =
     this?.destination?.hasRoute<ItemSearchRoute>() == true ||
         this?.destination?.hasRoute<QuickCategorySettingsRoute>() == true ||
+        this?.destination?.hasRoute<SettingsRoute>() == true ||
+        this?.destination?.hasRoute<SettingsDetailRoute>() == true ||
         isItemGuideDetailSource(ItemGuideDetailSource.SEARCH)
 
 private fun NavBackStackEntry?.isFavoritesSelected(): Boolean =

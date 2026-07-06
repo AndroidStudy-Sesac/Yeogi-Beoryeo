@@ -54,5 +54,9 @@ class NormalizeRegionForRegionalGuideUseCaseTest {
         override suspend fun normalizeRegionForRegionalGuide(
             region: Region
         ): Region = normalizedRegion
+
+        override suspend fun findAdminDongCandidatesForLegalDong(
+            region: Region
+        ): List<Region> = emptyList()
     }
 }

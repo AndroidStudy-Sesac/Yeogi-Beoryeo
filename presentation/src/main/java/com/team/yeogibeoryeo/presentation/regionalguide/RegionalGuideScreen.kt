@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,11 +30,13 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionSelectorSection
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideAmbiguousResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideCandidateResult
@@ -41,10 +44,10 @@ import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuide
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSearchBar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalWasteScheduleCard
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 @Composable
 fun RegionalGuideRoute(
@@ -76,6 +79,7 @@ fun RegionalGuideRoute(
         onSearchKeywordChange = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchByKeyword,
         onRetryClick = viewModel::retryLastRequest,
+        onEmptySearchActionClick = viewModel::prepareSearchAgain,
         onSidoSelected = viewModel::onSidoSelected,
         onSigunguSelected = viewModel::onSigunguSelected,
         onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
@@ -85,7 +89,7 @@ fun RegionalGuideRoute(
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
         onFavoriteClick = viewModel::onFavoriteClick,
-        modifier = modifier,
+        modifier = modifier.statusBarsPadding(),
     )
 }
 
@@ -98,6 +102,7 @@ fun RegionalGuideScreen(
     onSearchKeywordChange: (String) -> Unit,
     onSearchClick: (String) -> Unit,
     onRetryClick: () -> Unit,
+    onEmptySearchActionClick: () -> Unit,
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
@@ -137,6 +142,21 @@ fun RegionalGuideScreen(
     fun clearSearchFocus() {
         focusManager.clearFocus()
         keyboardController?.hide()
+    }
+
+    fun handleEmptyAction(actionType: RegionalGuideEmptyActionType) {
+        when (actionType) {
+            RegionalGuideEmptyActionType.SEARCH_AGAIN -> {
+                isRegionSelectorExpanded = false
+                onRegionSelectorDropdownDismissed()
+                onEmptySearchActionClick()
+            }
+
+            RegionalGuideEmptyActionType.SELECT_REGION -> {
+                isRegionSelectorExpanded = true
+                onRegionSelectorDropdownDismissed()
+            }
+        }
     }
 
     Column(
@@ -234,6 +254,7 @@ fun RegionalGuideScreen(
         RegionalGuideContent(
             uiState = uiState,
             onRetryClick = onRetryClick,
+            onEmptyActionClick = ::handleEmptyAction,
             onCandidateClick = onCandidateClick,
             onGuideCandidateClick = onGuideCandidateClick,
             onFavoriteClick = onFavoriteClick,
@@ -259,6 +280,7 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
 private fun RegionalGuideContent(
     uiState: RegionalGuideUiState,
     onRetryClick: () -> Unit,
+    onEmptyActionClick: (RegionalGuideEmptyActionType) -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     onFavoriteClick: () -> Unit,
@@ -286,9 +308,15 @@ private fun RegionalGuideContent(
         }
 
         is RegionalGuideUiState.Empty -> {
+            val action = uiState.action
             RegionalGuideEmptyResult(
-                message = uiState.message,
-                modifier = modifier
+                title = stringResource(id = uiState.titleResId),
+                message = stringResource(id = uiState.messageResId),
+                modifier = modifier,
+                actionLabel = action?.let { stringResource(id = it.labelResId) },
+                onActionClick = action?.let {
+                    { onEmptyActionClick(action.type) }
+                },
             )
         }
 
@@ -325,12 +353,24 @@ private fun RegionalGuideLoadingContent(
         CircularProgressIndicator()
 
         Text(
-            text = "\"$query\" 배출 가이드를 불러오는 중입니다.",
+            text = query.loadingMessage(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
+
+@Composable
+private fun String.loadingMessage(): String =
+    trim()
+        .takeIf { it.isNotBlank() }
+        ?.let { query ->
+            stringResource(
+                id = R.string.regional_guide_loading_region_message,
+                query,
+            )
+        }
+        ?: stringResource(id = R.string.regional_guide_loading_default_message)
 
 @Composable
 private fun RegionalGuideSuccessContent(
@@ -424,6 +464,7 @@ private fun RegionalGuideScreenIdlePreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -449,6 +490,7 @@ private fun RegionalGuideScreenLoadingPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -508,6 +550,7 @@ private fun RegionalGuideScreenSuccessPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -525,7 +568,8 @@ private fun RegionalGuideScreenEmptyPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.Empty(
                 query = "없는 지역",
-                message = "해당 지역의 배출 가이드 정보가 없습니다."
+                titleResId = R.string.regional_guide_empty_info_not_found_title,
+                messageResId = R.string.regional_guide_empty_info_not_found_message,
             ),
             searchKeyword = "없는 지역",
             regionSelectorUiState = RegionSelectorUiState(
@@ -534,6 +578,7 @@ private fun RegionalGuideScreenEmptyPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -572,6 +617,7 @@ private fun RegionalGuideScreenAmbiguousPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -618,6 +664,7 @@ private fun RegionalGuideScreenGuideCandidatesPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},
@@ -644,6 +691,7 @@ private fun RegionalGuideScreenErrorPreview() {
             onSearchKeywordChange = {},
             onSearchClick = {},
             onRetryClick = {},
+            onEmptySearchActionClick = {},
             onSidoSelected = {},
             onSigunguSelected = {},
             onEupmyeondongSelected = {},

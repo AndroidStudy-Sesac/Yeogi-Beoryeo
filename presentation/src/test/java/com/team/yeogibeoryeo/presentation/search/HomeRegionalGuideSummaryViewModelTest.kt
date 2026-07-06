@@ -8,6 +8,8 @@ import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSna
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
+import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
@@ -30,6 +32,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 
@@ -39,7 +42,7 @@ class HomeRegionalGuideSummaryViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `no regional guide favorite shows no favorite state`() =
+    fun `지역 가이드 즐겨찾기가 없으면 즐겨찾기 없음 상태를 보여준다`() =
         runTest {
             val viewModel = createViewModel()
             collectState(viewModel)
@@ -52,7 +55,7 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `latest regional guide favorite summary is shown`() =
+    fun `가장 최근 지역 가이드 즐겨찾기 요약을 보여준다`() =
         runTest {
             val snapshot =
                 sampleSnapshot(
@@ -92,7 +95,7 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `retry restarts latest info lookup`() =
+    fun `재시도하면 마지막 지역 가이드 조회를 다시 실행한다`() =
         runTest {
             val snapshot = sampleSnapshot(targetId = "regional-target")
             val regionalRepository =
@@ -128,7 +131,46 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `unknown weekday shows schedule confirmation state`() =
+    fun `같은 즐겨찾기 갱신 중에는 이전 요약을 유지한다`() =
+        runTest {
+            val snapshot = sampleSnapshot(targetId = "regional-target")
+            val regionalRepository =
+                FakeRegionalDisposalGuideRepository(
+                    guides = listOf(sampleGuide(region = snapshot.region)),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    snapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            initialSnapshots = listOf(snapshot),
+                        ),
+                    regionalRepository = regionalRepository,
+                )
+            val states = mutableListOf<HomeRegionalGuideSummaryUiState>()
+            collectState(viewModel, states)
+            advanceUntilIdle()
+            states.clear()
+
+            viewModel.retry()
+            advanceUntilIdle()
+
+            assertFalse(states.any { state -> state is HomeRegionalGuideSummaryUiState.Loading })
+            assertEquals(2, regionalRepository.requestCount)
+        }
+
+    @Test
+    fun `일반쓰레기 요일이 미지정이면 대체 요일이 적용된 요약을 보여준다`() =
         runTest {
             val snapshot = sampleSnapshot(targetId = "regional-target")
             val viewModel =
@@ -162,9 +204,13 @@ class HomeRegionalGuideSummaryViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                HomeRegionalGuideSummaryUiState.ScheduleNeedsConfirmation(
+                HomeRegionalGuideSummaryUiState.Summary(
                     targetId = "regional-target",
                     regionName = "Sido > Sigungu > Dong",
+                    disposalDays = null,
+                    disposalTime = null,
+                    hasDifferentDisposalDays = false,
+                    hasDifferentDisposalTime = false,
                 ),
                 viewModel.uiState.value,
             )
@@ -173,6 +219,15 @@ class HomeRegionalGuideSummaryViewModelTest {
     private fun TestScope.collectState(viewModel: HomeRegionalGuideSummaryViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect()
+        }
+    }
+
+    private fun TestScope.collectState(
+        viewModel: HomeRegionalGuideSummaryViewModel,
+        states: MutableList<HomeRegionalGuideSummaryUiState>,
+    ) {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect { state -> states += state }
         }
     }
 
@@ -194,6 +249,8 @@ class HomeRegionalGuideSummaryViewModelTest {
                             repository = regionalRepository,
                             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
                             selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(),
+                            findAdminDongCandidatesForLegalDongUseCase =
+                                FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                         ),
                     getTodayRegionalWasteSummaryUseCase = GetTodayRegionalWasteSummaryUseCase(),
                 ),
@@ -313,5 +370,27 @@ class HomeRegionalGuideSummaryViewModelTest {
             requestCount += 1
             return Result.success(guides.filter { guide -> guide.region.sigungu == query.sigunguQuery })
         }
+    }
+
+    private class FakeRegionOptionsRepository : RegionOptionsRepository {
+        override suspend fun getSidoOptions(): List<String> = emptyList()
+
+        override suspend fun getSigunguOptions(sido: String): List<String> = emptyList()
+
+        override suspend fun getEupmyeondongOptions(
+            sido: String,
+            sigungu: String,
+        ): List<String> = emptyList()
+
+        override suspend fun findRegionsByEupmyeondongKeyword(keyword: String): List<Region> =
+            emptyList()
+
+        override suspend fun findRegionsBySigunguKeyword(keyword: String): List<Region> =
+            emptyList()
+
+        override suspend fun normalizeRegionForRegionalGuide(region: Region): Region = region
+
+        override suspend fun findAdminDongCandidatesForLegalDong(region: Region): List<Region> =
+            emptyList()
     }
 }

@@ -2,10 +2,15 @@ package com.team.yeogibeoryeo.navigation
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.expandVertically
@@ -35,6 +40,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.team.yeogibeoryeo.BuildConfig
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
@@ -43,12 +49,14 @@ import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGui
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
-import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
+import com.team.yeogibeoryeo.presentation.settings.SettingsDetailRoute as SettingsDetailScreenRoute
+import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScreenRoute
 
 @Composable
 fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    onClearLocationCacheClick: () -> Unit = {},
 ) {
     val currentContext by rememberUpdatedState(LocalContext.current)
     val layoutDirection = LocalLayoutDirection.current
@@ -57,7 +65,8 @@ fun YeogiBeoryeoNavHost(
     val isMapScreen = currentDestination?.hasRoute<MapRoute>() == true
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
     val isUsefulGuideScreen = currentDestination?.hasRoute<ItemUsefulGuideRoute>() == true
-    val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen
+    val isSettingsDetailScreen = currentDestination?.hasRoute<SettingsDetailRoute>() == true
+    val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen || isSettingsDetailScreen
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(currentBackStackEntry) {
@@ -95,16 +104,17 @@ fun YeogiBeoryeoNavHost(
             }
         },
     ) { innerPadding ->
-        val navHostPadding = if (isMapScreen && !isBottomBarVisible) {
-            PaddingValues(
-                start = innerPadding.calculateStartPadding(layoutDirection),
-                top = 0.dp,
-                end = innerPadding.calculateEndPadding(layoutDirection),
-                bottom = 0.dp,
-            )
-        } else {
-            innerPadding
-        }
+        val navHostPadding = PaddingValues(
+            start = innerPadding.calculateStartPadding(layoutDirection),
+            top = 0.dp,
+            end = innerPadding.calculateEndPadding(layoutDirection),
+            bottom = when {
+                isMapScreen && !isBottomBarVisible -> 0.dp
+                hidesBottomBarOnScroll && !isBottomBarVisible ->
+                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                else -> innerPadding.calculateBottomPadding()
+            },
+        )
 
         NavHost(
             navController = navController,
@@ -184,7 +194,7 @@ fun YeogiBeoryeoNavHost(
                         )
                     },
                     onUsefulGuideClick = { guide ->
-                        navController.navigate(ItemUsefulGuideRoute(guide.type.name))
+                        navController.navigate(ItemUsefulGuideRoute(guide.type.toRouteType()))
                     },
                     onRegionalGuideSummaryClick = { targetId ->
                         navController.navigate(
@@ -198,6 +208,9 @@ fun YeogiBeoryeoNavHost(
                             QuickCategorySettingsRoute(maxSelectedCount = maxSelectedCount),
                         )
                     },
+                    onSettingsClick = {
+                        navController.navigate(SettingsRoute)
+                    },
                 )
             }
 
@@ -209,13 +222,40 @@ fun YeogiBeoryeoNavHost(
                 )
             }
 
+            composable<SettingsRoute> {
+                SettingsScreenRoute(
+                    onBackClick = navController::popBackStack,
+                    onDetailClick = { detailType ->
+                        navController.navigate(SettingsDetailRoute(detailType.toRouteType()))
+                    },
+                )
+            }
+
+            composable<SettingsDetailRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<SettingsDetailRoute>()
+                SettingsDetailScreenRoute(
+                    detailType = route.detailType.toScreenType(),
+                    appVersionName = BuildConfig.VERSION_NAME,
+                    onBackClick = navController::popBackStack,
+                    onOpenAppSettingsClick = {
+                        currentContext.openAppSettings()
+                    },
+                    onClearLocationCacheClick = onClearLocationCacheClick,
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (isSettingsDetailScreen) {
+                            isBottomBarVisible = isVisible
+                        }
+                    },
+                )
+            }
+
             composable<ItemUsefulGuideRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<ItemUsefulGuideRoute>()
                 ItemUsefulGuideScreenRoute(
-                    guideType = ItemUsefulGuideType.valueOf(route.guideType),
+                    guideType = route.guideType.toItemUsefulGuideType(),
                     onBackClick = navController::popBackStack,
                     onSmallEWasteClick = { type ->
-                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                        navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
                             launchSingleTop = true
                             restoreState = false
                         }
@@ -223,14 +263,14 @@ fun YeogiBeoryeoNavHost(
                     onFreePickupGuideClick = {
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(FreePickupGuideUrl)),
+                                Intent(Intent.ACTION_VIEW, FreePickupGuideUrl.toUri()),
                             )
                         }.isSuccess
                     },
                     onOfficialSiteClick = { url ->
                         runCatching {
                             currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                                Intent(Intent.ACTION_VIEW, url.toUri()),
                             )
                         }.isSuccess
                     },
@@ -255,7 +295,7 @@ fun YeogiBeoryeoNavHost(
                     guideId = route.guideId,
                     onBackClick = navController::popBackStack,
                     onCollectionSpotTypeClick = { type ->
-                        navController.navigate(MapRoute(initialSpotType = type.name)) {
+                        navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
                             launchSingleTop = true
                             restoreState = false
                         }
@@ -272,3 +312,11 @@ fun YeogiBeoryeoNavHost(
 }
 
 private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
+
+private fun android.content.Context.openAppSettings() {
+    val uri = Uri.fromParts("package", packageName, null)
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
+    runCatching {
+        startActivity(intent)
+    }
+}

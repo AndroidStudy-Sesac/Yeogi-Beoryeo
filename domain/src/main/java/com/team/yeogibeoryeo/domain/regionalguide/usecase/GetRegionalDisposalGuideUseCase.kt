@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
@@ -10,7 +11,8 @@ import javax.inject.Inject
 class GetRegionalDisposalGuideUseCase @Inject constructor(
     private val repository: RegionalDisposalGuideRepository,
     private val normalizeRegionalGuideQueryUseCase: NormalizeRegionalGuideQueryUseCase,
-    private val selectRegionalGuideCandidateUseCase: SelectRegionalGuideCandidateUseCase
+    private val selectRegionalGuideCandidateUseCase: SelectRegionalGuideCandidateUseCase,
+    private val findAdminDongCandidatesForLegalDongUseCase: FindAdminDongCandidatesForLegalDongUseCase
 ) {
     suspend operator fun invoke(
         region: Region,
@@ -27,12 +29,14 @@ class GetRegionalDisposalGuideUseCase @Inject constructor(
                     throwable = throwable
                 )
             }
+        val adminDongCandidates = findAdminDongCandidatesForLegalDongUseCase(query.displayRegion)
 
         return selectRegionalGuideCandidateUseCase(
             candidates = candidates,
             query = query,
             preferredTargetRegionName = preferredTargetRegionName,
             preferredManagementZoneName = preferredManagementZoneName,
+            mappedAdminDongCandidates = adminDongCandidates,
         )
     }
 

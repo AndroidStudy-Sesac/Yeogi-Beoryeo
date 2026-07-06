@@ -14,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
 
 @Composable
 fun MapSearchLoadingOverlay(
@@ -40,7 +42,7 @@ fun MapSearchLoadingOverlay(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Text(
-                    text = "검색중",
+                    text = stringResource(R.string.map_search_loading_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -64,7 +66,7 @@ fun MapSearchLoadingOverlay(
 private fun CurrentLocationSearchLoadingOverlayPreview() {
     MaterialTheme {
         MapSearchLoadingOverlay(
-            description = "현재 위치 주변을 찾고 있어요",
+            description = stringResource(R.string.map_search_loading_current_location),
         )
     }
 }

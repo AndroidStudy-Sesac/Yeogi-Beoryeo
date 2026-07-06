@@ -15,20 +15,19 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
+import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
+import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
+import com.team.yeogibeoryeo.presentation.regionalguide.model.withDuplicateDisplayDisambiguation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -38,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class RegionalGuideViewModel @Inject constructor(
@@ -169,7 +169,9 @@ class RegionalGuideViewModel @Inject constructor(
         if (selectedSido.isNullOrBlank() || selectedSigungu.isNullOrBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
                 query = state.selectedRegionText.orEmpty(),
-                message = "시도와 시군구를 선택해주세요."
+                titleResId = R.string.regional_guide_empty_select_region_title,
+                messageResId = R.string.regional_guide_empty_select_region_message,
+                action = selectRegionAction()
             )
             return
         }
@@ -201,6 +203,12 @@ class RegionalGuideViewModel @Inject constructor(
                 region = request.region
             )
             null -> searchCurrentKeyword()
+        }
+    }
+
+    fun prepareSearchAgain() {
+        if (_uiState.value is RegionalGuideUiState.Empty) {
+            _uiState.value = RegionalGuideUiState.Idle
         }
     }
 
@@ -260,7 +268,9 @@ class RegionalGuideViewModel @Inject constructor(
         if (trimmedKeyword.isBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
                 query = trimmedKeyword,
-                message = "검색할 지역명을 입력해주세요."
+                titleResId = R.string.regional_guide_empty_blank_keyword_title,
+                messageResId = R.string.regional_guide_empty_blank_keyword_message,
+                action = searchAgainAction()
             )
             return
         }
@@ -290,7 +300,9 @@ class RegionalGuideViewModel @Inject constructor(
                     ResolveRegionFromKeywordResult.NotFound -> {
                         _uiState.value = RegionalGuideUiState.Empty(
                             query = trimmedKeyword,
-                            message = "입력한 지역명을 찾을 수 없습니다."
+                            titleResId = R.string.regional_guide_empty_keyword_not_found_title,
+                            messageResId = R.string.regional_guide_empty_keyword_not_found_message,
+                            action = searchAgainAction()
                         )
                     }
 
@@ -322,7 +334,9 @@ class RegionalGuideViewModel @Inject constructor(
         if (trimmedAddress.isBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
                 query = trimmedAddress,
-                message = "주소 정보가 없습니다."
+                titleResId = R.string.regional_guide_empty_blank_address_title,
+                messageResId = R.string.regional_guide_empty_blank_address_message,
+                action = searchAgainAction()
             )
             return
         }
@@ -339,7 +353,9 @@ class RegionalGuideViewModel @Inject constructor(
                 if (region == null) {
                     _uiState.value = RegionalGuideUiState.Empty(
                         query = trimmedAddress,
-                        message = "주소에서 지역 정보를 찾을 수 없습니다."
+                        titleResId = R.string.regional_guide_empty_address_parse_failed_title,
+                        messageResId = R.string.regional_guide_empty_address_parse_failed_message,
+                        action = searchAgainAction()
                     )
                     return@launch
                 }
@@ -375,7 +391,9 @@ class RegionalGuideViewModel @Inject constructor(
                 if (snapshot == null) {
                     _uiState.value = RegionalGuideUiState.Empty(
                         query = "",
-                        message = "저장된 지역 가이드를 찾을 수 없습니다."
+                        titleResId = R.string.regional_guide_empty_favorite_restore_failed_title,
+                        messageResId = R.string.regional_guide_empty_favorite_restore_failed_message,
+                        action = selectRegionAction()
                     )
                     return@launch
                 }
@@ -386,6 +404,7 @@ class RegionalGuideViewModel @Inject constructor(
                     region = regionalGuideRegion,
                     preferredTargetRegionName = snapshot.targetRegionName,
                     preferredManagementZoneName = snapshot.managementZoneName,
+                    emptyContext = RegionalGuideEmptyContext.FAVORITE_RESTORE,
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -396,17 +415,6 @@ class RegionalGuideViewModel @Inject constructor(
                 )
             }
         }
-    }
-
-    fun resetState() {
-        guideLookupJob?.cancel()
-        keywordSuggestionJob?.cancel()
-        sigunguOptionsJob?.cancel()
-        eupmyeondongOptionsJob?.cancel()
-        favoriteStateJob?.cancel()
-        lastRequest = null
-        currentRegionalGuideFavoriteSnapshot = null
-        _uiState.value = RegionalGuideUiState.Idle
     }
 
     private fun loadSidoOptions() {
@@ -615,6 +623,7 @@ class RegionalGuideViewModel @Inject constructor(
         region: Region,
         preferredTargetRegionName: String? = null,
         preferredManagementZoneName: String? = null,
+        emptyContext: RegionalGuideEmptyContext = RegionalGuideEmptyContext.DEFAULT,
     ) {
         val result = getRegionalDisposalGuideUseCase(
             region = region,
@@ -622,11 +631,15 @@ class RegionalGuideViewModel @Inject constructor(
             preferredManagementZoneName = preferredManagementZoneName,
         )
 
-        _uiState.value = result.toUiState(query)
+        _uiState.value = result.toUiState(
+            query = query,
+            emptyContext = emptyContext,
+        )
     }
 
     private fun RegionalGuideLookupResult.toUiState(
-        query: String
+        query: String,
+        emptyContext: RegionalGuideEmptyContext,
     ): RegionalGuideUiState {
         return when (this) {
             is RegionalGuideLookupResult.Success -> {
@@ -650,18 +663,34 @@ class RegionalGuideViewModel @Inject constructor(
                         sigungu = guide.region.sigungu,
                         eupmyeondong = guide.region.eupmyeondong
                     )
-                }.sortedWith(regionalGuideCandidateDisplayComparator)
+                }
+                    .withDuplicateDisplayDisambiguation()
+                    .sortedWith(regionalGuideCandidateDisplayComparator)
             )
 
-            RegionalGuideLookupResult.NotFound -> RegionalGuideUiState.Empty(
-                query = query,
-                message = "해당 지역의 배출 가이드 정보가 없습니다."
-            )
+            RegionalGuideLookupResult.NotFound ->
+                if (emptyContext == RegionalGuideEmptyContext.FAVORITE_RESTORE) {
+                    favoriteRestoreFailedEmptyState(query)
+                } else {
+                    RegionalGuideUiState.Empty(
+                        query = query,
+                        titleResId = R.string.regional_guide_empty_info_not_found_title,
+                        messageResId = R.string.regional_guide_empty_info_not_found_message,
+                        action = selectRegionAction()
+                    )
+                }
 
-            RegionalGuideLookupResult.CandidateNotFound -> RegionalGuideUiState.Empty(
-                query = query,
-                message = "선택한 지역에 맞는 배출 가이드를 찾을 수 없습니다."
-            )
+            RegionalGuideLookupResult.CandidateNotFound ->
+                if (emptyContext == RegionalGuideEmptyContext.FAVORITE_RESTORE) {
+                    favoriteRestoreFailedEmptyState(query)
+                } else {
+                    RegionalGuideUiState.Empty(
+                        query = query,
+                        titleResId = R.string.regional_guide_empty_candidate_not_found_title,
+                        messageResId = R.string.regional_guide_empty_candidate_not_found_message,
+                        action = selectRegionAction()
+                    )
+                }
 
             is RegionalGuideLookupResult.Failure -> RegionalGuideUiState.Error(
                 query = query,
@@ -682,6 +711,26 @@ class RegionalGuideViewModel @Inject constructor(
                 "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
         }
     }
+
+    private fun searchAgainAction(): RegionalGuideEmptyActionUiModel =
+        RegionalGuideEmptyActionUiModel(
+            type = RegionalGuideEmptyActionType.SEARCH_AGAIN,
+            labelResId = R.string.regional_guide_empty_action_search_again
+        )
+
+    private fun selectRegionAction(): RegionalGuideEmptyActionUiModel =
+        RegionalGuideEmptyActionUiModel(
+            type = RegionalGuideEmptyActionType.SELECT_REGION,
+            labelResId = R.string.regional_guide_empty_action_select_region
+        )
+
+    private fun favoriteRestoreFailedEmptyState(query: String): RegionalGuideUiState.Empty =
+        RegionalGuideUiState.Empty(
+            query = query,
+            titleResId = R.string.regional_guide_empty_favorite_restore_failed_title,
+            messageResId = R.string.regional_guide_empty_favorite_restore_failed_message,
+            action = selectRegionAction()
+        )
 
     private fun Region.toCandidateUiModel(): RegionSearchCandidateUiModel =
         RegionSearchCandidateUiModel(
@@ -758,6 +807,11 @@ class RegionalGuideViewModel @Inject constructor(
             val query: String,
             val region: Region
         ) : RegionalGuideRequest
+    }
+
+    private enum class RegionalGuideEmptyContext {
+        DEFAULT,
+        FAVORITE_RESTORE,
     }
 
     private companion object {

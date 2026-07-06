@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.data.spot.geocoder.SpotGeocoder
 import com.team.yeogibeoryeo.data.spot.mapper.SpotMapper
 import com.team.yeogibeoryeo.data.spot.remote.datasource.SpotRemoteDataSource
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
@@ -28,16 +29,29 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         keyword: String,
         types: Set<CollectionSpotType>,
     ): List<CollectionSpot> {
-        val spots = remoteDataSource.searchByKeyword(
+        return searchByKeywordResult(
+            keyword = keyword,
+            types = types,
+        ).spots
+    }
+
+    override suspend fun searchByKeywordResult(
+        keyword: String,
+        types: Set<CollectionSpotType>,
+    ): CollectionSpotSearchResult {
+        val result = remoteDataSource.searchByKeywordResult(
             serviceKey = publicDataKeyProvider.publicDataServiceKey,
             keyword = keyword,
-        ).let { dtoList ->
-            spotMapper.mapToDomainList(dtoList)
-        }
+        )
 
-        return spots
+        val spots = spotMapper.mapToDomainList(result.items)
             .filterByTypes(types)
             .geocodeAll()
+
+        return CollectionSpotSearchResult(
+            spots = spots,
+            isPartial = result.isPartial,
+        )
     }
 
     override suspend fun searchByLocation(
@@ -62,7 +76,9 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     override suspend fun geocodeSpot(
         spot: CollectionSpot,
     ): CollectionSpot {
-        val coordinate = spotGeocoder.geocode(spot.address)
+        val coordinate = spot.address.toGeocodeKey()?.let { address ->
+            spotGeocoder.geocode(address)
+        }
 
         return spot.copy(
             coordinate = coordinate,
@@ -129,10 +145,15 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     }
 
     private fun String.toGeocodeKey(): String? {
-        return trim().takeIf { it.isNotBlank() }
+        return replace(PARENTHESIZED_TEXT_REGEX, " ")
+            .trim()
+            .replace(WHITESPACE_REGEX, " ")
+            .takeIf { it.isNotBlank() }
     }
 
     private companion object {
         const val MAX_CONCURRENT_GEOCODING_COUNT = 3
+        val PARENTHESIZED_TEXT_REGEX = "\\([^)]*\\)".toRegex()
+        val WHITESPACE_REGEX = "\\s+".toRegex()
     }
 }

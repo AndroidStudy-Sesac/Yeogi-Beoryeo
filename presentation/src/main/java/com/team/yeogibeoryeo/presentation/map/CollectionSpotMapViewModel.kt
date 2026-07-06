@@ -1,19 +1,26 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleCollectionSpotFavoriteUseCase
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidateResult
 import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.GetFreshRecentCurrentLocationSpotsUseCase
+import com.team.yeogibeoryeo.domain.spot.usecase.ResolveMapRegionSearchCandidateUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
@@ -30,6 +37,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class CollectionSpotMapViewModel @Inject constructor(
+    private val resolveMapRegionSearchCandidateUseCase: ResolveMapRegionSearchCandidateUseCase,
     private val searchCollectionSpotsByKeywordUseCase: SearchCollectionSpotsByKeywordUseCase,
     private val searchCollectionSpotsByLocationUseCase: SearchCollectionSpotsByLocationUseCase,
     private val filterCollectionSpotsUseCase: FilterCollectionSpotsUseCase,
@@ -37,6 +45,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val locationPermissionChecker: LocationPermissionChecker,
     private val getFreshRecentCurrentLocationSpotsUseCase: GetFreshRecentCurrentLocationSpotsUseCase,
     private val saveRecentCurrentLocationSpotsUseCase: SaveRecentCurrentLocationSpotsUseCase,
+    private val clearRecentCurrentLocationSpotsUseCase: ClearRecentCurrentLocationSpotsUseCase,
     private val observeFavoritesUseCase: ObserveFavoritesUseCase,
     private val toggleCollectionSpotFavoriteUseCase: ToggleCollectionSpotFavoriteUseCase,
     private val calculateDistanceMeterUseCase: CalculateDistanceMeterUseCase,
@@ -83,6 +92,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 } else {
                     it.spots
                 },
+                regionSearchCandidates = emptyList(),
                 selectedSpot = if (shouldCancelSpotSearch) {
                     null
                 } else {
@@ -98,9 +108,9 @@ class CollectionSpotMapViewModel @Inject constructor(
                 } else {
                     it.hasSearched
                 },
-                errorMessage = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = if (shouldCancelSpotSearch) {
                     MapSearchMode.KEYWORD
@@ -125,9 +135,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                     selectedSpot = null,
                     isLoading = false,
                     hasSearched = false,
-                    errorMessage = "검색어를 입력해주세요.",
+                    errorMessageResId = R.string.map_search_blank_keyword_message,
+                    partialWarningMessageResId = null,
                     locationNotice = null,
-                    locationNoticeMessage = null,
+                    regionSearchCandidates = emptyList(),
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
                 )
@@ -136,34 +147,112 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
 
         spotSearchJob?.cancel()
+        startKeywordSearchLoading()
         spotSearchJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    hasSearched = true,
-                    errorMessage = null,
-                    locationNotice = null,
-                    locationNoticeMessage = null,
-                    selectedSpot = null,
-                    isFavoriteSpotNearbyLoading = false,
-                    searchMode = MapSearchMode.KEYWORD,
-                )
-            }
+            when (val candidateResult = resolveMapRegionSearchCandidateUseCase(keyword)) {
+                is MapRegionSearchCandidateResult.NeedSelection -> {
+                    showRegionSearchCandidates(candidateResult.candidates)
+                }
 
-            runCatching {
-                searchCollectionSpotsByKeywordUseCase(
-                    keyword = keyword,
-                    types = emptySet(),
-                )
-            }.onSuccess { spots ->
-                updateSpotResult(spots)
-            }.onFailure { throwable ->
-                if (throwable is CancellationException) throw throwable
-
-                updateSpotFailure(
-                    message = MapLocationNotices.SpotSearchFailureMessage,
-                )
+                is MapRegionSearchCandidateResult.ReadyToSearch -> {
+                    searchByKeywordInternal(
+                        keyword = candidateResult.searchKeyword,
+                        selectedRegionCandidate = candidateResult.selectedCandidate,
+                    )
+                }
             }
+        }
+    }
+
+    fun onRegionSearchCandidateClick(candidate: MapRegionSearchCandidate) {
+        currentLocationRefreshJob?.cancel()
+        spotSearchJob?.cancel()
+        spotSearchJob = viewModelScope.launch {
+            searchByKeywordInternal(
+                keyword = candidate.searchKeyword,
+                selectedRegionCandidate = candidate,
+            )
+        }
+    }
+
+    private suspend fun searchByKeywordInternal(
+        keyword: String,
+        selectedRegionCandidate: MapRegionSearchCandidate?,
+    ) {
+        startKeywordSearchLoading()
+
+        runCatching {
+            searchByCandidateKeywords(
+                keyword = keyword,
+                selectedRegionCandidate = selectedRegionCandidate,
+            )
+        }.onSuccess { result ->
+            updateSpotResult(result)
+        }.onFailure { throwable ->
+            if (throwable is CancellationException) throw throwable
+
+            updateSpotFailure(
+                messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
+            )
+        }
+    }
+
+    private fun startKeywordSearchLoading() {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                hasSearched = true,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
+                locationNotice = null,
+                regionSearchCandidates = emptyList(),
+                selectedSpot = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+            )
+        }
+    }
+
+    private suspend fun searchByCandidateKeywords(
+        keyword: String,
+        selectedRegionCandidate: MapRegionSearchCandidate?,
+    ): CollectionSpotSearchResult {
+        val searchKeywords = selectedRegionCandidate
+            ?.searchKeywords
+            ?.takeIf { keywords -> keywords.isNotEmpty() }
+            ?: listOf(keyword)
+        val results = searchKeywords.map { searchKeyword ->
+            searchCollectionSpotsByKeywordUseCase.searchWithResult(
+                keyword = searchKeyword,
+                types = emptySet(),
+                selectedRegionCandidate = selectedRegionCandidate,
+            )
+        }
+
+        return CollectionSpotSearchResult(
+            spots = results
+                .flatMap { result -> result.spots }
+                .distinctBy { spot -> spot.id },
+            isPartial = results.any { result -> result.isPartial },
+        )
+    }
+
+    private fun showRegionSearchCandidates(candidates: List<MapRegionSearchCandidate>) {
+        originalSpots = emptyList()
+
+        _uiState.update {
+            it.copy(
+                spots = emptyList(),
+                regionSearchCandidates = candidates,
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
+                locationNotice = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+            )
         }
     }
 
@@ -171,6 +260,11 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationRefreshJob?.cancel()
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
+            if (!locationPermissionChecker.hasFineLocationPermission()) {
+                handleLocationPermissionDenied()
+                return@launch
+            }
+
             val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
 
             if (cachedEntry != null) {
@@ -194,9 +288,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
-                    errorMessage = null,
+                    errorMessageResId = null,
+                    partialWarningMessageResId = null,
                     locationNotice = null,
-                    locationNoticeMessage = null,
+                    regionSearchCandidates = emptyList(),
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.MAP_CENTER,
@@ -210,12 +305,12 @@ class CollectionSpotMapViewModel @Inject constructor(
                     types = emptySet(),
                 )
             }.onSuccess { spots ->
-                updateSpotResult(spots)
+                updateSpotResult(CollectionSpotSearchResult(spots = spots))
             }.onFailure { throwable ->
                 if (throwable is CancellationException) throw throwable
 
                 updateSpotFailure(
-                    message = MapLocationNotices.SpotSearchFailureMessage,
+                    messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
                 )
             }
         }
@@ -236,14 +331,14 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             val spotsWithDistance = spots.withDistanceFrom(coordinate)
 
-            updateSpotResult(spotsWithDistance)
+            updateSpotResult(CollectionSpotSearchResult(spots = spotsWithDistance))
             saveRecentCurrentLocationSpotsUseCase(spotsWithDistance)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
 
             if (!preservePreviousResultOnFailure) {
                 updateSpotFailure(
-                    message = MapLocationNotices.CurrentLocationSpotSearchFailureMessage,
+                    messageResId = MapLocationNotices.CurrentLocationSpotSearchFailureMessageResId,
                 )
             }
         }
@@ -301,9 +396,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                     isBookmarked = request.targetId in favoriteSpotIds,
                 ),
                 isLoading = false,
-                errorMessage = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
+                regionSearchCandidates = emptyList(),
                 favoriteSpotMoveRequestId = request.targetId,
                 favoriteSpotMoveRequestSequence = it.favoriteSpotMoveRequestSequence + 1,
                 isFavoriteSpotNearbyLoading = true,
@@ -320,6 +416,31 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onLocationPermissionDenied() {
+        viewModelScope.launch {
+            handleLocationPermissionDenied()
+        }
+    }
+
+    fun onLocationPermissionRevoked() {
+        viewModelScope.launch {
+            clearRecentCurrentLocationCache()
+
+            if (uiState.value.searchMode == MapSearchMode.CURRENT_LOCATION) {
+                showLocationPermissionDeniedNotice()
+            }
+        }
+    }
+
+    private suspend fun clearRecentCurrentLocationCache() {
+        clearRecentCurrentLocationSpotsUseCase()
+    }
+
+    private suspend fun handleLocationPermissionDenied() {
+        clearRecentCurrentLocationCache()
+        showLocationPermissionDeniedNotice()
+    }
+
+    private fun showLocationPermissionDeniedNotice() {
         originalSpots = emptyList()
 
         _uiState.update {
@@ -328,9 +449,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
-                errorMessage = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
                 locationNotice = MapLocationNotices.PermissionDenied,
-                locationNoticeMessage = MapLocationNotices.PermissionDenied.message,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -355,9 +477,13 @@ class CollectionSpotMapViewModel @Inject constructor(
         if (
             currentState.hasSearched ||
             currentState.isLoading ||
-            currentState.searchKeyword.isNotBlank() ||
-            !locationPermissionChecker.hasFineLocationPermission()
+            currentState.searchKeyword.isNotBlank()
         ) {
+            return
+        }
+
+        if (!locationPermissionChecker.hasFineLocationPermission()) {
+            onLocationPermissionDenied()
             return
         }
 
@@ -407,9 +533,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
-                errorMessage = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
                 locationNotice = MapLocationNotices.CurrentLocationUnavailable,
-                locationNoticeMessage = MapLocationNotices.CurrentLocationUnavailable.message,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
@@ -425,23 +552,18 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
-                errorMessage = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
                 locationNotice = MapLocationNotices.LocationServiceDisabled,
-                locationNoticeMessage = MapLocationNotices.LocationServiceDisabled.message,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
     }
 
-    fun clearErrorMessage() {
-        _uiState.update {
-            it.copy(errorMessage = null)
-        }
-    }
-
-    private fun updateSpotResult(spots: List<CollectionSpot>) {
-        originalSpots = spots.withFavoriteState()
+    private fun updateSpotResult(result: CollectionSpotSearchResult) {
+        originalSpots = result.spots.withFavoriteState()
 
         val filteredSpots = filterCollectionSpotsUseCase(
             spots = originalSpots,
@@ -454,9 +576,14 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = true,
-                errorMessage = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = if (result.isPartial) {
+                    R.string.map_spot_search_partial_failure_message
+                } else {
+                    null
+                },
                 locationNotice = null,
-                locationNoticeMessage = null,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
             )
         }
@@ -492,9 +619,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                         isLoading = false,
                         isFavoriteSpotNearbyLoading = false,
                         hasSearched = true,
-                        errorMessage = null,
+                        errorMessageResId = null,
+                        partialWarningMessageResId = null,
                         locationNotice = null,
-                        locationNoticeMessage = null,
+                        regionSearchCandidates = emptyList(),
                         searchMode = MapSearchMode.CURRENT_LOCATION,
                     )
                 }
@@ -508,7 +636,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    private fun updateSpotFailure(message: String) {
+    private fun updateSpotFailure(@StringRes messageResId: Int) {
         originalSpots = emptyList()
 
         _uiState.update {
@@ -517,9 +645,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = true,
-                errorMessage = message,
+                errorMessageResId = messageResId,
+                partialWarningMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
             )
         }
@@ -534,9 +663,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 it.copy(
                     isLoading = true,
                     hasSearched = true,
-                    errorMessage = null,
+                    errorMessageResId = null,
+                    partialWarningMessageResId = null,
                     locationNotice = null,
-                    locationNoticeMessage = null,
+                    regionSearchCandidates = emptyList(),
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.CURRENT_LOCATION,
@@ -565,9 +695,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             }
 
             CurrentLocationResult.PermissionDenied -> {
-                if (!preservePreviousResultOnFailure) {
-                    onLocationPermissionDenied()
-                }
+                handleLocationPermissionDenied()
             }
         }
     }
@@ -586,9 +714,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = true,
-                errorMessage = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
                 locationNotice = null,
-                locationNoticeMessage = null,
+                regionSearchCandidates = emptyList(),
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
             )

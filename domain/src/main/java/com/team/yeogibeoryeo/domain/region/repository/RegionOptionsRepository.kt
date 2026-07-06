@@ -19,6 +19,11 @@ interface RegionOptionsRepository {
         keyword: String
     ): List<Region>
 
+    suspend fun findLegalDongKeywordsByRegion(
+        region: Region,
+        keyword: String
+    ): List<String> = emptyList()
+
     suspend fun findRegionsBySigunguKeyword(
         keyword: String
     ): List<Region>
@@ -26,4 +31,8 @@ interface RegionOptionsRepository {
     suspend fun normalizeRegionForRegionalGuide(
         region: Region
     ): Region
+
+    suspend fun findAdminDongCandidatesForLegalDong(
+        region: Region
+    ): List<Region>
 }

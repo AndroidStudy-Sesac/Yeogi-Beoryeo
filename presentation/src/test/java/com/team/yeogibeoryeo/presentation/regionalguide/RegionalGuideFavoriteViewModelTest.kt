@@ -2,10 +2,10 @@
 
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -156,6 +156,57 @@ class RegionalGuideFavoriteViewModelTest {
     }
 
     @Test
+    fun `저장 후보 스냅샷이 없으면 복원 실패와 지역 다시 선택 action을 보여준다`() = runTest {
+        val viewModel = createViewModel(
+            regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository()
+        )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId("missing-target-id")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_message, state.messageResId)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+        assertEquals(R.string.regional_guide_empty_action_select_region, state.action?.labelResId)
+    }
+
+    @Test
+    fun `저장 후보가 info 후보와 더 이상 일치하지 않으면 복원 실패 action을 보여준다`() = runTest {
+        val savedGuide =
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                targetRegionName = "반석동 일부지역",
+                managementZoneName = "노은3동",
+                schedules = emptyList(),
+            )
+        val snapshot = savedGuide.toFavoriteSnapshot()
+        val viewModel =
+            createViewModel(
+                regionalGuideRepository =
+                    FakeRegionalDisposalGuideRepository(
+                        candidates = listOf(
+                            savedGuide.copy(managementZoneName = "노은2동")
+                        )
+                    ),
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(snapshot.targetId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_favorite_restore_failed_message, state.messageResId)
+        assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+    }
+
+    @Test
     fun `favorite click after guide candidate selection keeps original none zone values in snapshot`() = runTest {
         val region = Region(sido = "경기도", sigungu = "성남시")
         val doorToDoorGuide =
@@ -210,22 +261,16 @@ class RegionalGuideFavoriteViewModelTest {
 
     @Test
     fun `legacy regional guide favorite key is observed and removed with current snapshot`() = runTest {
-        val region = Region(sido = "Sido", sigungu = "Sigungu", eupmyeondong = "Dong")
+        val region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계동")
         val guide =
             RegionalDisposalGuide(
                 region = region,
-                targetRegionName = "Target",
-                managementZoneName = "Management",
+                targetRegionName = "하계1동",
+                managementZoneName = "6권역",
                 schedules = emptyList(),
             )
         val currentSnapshot = guide.toFavoriteSnapshot()
-        val legacyTargetId =
-            RegionalGuideFavoriteKey(
-                sido = region.sido,
-                sigungu = region.sigungu,
-                eupmyeondong = region.eupmyeondong,
-                targetRegionName = guide.targetRegionName,
-            ).encodeLegacy()
+        val legacyTargetId = currentSnapshot.legacyTargetId.orEmpty()
         val legacySnapshot = currentSnapshot.copy(targetId = legacyTargetId, managementZoneName = null)
         val favoriteRepository =
             FakeFavoriteRepository(
@@ -242,7 +287,9 @@ class RegionalGuideFavoriteViewModelTest {
             FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(legacySnapshot))
         val viewModel =
             createViewModel(
-                regionRepository = FakeRegionRepository(resolvedRegion = region),
+                regionRepository = FakeRegionRepository(
+                    resolvedRegion = region.copy(eupmyeondong = null)
+                ),
                 regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide)),
                 favoriteRepository = favoriteRepository,
                 regionalGuideSnapshotRepository = snapshotRepository,
@@ -254,8 +301,7 @@ class RegionalGuideFavoriteViewModelTest {
             )
         advanceUntilIdle()
 
-        viewModel.onSearchKeywordChanged("Sigungu")
-        viewModel.searchCurrentKeyword()
+        viewModel.loadByFavoriteTargetId(legacyTargetId)
         advanceUntilIdle()
 
         assertEquals(true, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
