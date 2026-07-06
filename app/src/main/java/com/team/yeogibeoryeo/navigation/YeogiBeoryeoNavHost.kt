@@ -63,10 +63,12 @@ fun YeogiBeoryeoNavHost(
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentDestination = currentBackStackEntry?.destination
     val isMapScreen = currentDestination?.hasRoute<MapRoute>() == true
+    val isItemSearchScreen = currentDestination?.hasRoute<ItemSearchRoute>() == true
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
     val isUsefulGuideScreen = currentDestination?.hasRoute<ItemUsefulGuideRoute>() == true
     val isSettingsDetailScreen = currentDestination?.hasRoute<SettingsDetailRoute>() == true
-    val hidesBottomBarOnScroll = isItemDetailScreen || isUsefulGuideScreen || isSettingsDetailScreen
+    val hidesBottomBarOnScroll =
+        isItemSearchScreen || isItemDetailScreen || isUsefulGuideScreen || isSettingsDetailScreen
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(currentBackStackEntry) {
@@ -210,6 +212,11 @@ fun YeogiBeoryeoNavHost(
                     },
                     onSettingsClick = {
                         navController.navigate(SettingsRoute)
+                    },
+                    onBottomBarVisibilityChanged = { isVisible ->
+                        if (isItemSearchScreen) {
+                            isBottomBarVisible = isVisible
+                        }
                     },
                 )
             }

@@ -93,6 +93,7 @@ class ItemSearchScreenTest {
                 ItemSearchScreen(
                     uiState =
                         ItemSearchUiState(
+                            query = "유리",
                             hasSearched = true,
                             guides = listOf(sampleGuide("유리병")),
                         ),
@@ -104,8 +105,69 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("검색 결과 1건").assertIsDisplayed()
         composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
+    }
+
+    @Test
+    fun 검색_결과_화면에서_뒤로가기_버튼을_누르면_검색을_초기화한다() {
+        var backClickCount = 0
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState =
+                        ItemSearchUiState(
+                            query = "유리",
+                            hasSearched = true,
+                            guides = listOf(sampleGuide("유리병")),
+                        ),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onBackClick = { backClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("품목 검색").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
+
+        assertEquals(1, backClickCount)
+    }
+
+    @Test
+    fun 검색_결과에서_초기_상태로_돌아오면_하단_네비게이션을_다시_보이게_요청한다() {
+        var uiState by mutableStateOf(
+            ItemSearchUiState(
+                query = "유리",
+                hasSearched = true,
+                guides = listOf(sampleGuide("유리병")),
+            ),
+        )
+        var isBottomBarVisible = false
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onBottomBarVisibilityChanged = { isBottomBarVisible = it },
+                )
+            }
+        }
+
+        composeTestRule.runOnIdle {
+            isBottomBarVisible = false
+            uiState = ItemSearchUiState()
+        }
+
+        composeTestRule.runOnIdle {
+            assertEquals(true, isBottomBarVisible)
+        }
     }
 
     @Test
@@ -167,7 +229,7 @@ class ItemSearchScreenTest {
     @Test
     fun 결과_카드를_누르면_선택한_가이드를_전달한다() {
         var clickedGuide: DisposalItemGuide? = null
-        val guide = sampleGuide("유리병")
+        val guide = sampleGuide("플라스틱병")
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -181,7 +243,7 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("유리병").performClick()
+        composeTestRule.onNodeWithText("플라스틱병").performClick()
 
         assertEquals(guide, clickedGuide)
     }
