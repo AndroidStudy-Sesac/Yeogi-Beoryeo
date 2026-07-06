@@ -2,6 +2,9 @@ package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -200,6 +203,21 @@ class SearchComponentsTest {
         composeTestRule.onNodeWithContentDescription("비닐류").performClick()
 
         assertEquals(RepresentativeGuideCategory.VINYL, clickedCategory)
+    }
+
+    @Test
+    fun 퀵_카테고리_라벨은_클릭_대상이_아니다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                QuickCategoryGrid(
+                    categories = listOf(RepresentativeGuideCategory.VINYL),
+                    onCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("비닐류")
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
     }
 
     @Test
