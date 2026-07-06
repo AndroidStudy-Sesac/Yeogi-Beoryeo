@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 
 @Composable
 internal fun itemSearchScreenMetrics(
@@ -15,6 +16,7 @@ internal fun itemSearchScreenMetrics(
     return ItemSearchScreenMetrics(
         horizontalPadding = if (isNarrowPhone) spacing.md else spacing.xl,
         topPadding = if (isNarrowPhone) spacing.lg else spacing.xl,
+        homeHeaderTopPadding = (AppTopBarDefaults.height - AppTopBarDefaults.buttonSize) / 2f,
         screenVerticalSpace = if (isNarrowPhone) spacing.lg else spacing.xl,
         sectionVerticalSpace = spacing.md,
         listBottomPadding = spacing.xl,
@@ -25,6 +27,7 @@ internal fun itemSearchScreenMetrics(
 internal data class ItemSearchScreenMetrics(
     val horizontalPadding: Dp,
     val topPadding: Dp,
+    val homeHeaderTopPadding: Dp,
     val screenVerticalSpace: Dp,
     val sectionVerticalSpace: Dp,
     val listBottomPadding: Dp,

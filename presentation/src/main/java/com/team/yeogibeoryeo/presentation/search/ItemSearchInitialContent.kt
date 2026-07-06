@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
@@ -32,7 +33,9 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.HomeRegionalGuideSummaryBanner
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
@@ -102,7 +105,7 @@ fun ItemSearchInitialContent(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = metrics.topPadding)
+                .padding(top = metrics.homeHeaderTopPadding)
                 .onGloballyPositioned { coordinates ->
                     val measuredViewportBottomInRootPx =
                         coordinates.positionInRoot().y.toInt() + coordinates.size.height
@@ -116,7 +119,8 @@ fun ItemSearchInitialContent(
         ) {
             item {
                 ItemSearchHeader(
-                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalPadding = metrics.horizontalPadding,
                     onSettingsClick = onSettingsClick,
                 )
             }
@@ -228,39 +232,51 @@ fun ItemSearchInitialContent(
 @Composable
 fun ItemSearchHeader(
     modifier: Modifier = Modifier,
+    horizontalPadding: Dp = ItemSearchLayoutDefaults.spacing.xl,
     onSettingsClick: (() -> Unit)? = null,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
 
-    Row(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
-        verticalAlignment = Alignment.Top,
+        verticalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(spacing.xs),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = horizontalPadding,
+                    end = AppTopBarDefaults.horizontalPadding,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(R.string.item_search_title),
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = stringResource(R.string.item_search_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        onSettingsClick?.let {
-            IconButton(onClick = it) {
-                Icon(
-                    painter = painterResource(id = CommonR.drawable.ic_action_settings),
-                    contentDescription = stringResource(R.string.settings_action),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
+            onSettingsClick?.let {
+                IconButton(
+                    onClick = it,
+                    modifier = Modifier.size(AppTopBarDefaults.buttonSize),
+                ) {
+                    Icon(
+                        painter = painterResource(id = CommonR.drawable.ic_action_settings),
+                        contentDescription = stringResource(R.string.settings_action),
+                        modifier = Modifier.size(AppTopBarDefaults.iconSize),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
+        KoreanLineBreakText(
+            text = stringResource(R.string.item_search_description),
+            modifier = Modifier.padding(horizontal = horizontalPadding),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
