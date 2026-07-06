@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -41,6 +42,7 @@ fun DisposalItemCard(
 ) {
     val stroke = ItemSearchLayoutDefaults.stroke
     val elevation = ItemSearchLayoutDefaults.elevation
+    val shape = MaterialTheme.shapes.large
     val favoriteStateDescription =
         stringResource(
             if (isFavorite) {
@@ -54,6 +56,7 @@ fun DisposalItemCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clip(shape)
             .semantics {
                 stateDescription = favoriteStateDescription
             }
@@ -62,7 +65,7 @@ fun DisposalItemCard(
                 role = Role.Button,
                 onClick = onClick,
             ),
-        shape = MaterialTheme.shapes.large,
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
