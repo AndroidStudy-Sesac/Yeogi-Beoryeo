@@ -84,7 +84,7 @@ internal object RegionOptionsMapper {
         if (targetKeyword.isBlank()) return emptyList()
 
         val administrativeMatches = administrativeRegions
-            .filter { region -> region.eupmyeondongName == targetKeyword }
+            .filter { region -> region.eupmyeondongName.matchesEupmyeondongKeyword(targetKeyword) }
             .map { region ->
                 RegionNormalizer.normalize(
                     Region(
@@ -96,13 +96,20 @@ internal object RegionOptionsMapper {
             }
 
         val legalMatches = legalAdminDongMappings
-            .filter { mapping -> mapping.legalDongName.trim().matchesLegalDongKeyword(targetKeyword) }
-            .map { mapping ->
+            .mapNotNull { mapping ->
+                val legalDongName = mapping.legalDongName
+                    .trim()
+                    .matchedLegalDongNameForKeyword(
+                        targetKeyword = targetKeyword,
+                        allowSuffixlessDongMatch = administrativeMatches.isEmpty()
+                    )
+                    ?: return@mapNotNull null
+
                 RegionNormalizer.normalize(
                     Region(
                         sido = mapping.sidoName.trim(),
                         sigungu = mapping.sigunguName.trimToNull(),
-                        eupmyeondong = targetKeyword
+                        eupmyeondong = legalDongName
                     )
                 )
             }
@@ -128,7 +135,7 @@ internal object RegionOptionsMapper {
             .filter { mapping ->
                 (sido == null || mapping.sidoName.trim() == sido) &&
                     (sigungu == null || mapping.sigunguName.trim() == sigungu) &&
-                    mapping.legalDongName.trim().matchesLegalDongKeyword(targetKeyword)
+                    mapping.legalDongName.trim().matchedLegalDongNameForKeyword(targetKeyword) != null
             }
             .map { mapping -> mapping.legalDongName.trim() }
             .filter { legalDongName -> legalDongName.isNotBlank() }
@@ -308,9 +315,23 @@ internal object RegionOptionsMapper {
         }
     }
 
-    private fun String.matchesLegalDongKeyword(targetKeyword: String): Boolean {
-        return this == targetKeyword ||
-            (startsWith(targetKeyword) && LEGAL_DONG_GA_REGEX.matches(this))
+    private fun String.matchedLegalDongNameForKeyword(
+        targetKeyword: String,
+        allowSuffixlessDongMatch: Boolean = true
+    ): String? =
+        when {
+            this == targetKeyword -> this
+            allowSuffixlessDongMatch && matchesEupmyeondongKeyword(targetKeyword) -> this
+            startsWith(targetKeyword) && LEGAL_DONG_GA_REGEX.matches(this) -> targetKeyword
+            else -> null
+        }
+
+    private fun String.matchesEupmyeondongKeyword(targetKeyword: String): Boolean {
+        if (this == targetKeyword) return true
+
+        return startsWith(targetKeyword) &&
+            length > targetKeyword.length &&
+            last() in EUPMYEONDONG_SUFFIXES
     }
 
     private fun String?.trimToNull(): String? =
@@ -392,5 +413,6 @@ internal object RegionOptionsMapper {
     private const val SEJONG_SIDO = "세종특별자치시"
     private const val NO_SIGUNGU_NAME = "없음"
     private const val CITY_SUFFIX = "시"
+    private val EUPMYEONDONG_SUFFIXES = setOf('읍', '면', '동')
     private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()
 }

@@ -53,6 +53,18 @@ data class RegionalGuideCandidateUiModel(
             else -> null
         }
 
+    internal val isOverallCollectionTypeCandidate: Boolean =
+        guide.managementZoneName.takeIfRegionalGuideDisplayValue() == null &&
+            guide.targetRegionName.takeIfRegionalGuideDisplayValue() == null &&
+            guide.disposalPlaceType.takeIfRegionalGuideDisplayValue() != null
+
+    internal val collectionTypeOptionText: String =
+        if (isOverallCollectionTypeCandidate) {
+            guide.disposalPlaceType.takeIfRegionalGuideDisplayValue() ?: displayText
+        } else {
+            displayText
+        }
+
     private fun primaryDisplayParts(): List<String> =
         listOfNotNull(
             guide.managementZoneName.takeIfRegionalGuideDisplayValue(),
@@ -132,8 +144,6 @@ internal fun List<RegionalGuideCandidateUiModel>.withDuplicateDisplayDisambiguat
                 .distinct()
         }
         .filterValues { disambiguationTexts -> disambiguationTexts.size > 1 }
-
-    if (disambiguationByDisplayText.isEmpty()) return this
 
     return map { candidate ->
         if (candidate.displayText in disambiguationByDisplayText) {

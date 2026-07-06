@@ -119,7 +119,11 @@ fun RegionalGuideScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous
     val guideCandidatesState = uiState as? RegionalGuideUiState.GuideCandidates
-    val hasSearchCandidates = ambiguousState != null || guideCandidatesState != null
+    val collectionTypeGuideCandidatesState = guideCandidatesState
+        ?.takeIf { state -> state.shouldShowCollectionTypeSelectionPanel() }
+    val listGuideCandidatesState = guideCandidatesState
+        ?.takeUnless { state -> state.shouldShowCollectionTypeSelectionPanel() }
+    val hasSearchCandidates = ambiguousState != null || listGuideCandidatesState != null
     val compactRegionText = when (uiState) {
         is RegionalGuideUiState.Success ->
             regionSelectorUiState.selectedRegionText ?: uiState.query
@@ -210,19 +214,20 @@ fun RegionalGuideScreen(
                             )
                         }
 
-                        if (guideCandidatesState != null) {
+                        if (listGuideCandidatesState != null) {
+                            val candidateMessageSpec = listGuideCandidatesState.candidateMessageSpec()
+
                             RegionalGuideCandidateResult(
-                                message = guideCandidatesState.reason.candidateMessage(),
-                                candidates = guideCandidatesState.candidates,
+                                message = candidateMessageSpec.title(),
+                                messageDescription = candidateMessageSpec.description(),
+                                sectionTitle = candidateMessageSpec.sectionTitle(),
+                                candidates = listGuideCandidatesState.candidates,
                                 onCandidateClick = { candidate ->
                                     clearSearchFocus()
                                     isRegionSelectorExpanded = false
                                     onRegionSelectorDropdownDismissed()
                                     onGuideCandidateClick(candidate)
                                 },
-                                showCollectionTypeHelp =
-                                    guideCandidatesState.reason ==
-                                        RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
                             )
                         }
                     }
@@ -233,24 +238,47 @@ fun RegionalGuideScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            RegionSelectorSection(
-                uiState = regionSelectorUiState,
-                compact = isRegionSelectorCompact,
-                compactRegionText = compactRegionText,
-                onSidoSelected = onSidoSelected,
-                onSigunguSelected = onSigunguSelected,
-                onEupmyeondongSelected = onEupmyeondongSelected,
-                onDropdownExpanded = onRegionSelectorDropdownExpanded,
-                onDropdownDismissed = onRegionSelectorDropdownDismissed,
-                onSearchClick = {
-                    isRegionSelectorExpanded = false
-                    onRegionSelectorDropdownDismissed()
-                    onRegionSelectionSearchClick()
-                },
-                onChangeClick = {
-                    isRegionSelectorExpanded = true
-                },
-            )
+            if (collectionTypeGuideCandidatesState != null) {
+                val candidateMessageSpec =
+                    collectionTypeGuideCandidatesState.collectionTypeSelectionMessageSpec()
+
+                RegionalGuideCandidateResult(
+                    message = candidateMessageSpec.title(),
+                    messageDescription = candidateMessageSpec.description(),
+                    sectionTitle = candidateMessageSpec.sectionTitle(),
+                    selectedRegionText = regionSelectorUiState.selectedRegionText
+                        ?: collectionTypeGuideCandidatesState.selectedRegionText(),
+                    candidates = collectionTypeGuideCandidatesState.candidates,
+                    onCandidateClick = { candidate ->
+                        clearSearchFocus()
+                        isRegionSelectorExpanded = false
+                        onRegionSelectorDropdownDismissed()
+                        onGuideCandidateClick(candidate)
+                    },
+                    showCollectionTypeHelp = true,
+                )
+            }
+
+            if (collectionTypeGuideCandidatesState == null) {
+                RegionSelectorSection(
+                    uiState = regionSelectorUiState,
+                    compact = isRegionSelectorCompact,
+                    compactRegionText = compactRegionText,
+                    onSidoSelected = onSidoSelected,
+                    onSigunguSelected = onSigunguSelected,
+                    onEupmyeondongSelected = onEupmyeondongSelected,
+                    onDropdownExpanded = onRegionSelectorDropdownExpanded,
+                    onDropdownDismissed = onRegionSelectorDropdownDismissed,
+                    onSearchClick = {
+                        isRegionSelectorExpanded = false
+                        onRegionSelectorDropdownDismissed()
+                        onRegionSelectionSearchClick()
+                    },
+                    onChangeClick = {
+                        isRegionSelectorExpanded = true
+                    },
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
         }
@@ -279,6 +307,35 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
         is RegionalGuideUiState.GuideCandidates -> query
         is RegionalGuideUiState.Error -> query
     }?.takeIf { query -> query.isNotBlank() }
+
+private fun RegionalGuideUiState.GuideCandidates.selectedRegionText(): String? =
+    candidates.firstNotNullOfOrNull { candidate ->
+        listOfNotNull(
+            candidate.sido.takeIfNotBlank(),
+            candidate.sigungu.takeIfNotBlank(),
+            candidate.eupmyeondong.takeIfNotBlank(),
+        )
+            .takeIf { parts -> parts.isNotEmpty() }
+            ?.joinToString(" > ")
+    }
+
+private fun String?.takeIfNotBlank(): String? =
+    this?.takeIf { value -> value.isNotBlank() }
+
+private fun RegionalGuideUiState.GuideCandidates.isFallbackBecauseDirectMatchNotFound(): Boolean =
+    reason == RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
+
+private fun RegionalGuideUiState.GuideCandidates.shouldShowCollectionTypeSelectionPanel(): Boolean =
+    isFallbackBecauseDirectMatchNotFound() || isOverallCollectionTypeSelection()
+
+private fun RegionalGuideUiState.GuideCandidates.isOverallCollectionTypeSelection(): Boolean =
+    reason == RegionalGuideCandidateReason.MULTIPLE_CANDIDATES &&
+        candidates.size > 1 &&
+        candidates.all { candidate -> candidate.isOverallCollectionTypeCandidate } &&
+        candidates
+            .mapNotNull { candidate -> candidate.guide.disposalPlaceType?.trim() }
+            .distinct()
+            .size > 1
 
 @Composable
 private fun RegionalGuideContent(

@@ -103,6 +103,20 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
+    fun `관리구역명과 대상지역명이 모두 없음이고 배출장소 유형이 있으면 전체 기준 수거 유형 후보로 본다`() {
+        val candidate = candidate(
+            sido = "강원특별자치도",
+            sigungu = "양구군",
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(true, candidate.isOverallCollectionTypeCandidate)
+        assertEquals("거점수거", candidate.collectionTypeOptionText)
+    }
+
+    @Test
     fun `배출장소 유형이 없으면 배출장소 설명으로 대체 후보를 구분한다`() {
         val candidate = candidate(
             sido = "경상북도",
