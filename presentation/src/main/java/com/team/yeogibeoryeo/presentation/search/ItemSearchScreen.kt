@@ -243,6 +243,7 @@ fun ItemSearchScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .zIndex(SearchResultHeaderZIndex)
+                                .background(MaterialTheme.colorScheme.background)
                                 .padding(bottom = metrics.sectionVerticalSpace)
                         ) {
                             ItemSearchBar(
