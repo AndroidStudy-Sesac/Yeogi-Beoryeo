@@ -7,6 +7,20 @@ data class RegionalGuideCandidateUiModel(
     val eupmyeondong: String?,
     internal val disambiguationText: String? = null
 ) {
+    val stableKey: String =
+        listOf(
+            "sido=${sido.toStableKeyPart()}",
+            "sigungu=${sigungu.toStableKeyPart()}",
+            "eupmyeondong=${eupmyeondong.toStableKeyPart()}",
+            "managementZone=${guide.managementZoneName.toStableKeyPart()}",
+            "targetRegion=${guide.targetRegionName.toStableKeyPart()}",
+            "placeType=${guide.disposalPlaceType.toStableKeyPart()}",
+            "placeDescription=${guide.disposalPlaceDescription.toStableKeyPart()}",
+            "uncollectedDays=${guide.uncollectedDays.toStableKeyPart()}",
+            "department=${guide.departmentInfo.toStableKeyPart()}",
+            "schedules=${guide.schedules.joinToString(SCHEDULE_KEY_SEPARATOR) { schedule -> schedule.stableKey }}",
+        ).joinToString(STABLE_KEY_SEPARATOR)
+
     val displayText: String =
         baseDisplayParts()
             .appendDisambiguation()
@@ -31,6 +45,13 @@ data class RegionalGuideCandidateUiModel(
                         listOf(managementZoneSortText, parts[1]).joinToString(CANDIDATE_LABEL_SEPARATOR)
                     }
             }
+
+    val collectionTypeHint: RegionalGuideCandidateCollectionTypeHint? =
+        when (guide.disposalPlaceType?.trim()) {
+            DOOR_TO_DOOR_COLLECTION_TYPE -> RegionalGuideCandidateCollectionTypeHint.DOOR_TO_DOOR
+            BASE_POINT_COLLECTION_TYPE -> RegionalGuideCandidateCollectionTypeHint.BASE_POINT
+            else -> null
+        }
 
     private fun primaryDisplayParts(): List<String> =
         listOfNotNull(
@@ -75,8 +96,31 @@ data class RegionalGuideCandidateUiModel(
     private companion object {
         const val CANDIDATE_LABEL_SEPARATOR = " / "
         const val SCHEDULE_SUMMARY_SEPARATOR = " "
+        const val STABLE_KEY_SEPARATOR = "|"
+        const val SCHEDULE_KEY_SEPARATOR = ";"
+        const val DOOR_TO_DOOR_COLLECTION_TYPE = "문전수거"
+        const val BASE_POINT_COLLECTION_TYPE = "거점수거"
     }
 }
+
+enum class RegionalGuideCandidateCollectionTypeHint {
+    DOOR_TO_DOOR,
+    BASE_POINT,
+}
+
+private val RegionalWasteScheduleUiModel.stableKey: String
+    get() = listOf(
+        wasteTypeName.toStableKeyPart(),
+        disposalDays.toStableKeyPart(),
+        disposalTime.toStableKeyPart(),
+        disposalMethod.toStableKeyPart(),
+    ).joinToString("/")
+
+private fun String?.toStableKeyPart(): String =
+    this
+        ?.trim()
+        ?.takeIf { value -> value.isNotBlank() }
+        ?: "<blank>"
 
 internal fun List<RegionalGuideCandidateUiModel>.withDuplicateDisplayDisambiguation():
     List<RegionalGuideCandidateUiModel> {

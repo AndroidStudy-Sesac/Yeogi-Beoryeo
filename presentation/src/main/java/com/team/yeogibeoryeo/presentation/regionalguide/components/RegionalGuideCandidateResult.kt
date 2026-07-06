@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
@@ -7,40 +8,54 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateCollectionTypeHint
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 
 @Composable
 fun RegionalGuideCandidateResult(
+    message: String,
     candidates: List<RegionalGuideCandidateUiModel>,
     onCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    showCollectionTypeHelp: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    )
+
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
     RegionalGuideCandidateList(
         candidates = candidates,
-        key = { candidate -> candidate.displayText },
+        key = { candidate -> candidate.stableKey },
         onCandidateClick = onCandidateClick,
         modifier = modifier
     ) { candidate ->
-        RegionalGuideCandidateRowText(text = candidate.displayText)
+        RegionalGuideCandidateRowText(
+            text = candidate.displayText,
+            supportingText = candidate.collectionTypeSupportingText(showCollectionTypeHelp)
+        )
     }
 }
 
 @Composable
 private fun RegionalGuideCandidateRowText(
     text: String,
+    supportingText: String?,
     modifier: Modifier = Modifier
 ) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.Medium,
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(
@@ -49,7 +64,40 @@ private fun RegionalGuideCandidateRowText(
                 top = 14.dp,
                 bottom = 14.dp
             )
-    )
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        )
+
+        if (supportingText != null) {
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegionalGuideCandidateUiModel.collectionTypeSupportingText(
+    enabled: Boolean
+): String? {
+    if (!enabled) return null
+
+    return when (collectionTypeHint) {
+        RegionalGuideCandidateCollectionTypeHint.DOOR_TO_DOOR ->
+            stringResource(id = R.string.regional_guide_candidate_door_to_door_supporting_text)
+
+        RegionalGuideCandidateCollectionTypeHint.BASE_POINT ->
+            stringResource(id = R.string.regional_guide_candidate_base_point_supporting_text)
+
+        null -> null
+    }
 }
 
 @Preview(showBackground = true)
@@ -57,6 +105,7 @@ private fun RegionalGuideCandidateRowText(
 private fun RegionalGuideCandidateResultPreview() {
     MaterialTheme {
         RegionalGuideCandidateResult(
+            message = "여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해주세요.",
             candidates = listOf(
                 RegionalGuideCandidateUiModel(
                     guide = previewGuide("범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"),

@@ -2,9 +2,9 @@ package com.team.yeogibeoryeo.presentation.regionalguide
 
 import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 sealed interface RegionalGuideUiState {
     data object Idle : RegionalGuideUiState
@@ -34,7 +34,7 @@ sealed interface RegionalGuideUiState {
 
     data class GuideCandidates(
         val query: String,
-        val message: String,
+        val reason: RegionalGuideCandidateReason,
         val candidates: List<RegionalGuideCandidateUiModel>
     ) : RegionalGuideUiState
 
@@ -52,4 +52,11 @@ data class RegionalGuideEmptyActionUiModel(
 enum class RegionalGuideEmptyActionType {
     SEARCH_AGAIN,
     SELECT_REGION,
+}
+
+enum class RegionalGuideCandidateReason {
+    MULTIPLE_CANDIDATES,
+    MULTIPLE_EXACT_MATCHES,
+    FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
+    FAVORITE_RESTORE_AMBIGUOUS,
 }

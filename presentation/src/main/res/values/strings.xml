@@ -106,6 +106,12 @@
     <string name="regional_guide_empty_action_select_region">지역 다시 선택하기</string>
     <string name="regional_guide_loading_default_message">배출 가이드를 불러오는 중입니다.</string>
     <string name="regional_guide_loading_region_message">\"%1$s\" 배출 가이드를 불러오는 중입니다.</string>
+    <string name="regional_guide_candidate_multiple_message">여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_multiple_exact_message">선택한 지역에 여러 배출 기준이 있어요. 해당하는 권역을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_fallback_message">선택한 읍면동의 직접 안내를 찾지 못했어요. 같은 시군구 기준 수거 유형을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_favorite_restore_ambiguous_message">저장된 지역과 일치하는 배출 기준이 여러 개 있어요. 다시 확인할 권역을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_door_to_door_supporting_text">집 앞 또는 지정된 배출장소에 배출하는 지역</string>
+    <string name="regional_guide_candidate_base_point_supporting_text">마을 거점 또는 지정 수거 장소를 이용하는 지역</string>
     <string name="item_guide_detail_not_found_title">품목 가이드를 찾을 수 없습니다</string>
     <string name="item_guide_detail_select_again_message">다시 검색해서 품목을 선택해주세요.</string>
     <string name="item_guide_detail_load_failed_message">품목 정보를 불러오는 중 오류가 발생했습니다.</string>

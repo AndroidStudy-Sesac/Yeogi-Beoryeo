@@ -212,6 +212,7 @@ fun RegionalGuideScreen(
 
                         if (guideCandidatesState != null) {
                             RegionalGuideCandidateResult(
+                                message = guideCandidatesState.reason.candidateMessage(),
                                 candidates = guideCandidatesState.candidates,
                                 onCandidateClick = { candidate ->
                                     clearSearchFocus()
@@ -219,6 +220,9 @@ fun RegionalGuideScreen(
                                     onRegionSelectorDropdownDismissed()
                                     onGuideCandidateClick(candidate)
                                 },
+                                showCollectionTypeHelp =
+                                    guideCandidatesState.reason ==
+                                        RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
                             )
                         }
                     }
@@ -635,7 +639,7 @@ private fun RegionalGuideScreenGuideCandidatesPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.GuideCandidates(
                 query = "울주군",
-                message = "여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해주세요.",
+                reason = RegionalGuideCandidateReason.MULTIPLE_CANDIDATES,
                 candidates = listOf(
                     RegionalGuideCandidateUiModel(
                         guide = previewRegionalGuide(
@@ -660,6 +664,58 @@ private fun RegionalGuideScreenGuideCandidatesPreview() {
             searchKeyword = "울주군",
             regionSelectorUiState = RegionSelectorUiState(
                 sidoOptions = listOf("서울특별시", "울산광역시", "경기도"),
+            ),
+            onSearchKeywordChange = {},
+            onSearchClick = {},
+            onRetryClick = {},
+            onEmptySearchActionClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalGuideScreenFallbackGuideCandidatesPreview() {
+    MaterialTheme {
+        RegionalGuideScreen(
+            uiState = RegionalGuideUiState.GuideCandidates(
+                query = "사천면",
+                reason = RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
+                candidates = listOf(
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "강원특별자치도 강릉시",
+                            targetRegionName = "없음"
+                        ),
+                        sido = "강원특별자치도",
+                        sigungu = "강릉시",
+                        eupmyeondong = "사천면"
+                    ),
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "강원특별자치도 강릉시",
+                            targetRegionName = "없음"
+                        ).copy(disposalPlaceType = "거점수거"),
+                        sido = "강원특별자치도",
+                        sigungu = "강릉시",
+                        eupmyeondong = "사천면"
+                    ),
+                )
+            ),
+            searchKeyword = "사천면",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("강원특별자치도"),
+                sigunguOptions = listOf("강릉시"),
+                eupmyeondongOptions = listOf("사천면"),
+                selectedSido = "강원특별자치도",
+                selectedSigungu = "강릉시",
+                selectedEupmyeondong = "사천면",
             ),
             onSearchKeywordChange = {},
             onSearchClick = {},

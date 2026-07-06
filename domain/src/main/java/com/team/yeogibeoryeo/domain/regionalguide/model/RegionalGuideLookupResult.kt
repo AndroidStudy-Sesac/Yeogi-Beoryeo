@@ -6,7 +6,8 @@ sealed interface RegionalGuideLookupResult {
     ) : RegionalGuideLookupResult
 
     data class Candidates(
-        val guides: List<RegionalDisposalGuide>
+        val guides: List<RegionalDisposalGuide>,
+        val reason: RegionalGuideCandidateLookupReason = RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES
     ) : RegionalGuideLookupResult
 
     data object NotFound : RegionalGuideLookupResult
@@ -17,6 +18,12 @@ sealed interface RegionalGuideLookupResult {
         val reason: RegionalGuideFailureReason = RegionalGuideFailureReason.UNKNOWN,
         val throwable: Throwable? = null
     ) : RegionalGuideLookupResult
+}
+
+enum class RegionalGuideCandidateLookupReason {
+    MULTIPLE_CANDIDATES,
+    MULTIPLE_EXACT_MATCHES,
+    FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
 }
 
 enum class RegionalGuideFailureReason {
