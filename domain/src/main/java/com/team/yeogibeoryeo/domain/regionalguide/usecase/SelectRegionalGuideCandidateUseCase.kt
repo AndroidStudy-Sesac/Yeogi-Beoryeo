@@ -104,6 +104,9 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return candidates
                 .selectOverallCandidates(sigunguQuery)
                 .toSingleSuccessOrCandidates(requestedRegion)
+                ?: candidates
+                    .selectUnmatchedSelectorFallbackCandidates()
+                    .toCandidateListOrNull(requestedRegion)
         }
 
         return null
@@ -167,12 +170,28 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
     }
 
+    private fun List<RegionalDisposalGuide>.selectUnmatchedSelectorFallbackCandidates(): List<RegionalDisposalGuide> {
+        val broadCandidates = filter { guide -> !guide.hasExplicitEupmyeondongTarget() }
+
+        return broadCandidates.takeIf { candidates -> candidates.size > 1 }.orEmpty()
+    }
+
     private fun List<RegionalDisposalGuide>.toCandidateResultOrNotFound(
         displayRegion: Region
     ): RegionalGuideLookupResult {
         if (!displayRegion.eupmyeondong.isNullOrBlank() || size <= 1) {
             return RegionalGuideLookupResult.CandidateNotFound
         }
+
+        return RegionalGuideLookupResult.Candidates(
+            guides = map { guide -> guide.withDisplayRegion(displayRegion) }
+        )
+    }
+
+    private fun List<RegionalDisposalGuide>.toCandidateListOrNull(
+        displayRegion: Region
+    ): RegionalGuideLookupResult.Candidates? {
+        if (isEmpty()) return null
 
         return RegionalGuideLookupResult.Candidates(
             guides = map { guide -> guide.withDisplayRegion(displayRegion) }
@@ -397,6 +416,25 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             .split(TARGET_REGION_GROUP_DELIMITER)
             .any { token ->
                 ADMIN_DONG_RANGE_REGEX.matches(token) ||
+                    ADMIN_DONG_GROUP_REGEX.matches(token)
+            }
+    }
+
+    private fun RegionalDisposalGuide.hasExplicitEupmyeondongTarget(): Boolean =
+        managementZoneName.hasExplicitEupmyeondongExpression() ||
+            targetRegionName.hasExplicitEupmyeondongExpression()
+
+    private fun String?.hasExplicitEupmyeondongExpression(): Boolean {
+        val value = normalizeRegionName()
+            ?.replace(WHITESPACE_REGEX, "")
+            ?.replace(ADMIN_DONG_NUMBER_MARKER_REGEX, "")
+            ?: return false
+
+        return value
+            .split(TARGET_REGION_GROUP_DELIMITER)
+            .any { token ->
+                token.hasAdministrativeSuffix() ||
+                    ADMIN_DONG_RANGE_REGEX.matches(token) ||
                     ADMIN_DONG_GROUP_REGEX.matches(token)
             }
     }
