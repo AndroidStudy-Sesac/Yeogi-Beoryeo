@@ -210,6 +210,52 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `지역 후보 선택 후 다건 검색 결과를 선택 지역 필터와 함께 표시한다`() =
+        runTest {
+            val selectedRegionSpot = sampleSpot("gwangju-geumho", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "광주광역시 서구 금호동")
+            val selectedRegionRoadAddressSpot = sampleSpot("gwangju-geumho-road", CollectionSpotType.BATTERY_BIN)
+                .copy(address = "광주광역시 서구 운천로 10")
+            val otherRegionSpot = sampleSpot("seoul-geumho", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "서울특별시 성동구 금호동")
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(
+                    selectedRegionSpot,
+                    selectedRegionRoadAddressSpot,
+                    otherRegionSpot,
+                ),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "금호동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "성동구", eupmyeondong = "금호동"),
+                        Region(sido = "광주광역시", sigungu = "서구", eupmyeondong = "금호동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("금호동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates
+                .first { it.displayName == "광주광역시 서구 금호동" }
+            viewModel.onRegionSearchCandidateClick(candidate)
+            advanceUntilIdle()
+
+            assertEquals(listOf("금호동"), repository.keywords)
+            assertEquals(
+                listOf(selectedRegionSpot, selectedRegionRoadAddressSpot),
+                viewModel.uiState.value.spots,
+            )
+        }
+
+    @Test
     fun `지역 범위가 포함된 동 검색어는 후보를 좁혀 바로 검색한다`() =
         runTest {
             val expectedSpot = sampleSpot("seoul-myeongdong", CollectionSpotType.STANDARD_BAG_STORE)

@@ -14,6 +14,7 @@ import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseDto
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -63,6 +64,42 @@ class CollectionSpotRepositoryImplTest {
         assertEquals(1, result.size)
         assertEquals("재활용센터", result.first().name)
         assertEquals(CollectionSpotType.RECYCLING_CENTER, result.first().type)
+    }
+
+    @Test
+    fun `검색어 기반 조회 시 여러 페이지 결과를 변환하고 반환한다`() = runBlocking {
+        val apiService = FakeSpotApiService(
+            response = createResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 3,
+                items = listOf(
+                    spotItem("1페이지 수거함", "서울특별시 영등포구 문래동", "주민센터 앞"),
+                    spotItem("1페이지 재활용센터", "서울특별시 영등포구 문래동", "학교 앞"),
+                ),
+            ),
+            responsesByPage = mapOf(
+                2 to createResponse(
+                    pageNo = 2,
+                    numOfRows = 2,
+                    totalCount = 3,
+                    items = listOf(
+                        spotItem("2페이지 수거함", "서울특별시 영등포구 문래동", "공원 앞"),
+                    ),
+                ),
+            ),
+        )
+        val repository = createRepository(apiService)
+
+        val result = repository.searchByKeyword(
+            keyword = "문래동",
+        )
+
+        assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        assertEquals(
+            listOf("1페이지 수거함", "1페이지 재활용센터", "2페이지 수거함"),
+            result.map { spot -> spot.name },
+        )
     }
 
     @Test
@@ -268,10 +305,12 @@ class CollectionSpotRepositoryImplTest {
 
     private class FakeSpotApiService(
         private val response: SpotResponseDto,
+        private val responsesByPage: Map<Int, SpotResponseDto> = emptyMap(),
     ) : SpotApiService {
 
         var requestedServiceKey: String? = null
         var requestedPageNo: Int? = null
+        val requestedPageNos = mutableListOf<Int>()
         var requestedNumOfRows: Int? = null
         var requestedAddr: String? = null
         var requestedLatitude: Double? = null
@@ -291,6 +330,7 @@ class CollectionSpotRepositoryImplTest {
         ): SpotResponseDto {
             requestedServiceKey = serviceKey
             requestedPageNo = pageNo
+            requestedPageNos += pageNo
             requestedNumOfRows = numOfRows
             requestedAddr = addr
             requestedLatitude = latitude
@@ -298,7 +338,7 @@ class CollectionSpotRepositoryImplTest {
             requestedRadius = radius
             requestedType = type
 
-            return response
+            return responsesByPage[pageNo] ?: response
         }
     }
 
@@ -405,6 +445,40 @@ class CollectionSpotRepositoryImplTest {
                         ),
                     ),
                 ),
+            )
+        }
+
+        fun createResponse(
+            pageNo: Int?,
+            numOfRows: Int?,
+            totalCount: Int?,
+            items: List<SpotItemDto>,
+        ): SpotResponseDto {
+            return SpotResponseDto(
+                response = SpotResponseBodyDto(
+                    header = SpotHeaderDto(
+                        resultCode = "00",
+                        resultMsg = "NORMAL SERVICE",
+                    ),
+                    body = SpotBodyDto(
+                        items = SpotItemsDto(item = items),
+                        numOfRows = numOfRows?.let(::JsonPrimitive),
+                        pageNo = pageNo?.let(::JsonPrimitive),
+                        totalCount = totalCount?.let(::JsonPrimitive),
+                    ),
+                ),
+            )
+        }
+
+        fun spotItem(
+            name: String,
+            address: String,
+            detailAddress: String,
+        ): SpotItemDto {
+            return SpotItemDto(
+                spotNm = name,
+                addrBase = address,
+                addrDtl = detailAddress,
             )
         }
 
