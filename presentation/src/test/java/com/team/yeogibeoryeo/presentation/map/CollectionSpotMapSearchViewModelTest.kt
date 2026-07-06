@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -207,6 +208,52 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertEquals(emptyList<MapRegionSearchCandidate>(), viewModel.uiState.value.regionSearchCandidates)
             assertEquals(listOf(seoulSpot), viewModel.uiState.value.spots)
             assertEquals("명동", viewModel.uiState.value.searchKeyword)
+        }
+
+    @Test
+    fun `지역 후보 선택 후 다건 검색 결과를 선택 지역 필터와 함께 표시한다`() =
+        runTest {
+            val selectedRegionSpot = sampleSpot("gwangju-geumho", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "광주광역시 서구 금호동")
+            val selectedRegionRoadAddressSpot = sampleSpot("gwangju-geumho-road", CollectionSpotType.BATTERY_BIN)
+                .copy(address = "광주광역시 서구 운천로 10")
+            val otherRegionSpot = sampleSpot("seoul-geumho", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(address = "서울특별시 성동구 금호동")
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = listOf(
+                    selectedRegionSpot,
+                    selectedRegionRoadAddressSpot,
+                    otherRegionSpot,
+                ),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "금호동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "성동구", eupmyeondong = "금호동"),
+                        Region(sido = "광주광역시", sigungu = "서구", eupmyeondong = "금호동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("금호동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates
+                .first { it.displayName == "광주광역시 서구 금호동" }
+            viewModel.onRegionSearchCandidateClick(candidate)
+            advanceUntilIdle()
+
+            assertEquals(listOf("금호동"), repository.keywords)
+            assertEquals(
+                listOf(selectedRegionSpot, selectedRegionRoadAddressSpot),
+                viewModel.uiState.value.spots,
+            )
         }
 
     @Test
@@ -420,6 +467,31 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
                 viewModel.uiState.value.errorMessageResId,
             )
             assertNull(viewModel.uiState.value.locationNotice)
+        }
+
+    @Test
+    fun `키워드 검색이 일부 실패하면 조회된 결과와 일부 실패 안내를 함께 표시한다`() =
+        runTest {
+            val expectedSpots = listOf(sampleSpot("partial", CollectionSpotType.BATTERY_BIN))
+            val repository = FakeCollectionSpotRepository(
+                keywordSpots = expectedSpots,
+                isKeywordSearchPartial = true,
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("상동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(
+                R.string.map_spot_search_partial_failure_message,
+                viewModel.uiState.value.partialWarningMessageResId,
+            )
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
 }

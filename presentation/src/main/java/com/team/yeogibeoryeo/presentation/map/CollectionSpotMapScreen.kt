@@ -448,6 +448,7 @@ private fun CollectionSpotMapContent(
                             regionSearchCandidates = uiState.regionSearchCandidates,
                             locationNotice = uiState.locationNotice,
                             errorMessageResId = uiState.errorMessageResId,
+                            partialWarningMessageResId = uiState.partialWarningMessageResId,
                             onTypeClick = onTypeClick,
                             onRegionCandidateClick = onRegionCandidateClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,

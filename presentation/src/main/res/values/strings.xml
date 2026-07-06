@@ -213,6 +213,7 @@ SOFTWARE.]]></string>
     <string name="map_search_loading_map_center">현 지도 주변을 찾고 있어요</string>
     <string name="map_search_blank_keyword_message">검색어를 입력해주세요.</string>
     <string name="map_spot_search_failure_message">잠시 후 다시 시도하거나 네트워크 연결을 확인해 주세요.</string>
+    <string name="map_spot_search_partial_failure_message">일부 결과를 불러오지 못했어요. 다시 검색해 주세요.</string>
     <string name="map_current_location_spot_search_failure_message">네트워크 연결을 확인한 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
     <string name="map_spot_search_title">수거 장소 검색</string>
     <string name="map_spot_result_count">검색 결과 %1$d개</string>

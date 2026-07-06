@@ -43,6 +43,7 @@ fun SpotBottomSheetContent(
     regionSearchCandidates: List<MapRegionSearchCandidate>,
     locationNotice: MapLocationNotice?,
     @StringRes errorMessageResId: Int?,
+    @StringRes partialWarningMessageResId: Int? = null,
     onTypeClick: (CollectionSpotType) -> Unit,
     onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
@@ -53,6 +54,11 @@ fun SpotBottomSheetContent(
 ) {
     val hasNoticeOrError = locationNotice != null ||
         errorMessageResId != null
+    val shouldShowPartialWarning = partialWarningMessageResId != null &&
+        spots.isNotEmpty() &&
+        !isLoading &&
+        !hasNoticeOrError &&
+        regionSearchCandidates.isEmpty()
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -61,6 +67,15 @@ fun SpotBottomSheetContent(
             resultCount = spots.size,
             hasSearched = hasSearched,
         )
+
+        if (shouldShowPartialWarning) {
+            Text(
+                text = stringResource(partialWarningMessageResId),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
 
         if (
             hasSearched &&
