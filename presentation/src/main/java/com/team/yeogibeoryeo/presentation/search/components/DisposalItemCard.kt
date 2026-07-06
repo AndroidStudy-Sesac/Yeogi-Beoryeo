@@ -139,7 +139,7 @@ private fun BoxScope.FavoriteIndicator() {
 }
 
 @Composable
-private fun ColumnScope.DisposalItemTitle(text: String) {
+private fun DisposalItemTitle(text: String) {
     KoreanLineBreakText(
         text = text,
         modifier = Modifier
@@ -154,7 +154,7 @@ private fun ColumnScope.DisposalItemTitle(text: String) {
 }
 
 @Composable
-private fun ColumnScope.DisposalItemDescription(text: String) {
+private fun DisposalItemDescription(text: String) {
     KoreanLineBreakText(
         text = text,
         style = MaterialTheme.typography.bodyMedium.copy(

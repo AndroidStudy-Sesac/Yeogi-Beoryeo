@@ -229,7 +229,7 @@ class ItemSearchScreenTest {
     @Test
     fun 결과_카드를_누르면_선택한_가이드를_전달한다() {
         var clickedGuide: DisposalItemGuide? = null
-        val guide = sampleGuide("유리병")
+        val guide = sampleGuide("플라스틱병")
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -243,7 +243,7 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("유리병").performClick()
+        composeTestRule.onNodeWithText("플라스틱병").performClick()
 
         assertEquals(guide, clickedGuide)
     }
