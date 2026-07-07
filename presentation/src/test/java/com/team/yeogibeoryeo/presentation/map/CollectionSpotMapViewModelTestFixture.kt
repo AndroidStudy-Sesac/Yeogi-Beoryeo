@@ -253,6 +253,19 @@ internal class FakeCollectionSpotRepository(
         )
     }
 
+    override suspend fun searchByKeywordResultWithoutCoordinates(
+        keyword: String,
+        types: Set<CollectionSpotType>,
+    ): CollectionSpotSearchResult {
+        return CollectionSpotSearchResult(
+            spots = searchByKeyword(
+                keyword = keyword,
+                types = types,
+            ),
+            isPartial = isKeywordSearchPartial,
+        )
+    }
+
     override suspend fun searchByLocation(
         coordinate: Coordinate,
         radiusMeter: Int,

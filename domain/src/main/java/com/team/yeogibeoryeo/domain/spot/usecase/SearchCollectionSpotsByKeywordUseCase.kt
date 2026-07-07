@@ -32,12 +32,21 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
         selectedRegionCandidate: MapRegionSearchCandidate? = null,
     ): CollectionSpotSearchResult {
         val normalizedKeyword = normalizeKeywordUseCase(keyword)
-        val result = repository.searchByKeywordResult(
+        val result = repository.searchByKeywordResultWithoutCoordinates(
             keyword = normalizedKeyword,
             types = types,
         )
+        val explicitRegionFilterStartedAtNanos = System.nanoTime()
         val explicitRegionFilteredSpots = result.spots
             .filterByExplicitRegionKeyword(normalizedKeyword)
+        if (CollectionSpotAddressSearchPolicy.isEupMyeonDongCandidate(normalizedKeyword)) {
+            mapSearchTimingLogger.log(
+                "explicit region filter finished before=${result.spots.size} " +
+                    "after=${explicitRegionFilteredSpots.size} " +
+                    "elapsedMs=${explicitRegionFilterStartedAtNanos.elapsedMs()}",
+            )
+        }
+
         val selectedRegionFilterStartedAtNanos = System.nanoTime()
         val selectedRegionFilteredSpots = explicitRegionFilteredSpots
             .filterBySelectedRegionCandidate(selectedRegionCandidate)
@@ -49,9 +58,10 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
                     "elapsedMs=${selectedRegionFilterStartedAtNanos.elapsedMs()}",
             )
         }
+        val geocodedSpots = repository.geocodeSpots(selectedRegionFilteredSpots)
 
         return CollectionSpotSearchResult(
-            spots = selectedRegionFilteredSpots,
+            spots = geocodedSpots,
             isPartial = result.isPartial,
         )
     }

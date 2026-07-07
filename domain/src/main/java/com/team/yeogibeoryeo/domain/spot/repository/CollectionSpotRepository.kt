@@ -24,11 +24,22 @@ interface CollectionSpotRepository {
         )
     }
 
+    suspend fun searchByKeywordResultWithoutCoordinates(
+        keyword: String,
+        types: Set<CollectionSpotType> = emptySet()
+    ): CollectionSpotSearchResult
+
     suspend fun searchByLocation(
         coordinate: Coordinate,
         radiusMeter: Int,
         types: Set<CollectionSpotType> = emptySet()
     ): List<CollectionSpot>
+
+    suspend fun geocodeSpots(
+        spots: List<CollectionSpot>
+    ): List<CollectionSpot> {
+        return spots.map { spot -> geocodeSpot(spot) }
+    }
 
     suspend fun geocodeSpot(
         spot: CollectionSpot
