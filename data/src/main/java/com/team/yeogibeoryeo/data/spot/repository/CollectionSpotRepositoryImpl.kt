@@ -41,6 +41,28 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         types: Set<CollectionSpotType>,
     ): CollectionSpotSearchResult {
         val repositorySearchStartedAtNanos = System.nanoTime()
+        val result = searchByKeywordResultWithoutCoordinates(
+            keyword = keyword,
+            types = types,
+        )
+        val spots = geocodeSpots(result.spots)
+
+        mapSearchTimingLogger.log(
+            "repository search finished finalCount=${spots.size} " +
+                "elapsedMs=${repositorySearchStartedAtNanos.elapsedMs()}",
+        )
+
+        return CollectionSpotSearchResult(
+            spots = spots,
+            isPartial = result.isPartial,
+        )
+    }
+
+    override suspend fun searchByKeywordResultWithoutCoordinates(
+        keyword: String,
+        types: Set<CollectionSpotType>,
+    ): CollectionSpotSearchResult {
+        val repositorySearchStartedAtNanos = System.nanoTime()
         val result = remoteDataSource.searchByKeywordResult(
             serviceKey = publicDataKeyProvider.publicDataServiceKey,
             keyword = keyword,
@@ -54,16 +76,13 @@ class CollectionSpotRepositoryImpl @Inject constructor(
                 "elapsedMs=${typeFilterStartedAtNanos.elapsedMs()}",
         )
 
-        val spots = typeFilteredSpots
-            .geocodeAll()
-
         mapSearchTimingLogger.log(
-            "repository search finished finalCount=${spots.size} " +
+            "repository raw search finished rawCount=${typeFilteredSpots.size} " +
                 "elapsedMs=${repositorySearchStartedAtNanos.elapsedMs()}",
         )
 
         return CollectionSpotSearchResult(
-            spots = spots,
+            spots = typeFilteredSpots,
             isPartial = result.isPartial,
         )
     }
@@ -116,6 +135,10 @@ class CollectionSpotRepositoryImpl @Inject constructor(
             coordinate = coordinate,
         )
     }
+
+    override suspend fun geocodeSpots(
+        spots: List<CollectionSpot>,
+    ): List<CollectionSpot> = spots.geocodeAll()
 
     private fun List<CollectionSpot>.filterByTypes(
         types: Set<CollectionSpotType>,

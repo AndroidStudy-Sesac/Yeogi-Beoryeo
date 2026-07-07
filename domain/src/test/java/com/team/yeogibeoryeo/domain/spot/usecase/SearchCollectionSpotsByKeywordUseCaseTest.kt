@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.domain.spot.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
@@ -136,6 +137,38 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
         }
 
     @Test
+    fun `선택 지역 필터에서 제외되는 결과는 geocoding하지 않는다`() =
+        runSuspendTest {
+            val seoulSpot = collectionSpot(
+                id = "seoul-myeongdong",
+                address = "서울특별시 중구 명동길 3",
+                coordinate = null,
+            )
+            val jecheonSpot = collectionSpot(
+                id = "jecheon-myeongdong",
+                address = "충청북도 제천시 명동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(seoulSpot, jecheonSpot)
+
+            val result = useCase(
+                keyword = "명동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "서울특별시",
+                        sigungu = "중구",
+                        eupmyeondong = "명동",
+                    ),
+                    searchKeyword = "명동",
+                ),
+            )
+
+            assertEquals(listOf("seoul-myeongdong"), repository.geocodedSpotIds)
+            assertEquals(listOf("seoul-myeongdong"), result.map { spot -> spot.id })
+            assertEquals(DEFAULT_COORDINATE, result.first().coordinate)
+        }
+
+    @Test
     fun `선택 지역 후보가 있어도 지역 범위가 불명확한 도로명 주소 결과는 유지한다`() =
         runSuspendTest {
             val roadAddressSpot = collectionSpot(
@@ -168,6 +201,7 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
     private fun collectionSpot(
         id: String,
         address: String,
+        coordinate: Coordinate? = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
     ): CollectionSpot {
         return CollectionSpot(
             id = id,
@@ -175,13 +209,14 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
             type = CollectionSpotType.STANDARD_BAG_STORE,
             address = address,
             detailLocation = null,
-            coordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+            coordinate = coordinate,
         )
     }
 
     private class FakeCollectionSpotRepository : CollectionSpotRepository {
         var keywordSpots: List<CollectionSpot> = emptyList()
         val keywords = mutableListOf<String>()
+        val geocodedSpotIds = mutableListOf<String>()
 
         override suspend fun searchByKeyword(
             keyword: String,
@@ -191,12 +226,31 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
             return keywordSpots
         }
 
+        override suspend fun searchByKeywordResultWithoutCoordinates(
+            keyword: String,
+            types: Set<CollectionSpotType>,
+        ) = CollectionSpotSearchResult(
+            spots = searchByKeyword(
+                keyword = keyword,
+                types = types,
+            ),
+        )
+
         override suspend fun searchByLocation(
             coordinate: Coordinate,
             radiusMeter: Int,
             types: Set<CollectionSpotType>,
         ): List<CollectionSpot> = emptyList()
 
-        override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot = spot
+        override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot {
+            geocodedSpotIds += spot.id
+            return spot.copy(
+                coordinate = spot.coordinate ?: DEFAULT_COORDINATE,
+            )
+        }
+    }
+
+    private companion object {
+        val DEFAULT_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
     }
 }

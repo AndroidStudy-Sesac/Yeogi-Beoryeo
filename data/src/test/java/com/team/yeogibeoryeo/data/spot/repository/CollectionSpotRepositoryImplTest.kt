@@ -67,6 +67,28 @@ class CollectionSpotRepositoryImplTest {
     }
 
     @Test
+    fun `좌표 없는 검색어 기반 조회는 geocoding하지 않고 결과를 반환한다`() = runBlocking {
+        val apiService = FakeSpotApiService(
+            response = createNormalResponse(),
+        )
+        val spotGeocoder = FakeSpotGeocoder()
+        val repository = createRepository(
+            apiService = apiService,
+            spotGeocoder = spotGeocoder,
+        )
+
+        val result = repository.searchByKeywordResultWithoutCoordinates(
+            keyword = "문래동",
+        )
+
+        assertEquals(TEST_SERVICE_KEY, apiService.requestedServiceKey)
+        assertEquals("문래동", apiService.requestedAddr)
+        assertEquals(2, result.spots.size)
+        assertEquals(emptyList<String>(), spotGeocoder.requestedAddresses)
+        assertNull(result.spots.first().coordinate)
+    }
+
+    @Test
     fun `검색어 기반 조회 시 여러 페이지 결과를 변환하고 반환한다`() = runBlocking {
         val apiService = FakeSpotApiService(
             response = createResponse(
