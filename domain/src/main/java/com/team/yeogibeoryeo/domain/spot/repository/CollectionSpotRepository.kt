@@ -27,12 +27,7 @@ interface CollectionSpotRepository {
     suspend fun searchByKeywordResultWithoutCoordinates(
         keyword: String,
         types: Set<CollectionSpotType> = emptySet()
-    ): CollectionSpotSearchResult {
-        return searchByKeywordResult(
-            keyword = keyword,
-            types = types,
-        )
-    }
+    ): CollectionSpotSearchResult
 
     suspend fun searchByLocation(
         coordinate: Coordinate,

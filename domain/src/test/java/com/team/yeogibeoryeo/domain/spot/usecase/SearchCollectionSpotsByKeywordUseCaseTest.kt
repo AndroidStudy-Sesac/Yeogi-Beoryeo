@@ -38,6 +38,28 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
         }
 
     @Test
+    fun `명시 지역 필터에서 제외되는 결과는 geocoding하지 않는다`() =
+        runSuspendTest {
+            val myeongDongSpot = collectionSpot(
+                id = "myeongdong",
+                address = "서울특별시 중구 명동길 26 (명동)",
+                coordinate = null,
+            )
+            val bongMyeongDongSpot = collectionSpot(
+                id = "bongmyeongdong",
+                address = "충청북도 청주시 흥덕구 송절로124번길 65 (봉명동)",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(myeongDongSpot, bongMyeongDongSpot)
+
+            val result = useCase(keyword = "명동")
+
+            assertEquals(listOf("myeongdong"), repository.geocodedSpotIds)
+            assertEquals(listOf("myeongdong"), result.map { spot -> spot.id })
+            assertEquals(DEFAULT_COORDINATE, result.first().coordinate)
+        }
+
+    @Test
     fun `명동 검색에서 번지에 붙은 괄호 속 봉명동 결과는 제외한다`() =
         runSuspendTest {
             val spot = collectionSpot(
