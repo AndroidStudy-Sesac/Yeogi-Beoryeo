@@ -8,12 +8,12 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.log.MapSearchTimingLogger
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.supervisorScope
@@ -23,6 +23,7 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     private val spotMapper: SpotMapper,
     private val spotGeocoder: SpotGeocoder,
     private val publicDataKeyProvider: AppKeyProvider,
+    private val mapSearchTimingLogger: MapSearchTimingLogger = MapSearchTimingLogger.NoOp,
 ) : CollectionSpotRepository {
 
     override suspend fun searchByKeyword(
@@ -39,14 +40,27 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         keyword: String,
         types: Set<CollectionSpotType>,
     ): CollectionSpotSearchResult {
+        val repositorySearchStartedAtNanos = System.nanoTime()
         val result = remoteDataSource.searchByKeywordResult(
             serviceKey = publicDataKeyProvider.publicDataServiceKey,
             keyword = keyword,
         )
 
-        val spots = spotMapper.mapToDomainList(result.items)
-            .filterByTypes(types)
+        val mappedSpots = spotMapper.mapToDomainList(result.items)
+        val typeFilterStartedAtNanos = System.nanoTime()
+        val typeFilteredSpots = mappedSpots.filterByTypes(types)
+        mapSearchTimingLogger.log(
+            "type filter finished before=${mappedSpots.size} after=${typeFilteredSpots.size} " +
+                "elapsedMs=${typeFilterStartedAtNanos.elapsedMs()}",
+        )
+
+        val spots = typeFilteredSpots
             .geocodeAll()
+
+        mapSearchTimingLogger.log(
+            "repository search finished finalCount=${spots.size} " +
+                "elapsedMs=${repositorySearchStartedAtNanos.elapsedMs()}",
+        )
 
         return CollectionSpotSearchResult(
             spots = spots,
@@ -59,18 +73,36 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         radiusMeter: Int,
         types: Set<CollectionSpotType>,
     ): List<CollectionSpot> {
+        val repositorySearchStartedAtNanos = System.nanoTime()
+        val remoteSearchStartedAtNanos = System.nanoTime()
         val spots = remoteDataSource.searchByLocation(
             serviceKey = publicDataKeyProvider.publicDataServiceKey,
             latitude = coordinate.latitude,
             longitude = coordinate.longitude,
             radiusMeter = radiusMeter,
         ).let { dtoList ->
+            mapSearchTimingLogger.log(
+                "getSpot location finished count=${dtoList.size} " +
+                    "elapsedMs=${remoteSearchStartedAtNanos.elapsedMs()}",
+            )
             spotMapper.mapToDomainList(dtoList)
         }
 
-        return spots
-            .filterByTypes(types)
+        val typeFilterStartedAtNanos = System.nanoTime()
+        val typeFilteredSpots = spots.filterByTypes(types)
+        mapSearchTimingLogger.log(
+            "type filter finished before=${spots.size} after=${typeFilteredSpots.size} " +
+                "elapsedMs=${typeFilterStartedAtNanos.elapsedMs()}",
+        )
+
+        return typeFilteredSpots
             .geocodeAll()
+            .also { geocodedSpots ->
+                mapSearchTimingLogger.log(
+                    "repository search finished finalCount=${geocodedSpots.size} " +
+                        "elapsedMs=${repositorySearchStartedAtNanos.elapsedMs()}",
+                )
+            }
     }
 
     override suspend fun geocodeSpot(
@@ -99,12 +131,18 @@ class CollectionSpotRepositoryImpl @Inject constructor(
         if (isEmpty()) return this
 
         return supervisorScope {
+            val addressKeys = mapNotNull { spot -> spot.address.toGeocodeKey() }
+                .distinct()
             val geocodeJobsByAddress = LinkedHashMap<String, Deferred<Coordinate?>>()
-            val geocodeSemaphore = Semaphore(MAX_CONCURRENT_GEOCODING_COUNT)
+            val geocodeSemaphore = Semaphore(GEOCODING_CONCURRENCY_LIMIT)
+            val geocodingStartedAtNanos = System.nanoTime()
 
-            forEach { spot ->
-                val addressKey = spot.address.toGeocodeKey() ?: return@forEach
+            mapSearchTimingLogger.log(
+                "geocoding started targetCount=${addressKeys.size} " +
+                    "concurrency=$GEOCODING_CONCURRENCY_LIMIT",
+            )
 
+            addressKeys.forEach { addressKey ->
                 geocodeJobsByAddress.getOrPut(addressKey) {
                     async {
                         geocodeSafely(
@@ -115,12 +153,20 @@ class CollectionSpotRepositoryImpl @Inject constructor(
                 }
             }
 
-            geocodeJobsByAddress.values.awaitAll()
+            val coordinatesByAddress = geocodeJobsByAddress
+                .mapValues { (_, geocodeJob) -> geocodeJob.await() }
+            val geocodeSuccessCount = coordinatesByAddress.values.count { coordinate -> coordinate != null }
+
+            mapSearchTimingLogger.log(
+                "geocoding finished success=$geocodeSuccessCount " +
+                    "null=${coordinatesByAddress.size - geocodeSuccessCount} " +
+                    "elapsedMs=${geocodingStartedAtNanos.elapsedMs()}",
+            )
 
             map { spot ->
                 val addressKey = spot.address.toGeocodeKey()
                     ?: return@map spot
-                val coordinate = geocodeJobsByAddress[addressKey]?.await()
+                val coordinate = coordinatesByAddress[addressKey]
 
                 spot.copy(
                     coordinate = coordinate,
@@ -152,8 +198,13 @@ class CollectionSpotRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        const val MAX_CONCURRENT_GEOCODING_COUNT = 3
+        const val GEOCODING_CONCURRENCY_LIMIT = 3
         val PARENTHESIZED_TEXT_REGEX = "\\([^)]*\\)".toRegex()
         val WHITESPACE_REGEX = "\\s+".toRegex()
     }
 }
+
+private fun Long.elapsedMs(): Long =
+    (System.nanoTime() - this) / NANOS_PER_MILLISECOND
+
+private const val NANOS_PER_MILLISECOND = 1_000_000L

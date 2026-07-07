@@ -12,6 +12,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidateResult
+import com.team.yeogibeoryeo.domain.spot.log.MapSearchTimingLogger
 import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.FilterCollectionSpotsUseCase
@@ -49,6 +50,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val observeFavoritesUseCase: ObserveFavoritesUseCase,
     private val toggleCollectionSpotFavoriteUseCase: ToggleCollectionSpotFavoriteUseCase,
     private val calculateDistanceMeterUseCase: CalculateDistanceMeterUseCase,
+    private val mapSearchTimingLogger: MapSearchTimingLogger = MapSearchTimingLogger.NoOp,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
@@ -151,6 +153,10 @@ class CollectionSpotMapViewModel @Inject constructor(
         spotSearchJob = viewModelScope.launch {
             when (val candidateResult = resolveMapRegionSearchCandidateUseCase(keyword)) {
                 is MapRegionSearchCandidateResult.NeedSelection -> {
+                    mapSearchTimingLogger.log(
+                        "keyword search candidate selection required query=$keyword " +
+                            "candidateCount=${candidateResult.candidates.size}",
+                    )
                     showRegionSearchCandidates(candidateResult.candidates)
                 }
 
@@ -179,6 +185,11 @@ class CollectionSpotMapViewModel @Inject constructor(
         keyword: String,
         selectedRegionCandidate: MapRegionSearchCandidate?,
     ) {
+        val searchStartedAtNanos = System.nanoTime()
+        mapSearchTimingLogger.log(
+            "keyword search started query=$keyword " +
+                "selectedRegion=${selectedRegionCandidate?.displayName ?: NO_SELECTED_REGION}",
+        )
         startKeywordSearchLoading()
 
         runCatching {
@@ -187,7 +198,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedRegionCandidate = selectedRegionCandidate,
             )
         }.onSuccess { result ->
-            updateSpotResult(result)
+            updateSpotResult(
+                result = result,
+                searchStartedAtNanos = searchStartedAtNanos,
+            )
         }.onFailure { throwable ->
             if (throwable is CancellationException) throw throwable
 
@@ -228,11 +242,20 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedRegionCandidate = selectedRegionCandidate,
             )
         }
+        val mergeStartedAtNanos = System.nanoTime()
+        val mergedSpots = results.flatMap { result -> result.spots }
+        val dedupedSpots = mergedSpots.distinctBy { spot -> spot.id }
+
+        if (searchKeywords.size > 1) {
+            mapSearchTimingLogger.log(
+                "candidate keyword merge/dedup finished keywords=${searchKeywords.size} " +
+                    "before=${mergedSpots.size} after=${dedupedSpots.size} " +
+                    "elapsedMs=${mergeStartedAtNanos.elapsedMs()}",
+            )
+        }
 
         return CollectionSpotSearchResult(
-            spots = results
-                .flatMap { result -> result.spots }
-                .distinctBy { spot -> spot.id },
+            spots = dedupedSpots,
             isPartial = results.any { result -> result.isPartial },
         )
     }
@@ -284,6 +307,11 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationRefreshJob?.cancel()
         spotSearchJob?.cancel()
         spotSearchJob = viewModelScope.launch {
+            val searchStartedAtNanos = System.nanoTime()
+            mapSearchTimingLogger.log(
+                "map center search started latitude=${coordinate.latitude} " +
+                    "longitude=${coordinate.longitude}",
+            )
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -305,7 +333,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                     types = emptySet(),
                 )
             }.onSuccess { spots ->
-                updateSpotResult(CollectionSpotSearchResult(spots = spots))
+                updateSpotResult(
+                    result = CollectionSpotSearchResult(spots = spots),
+                    searchStartedAtNanos = searchStartedAtNanos,
+                )
             }.onFailure { throwable ->
                 if (throwable is CancellationException) throw throwable
 
@@ -320,6 +351,11 @@ class CollectionSpotMapViewModel @Inject constructor(
         coordinate: Coordinate,
         preservePreviousResultOnFailure: Boolean,
     ) {
+        val searchStartedAtNanos = System.nanoTime()
+        mapSearchTimingLogger.log(
+            "current location search started latitude=${coordinate.latitude} " +
+                "longitude=${coordinate.longitude}",
+        )
         try {
             val spots = searchCollectionSpotsByLocationUseCase(
                 coordinate = coordinate,
@@ -331,7 +367,10 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             val spotsWithDistance = spots.withDistanceFrom(coordinate)
 
-            updateSpotResult(CollectionSpotSearchResult(spots = spotsWithDistance))
+            updateSpotResult(
+                result = CollectionSpotSearchResult(spots = spotsWithDistance),
+                searchStartedAtNanos = searchStartedAtNanos,
+            )
             saveRecentCurrentLocationSpotsUseCase(spotsWithDistance)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
@@ -562,7 +601,10 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    private fun updateSpotResult(result: CollectionSpotSearchResult) {
+    private fun updateSpotResult(
+        result: CollectionSpotSearchResult,
+        searchStartedAtNanos: Long? = null,
+    ) {
         originalSpots = result.spots.withFavoriteState()
 
         val filteredSpots = filterCollectionSpotsUseCase(
@@ -570,6 +612,13 @@ class CollectionSpotMapViewModel @Inject constructor(
             selectedTypes = uiState.value.selectedTypes,
         )
 
+        if (searchStartedAtNanos != null) {
+            mapSearchTimingLogger.log(
+                "viewModel search success resultCount=${filteredSpots.size} " +
+                    "elapsedMs=${searchStartedAtNanos.elapsedMs()}",
+            )
+        }
+        val stateUpdateStartedAtNanos = System.nanoTime()
         _uiState.update {
             it.copy(
                 spots = filteredSpots,
@@ -587,6 +636,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isFavoriteSpotNearbyLoading = false,
             )
         }
+        mapSearchTimingLogger.log(
+            "ui state updated mode=ResultList resultCount=${filteredSpots.size} " +
+                "elapsedMs=${stateUpdateStartedAtNanos.elapsedMs()}",
+        )
     }
 
     private fun searchNearbySpotsForFavoriteSpot(request: FavoriteSpotMapMoveRequest) {
@@ -813,5 +866,11 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private companion object {
         const val DEFAULT_RADIUS_METER = 500
+        const val NO_SELECTED_REGION = "none"
     }
 }
+
+private fun Long.elapsedMs(): Long =
+    (System.nanoTime() - this) / NANOS_PER_MILLISECOND
+
+private const val NANOS_PER_MILLISECOND = 1_000_000L
