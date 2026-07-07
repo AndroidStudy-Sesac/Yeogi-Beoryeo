@@ -3,12 +3,14 @@ package com.team.yeogibeoryeo.data.spot.remote.datasource
 import com.team.yeogibeoryeo.data.spot.remote.SpotApiService
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseDto
+import com.team.yeogibeoryeo.domain.spot.log.MapSearchTimingLogger
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonPrimitive
 
 class SpotRemoteDataSource @Inject constructor(
     private val apiService: SpotApiService,
+    private val mapSearchTimingLogger: MapSearchTimingLogger = MapSearchTimingLogger.NoOp,
 ) {
     suspend fun searchByKeyword(
         serviceKey: String,
@@ -30,6 +32,7 @@ class SpotRemoteDataSource @Inject constructor(
         pageNo: Int = 1,
         numOfRows: Int = 100,
     ): SpotKeywordSearchResult {
+        val searchStartedAtNanos = System.nanoTime()
         val firstPage = fetchKeywordPage(
             serviceKey = serviceKey,
             keyword = keyword,
@@ -48,6 +51,13 @@ class SpotRemoteDataSource @Inject constructor(
         val lastPage = totalPages
         val mergedItems = firstPage.items.toMutableList()
         var isPartial = false
+        var fetchedPageCount = 1
+
+        mapSearchTimingLogger.log(
+            "getSpot addr first page finished page=$currentPageNo " +
+                "count=${firstPage.items.size} totalCount=${totalCount ?: UNKNOWN_TOTAL_COUNT} " +
+                "elapsedMs=${searchStartedAtNanos.elapsedMs()}",
+        )
 
         for (nextPageNo in (currentPageNo + 1)..lastPage) {
             val nextPage = try {
@@ -65,16 +75,30 @@ class SpotRemoteDataSource @Inject constructor(
             }
 
             mergedItems += nextPage.items
+            fetchedPageCount += 1
         }
 
+        mapSearchTimingLogger.log(
+            "getSpot addr all pages finished pages=$fetchedPageCount " +
+                "rawCount=${mergedItems.size} elapsedMs=${searchStartedAtNanos.elapsedMs()} " +
+                "partial=$isPartial",
+        )
+
+        val mergeStartedAtNanos = System.nanoTime()
+        val dedupedItems = mergedItems.distinctBy { item ->
+            listOf(
+                item.spotNm.orEmpty().trim(),
+                item.addrBase.orEmpty().trim(),
+                item.addrDtl.orEmpty().trim(),
+            )
+        }
+        mapSearchTimingLogger.log(
+            "merge/dedup finished before=${mergedItems.size} after=${dedupedItems.size} " +
+                "elapsedMs=${mergeStartedAtNanos.elapsedMs()}",
+        )
+
         return SpotKeywordSearchResult(
-            items = mergedItems.distinctBy { item ->
-                listOf(
-                    item.spotNm.orEmpty().trim(),
-                    item.addrBase.orEmpty().trim(),
-                    item.addrDtl.orEmpty().trim(),
-                )
-            },
+            items = dedupedItems,
             isPartial = isPartial,
         )
     }
@@ -150,8 +174,14 @@ class SpotRemoteDataSource @Inject constructor(
 
     private companion object {
         const val RESULT_CODE_NO_DATA = "03"
+        const val UNKNOWN_TOTAL_COUNT = "unknown"
     }
 }
+
+private fun Long.elapsedMs(): Long =
+    (System.nanoTime() - this) / NANOS_PER_MILLISECOND
+
+private const val NANOS_PER_MILLISECOND = 1_000_000L
 
 data class SpotKeywordSearchResult(
     val items: List<SpotItemDto>,

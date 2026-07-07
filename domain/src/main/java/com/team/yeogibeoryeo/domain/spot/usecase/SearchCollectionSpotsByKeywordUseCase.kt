@@ -5,12 +5,14 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotAddressSearchPolicy
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.domain.spot.log.MapSearchTimingLogger
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import javax.inject.Inject
 
 class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
     private val repository: CollectionSpotRepository,
     private val normalizeKeywordUseCase: NormalizeCollectionSpotSearchKeywordUseCase,
+    private val mapSearchTimingLogger: MapSearchTimingLogger = MapSearchTimingLogger.NoOp,
 ) {
     suspend operator fun invoke(
         keyword: String,
@@ -34,11 +36,22 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
             keyword = normalizedKeyword,
             types = types,
         )
+        val explicitRegionFilteredSpots = result.spots
+            .filterByExplicitRegionKeyword(normalizedKeyword)
+        val selectedRegionFilterStartedAtNanos = System.nanoTime()
+        val selectedRegionFilteredSpots = explicitRegionFilteredSpots
+            .filterBySelectedRegionCandidate(selectedRegionCandidate)
+
+        if (selectedRegionCandidate != null) {
+            mapSearchTimingLogger.log(
+                "selected region filter finished before=${explicitRegionFilteredSpots.size} " +
+                    "after=${selectedRegionFilteredSpots.size} " +
+                    "elapsedMs=${selectedRegionFilterStartedAtNanos.elapsedMs()}",
+            )
+        }
 
         return CollectionSpotSearchResult(
-            spots = result.spots
-                .filterByExplicitRegionKeyword(normalizedKeyword)
-                .filterBySelectedRegionCandidate(selectedRegionCandidate),
+            spots = selectedRegionFilteredSpots,
             isPartial = result.isPartial,
         )
     }
@@ -101,3 +114,8 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
         const val REGION_SCOPE_SEPARATOR = " "
     }
 }
+
+private fun Long.elapsedMs(): Long =
+    (System.nanoTime() - this) / NANOS_PER_MILLISECOND
+
+private const val NANOS_PER_MILLISECOND = 1_000_000L
