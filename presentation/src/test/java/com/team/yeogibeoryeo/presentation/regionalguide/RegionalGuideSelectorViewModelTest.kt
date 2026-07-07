@@ -143,6 +143,39 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
+    fun `selected region search updates search keyword to selected region text`() = runTest {
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = listOf(
+                sampleGuide(
+                    sido = "광주광역시",
+                    sigungu = "동구",
+                    targetRegionName = "동구 전체"
+                )
+            )
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "광주광역시" to listOf("동구")
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("금호동")
+        viewModel.onSidoSelected("광주광역시")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("동구")
+        advanceUntilIdle()
+        viewModel.onRegionSelectionSearchClick()
+        advanceUntilIdle()
+
+        assertEquals("광주광역시 > 동구", viewModel.searchKeyword.value)
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+    }
+
+    @Test
     fun `keyword search collapses expanded region selector dropdown`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()

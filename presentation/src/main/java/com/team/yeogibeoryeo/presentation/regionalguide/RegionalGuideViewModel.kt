@@ -186,7 +186,8 @@ class RegionalGuideViewModel @Inject constructor(
 
         searchBySelectedRegion(
             query = query,
-            region = region
+            region = region,
+            syncSearchKeyword = true,
         )
     }
 
@@ -480,8 +481,12 @@ class RegionalGuideViewModel @Inject constructor(
 
     private fun searchBySelectedRegion(
         query: String,
-        region: Region
+        region: Region,
+        syncSearchKeyword: Boolean = false,
     ) {
+        if (syncSearchKeyword) {
+            _searchKeyword.value = query
+        }
         keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
         collapseRegionSelectorDropdowns()

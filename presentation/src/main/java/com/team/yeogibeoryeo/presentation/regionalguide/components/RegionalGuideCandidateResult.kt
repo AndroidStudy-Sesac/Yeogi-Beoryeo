@@ -22,43 +22,50 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateCollectionTypeHint
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateDistinguishingLabel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateDistinguishingText
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 
 @Composable
 fun RegionalGuideCandidateResult(
-    message: String,
-    messageDescription: String? = null,
-    sectionTitle: String? = null,
-    selectedRegionText: String? = null,
     candidates: List<RegionalGuideCandidateUiModel>,
     onCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
-    showCollectionTypeHelp: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        if (showCollectionTypeHelp) {
-            RegionalGuideFallbackCandidatePanel(
-                message = message,
-                description = messageDescription,
-                selectedRegionText = selectedRegionText,
-                sectionTitle = sectionTitle,
-                candidates = candidates,
-                onCandidateClick = onCandidateClick,
+        RegionalGuideCandidateList(
+            candidates = candidates,
+            key = { candidate -> candidate.stableKey },
+            onCandidateClick = onCandidateClick,
+        ) { candidate ->
+            RegionalGuideCandidateRowText(
+                text = candidate.displayText,
+                supportingText = null
             )
-        } else {
-            RegionalGuideCandidateList(
-                candidates = candidates,
-                key = { candidate -> candidate.stableKey },
-                onCandidateClick = onCandidateClick,
-            ) { candidate ->
-                RegionalGuideCandidateRowText(
-                    text = candidate.displayText,
-                    supportingText = null
-                )
-            }
         }
     }
+}
+
+@Composable
+fun RegionalGuideCollectionTypeCandidateResult(
+    message: String,
+    candidates: List<RegionalGuideCandidateUiModel>,
+    onCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    modifier: Modifier = Modifier,
+    messageDescription: String? = null,
+    sectionTitle: String? = null,
+    selectedRegionText: String? = null,
+) {
+    RegionalGuideFallbackCandidatePanel(
+        message = message,
+        description = messageDescription,
+        selectedRegionText = selectedRegionText,
+        sectionTitle = sectionTitle,
+        candidates = candidates,
+        onCandidateClick = onCandidateClick,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -213,6 +220,12 @@ private fun RegionalGuideFallbackCandidateCards(
     onCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val duplicatedOptionTexts = candidates
+        .groupingBy { candidate -> candidate.collectionTypeOptionText }
+        .eachCount()
+        .filterValues { count -> count > 1 }
+        .keys
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -221,6 +234,7 @@ private fun RegionalGuideFallbackCandidateCards(
             key(candidate.stableKey) {
                 RegionalGuideFallbackCandidateCard(
                     candidate = candidate,
+                    showDistinguishingText = candidate.collectionTypeOptionText in duplicatedOptionTexts,
                     onClick = { onCandidateClick(candidate) },
                 )
             }
@@ -231,6 +245,7 @@ private fun RegionalGuideFallbackCandidateCards(
 @Composable
 private fun RegionalGuideFallbackCandidateCard(
     candidate: RegionalGuideCandidateUiModel,
+    showDistinguishingText: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -271,6 +286,16 @@ private fun RegionalGuideFallbackCandidateCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+
+                if (showDistinguishingText) {
+                    candidate.collectionTypeDistinguishingText?.let { distinguishingText ->
+                        Text(
+                            text = distinguishingText.labelText(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
 
             Surface(
@@ -304,6 +329,29 @@ private fun RegionalGuideCandidateUiModel.collectionTypeSupportingText(
 
         null -> null
     }
+}
+
+@Composable
+private fun RegionalGuideCandidateDistinguishingText.labelText(): String {
+    val labelText = when (label) {
+        RegionalGuideCandidateDistinguishingLabel.DISPOSAL_PLACE ->
+            stringResource(id = R.string.regional_guide_candidate_distinguishing_disposal_place)
+
+        RegionalGuideCandidateDistinguishingLabel.UNCOLLECTED_DAYS ->
+            stringResource(id = R.string.regional_guide_candidate_distinguishing_uncollected_days)
+
+        RegionalGuideCandidateDistinguishingLabel.SCHEDULE ->
+            stringResource(id = R.string.regional_guide_candidate_distinguishing_schedule)
+
+        RegionalGuideCandidateDistinguishingLabel.DEPARTMENT ->
+            stringResource(id = R.string.regional_guide_candidate_distinguishing_department)
+    }
+
+    return stringResource(
+        id = R.string.regional_guide_candidate_distinguishing_format,
+        labelText,
+        value,
+    )
 }
 
 private fun previewFallbackCandidates(): List<RegionalGuideCandidateUiModel> =
@@ -348,14 +396,13 @@ private fun previewFallbackCandidates(): List<RegionalGuideCandidateUiModel> =
 @Composable
 private fun RegionalGuideCandidateResultFallbackPreview() {
     MaterialTheme {
-        RegionalGuideCandidateResult(
+        RegionalGuideCollectionTypeCandidateResult(
             message = "직접 안내를 찾지 못했어요",
             messageDescription = "사천면의 직접 배출 안내가 없어 강릉시 기준 수거 유형을 선택해 주세요.",
             selectedRegionText = "강원특별자치도 > 강릉시 > 사천면",
             sectionTitle = "수거 유형 선택",
             candidates = previewFallbackCandidates(),
             onCandidateClick = {},
-            showCollectionTypeHelp = true,
             modifier = Modifier.padding(16.dp)
         )
     }
@@ -366,7 +413,6 @@ private fun RegionalGuideCandidateResultFallbackPreview() {
 private fun RegionalGuideCandidateResultPreview() {
     MaterialTheme {
         RegionalGuideCandidateResult(
-            message = "여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해주세요.",
             candidates = listOf(
                 RegionalGuideCandidateUiModel(
                     guide = previewGuide("범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"),

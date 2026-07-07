@@ -117,6 +117,65 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
+    fun `수거 유형명 후보는 수거 유형 선택 후보로 본다`() {
+        val candidate = candidate(
+            managementZoneName = "거점수거 지역",
+            targetRegionName = "거점수거 지역",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(true, candidate.isCollectionTypeSelectionCandidate)
+    }
+
+    @Test
+    fun `일반 권역 후보는 배출장소 유형이 있어도 수거 유형 선택 후보로 보지 않는다`() {
+        val candidate = candidate(
+            managementZoneName = "1권역",
+            targetRegionName = "갑천면",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(false, candidate.isCollectionTypeSelectionCandidate)
+    }
+
+    @Test
+    fun `동일 수거 유형 후보 구분 정보는 배출장소 설명을 우선 사용한다`() {
+        val candidate = candidate(
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "거점수거",
+            disposalPlaceDescription = "지정 거점 장소 배출",
+            uncollectedDays = "일요일",
+        )
+
+        assertEquals(
+            RegionalGuideCandidateDistinguishingText(
+                label = RegionalGuideCandidateDistinguishingLabel.DISPOSAL_PLACE,
+                value = "지정 거점 장소 배출"
+            ),
+            candidate.collectionTypeDistinguishingText
+        )
+    }
+
+    @Test
+    fun `배출장소 설명이 없으면 미수거일로 동일 수거 유형 후보를 구분한다`() {
+        val candidate = candidate(
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "거점수거",
+            uncollectedDays = "일요일"
+        )
+
+        assertEquals(
+            RegionalGuideCandidateDistinguishingText(
+                label = RegionalGuideCandidateDistinguishingLabel.UNCOLLECTED_DAYS,
+                value = "일요일"
+            ),
+            candidate.collectionTypeDistinguishingText
+        )
+    }
+
+    @Test
     fun `배출장소 유형이 없으면 배출장소 설명으로 대체 후보를 구분한다`() {
         val candidate = candidate(
             sido = "경상북도",
@@ -426,6 +485,8 @@ class RegionalGuideCandidateUiModelTest {
         targetRegionName: String?,
         disposalPlaceType: String? = null,
         disposalPlaceDescription: String? = null,
+        uncollectedDays: String? = null,
+        departmentInfo: String? = null,
         schedules: List<RegionalWasteScheduleUiModel> = emptyList()
     ): RegionalGuideCandidateUiModel =
         RegionalGuideCandidateUiModel(
@@ -436,8 +497,8 @@ class RegionalGuideCandidateUiModelTest {
                 disposalPlaceType = disposalPlaceType,
                 disposalPlaceDescription = disposalPlaceDescription,
                 schedules = schedules,
-                uncollectedDays = null,
-                departmentInfo = null
+                uncollectedDays = uncollectedDays,
+                departmentInfo = departmentInfo
             ),
             sido = sido,
             sigungu = sigungu,
