@@ -25,11 +25,15 @@ internal fun quickCategoryGridCollapseLayout(
         rowSpacingPx = rowSpacingPx,
     )
     val measuredCollapsedItemCount = visibleRowCount * columnCount
+    val minCollapsedItemCount = quickCategoryMinCollapsedItemCount(columnCount)
+    val validFixedCollapsedItemCount = fixedCollapsedItemCount.takeIf {
+        it >= minCollapsedItemCount && it % columnCount == 0
+    }
     val collapsedItemCount =
-        fixedCollapsedItemCount.takeIf { it > 0 } ?: measuredCollapsedItemCount
+        validFixedCollapsedItemCount ?: measuredCollapsedItemCount
     val needsMoreToggle = categoryCount > collapsedItemCount
     val needsCollapseToggle =
-        categoryCount > quickCategoryMinCollapsedItemCount(columnCount)
+        categoryCount > minCollapsedItemCount
     val showsMore = !isExpanded && needsMoreToggle
 
     return QuickCategoryGridCollapseLayout(

@@ -76,6 +76,24 @@ class QuickCategoryGridMetricsTest {
     }
 
     @Test
+    fun `일반 글자 크기에서는 가로모드 폭에 맞춰 최대 6열까지 늘린다`() {
+        mapOf(
+            449.dp to 4,
+            450.dp to 5,
+            559.dp to 5,
+            560.dp to 6,
+            800.dp to 6,
+        ).forEach { (maxWidth, expectedColumnCount) ->
+            val metrics = quickCategoryGridMetricsSpec(
+                maxWidth = maxWidth,
+                fontScale = 1.0f,
+            )
+
+            assertEquals(expectedColumnCount, metrics.columnCount)
+        }
+    }
+
+    @Test
     fun `큰 글자 크기에서는 font scale 1_3부터 최대 3열로 제한한다`() {
         val normalFont = quickCategoryGridMetricsSpec(
             maxWidth = 320.dp,
@@ -124,5 +142,24 @@ class QuickCategoryGridMetricsTest {
 
         assertEquals(3, wideLargeFont.columnCount)
         assertEquals(112.dp, wideLargeFont.cellSize)
+    }
+
+    @Test
+    fun `큰 글자 크기에서도 가로모드 폭에 맞춰 최대 6열까지 늘린다`() {
+        listOf(1.3f, 1.5f).forEach { fontScale ->
+            mapOf(
+                449.dp to 3,
+                450.dp to 4,
+                560.dp to 5,
+                800.dp to 6,
+            ).forEach { (maxWidth, expectedColumnCount) ->
+                val metrics = quickCategoryGridMetricsSpec(
+                    maxWidth = maxWidth,
+                    fontScale = fontScale,
+                )
+
+                assertEquals(expectedColumnCount, metrics.columnCount)
+            }
+        }
     }
 }

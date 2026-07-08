@@ -50,10 +50,10 @@ fun ItemUsefulGuideBannerRow(
     onGuideClick: (ItemUsefulGuideContent) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
+    itemWidthFraction: Float = ItemSearchLayoutDefaults.fraction.USEFUL_GUIDE_BANNER_WIDTH,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
-    val fraction = ItemSearchLayoutDefaults.fraction
     val listState = rememberLazyListState()
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
     val selectedIndex by remember {
@@ -85,7 +85,7 @@ fun ItemUsefulGuideBannerRow(
                     guide = guide,
                     onClick = { onGuideClick(guide) },
                     modifier = Modifier
-                        .fillParentMaxWidth(fraction.USEFUL_GUIDE_BANNER_WIDTH)
+                        .fillParentMaxWidth(itemWidthFraction)
                         .height(size.usefulGuideBannerCardHeight),
                 )
             }

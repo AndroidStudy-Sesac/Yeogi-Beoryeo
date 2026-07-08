@@ -67,12 +67,19 @@ fun YeogiBeoryeoNavHost(
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
     val isUsefulGuideScreen = currentDestination?.hasRoute<ItemUsefulGuideRoute>() == true
     val isSettingsDetailScreen = currentDestination?.hasRoute<SettingsDetailRoute>() == true
+    var isItemSearchBottomBarScrollEnabled by remember { mutableStateOf(false) }
     val hidesBottomBarOnScroll =
-        isItemSearchScreen || isItemDetailScreen || isUsefulGuideScreen || isSettingsDetailScreen
+        (isItemSearchScreen && isItemSearchBottomBarScrollEnabled) ||
+            isItemDetailScreen ||
+            isUsefulGuideScreen ||
+            isSettingsDetailScreen
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(currentBackStackEntry) {
         isBottomBarVisible = true
+        if (!isItemSearchScreen) {
+            isItemSearchBottomBarScrollEnabled = false
+        }
     }
 
     Scaffold(
@@ -216,6 +223,11 @@ fun YeogiBeoryeoNavHost(
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (isItemSearchScreen) {
                             isBottomBarVisible = isVisible
+                        }
+                    },
+                    onItemSearchBottomBarScrollEnabledChanged = { isEnabled ->
+                        if (isItemSearchScreen) {
+                            isItemSearchBottomBarScrollEnabled = isEnabled
                         }
                     },
                 )

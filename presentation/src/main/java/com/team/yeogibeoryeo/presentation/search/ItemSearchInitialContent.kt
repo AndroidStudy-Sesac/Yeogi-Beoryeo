@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
+import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.HomeRegionalGuideSummaryBanner
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
@@ -74,6 +75,8 @@ fun ItemSearchInitialContent(
     modifier: Modifier = Modifier,
     onRegionalGuideSummaryClick: (String) -> Unit = {},
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
@@ -102,7 +105,24 @@ fun ItemSearchInitialContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        val metrics = itemSearchScreenMetrics(maxWidth = maxWidth)
+        val metrics = itemSearchScreenMetrics(
+            maxWidth = maxWidth,
+            maxHeight = maxHeight,
+        )
+
+        LaunchedEffect(metrics.isCompactLandscape) {
+            onItemSearchBottomBarScrollEnabledChanged(metrics.isCompactLandscape)
+            if (!metrics.isCompactLandscape) {
+                onBottomBarVisibilityChanged(true)
+            }
+        }
+
+        if (metrics.isCompactLandscape) {
+            BottomBarVisibilityOnScrollEffect(
+                listState = listState,
+                onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+            )
+        }
 
         LazyColumn(
             state = listState,
@@ -145,6 +165,7 @@ fun ItemSearchInitialContent(
                         guides = itemUsefulGuideContents,
                         onGuideClick = onUsefulGuideClick,
                         contentPadding = PaddingValues(horizontal = metrics.horizontalPadding),
+                        itemWidthFraction = metrics.usefulGuideBannerWidthFraction,
                     )
                 }
             }

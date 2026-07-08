@@ -45,6 +45,7 @@ internal object ItemSearchSizeDefaults {
 
 internal object ItemSearchFractionDefaults {
     const val USEFUL_GUIDE_BANNER_WIDTH = 0.94f
+    const val USEFUL_GUIDE_LANDSCAPE_BANNER_WIDTH = 0.56f
 }
 
 internal object ItemSearchAlphaDefaults {
