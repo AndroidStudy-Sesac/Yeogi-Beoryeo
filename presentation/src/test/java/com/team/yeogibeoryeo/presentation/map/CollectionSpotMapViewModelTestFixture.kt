@@ -16,6 +16,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
+import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotGeocodingRepository
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
@@ -88,9 +89,13 @@ internal fun createViewModel(
         ),
         searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(
             repository = repository,
+            geocodingRepository = repository,
             normalizeKeywordUseCase = normalizeKeywordUseCase,
         ),
-        searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
+        searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(
+            repository = repository,
+            geocodingRepository = repository,
+        ),
         filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
         currentLocationProvider = currentLocationProvider,
         locationPermissionChecker = FakeLocationPermissionChecker(hasFineLocationPermission),
@@ -225,48 +230,25 @@ internal class FakeCollectionSpotRepository(
     internal val keywordSearchThrowable: Throwable? = null,
     internal val locationSearchThrowable: Throwable? = null,
     internal val locationSearchResultProvider: (suspend () -> List<CollectionSpot>)? = null,
-) : CollectionSpotRepository {
+) : CollectionSpotRepository, CollectionSpotGeocodingRepository {
     val keywords = mutableListOf<String>()
     var locationSearchCallCount = 0
     var lastLocationCoordinate: Coordinate? = null
     var lastRadiusMeter: Int? = null
 
-    override suspend fun searchByKeyword(
+    override suspend fun searchRawByKeyword(
         keyword: String,
         types: Set<CollectionSpotType>,
-    ): List<CollectionSpot> {
+    ): CollectionSpotSearchResult {
         keywords += keyword
         keywordSearchThrowable?.let { throw it }
-        return keywordSpots
-    }
-
-    override suspend fun searchByKeywordResult(
-        keyword: String,
-        types: Set<CollectionSpotType>,
-    ): CollectionSpotSearchResult {
         return CollectionSpotSearchResult(
-            spots = searchByKeyword(
-                keyword = keyword,
-                types = types,
-            ),
+            spots = keywordSpots,
             isPartial = isKeywordSearchPartial,
         )
     }
 
-    override suspend fun searchByKeywordResultWithoutCoordinates(
-        keyword: String,
-        types: Set<CollectionSpotType>,
-    ): CollectionSpotSearchResult {
-        return CollectionSpotSearchResult(
-            spots = searchByKeyword(
-                keyword = keyword,
-                types = types,
-            ),
-            isPartial = isKeywordSearchPartial,
-        )
-    }
-
-    override suspend fun searchByLocation(
+    override suspend fun searchRawByLocation(
         coordinate: Coordinate,
         radiusMeter: Int,
         types: Set<CollectionSpotType>,

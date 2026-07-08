@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotGeocodingRepository
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -15,6 +16,7 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
     private val repository = FakeCollectionSpotRepository()
     private val useCase = SearchCollectionSpotsByKeywordUseCase(
         repository = repository,
+        geocodingRepository = repository,
         normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase(),
     )
 
@@ -235,30 +237,21 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
         )
     }
 
-    private class FakeCollectionSpotRepository : CollectionSpotRepository {
+    private class FakeCollectionSpotRepository : CollectionSpotRepository, CollectionSpotGeocodingRepository {
         var keywordSpots: List<CollectionSpot> = emptyList()
         val keywords = mutableListOf<String>()
         val geocodedSpotIds = mutableListOf<String>()
 
-        override suspend fun searchByKeyword(
-            keyword: String,
-            types: Set<CollectionSpotType>,
-        ): List<CollectionSpot> {
-            keywords += keyword
-            return keywordSpots
-        }
-
-        override suspend fun searchByKeywordResultWithoutCoordinates(
+        override suspend fun searchRawByKeyword(
             keyword: String,
             types: Set<CollectionSpotType>,
         ) = CollectionSpotSearchResult(
-            spots = searchByKeyword(
-                keyword = keyword,
-                types = types,
-            ),
-        )
+            spots = keywordSpots,
+        ).also {
+            keywords += keyword
+        }
 
-        override suspend fun searchByLocation(
+        override suspend fun searchRawByLocation(
             coordinate: Coordinate,
             radiusMeter: Int,
             types: Set<CollectionSpotType>,
