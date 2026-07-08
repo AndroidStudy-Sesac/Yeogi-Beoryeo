@@ -70,6 +70,7 @@ fun ItemSearchRoute(
     modifier: Modifier = Modifier,
     initialQuery: String? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -129,6 +130,7 @@ fun ItemSearchRoute(
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+        onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
         modifier = modifier,
     )
 }
@@ -155,14 +157,22 @@ fun ItemSearchScreen(
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
 ) {
-    LaunchedEffect(uiState.hasSearched, uiState.guides.isEmpty()) {
-        if (!uiState.hasSearched || uiState.guides.isEmpty()) {
+    val showsInitialContent =
+        !uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null
+    val showsSearchResults = uiState.guides.isNotEmpty()
+
+    LaunchedEffect(showsInitialContent, showsSearchResults) {
+        if (!showsInitialContent) {
+            onItemSearchBottomBarScrollEnabledChanged(showsSearchResults)
+        }
+        if (!showsSearchResults) {
             onBottomBarVisibilityChanged(true)
         }
     }
 
-    if (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null) {
+    if (showsInitialContent) {
         ItemSearchInitialContent(
             query = uiState.query,
             onQueryChange = onQueryChange,
@@ -187,6 +197,8 @@ fun ItemSearchScreen(
             onSettingsClick = onSettingsClick,
             listState = categoryListState,
             modifier = modifier.statusBarsPadding(),
+            onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+            onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
         )
         return
     }
@@ -197,7 +209,10 @@ fun ItemSearchScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         val spacing = ItemSearchLayoutDefaults.spacing
-        val metrics = itemSearchScreenMetrics(maxWidth = maxWidth)
+        val metrics = itemSearchScreenMetrics(
+            maxWidth = maxWidth,
+            maxHeight = maxHeight,
+        )
         val density = LocalDensity.current
         val coroutineScope = rememberCoroutineScope()
 
