@@ -6,11 +6,13 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.domain.spot.log.MapSearchTimingLogger
+import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotGeocodingRepository
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import javax.inject.Inject
 
 class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
     private val repository: CollectionSpotRepository,
+    private val geocodingRepository: CollectionSpotGeocodingRepository,
     private val normalizeKeywordUseCase: NormalizeCollectionSpotSearchKeywordUseCase,
     private val mapSearchTimingLogger: MapSearchTimingLogger = MapSearchTimingLogger.NoOp,
 ) {
@@ -32,7 +34,7 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
         selectedRegionCandidate: MapRegionSearchCandidate? = null,
     ): CollectionSpotSearchResult {
         val normalizedKeyword = normalizeKeywordUseCase(keyword)
-        val result = repository.searchByKeywordResultWithoutCoordinates(
+        val result = repository.searchRawByKeyword(
             keyword = normalizedKeyword,
             types = types,
         )
@@ -58,7 +60,7 @@ class SearchCollectionSpotsByKeywordUseCase @Inject constructor(
                     "elapsedMs=${selectedRegionFilterStartedAtNanos.elapsedMs()}",
             )
         }
-        val geocodedSpots = repository.geocodeSpots(selectedRegionFilteredSpots)
+        val geocodedSpots = geocodingRepository.geocodeSpots(selectedRegionFilteredSpots)
 
         return CollectionSpotSearchResult(
             spots = geocodedSpots,

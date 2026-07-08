@@ -2,7 +2,9 @@ package com.team.yeogibeoryeo.data.spot.di
 
 import com.team.yeogibeoryeo.data.spot.geocoder.AndroidSpotGeocoder
 import com.team.yeogibeoryeo.data.spot.geocoder.SpotGeocoder
+import com.team.yeogibeoryeo.data.spot.repository.CollectionSpotGeocodingRepositoryImpl
 import com.team.yeogibeoryeo.data.spot.repository.CollectionSpotRepositoryImpl
+import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotGeocodingRepository
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import dagger.Binds
 import dagger.Module
@@ -19,6 +21,12 @@ abstract class SpotDataModule {
     abstract fun bindCollectionSpotRepository(
         collectionSpotRepositoryImpl: CollectionSpotRepositoryImpl,
     ): CollectionSpotRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCollectionSpotGeocodingRepository(
+        collectionSpotGeocodingRepositoryImpl: CollectionSpotGeocodingRepositoryImpl,
+    ): CollectionSpotGeocodingRepository
 
     @Binds
     @Singleton
