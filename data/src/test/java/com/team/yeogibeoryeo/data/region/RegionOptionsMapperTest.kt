@@ -582,6 +582,70 @@ class RegionOptionsMapperTest {
     }
 
     @Test
+    fun `접미사 없는 동 검색어도 행정동 후보로 반환한다`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "부산광역시",
+                    sigunguName = "사하구",
+                    eupmyeondongName = "괴정제1동"
+                ),
+                administrativeRegion(
+                    sidoName = "부산광역시",
+                    sigunguName = "사하구",
+                    eupmyeondongName = "괴정제2동"
+                )
+            ),
+            legalAdminDongMappings = listOf(
+                legalAdminMapping(
+                    sidoName = "부산광역시",
+                    sigunguName = "사하구",
+                    legalDongName = "괴정동",
+                    adminDongName = "괴정제1동"
+                )
+            ),
+            keyword = "괴정"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "괴정제1동"),
+                Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "괴정제2동")
+            ),
+            regions
+        )
+    }
+
+    @Test
+    fun `접미사 없는 법정동 검색어는 실제 법정동 이름을 후보에 유지한다`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = emptyList(),
+            legalAdminDongMappings = listOf(
+                legalAdminMapping(
+                    sidoName = "부산광역시",
+                    sigunguName = "사하구",
+                    legalDongName = "괴정동",
+                    adminDongName = "괴정제1동"
+                ),
+                legalAdminMapping(
+                    sidoName = "부산광역시",
+                    sigunguName = "사하구",
+                    legalDongName = "괴정동",
+                    adminDongName = "괴정제2동"
+                )
+            ),
+            keyword = "괴정"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "괴정동")
+            ),
+            regions
+        )
+    }
+
+    @Test
     fun `legal dong keyword lookup returns ga aliases but excludes ri aliases`() {
         val keywords = RegionOptionsMapper.findLegalDongKeywordsByRegion(
             mappings = listOf(

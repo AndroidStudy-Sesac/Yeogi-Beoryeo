@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import javax.inject.Inject
@@ -32,7 +33,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                     preferredTargetRegionName = preferredTargetRegionName,
                     preferredManagementZoneName = preferredManagementZoneName
                 )
-                .toSingleSuccessOrCandidates(query.displayRegion)
+                .toSingleSuccessOrCandidates(
+                    displayRegion = query.displayRegion,
+                    candidateReason = RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES
+                )
                 ?: RegionalGuideLookupResult.CandidateNotFound
         }
 
@@ -45,7 +49,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         filteredCandidates.selectOverallCandidates(query.sigunguQuery)
-            .toSingleSuccessOrCandidates(query.displayRegion)
+            .toSingleSuccessOrCandidates(
+                displayRegion = query.displayRegion,
+                candidateReason = query.displayRegion.toOverallCandidateReason()
+            )
             ?.let { result -> return result }
 
         selectByTargetRegion(
@@ -85,7 +92,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         if (!eupmyeondong.isNullOrBlank()) {
             candidates
                 .filterByRequestedEupmyeondong(eupmyeondong)
-                .toSingleSuccessOrCandidates(requestedRegion)
+                .toSingleSuccessOrCandidates(
+                    displayRegion = requestedRegion,
+                    candidateReason = RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES
+                )
                 ?.let { result -> return result }
 
             candidates
@@ -93,20 +103,32 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                     guide.targetRegionName.isSejongDongArea() &&
                         eupmyeondong in SEJONG_DONG_AREA_NAMES
                 }
-                .toSingleSuccessOrCandidates(requestedRegion)
+                .toSingleSuccessOrCandidates(
+                    displayRegion = requestedRegion,
+                    candidateReason = RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES
+                )
                 ?.let { result -> return result }
 
             candidates
                 .filterByMappedAdminDongs(mappedAdminDongCandidates)
-                .toSingleSuccessOrCandidates(requestedRegion)
+                .toSingleSuccessOrCandidates(
+                    displayRegion = requestedRegion,
+                    candidateReason = RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES
+                )
                 ?.let { result -> return result }
 
             return candidates
                 .selectOverallCandidates(sigunguQuery)
-                .toSingleSuccessOrCandidates(requestedRegion)
+                .toSingleSuccessOrCandidates(
+                    displayRegion = requestedRegion,
+                    candidateReason = RegionalGuideCandidateLookupReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
+                )
                 ?: candidates
                     .selectUnmatchedSelectorFallbackCandidates()
-                    .toCandidateListOrNull(requestedRegion)
+                    .toCandidateListOrNull(
+                        displayRegion = requestedRegion,
+                        candidateReason = RegionalGuideCandidateLookupReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
+                    )
         }
 
         return null
@@ -184,22 +206,27 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return RegionalGuideLookupResult.Candidates(
-            guides = map { guide -> guide.withDisplayRegion(displayRegion) }
+            guides = map { guide -> guide.withDisplayRegion(displayRegion) },
+            reason = RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES
         )
     }
 
     private fun List<RegionalDisposalGuide>.toCandidateListOrNull(
-        displayRegion: Region
+        displayRegion: Region,
+        candidateReason: RegionalGuideCandidateLookupReason
     ): RegionalGuideLookupResult.Candidates? {
         if (isEmpty()) return null
 
         return RegionalGuideLookupResult.Candidates(
-            guides = map { guide -> guide.withDisplayRegion(displayRegion) }
+            guides = map { guide -> guide.withDisplayRegion(displayRegion) },
+            reason = candidateReason
         )
     }
 
     private fun List<RegionalDisposalGuide>.toSingleSuccessOrCandidates(
-        displayRegion: Region
+        displayRegion: Region,
+        candidateReason: RegionalGuideCandidateLookupReason =
+            RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES
     ): RegionalGuideLookupResult? {
         return when (size) {
             0 -> null
@@ -207,10 +234,18 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 guide = first().withDisplayRegion(displayRegion)
             )
             else -> RegionalGuideLookupResult.Candidates(
-                guides = map { guide -> guide.withDisplayRegion(displayRegion) }
+                guides = map { guide -> guide.withDisplayRegion(displayRegion) },
+                reason = candidateReason
             )
         }
     }
+
+    private fun Region.toOverallCandidateReason(): RegionalGuideCandidateLookupReason =
+        if (eupmyeondong.isNullOrBlank()) {
+            RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES
+        } else {
+            RegionalGuideCandidateLookupReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
+        }
 
     private fun List<RegionalDisposalGuide>.filterByPreferredCandidate(
         preferredTargetRegionName: String?,

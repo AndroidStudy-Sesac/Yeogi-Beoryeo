@@ -7,6 +7,20 @@ data class RegionalGuideCandidateUiModel(
     val eupmyeondong: String?,
     internal val disambiguationText: String? = null
 ) {
+    val stableKey: String =
+        listOf(
+            "sido=${sido.toStableKeyPart()}",
+            "sigungu=${sigungu.toStableKeyPart()}",
+            "eupmyeondong=${eupmyeondong.toStableKeyPart()}",
+            "managementZone=${guide.managementZoneName.toStableKeyPart()}",
+            "targetRegion=${guide.targetRegionName.toStableKeyPart()}",
+            "placeType=${guide.disposalPlaceType.toStableKeyPart()}",
+            "placeDescription=${guide.disposalPlaceDescription.toStableKeyPart()}",
+            "uncollectedDays=${guide.uncollectedDays.toStableKeyPart()}",
+            "department=${guide.departmentInfo.toStableKeyPart()}",
+            "schedules=${guide.schedules.joinToString(SCHEDULE_KEY_SEPARATOR) { schedule -> schedule.stableKey }}",
+        ).joinToString(STABLE_KEY_SEPARATOR)
+
     val displayText: String =
         baseDisplayParts()
             .appendDisambiguation()
@@ -31,6 +45,46 @@ data class RegionalGuideCandidateUiModel(
                         listOf(managementZoneSortText, parts[1]).joinToString(CANDIDATE_LABEL_SEPARATOR)
                     }
             }
+
+    val collectionTypeHint: RegionalGuideCandidateCollectionTypeHint? =
+        when (guide.disposalPlaceType?.trim()) {
+            DOOR_TO_DOOR_COLLECTION_TYPE -> RegionalGuideCandidateCollectionTypeHint.DOOR_TO_DOOR
+            BASE_POINT_COLLECTION_TYPE -> RegionalGuideCandidateCollectionTypeHint.BASE_POINT
+            else -> null
+        }
+
+    internal val isOverallCollectionTypeCandidate: Boolean =
+        guide.managementZoneName.takeIfRegionalGuideDisplayValue() == null &&
+            guide.targetRegionName.takeIfRegionalGuideDisplayValue() == null &&
+            guide.disposalPlaceType.takeIfRegionalGuideDisplayValue() != null
+
+    internal val isCollectionTypeSelectionCandidate: Boolean =
+        isOverallCollectionTypeCandidate || isNamedCollectionTypeCandidate()
+
+    internal val collectionTypeOptionText: String =
+        if (isOverallCollectionTypeCandidate) {
+            guide.disposalPlaceType.takeIfRegionalGuideDisplayValue() ?: displayText
+        } else {
+            displayText
+        }
+
+    internal val collectionTypeDistinguishingText: RegionalGuideCandidateDistinguishingText? =
+        listOfNotNull(
+            guide.disposalPlaceDescription.toDistinguishingText(
+                RegionalGuideCandidateDistinguishingLabel.DISPOSAL_PLACE
+            ),
+            guide.uncollectedDays.toDistinguishingText(
+                RegionalGuideCandidateDistinguishingLabel.UNCOLLECTED_DAYS
+            ),
+            guide.schedules.firstNotNullOfOrNull { schedule ->
+                schedule.toCandidateSummary()
+            }?.toDistinguishingText(
+                RegionalGuideCandidateDistinguishingLabel.SCHEDULE
+            ),
+            guide.departmentInfo.toDistinguishingText(
+                RegionalGuideCandidateDistinguishingLabel.DEPARTMENT
+            ),
+        ).firstOrNull()
 
     private fun primaryDisplayParts(): List<String> =
         listOfNotNull(
@@ -58,6 +112,19 @@ data class RegionalGuideCandidateUiModel(
     private fun List<String>.appendDisambiguation(): List<String> =
         this + listOfNotNull(disambiguationText.takeIfRegionalGuideDisplayValue())
 
+    private fun isNamedCollectionTypeCandidate(): Boolean {
+        val disposalPlaceType = guide.disposalPlaceType.takeIfRegionalGuideDisplayValue()
+            ?: return false
+        if (collectionTypeHint == null) return false
+
+        val displayParts = primaryDisplayParts()
+        if (displayParts.isEmpty()) return false
+
+        return displayParts.all { displayPart ->
+            displayPart.isCollectionTypeDisplayName(disposalPlaceType)
+        }
+    }
+
     private fun RegionalWasteScheduleUiModel.toCandidateSummary(): String? {
         val criterion =
             disposalDays.takeIfRegionalGuideDisplayValue()
@@ -75,8 +142,65 @@ data class RegionalGuideCandidateUiModel(
     private companion object {
         const val CANDIDATE_LABEL_SEPARATOR = " / "
         const val SCHEDULE_SUMMARY_SEPARATOR = " "
+        const val STABLE_KEY_SEPARATOR = "|"
+        const val SCHEDULE_KEY_SEPARATOR = ";"
+        const val DOOR_TO_DOOR_COLLECTION_TYPE = "문전수거"
+        const val BASE_POINT_COLLECTION_TYPE = "거점수거"
     }
 }
+
+internal data class RegionalGuideCandidateDistinguishingText(
+    val label: RegionalGuideCandidateDistinguishingLabel,
+    val value: String
+)
+
+internal enum class RegionalGuideCandidateDistinguishingLabel {
+    DISPOSAL_PLACE,
+    UNCOLLECTED_DAYS,
+    SCHEDULE,
+    DEPARTMENT,
+}
+
+enum class RegionalGuideCandidateCollectionTypeHint {
+    DOOR_TO_DOOR,
+    BASE_POINT,
+}
+
+private val RegionalWasteScheduleUiModel.stableKey: String
+    get() = listOf(
+        wasteTypeName.toStableKeyPart(),
+        disposalDays.toStableKeyPart(),
+        disposalTime.toStableKeyPart(),
+        disposalMethod.toStableKeyPart(),
+    ).joinToString("/")
+
+private fun String?.toStableKeyPart(): String =
+    this
+        ?.trim()
+        ?.takeIf { value -> value.isNotBlank() }
+        ?: "<blank>"
+
+private fun String?.toDistinguishingText(
+    label: RegionalGuideCandidateDistinguishingLabel
+): RegionalGuideCandidateDistinguishingText? =
+    takeIfRegionalGuideDisplayValue()
+        ?.let { value ->
+            RegionalGuideCandidateDistinguishingText(
+                label = label,
+                value = value
+            )
+        }
+
+private fun String.isCollectionTypeDisplayName(disposalPlaceType: String): Boolean {
+    val normalizedDisplayName = toCollectionTypeComparableText()
+    val normalizedType = disposalPlaceType.toCollectionTypeComparableText()
+
+    return normalizedDisplayName == normalizedType ||
+        normalizedDisplayName == "${normalizedType}지역"
+}
+
+private fun String.toCollectionTypeComparableText(): String =
+    trim().replace(" ", "")
 
 internal fun List<RegionalGuideCandidateUiModel>.withDuplicateDisplayDisambiguation():
     List<RegionalGuideCandidateUiModel> {
@@ -88,8 +212,6 @@ internal fun List<RegionalGuideCandidateUiModel>.withDuplicateDisplayDisambiguat
                 .distinct()
         }
         .filterValues { disambiguationTexts -> disambiguationTexts.size > 1 }
-
-    if (disambiguationByDisplayText.isEmpty()) return this
 
     return map { candidate ->
         if (candidate.displayText in disambiguationByDisplayText) {

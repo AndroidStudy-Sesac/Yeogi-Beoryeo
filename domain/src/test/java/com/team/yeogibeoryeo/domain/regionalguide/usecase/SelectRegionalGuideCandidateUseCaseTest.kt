@@ -1,6 +1,7 @@
 ﻿package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
@@ -960,6 +961,46 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
         assertEquals("사천면", candidates[0].region.eupmyeondong)
         assertEquals("문전수거", candidates[0].disposalPlaceType)
         assertEquals("거점수거", candidates[1].disposalPlaceType)
+    }
+
+    @Test
+    fun `직접 매칭 실패 후 없음 전체 기준 수거 유형 후보만 있으면 fallback 후보 목록을 반환한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "없음",
+                    targetRegionName = "없음",
+                    disposalPlaceType = "문전수거"
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "없음",
+                    targetRegionName = "없음",
+                    disposalPlaceType = "거점수거"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    eupmyeondong = "양구읍"
+                ),
+                sigunguQuery = "양구군"
+            )
+        )
+
+        val candidatesResult = result as RegionalGuideLookupResult.Candidates
+
+        assertEquals(
+            RegionalGuideCandidateLookupReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
+            candidatesResult.reason
+        )
+        assertEquals(2, candidatesResult.guides.size)
+        assertEquals(listOf("문전수거", "거점수거"), candidatesResult.guides.map { guide -> guide.disposalPlaceType })
+        assertEquals(listOf("양구읍", "양구읍"), candidatesResult.guides.map { guide -> guide.region.eupmyeondong })
     }
 
     @Test

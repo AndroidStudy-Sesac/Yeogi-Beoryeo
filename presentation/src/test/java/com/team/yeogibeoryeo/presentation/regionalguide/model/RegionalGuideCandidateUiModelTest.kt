@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.model
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class RegionalGuideCandidateUiModelTest {
@@ -46,7 +47,7 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
-    fun `관리구역명과 대상지역명이 모두 비어 있으면 시도 시군구 fallback을 표시한다`() {
+    fun `관리구역명과 대상지역명이 모두 비어 있으면 시도 시군구 대체 문구를 표시한다`() {
         val candidate = candidate(
             regionName = "대전광역시 유성구",
             managementZoneName = " ",
@@ -57,7 +58,7 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
-    fun `관리구역명과 대상지역명이 모두 없음이면 시도 시군구 fallback을 표시한다`() {
+    fun `관리구역명과 대상지역명이 모두 없음이면 시도 시군구 대체 문구를 표시한다`() {
         val candidate = candidate(
             sido = "경기도",
             sigungu = "성남시",
@@ -89,7 +90,7 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
-    fun `관리구역명과 대상지역명이 모두 없음이면 배출장소 유형으로 fallback 후보를 구분한다`() {
+    fun `관리구역명과 대상지역명이 모두 없음이면 배출장소 유형으로 대체 후보를 구분한다`() {
         val candidate = candidate(
             sido = "경기도",
             sigungu = "성남시",
@@ -102,7 +103,80 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
-    fun `배출장소 유형이 없으면 배출장소 설명으로 fallback 후보를 구분한다`() {
+    fun `관리구역명과 대상지역명이 모두 없음이고 배출장소 유형이 있으면 전체 기준 수거 유형 후보로 본다`() {
+        val candidate = candidate(
+            sido = "강원특별자치도",
+            sigungu = "양구군",
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(true, candidate.isOverallCollectionTypeCandidate)
+        assertEquals("거점수거", candidate.collectionTypeOptionText)
+    }
+
+    @Test
+    fun `수거 유형명 후보는 수거 유형 선택 후보로 본다`() {
+        val candidate = candidate(
+            managementZoneName = "거점수거 지역",
+            targetRegionName = "거점수거 지역",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(true, candidate.isCollectionTypeSelectionCandidate)
+    }
+
+    @Test
+    fun `일반 권역 후보는 배출장소 유형이 있어도 수거 유형 선택 후보로 보지 않는다`() {
+        val candidate = candidate(
+            managementZoneName = "1권역",
+            targetRegionName = "갑천면",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(false, candidate.isCollectionTypeSelectionCandidate)
+    }
+
+    @Test
+    fun `동일 수거 유형 후보 구분 정보는 배출장소 설명을 우선 사용한다`() {
+        val candidate = candidate(
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "거점수거",
+            disposalPlaceDescription = "지정 거점 장소 배출",
+            uncollectedDays = "일요일",
+        )
+
+        assertEquals(
+            RegionalGuideCandidateDistinguishingText(
+                label = RegionalGuideCandidateDistinguishingLabel.DISPOSAL_PLACE,
+                value = "지정 거점 장소 배출"
+            ),
+            candidate.collectionTypeDistinguishingText
+        )
+    }
+
+    @Test
+    fun `배출장소 설명이 없으면 미수거일로 동일 수거 유형 후보를 구분한다`() {
+        val candidate = candidate(
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "거점수거",
+            uncollectedDays = "일요일"
+        )
+
+        assertEquals(
+            RegionalGuideCandidateDistinguishingText(
+                label = RegionalGuideCandidateDistinguishingLabel.UNCOLLECTED_DAYS,
+                value = "일요일"
+            ),
+            candidate.collectionTypeDistinguishingText
+        )
+    }
+
+    @Test
+    fun `배출장소 유형이 없으면 배출장소 설명으로 대체 후보를 구분한다`() {
         val candidate = candidate(
             sido = "경상북도",
             sigungu = "성주군",
@@ -115,7 +189,7 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
-    fun `배출장소 정보가 없으면 첫 배출 일정 요약으로 fallback 후보를 구분한다`() {
+    fun `배출장소 정보가 없으면 첫 배출 일정 요약으로 대체 후보를 구분한다`() {
         val candidate = candidate(
             sido = "대구광역시",
             sigungu = "군위군",
@@ -346,6 +420,63 @@ class RegionalGuideCandidateUiModelTest {
         )
     }
 
+    @Test
+    fun `안정 키는 표시명이 같은 후보도 식별 가능한 값 조합으로 구분한다`() {
+        val doorToDoorCandidate = candidate(
+            sido = "대전광역시",
+            sigungu = "서구",
+            managementZoneName = "대전광역시",
+            targetRegionName = "서구",
+            disposalPlaceType = "문전수거"
+        )
+        val basePointCandidate = candidate(
+            sido = "대전광역시",
+            sigungu = "서구",
+            managementZoneName = "대전광역시",
+            targetRegionName = "서구",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(doorToDoorCandidate.displayText, basePointCandidate.displayText)
+        assertNotEquals(doorToDoorCandidate.displayText, doorToDoorCandidate.stableKey)
+        assertNotEquals(doorToDoorCandidate.stableKey, basePointCandidate.stableKey)
+    }
+
+    @Test
+    fun `문전수거와 거점수거 원본 유형은 후보 보조 설명 힌트로 구분한다`() {
+        val doorToDoorCandidate = candidate(
+            managementZoneName = "문전수거 지역",
+            targetRegionName = "문전수거 지역",
+            disposalPlaceType = "문전수거"
+        )
+        val basePointCandidate = candidate(
+            managementZoneName = "거점수거 지역",
+            targetRegionName = "거점수거 지역",
+            disposalPlaceType = "거점수거"
+        )
+
+        assertEquals(
+            RegionalGuideCandidateCollectionTypeHint.DOOR_TO_DOOR,
+            doorToDoorCandidate.collectionTypeHint
+        )
+        assertEquals(
+            RegionalGuideCandidateCollectionTypeHint.BASE_POINT,
+            basePointCandidate.collectionTypeHint
+        )
+    }
+
+    @Test
+    fun `수거 유형 보조 설명 힌트는 배출장소 설명만으로 임의 판정하지 않는다`() {
+        val candidate = candidate(
+            managementZoneName = "문전수거 지역",
+            targetRegionName = "문전수거 지역",
+            disposalPlaceType = null,
+            disposalPlaceDescription = "문전수거 방식으로 배출"
+        )
+
+        assertEquals(null, candidate.collectionTypeHint)
+    }
+
     private fun candidate(
         regionName: String = "대전광역시 유성구",
         sido: String = "대전광역시",
@@ -354,6 +485,8 @@ class RegionalGuideCandidateUiModelTest {
         targetRegionName: String?,
         disposalPlaceType: String? = null,
         disposalPlaceDescription: String? = null,
+        uncollectedDays: String? = null,
+        departmentInfo: String? = null,
         schedules: List<RegionalWasteScheduleUiModel> = emptyList()
     ): RegionalGuideCandidateUiModel =
         RegionalGuideCandidateUiModel(
@@ -364,8 +497,8 @@ class RegionalGuideCandidateUiModelTest {
                 disposalPlaceType = disposalPlaceType,
                 disposalPlaceDescription = disposalPlaceDescription,
                 schedules = schedules,
-                uncollectedDays = null,
-                departmentInfo = null
+                uncollectedDays = uncollectedDays,
+                departmentInfo = departmentInfo
             ),
             sido = sido,
             sigungu = sigungu,

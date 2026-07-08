@@ -18,6 +18,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGui
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
@@ -185,7 +186,8 @@ class RegionalGuideViewModel @Inject constructor(
 
         searchBySelectedRegion(
             query = query,
-            region = region
+            region = region,
+            syncSearchKeyword = true,
         )
     }
 
@@ -479,8 +481,12 @@ class RegionalGuideViewModel @Inject constructor(
 
     private fun searchBySelectedRegion(
         query: String,
-        region: Region
+        region: Region,
+        syncSearchKeyword: Boolean = false,
     ) {
+        if (syncSearchKeyword) {
+            _searchKeyword.value = query
+        }
         keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
         collapseRegionSelectorDropdowns()
@@ -655,7 +661,10 @@ class RegionalGuideViewModel @Inject constructor(
 
             is RegionalGuideLookupResult.Candidates -> RegionalGuideUiState.GuideCandidates(
                 query = query,
-                message = "여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해주세요.",
+                reason = toUiCandidateReason(
+                    lookupReason = reason,
+                    emptyContext = emptyContext,
+                ),
                 candidates = guides.map { guide ->
                     RegionalGuideCandidateUiModel(
                         guide = guide.toUiModel(),
@@ -698,6 +707,33 @@ class RegionalGuideViewModel @Inject constructor(
             )
         }
     }
+
+    private fun toUiCandidateReason(
+        lookupReason: RegionalGuideCandidateLookupReason,
+        emptyContext: RegionalGuideEmptyContext,
+    ): RegionalGuideCandidateReason =
+        emptyContext.favoriteRestoreCandidateReason()
+            ?: lookupReason.toDefaultUiCandidateReason()
+
+    private fun RegionalGuideEmptyContext.favoriteRestoreCandidateReason(): RegionalGuideCandidateReason? =
+        when (this) {
+            RegionalGuideEmptyContext.FAVORITE_RESTORE ->
+                RegionalGuideCandidateReason.FAVORITE_RESTORE_AMBIGUOUS
+
+            RegionalGuideEmptyContext.DEFAULT -> null
+        }
+
+    private fun RegionalGuideCandidateLookupReason.toDefaultUiCandidateReason(): RegionalGuideCandidateReason =
+        when (this) {
+            RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES ->
+                RegionalGuideCandidateReason.MULTIPLE_CANDIDATES
+
+            RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES ->
+                RegionalGuideCandidateReason.MULTIPLE_EXACT_MATCHES
+
+            RegionalGuideCandidateLookupReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND ->
+                RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
+        }
 
     private fun RegionalGuideFailureReason.toErrorMessage(): String {
         return when (this) {
