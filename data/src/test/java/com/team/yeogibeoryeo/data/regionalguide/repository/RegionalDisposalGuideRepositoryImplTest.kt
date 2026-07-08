@@ -100,6 +100,32 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
+    fun `repository는 API 시도명 원본값을 정규화하지 않는다`() = runBlocking {
+        fakeDataSource.mockResult = Result.success(
+            listOf(
+                RegionalGuideItemDto(
+                    sidoName = "전남광주통합특별시",
+                    sigunguName = "광산구",
+                    dongName = "광산구 전체"
+                )
+            )
+        )
+
+        val result = repository.getRegionalDisposalGuideCandidates(
+            RegionalGuideQuery(
+                displayRegion = Region(sido = "광주광역시", sigungu = "광산구"),
+                sigunguQuery = "광산구"
+            )
+        )
+
+        val guide = result.getOrThrow().single()
+
+        assertEquals("전남광주통합특별시", guide.region.sido)
+        assertEquals("광산구", guide.region.sigungu)
+        assertEquals("광산구 전체", guide.targetRegionName)
+    }
+
+    @Test
     fun `원격 데이터 소스 실패는 Result failure로 유지한다`() = runBlocking {
         fakeDataSource.mockResult = Result.failure(IllegalStateException("network error"))
 

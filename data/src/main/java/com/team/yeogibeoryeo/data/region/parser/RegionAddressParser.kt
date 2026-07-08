@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.data.region.parser
 
 import com.team.yeogibeoryeo.data.region.RegionNormalizer
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import javax.inject.Inject
 
 class RegionAddressParser @Inject constructor() {
@@ -52,7 +53,9 @@ class RegionAddressParser @Inject constructor() {
             eupmyeondong = eupmyeondong ?: normalizedAddress.extractParenthesizedEupmyeondong()
         )
 
-        return RegionNormalizer.normalize(parsedRegion)
+        return RegionSidoAliasPolicy.normalizeInputRegion(
+            RegionNormalizer.normalize(parsedRegion)
+        )
     }
 
     private fun String.cleanRegionToken(): String =
@@ -74,7 +77,9 @@ class RegionAddressParser @Inject constructor() {
         endsWith("시") || endsWith("군") || endsWith("구")
 
     private fun String.isEupmyeondongName(): Boolean =
-        endsWith("읍") || endsWith("면") || endsWith("동")
+        !contains("(") &&
+            !contains(")") &&
+            (endsWith("읍") || endsWith("면") || endsWith("동"))
 
     companion object {
         private val WHITESPACE_REGEX = "\\s+".toRegex()

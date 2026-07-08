@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 
 /**
  * 행정구역 명칭을 배출 가이드 API(/info) 표준 포맷으로 보정하는 유틸리티
@@ -25,6 +26,7 @@ object RegionNormalizer {
         "전북특별자치도",
         "전라북도",
         "전라남도",
+        RegionSidoAliasPolicy.GWANGJU_JEONNAM_INTEGRATED_SIDO,
         "경상북도",
         "경상남도",
         "제주특별자치도",
