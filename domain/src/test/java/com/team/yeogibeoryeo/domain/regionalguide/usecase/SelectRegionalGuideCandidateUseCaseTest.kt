@@ -62,6 +62,102 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
     }
 
     @Test
+    fun `광주광역시 선택값은 전남광주통합특별시 광주 후보를 필터링하지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "전남광주통합특별시",
+                    sigungu = "광산구",
+                    targetRegionName = "광산구 전체"
+                ),
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "광산구",
+                    targetRegionName = "다른 시도 후보"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(sido = "광주광역시", sigungu = "광산구"),
+                sigunguQuery = "광산구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("광주광역시", guide.region.sido)
+        assertEquals("광산구", guide.region.sigungu)
+        assertEquals("광산구 전체", guide.targetRegionName)
+    }
+
+    @Test
+    fun `광주광역시 5개 구 선택값은 전남광주통합특별시 후보와 매칭된다`() {
+        val gwangjuSigunguNames = listOf("동구", "서구", "남구", "북구", "광산구")
+
+        gwangjuSigunguNames.forEach { sigungu ->
+            val result = useCase(
+                candidates = listOf(
+                    regionalDisposalGuide(
+                        sido = "전남광주통합특별시",
+                        sigungu = sigungu,
+                        targetRegionName = "$sigungu 전체"
+                    )
+                ),
+                query = regionalGuideQuery(
+                    displayRegion = Region(sido = "광주광역시", sigungu = sigungu),
+                    sigunguQuery = sigungu
+                )
+            )
+
+            val guide = (result as RegionalGuideLookupResult.Success).guide
+
+            assertEquals(sigungu, guide.region.sigungu)
+            assertEquals("$sigungu 전체", guide.targetRegionName)
+        }
+    }
+
+    @Test
+    fun `광주광역시 선택값은 전남광주통합특별시 전남 시군 후보를 선택하지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "전남광주통합특별시",
+                    sigungu = "고흥군",
+                    targetRegionName = "고흥군 전체"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(sido = "광주광역시", sigungu = "고흥군"),
+                sigunguQuery = "고흥군"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `전라남도 선택값은 전남광주통합특별시 전남 시군 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "전남광주통합특별시",
+                    sigungu = "고흥군",
+                    targetRegionName = "고흥군 전체"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(sido = "전라남도", sigungu = "고흥군"),
+                sigunguQuery = "고흥군"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("전라남도", guide.region.sido)
+        assertEquals("고흥군", guide.region.sigungu)
+        assertEquals("고흥군 전체", guide.targetRegionName)
+    }
+
+    @Test
     fun `대상지역 설명에 선택 읍면동이 포함되면 해당 후보를 선택하고 Region 읍면동은 선택값으로 유지한다`() {
         val result = useCase(
             candidates = listOf(

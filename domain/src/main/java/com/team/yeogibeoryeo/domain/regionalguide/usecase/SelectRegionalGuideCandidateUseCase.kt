@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import javax.inject.Inject
 
 class SelectRegionalGuideCandidateUseCase @Inject constructor() {
@@ -70,7 +71,13 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     ): List<RegionalDisposalGuide> {
         if (sido.isNullOrBlank()) return this
 
-        return filter { guide -> guide.region.sido == sido }
+        return filter { guide ->
+            RegionSidoAliasPolicy.isSameSido(
+                requestedSido = sido,
+                candidateSido = guide.region.sido,
+                candidateSigungu = guide.region.sigungu,
+            )
+        }
     }
 
     private fun List<RegionalDisposalGuide>.filterBySigungu(

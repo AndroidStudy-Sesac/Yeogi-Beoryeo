@@ -114,6 +114,39 @@ class RegionAddressParserTest {
     }
 
     @Test
+    fun `전남광주통합특별시 광주 5개 구 주소는 광주광역시로 정규화된다`() {
+        val result = parser.parse(
+            "전남광주통합특별시 서구 풍금로151번길 14"
+        )
+
+        assertEquals("광주광역시", result.sido)
+        assertEquals("서구", result.sigungu)
+        assertNull(result.eupmyeondong)
+    }
+
+    @Test
+    fun `도로명 주소의 건물번호와 괄호 안 동명이 붙어 있으면 괄호 안 동명만 추출한다`() {
+        val result = parser.parse(
+            "전남광주통합특별시 서구 풍금로151번길 14(금호동)"
+        )
+
+        assertEquals("광주광역시", result.sido)
+        assertEquals("서구", result.sigungu)
+        assertEquals("금호동", result.eupmyeondong)
+    }
+
+    @Test
+    fun `전남광주통합특별시 전남 시군 주소는 전라남도로 정규화된다`() {
+        val result = parser.parse(
+            "전남광주통합특별시 고흥군 고흥읍"
+        )
+
+        assertEquals("전라남도", result.sido)
+        assertEquals("고흥군", result.sigungu)
+        assertEquals("고흥읍", result.eupmyeondong)
+    }
+
+    @Test
     fun `과거 시도명은 현재 공식 시도명으로 정규화된다`() {
         val result = parser.parse(
             "강원도 춘천시 후평동"
