@@ -103,7 +103,7 @@ class CollectionSpotGeocodingRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        const val GEOCODING_CONCURRENCY_LIMIT = 3
+        const val GEOCODING_CONCURRENCY_LIMIT = 4
         val PARENTHESIZED_TEXT_REGEX = "\\([^)]*\\)".toRegex()
         val WHITESPACE_REGEX = "\\s+".toRegex()
     }
