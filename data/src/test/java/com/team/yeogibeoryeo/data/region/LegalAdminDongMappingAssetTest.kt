@@ -15,7 +15,7 @@ class LegalAdminDongMappingAssetTest {
     }
 
     @Test
-    fun `legal admin mapping asset can be decoded and contains haggye mappings`() {
+    fun `법정동 행정동 매핑 자산을 파싱하고 하계 매핑을 확인할 수 있다`() {
         val mappings = json.decodeFromString<List<LegalAdminDongMappingDto>>(
             File(ASSET_PATH).readText()
         )
@@ -35,7 +35,7 @@ class LegalAdminDongMappingAssetTest {
     }
 
     @Test
-    fun `legal admin mapping dto requires lookup key fields`() {
+    fun `법정동 행정동 매핑 dto는 조회 키 필드를 유지한다`() {
         assertThrows(SerializationException::class.java) {
             json.decodeFromString<List<LegalAdminDongMappingDto>>(
                 """
@@ -51,6 +51,6 @@ class LegalAdminDongMappingAssetTest {
 
     private companion object {
         const val ASSET_PATH =
-            "src/main/assets/region/legal_to_admin_mappings.20260325.json"
+            "src/main/assets/region/legal_to_admin_mappings.20260701.json"
     }
 }
