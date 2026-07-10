@@ -1,0 +1,87 @@
+"module: app":
+  - changed-files:
+      - any-glob-to-any-file: "app/**"
+
+"module: common":
+  - changed-files:
+      - any-glob-to-any-file: "common/**"
+
+"module: data":
+  - changed-files:
+      - any-glob-to-any-file: "data/**"
+
+"module: domain":
+  - changed-files:
+      - any-glob-to-any-file: "domain/**"
+
+"module: presentation":
+  - changed-files:
+      - any-glob-to-any-file: "presentation/**"
+
+"module: search":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "presentation/src/main/java/**/search/**"
+          - "presentation/src/test/java/**/search/**"
+          - "presentation/src/androidTest/java/**/search/**"
+
+"module: map":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "presentation/src/main/java/**/map/**"
+          - "presentation/src/test/java/**/map/**"
+          - "presentation/src/androidTest/java/**/map/**"
+
+"module: regionalguide":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "presentation/src/main/java/**/regionalguide/**"
+          - "presentation/src/test/java/**/regionalguide/**"
+          - "presentation/src/androidTest/java/**/regionalguide/**"
+
+"module: bookmark":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "presentation/src/main/java/**/favorites/**"
+          - "presentation/src/test/java/**/favorites/**"
+          - "presentation/src/androidTest/java/**/favorites/**"
+
+"type: setting":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "gradle/**"
+          - "**/*.gradle.kts"
+          - "settings.gradle.kts"
+          - "gradle.properties"
+  - head-branch:
+      - "^setting/"
+
+"type: docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "**/*.md"
+          - "DATA_SOURCES.md"
+          - "README.md"
+          - "THIRD_PARTY_NOTICES.md"
+  - head-branch:
+      - "^docs/"
+
+"type: feature":
+  - head-branch:
+      - "^feature/"
+
+"type: bug":
+  - head-branch:
+      - "^fix/"
+      - "^bug/"
+      - "^bugfix/"
+
+"type: refactor":
+  - head-branch:
+      - "^refactor/"
+
+"type: spike":
+  - head-branch:
+      - "^spike/"
