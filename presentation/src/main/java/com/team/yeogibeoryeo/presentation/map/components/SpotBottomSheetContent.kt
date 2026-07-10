@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -172,7 +173,9 @@ private fun MapRegionDetailSelection(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val detailKeywords = candidate.searchKeywords.drop(1)
+    val detailKeywords = candidate.searchKeywords
+        .filterNot { keyword -> keyword == candidate.searchKeyword }
+        .distinct()
 
     Column(
         modifier = modifier
@@ -241,7 +244,10 @@ private fun RegionDetailKeywordRow(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                role = Role.Button,
+                onClick = onClick,
+            )
             .padding(vertical = 14.dp),
     ) {
         Text(
@@ -265,7 +271,10 @@ private fun RegionDetailAllRow(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                role = Role.Button,
+                onClick = onClick,
+            )
             .padding(vertical = 14.dp),
     ) {
         Text(
