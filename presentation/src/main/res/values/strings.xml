@@ -240,6 +240,11 @@ SOFTWARE.]]></string>
     <string name="map_spot_result_count">검색 결과 %1$d개</string>
     <string name="map_region_candidate_title">지역을 선택해주세요</string>
     <string name="map_region_candidate_description">같은 이름의 지역이 여러 곳 있어요.</string>
+    <string name="map_region_detail_title">세부 지역을 선택해주세요</string>
+    <string name="map_region_detail_description">세부 지역을 선택하면 더 빠르게 검색할 수 있어요.</string>
+    <string name="map_region_detail_all_label">%1$s 전체 보기</string>
+    <string name="map_region_detail_all_description">결과가 많아 오래 걸릴 수 있어요.</string>
+    <string name="map_region_detail_back_to_candidates">지역 목록으로</string>
     <string name="map_empty_spot_result_title">검색 결과가 없습니다.</string>
     <string name="map_empty_spot_result_description">동/읍/면 이름으로 다시 검색해 주세요.\n예: 문래동, 역삼동</string>
     <string name="map_location_permission_denied_title">위치 권한이 필요합니다.</string>

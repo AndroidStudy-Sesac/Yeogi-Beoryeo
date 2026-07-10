@@ -375,7 +375,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
         }
 
     @Test
-    fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 유지하고 현재 위치 결과를 반영한다`() =
+    fun `키워드 검색 후 현재 위치 검색을 실행하면 검색어를 비우고 현재 위치 결과를 반영한다`() =
         runTest {
             val keywordSpot = sampleSpot("keyword", CollectionSpotType.OTHER)
             val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
@@ -396,7 +396,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             viewModel.searchByCurrentLocation()
             advanceUntilIdle()
 
-            assertEquals("용답동", viewModel.uiState.value.searchKeyword)
+            assertEquals("", viewModel.uiState.value.searchKeyword)
             assertEquals(
                 listOf(locationSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
                 viewModel.uiState.value.spots,

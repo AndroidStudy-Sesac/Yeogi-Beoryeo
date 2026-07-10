@@ -143,6 +143,9 @@ fun CollectionSpotMapScreen(
         onKeywordChanged = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchByKeyword,
         onRegionCandidateClick = viewModel::onRegionSearchCandidateClick,
+        onRegionDetailAllClick = viewModel::onRegionDetailSearchAllClick,
+        onRegionDetailKeywordClick = viewModel::onRegionDetailSearchKeywordClick,
+        onRegionDetailBackClick = viewModel::onRegionDetailSearchBack,
         onCurrentLocationClick = {
             requestCurrentLocationSearch()
         },
@@ -169,6 +172,9 @@ private fun CollectionSpotMapContent(
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
     onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
+    onRegionDetailAllClick: () -> Unit,
+    onRegionDetailKeywordClick: (String) -> Unit,
+    onRegionDetailBackClick: () -> Unit,
     onCurrentLocationClick: () -> Unit,
     onMapCenterSearchClick: (Coordinate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
@@ -197,6 +203,8 @@ private fun CollectionSpotMapContent(
     val hasNoticeOrError = uiState.locationNotice != null ||
         uiState.errorMessageResId != null
     val hasRegionCandidates = uiState.regionSearchCandidates.isNotEmpty()
+    val hasRegionDetailSelection = uiState.regionDetailSearchCandidate != null
+    val hasRegionSelection = hasRegionCandidates || hasRegionDetailSelection
     val isNoticeOrErrorOnly = hasNoticeOrError &&
         uiState.spots.isEmpty() &&
         selectedSpot == null
@@ -207,7 +215,15 @@ private fun CollectionSpotMapContent(
     }
     val hasResultListToReturn = uiState.hasSearched ||
         uiState.spots.isNotEmpty() ||
-        hasRegionCandidates
+        hasRegionSelection
+
+    BackHandler(enabled = hasRegionDetailSelection) {
+        onRegionDetailBackClick()
+        if (!hasRegionCandidates) {
+            mapUiMode = MapUiMode.Browsing
+            sheetLevel = MapSheetLevel.Hidden
+        }
+    }
 
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
@@ -218,6 +234,16 @@ private fun CollectionSpotMapContent(
             sheetLevel = MapSheetLevel.Hidden
             MapUiMode.Browsing
         }
+    }
+
+    BackHandler(
+        enabled = mapUiMode == MapUiMode.ResultList &&
+            sheetLevel != MapSheetLevel.Hidden &&
+            shouldShowBottomSheet &&
+            !hasRegionDetailSelection,
+    ) {
+        mapUiMode = MapUiMode.Browsing
+        sheetLevel = MapSheetLevel.Hidden
     }
 
     LaunchedEffect(isLocationPermissionGranted) {
@@ -233,9 +259,10 @@ private fun CollectionSpotMapContent(
         uiState.errorMessageResId,
         uiState.locationNotice,
         uiState.regionSearchCandidates,
+        uiState.regionDetailSearchCandidate,
     ) {
         when {
-            hasRegionCandidates -> {
+            hasRegionSelection -> {
                 mapUiMode = MapUiMode.ResultList
                 sheetLevel = MapSheetLevel.Half
             }
@@ -446,11 +473,15 @@ private fun CollectionSpotMapContent(
                             hasSearched = uiState.hasSearched,
                             selectedTypes = uiState.selectedTypes,
                             regionSearchCandidates = uiState.regionSearchCandidates,
+                            regionDetailSearchCandidate = uiState.regionDetailSearchCandidate,
                             locationNotice = uiState.locationNotice,
                             errorMessageResId = uiState.errorMessageResId,
                             partialWarningMessageResId = uiState.partialWarningMessageResId,
                             onTypeClick = onTypeClick,
                             onRegionCandidateClick = onRegionCandidateClick,
+                            onRegionDetailAllClick = onRegionDetailAllClick,
+                            onRegionDetailKeywordClick = onRegionDetailKeywordClick,
+                            onRegionDetailBackClick = onRegionDetailBackClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,
                             onSpotFavoriteClick = onSpotFavoriteClick,
                             onSpotClick = { spot ->
@@ -476,6 +507,7 @@ private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
         locationNotice != null ||
         errorMessageResId != null ||
         regionSearchCandidates.isNotEmpty() ||
+        regionDetailSearchCandidate != null ||
         hasSearched ||
         spots.isNotEmpty() ||
         selectedSpot != null
@@ -517,6 +549,9 @@ private fun CollectionSpotMapContentPreview() {
                 onKeywordChanged = {},
                 onSearchClick = {},
                 onRegionCandidateClick = {},
+                onRegionDetailAllClick = {},
+                onRegionDetailKeywordClick = {},
+                onRegionDetailBackClick = {},
                 onCurrentLocationClick = {},
                 onMapCenterSearchClick = {},
                 onLocationNoticeActionClick = {},

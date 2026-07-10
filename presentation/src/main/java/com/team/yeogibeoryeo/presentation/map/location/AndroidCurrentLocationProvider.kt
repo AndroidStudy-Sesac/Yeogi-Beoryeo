@@ -13,7 +13,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 class AndroidCurrentLocationProvider @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     private val locationPermissionChecker: LocationPermissionChecker,
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : CurrentLocationProvider {
 
     @SuppressLint("MissingPermission")
