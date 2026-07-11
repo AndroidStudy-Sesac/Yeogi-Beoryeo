@@ -3,12 +3,11 @@ package com.team.yeogibeoryeo.data.region.local
 import android.content.Context
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class RegionalGuideRegionOptionsLocalDataSource @Inject constructor(
@@ -38,6 +37,7 @@ class RegionalGuideRegionOptionsLocalDataSource @Inject constructor(
     }
 
     private companion object {
-        const val REGIONAL_GUIDE_REGION_ASSET_PATH = "region/regional_guide_regions.json"
+        const val REGIONAL_GUIDE_REGION_ASSET_PATH =
+            "region/regional_guide_regions.20260701.json"
     }
 }
