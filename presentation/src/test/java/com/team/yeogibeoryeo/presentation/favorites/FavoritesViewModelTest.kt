@@ -54,11 +54,7 @@ class FavoritesViewModelTest {
     fun `즐겨찾기 원본 가이드를 조회해 UI 모델로 변환한다`() =
         runTest {
             val guide =
-                sampleGuide(
-                    id = "paper-pack",
-                    name = "종이팩",
-                    subCategory = DisposalSubCategory.MILK_CARTON,
-                )
+                sampleItemGuide()
             val viewModel =
                 createViewModel(
                     favoriteRepository =
@@ -359,11 +355,7 @@ class FavoritesViewModelTest {
     fun `품목 즐겨찾기 해제 시 공통 Favorite를 삭제하고 UI 목록을 갱신한다`() =
         runTest {
             val guide =
-                sampleGuide(
-                    id = "paper-pack",
-                    name = "종이팩",
-                    subCategory = DisposalSubCategory.MILK_CARTON,
-                )
+                sampleItemGuide()
             val favoriteRepository =
                 FakeFavoriteRepository(
                     initialFavorites =
@@ -554,16 +546,12 @@ class FavoritesViewModelTest {
             regionalGuideUiMapper = FavoriteRegionalGuideUiMapper(),
         )
 
-    private fun sampleGuide(
-        id: String,
-        name: String,
-        subCategory: DisposalSubCategory? = null,
-    ): DisposalItemGuide =
+    private fun sampleItemGuide(): DisposalItemGuide =
         DisposalItemGuide(
-            id = id,
-            name = name,
+            id = "paper-pack",
+            name = "종이팩",
             category = DisposalCategory.PAPER_PACK,
-            subCategory = subCategory,
+            subCategory = DisposalSubCategory.MILK_CARTON,
             instructions = listOf(DisposalInstruction(method = "재활용폐기물")),
             steps = emptyList(),
             cautions = emptyList(),
