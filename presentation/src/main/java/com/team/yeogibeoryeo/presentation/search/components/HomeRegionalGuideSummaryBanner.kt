@@ -156,8 +156,8 @@ fun HomeRegionalGuideSummaryBanner(
 private fun HomeRegionalGuideSummaryInfoBlock(
     label: String,
     value: String,
-    notice: String? = null,
     modifier: Modifier = Modifier,
+    notice: String? = null,
 ) {
     Card(
         modifier = modifier,
