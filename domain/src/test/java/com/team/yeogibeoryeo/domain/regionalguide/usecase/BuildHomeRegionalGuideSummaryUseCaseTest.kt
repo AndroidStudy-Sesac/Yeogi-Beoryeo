@@ -1,18 +1,18 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryBuildResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
-import com.team.yeogibeoryeo.domain.regionalguide.model.TodayRegionalWasteSummaryResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class GetTodayRegionalWasteSummaryUseCaseTest {
-    private val useCase = GetTodayRegionalWasteSummaryUseCase()
+class BuildHomeRegionalGuideSummaryUseCaseTest {
+    private val useCase = BuildHomeRegionalGuideSummaryUseCase()
 
     @Test
     fun `지역 가이드 일정을 일반쓰레기 대표값 기준으로 요약한다`() {
@@ -40,7 +40,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertEquals("target-id", targetId)
             assertEquals(
@@ -85,7 +85,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertEquals("월, 수, 금", disposalDays)
             assertEquals("18:00 ~ 23:00", disposalTime)
@@ -128,7 +128,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertEquals("월, 수, 금", disposalDays)
             assertEquals("18:00 ~ 23:00", disposalTime)
@@ -163,7 +163,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertEquals(
                 listOf(
@@ -200,7 +200,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertEquals(listOf(RegionalWasteType.FOOD.description), wasteTypeNames)
             assertNull(disposalDays)
@@ -234,7 +234,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertNull(disposalDays)
             assertEquals("18:00 이후", disposalTime)
@@ -242,7 +242,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
     }
 
     @Test
-    fun `일반쓰레기 요일은 오늘 요일 매칭 없이 표시한다`() {
+    fun `일반쓰레기 요일은 현재 요일 매칭 없이 대표 요일로 표시한다`() {
         val guide =
             sampleGuide(
                 schedules =
@@ -261,7 +261,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertEquals("화, 목", disposalDays)
             assertNull(disposalTime)
@@ -288,7 +288,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertNull(disposalDays)
             assertNull(disposalTime)
@@ -316,7 +316,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertNull(disposalDays)
             assertEquals("18:00 이후", disposalTime)
@@ -344,7 +344,7 @@ class GetTodayRegionalWasteSummaryUseCaseTest {
                 guide = guide,
             )
 
-        require(summary is TodayRegionalWasteSummaryResult.Summary)
+        require(summary is HomeRegionalGuideSummaryBuildResult.Summary)
         summary.summary.run {
             assertNull(disposalDays)
             assertEquals("18:00 이후", disposalTime)

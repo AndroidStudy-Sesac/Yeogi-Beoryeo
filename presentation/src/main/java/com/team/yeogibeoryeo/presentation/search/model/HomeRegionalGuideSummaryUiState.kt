@@ -17,12 +17,12 @@ sealed interface HomeRegionalGuideSummaryUiState {
         val hasDifferentDisposalTime: Boolean,
     ) : HomeRegionalGuideSummaryUiState
 
-    data class NoTodaySchedule(
+    data class NoRepresentativeSchedule(
         val targetId: String,
         val regionName: String,
     ) : HomeRegionalGuideSummaryUiState
 
-    data class ScheduleNeedsConfirmation(
+    data class RepresentativeScheduleNeedsConfirmation(
         val targetId: String,
         val regionName: String,
     ) : HomeRegionalGuideSummaryUiState

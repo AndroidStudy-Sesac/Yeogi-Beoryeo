@@ -263,24 +263,24 @@ private fun HomeRegionalGuideSummaryUiState.toBannerContent(): HomeRegionalGuide
                 ),
             )
 
-        is HomeRegionalGuideSummaryUiState.NoTodaySchedule ->
+        is HomeRegionalGuideSummaryUiState.NoRepresentativeSchedule ->
             HomeRegionalGuideBannerContent(
                 label = label,
                 title = regionName,
                 detail = stringResource(
-                    id = R.string.home_regional_guide_summary_no_today_schedule_detail,
+                    id = R.string.home_regional_guide_summary_no_representative_schedule_detail,
                 ),
                 targetId = targetId,
                 actionLabel = openDetailAction,
                 showChevron = true,
             )
 
-        is HomeRegionalGuideSummaryUiState.ScheduleNeedsConfirmation ->
+        is HomeRegionalGuideSummaryUiState.RepresentativeScheduleNeedsConfirmation ->
             HomeRegionalGuideBannerContent(
                 label = label,
                 title = regionName,
                 detail = stringResource(
-                    id = R.string.home_regional_guide_summary_schedule_needs_confirmation_detail,
+                    id = R.string.home_regional_guide_summary_representative_schedule_needs_confirmation_detail,
                 ),
                 targetId = targetId,
                 actionLabel = openDetailAction,
@@ -376,10 +376,10 @@ private fun HomeRegionalGuideSummaryBannerMixedSchedulePreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun HomeRegionalGuideSummaryBannerNeedsConfirmationPreview() {
+private fun HomeRegionalGuideSummaryBannerRepresentativeScheduleNeedsConfirmationPreview() {
     MaterialTheme {
         HomeRegionalGuideSummaryBanner(
-            state = HomeRegionalGuideSummaryUiState.ScheduleNeedsConfirmation(
+            state = HomeRegionalGuideSummaryUiState.RepresentativeScheduleNeedsConfirmation(
                 targetId = "preview",
                 regionName = "경기도 > 고양시",
             ),

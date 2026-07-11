@@ -15,8 +15,8 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.BuildHomeRegionalGuideSummaryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
-import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetTodayRegionalWasteSummaryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuideSummaryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
@@ -252,7 +252,7 @@ class HomeRegionalGuideSummaryViewModelTest {
                             findAdminDongCandidatesForLegalDongUseCase =
                                 FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                         ),
-                    getTodayRegionalWasteSummaryUseCase = GetTodayRegionalWasteSummaryUseCase(),
+                    buildHomeRegionalGuideSummaryUseCase = BuildHomeRegionalGuideSummaryUseCase(),
                 ),
         )
 
