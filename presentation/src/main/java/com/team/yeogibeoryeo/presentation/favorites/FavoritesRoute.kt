@@ -24,6 +24,7 @@ fun FavoritesRoute(
         onItemGuideClick = onItemGuideClick,
         onCollectionSpotClick = onCollectionSpotClick,
         onRegionalGuideClick = onRegionalGuideClick,
+        onItemGuideFavoriteRemoveClick = viewModel::removeItemGuideFavorite,
         onCollectionSpotFavoriteRemoveClick = viewModel::removeCollectionSpotFavorite,
         onRegionalGuideFavoriteRemoveClick = viewModel::removeRegionalGuideFavorite,
         modifier = modifier.statusBarsPadding(),
