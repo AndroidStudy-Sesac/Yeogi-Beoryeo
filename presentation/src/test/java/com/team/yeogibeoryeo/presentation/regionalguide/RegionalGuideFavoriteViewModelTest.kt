@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -254,6 +255,64 @@ class RegionalGuideFavoriteViewModelTest {
 
         assertEquals(RegionalGuideCandidateReason.FAVORITE_RESTORE_AMBIGUOUS, state.reason)
         assertEquals(2, state.candidates.size)
+    }
+
+    @Test
+    fun `즐겨찾기 복원 모호 후보 상세에서 뒤로가기를 요청하면 이전 후보 목록을 복원한다`() = runTest {
+        val region = Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "반석동")
+        val firstGuide =
+            RegionalDisposalGuide(
+                region = region,
+                targetRegionName = "반석동 일부지역",
+                managementZoneName = "노은2동",
+                schedules = emptyList(),
+            )
+        val secondGuide =
+            RegionalDisposalGuide(
+                region = region,
+                targetRegionName = "반석동 일부지역",
+                managementZoneName = "노은3동",
+                schedules = emptyList(),
+            )
+        val targetId = RegionalGuideFavoriteKey(
+            sido = region.sido,
+            sigungu = region.sigungu,
+            eupmyeondong = region.eupmyeondong,
+            targetRegionName = secondGuide.targetRegionName,
+            managementZoneName = null,
+        ).encode()
+        val snapshot = RegionalGuideFavoriteSnapshot(
+            targetId = targetId,
+            region = region,
+            targetRegionName = secondGuide.targetRegionName,
+            managementZoneName = null,
+        )
+        val viewModel =
+            createViewModel(
+                regionalGuideRepository =
+                    FakeRegionalDisposalGuideRepository(candidates = listOf(firstGuide, secondGuide)),
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(targetId)
+        advanceUntilIdle()
+
+        val candidate = (viewModel.uiState.value as RegionalGuideUiState.GuideCandidates)
+            .candidates
+            .first()
+
+        viewModel.onRegionalGuideCandidateSelected(candidate)
+
+        val successState = viewModel.uiState.value as RegionalGuideUiState.Success
+        assertTrue(successState.canRestoreCandidates)
+
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        val restoredState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+        assertEquals(RegionalGuideCandidateReason.FAVORITE_RESTORE_AMBIGUOUS, restoredState.reason)
+        assertEquals(2, restoredState.candidates.size)
     }
 
     @Test

@@ -204,7 +204,8 @@ internal class FakeRegionOptionsRepository(
 }
 
 internal class FakeRegionalDisposalGuideRepository(
-    private val candidates: List<RegionalDisposalGuide> = emptyList()
+    private val candidates: List<RegionalDisposalGuide> = emptyList(),
+    private val failure: Throwable? = null,
 ) : RegionalDisposalGuideRepository {
     val queries = mutableListOf<RegionalGuideQuery>()
 
@@ -212,6 +213,7 @@ internal class FakeRegionalDisposalGuideRepository(
         query: RegionalGuideQuery
     ): Result<List<RegionalDisposalGuide>> {
         queries += query
+        failure?.let { return Result.failure(it) }
         return Result.success(candidates)
     }
 }

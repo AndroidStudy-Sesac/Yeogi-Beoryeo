@@ -17,6 +17,7 @@ sealed interface RegionalGuideUiState {
         val query: String,
         val guide: RegionalGuideUiModel,
         val isFavorite: Boolean = false,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Empty(
@@ -35,7 +36,8 @@ sealed interface RegionalGuideUiState {
     data class GuideCandidates(
         val query: String,
         val reason: RegionalGuideCandidateReason,
-        val candidates: List<RegionalGuideCandidateUiModel>
+        val candidates: List<RegionalGuideCandidateUiModel>,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Error(

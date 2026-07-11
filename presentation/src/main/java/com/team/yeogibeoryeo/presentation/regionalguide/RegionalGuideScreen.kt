@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -91,6 +92,7 @@ fun RegionalGuideRoute(
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
+        onRestoreCandidates = viewModel::restoreCandidatesFromDetail,
         onFavoriteClick = viewModel::onFavoriteClick,
         modifier = modifier.statusBarsPadding(),
     )
@@ -114,6 +116,7 @@ fun RegionalGuideScreen(
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    onRestoreCandidates: () -> Boolean = { false },
     onFavoriteClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -173,6 +176,17 @@ fun RegionalGuideScreen(
     }
 
     val collectionTypePanelScrollState = rememberScrollState()
+
+    BackHandler(
+        enabled = when (uiState) {
+            is RegionalGuideUiState.Success -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Ambiguous,
+            is RegionalGuideUiState.GuideCandidates -> true
+            else -> false
+        }
+    ) {
+        onRestoreCandidates()
+    }
 
     Column(
         modifier = modifier
