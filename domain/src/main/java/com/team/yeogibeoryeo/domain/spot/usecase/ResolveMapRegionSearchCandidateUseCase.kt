@@ -72,7 +72,12 @@ class ResolveMapRegionSearchCandidateUseCase @Inject constructor(
 
     private fun Region.matchesScopeToken(token: String): Boolean {
         val sidoMatches = sido?.let { sido ->
-            CollectionSpotAddressSearchPolicy.sidoMatches(token, sido)
+            CollectionSpotAddressSearchPolicy.sidoMatches(
+                token = token,
+                sido = sido,
+                requestedSigungu = sigungu,
+                candidateSigungu = sigungu,
+            )
         } ?: false
         val sigunguMatches = sigungu
             ?.split(REGION_SCOPE_SEPARATOR)
@@ -114,9 +119,14 @@ class ResolveMapRegionSearchCandidateUseCase @Inject constructor(
         }
         if (scopeTokens.isEmpty()) return null
 
-        val sido = scopeTokens
-            .firstNotNullOfOrNull { token -> CollectionSpotAddressSearchPolicy.normalizedSidoName(token) }
         val sigungu = scopeTokens.toSigunguName()
+        val sido = scopeTokens
+            .firstNotNullOfOrNull { token ->
+                CollectionSpotAddressSearchPolicy.normalizedSidoName(
+                    token = token,
+                    sigungu = sigungu,
+                )
+            }
 
         if (sido == null && sigungu == null) return null
 

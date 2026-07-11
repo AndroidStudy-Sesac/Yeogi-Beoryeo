@@ -19,6 +19,7 @@ class ResolveMapRegionSearchCandidateUseCaseTest {
             "금호동" to listOf(
                 Region(sido = "서울특별시", sigungu = "성동구", eupmyeondong = "금호동"),
                 Region(sido = "광주광역시", sigungu = "서구", eupmyeondong = "금호동"),
+                Region(sido = "전라남도", sigungu = "광양시", eupmyeondong = "금호동"),
             ),
             "문래동" to listOf(
                 Region(sido = "서울특별시", sigungu = "영등포구", eupmyeondong = "문래동"),
@@ -105,6 +106,28 @@ class ResolveMapRegionSearchCandidateUseCaseTest {
             result as MapRegionSearchCandidateResult.ReadyToSearch
             assertEquals("금호동", result.searchKeyword)
             assertEquals("대구광역시 북구 금호동", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `전남광주통합특별시 광주 5개 구 입력은 광주 후보로 좁혀 검색한다`() =
+        runSuspendTest {
+            val result = useCase("전남광주통합특별시 서구 금호동")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("금호동", result.searchKeyword)
+            assertEquals("광주광역시 서구 금호동", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `전남광주통합특별시 전남 시군 입력은 전남 후보로 좁혀 검색한다`() =
+        runSuspendTest {
+            val result = useCase("전남광주통합특별시 광양시 금호동")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("금호동", result.searchKeyword)
+            assertEquals("전라남도 광양시 금호동", result.selectedCandidate?.displayName)
         }
 
     private fun runSuspendTest(block: suspend () -> Unit) {
