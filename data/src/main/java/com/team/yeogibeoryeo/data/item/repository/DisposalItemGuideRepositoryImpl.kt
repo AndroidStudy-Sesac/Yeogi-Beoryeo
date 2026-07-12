@@ -16,15 +16,15 @@ constructor(
     private val localDataSource: ItemCategoryLocalSource,
 ) : DisposalItemGuideRepository {
     override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> {
-        val normalizedQuery = query.trim()
-        if (normalizedQuery.isBlank()) return emptyList()
+        val searchQuery = query.toSearchKey()
+        if (searchQuery.isBlank()) return emptyList()
 
         val dictionaryItems = localDataSource.getWasteDictionaryItems()
-        val directMatches = dictionaryItems.searchBy(normalizedQuery)
+        val directMatches = dictionaryItems.searchBy(searchQuery)
         if (directMatches.isNotEmpty()) return directMatches
 
-        val resolvedQuery = localDataSource.getSynonyms()[normalizedQuery] ?: normalizedQuery
-        if (resolvedQuery == normalizedQuery) return emptyList()
+        val resolvedQuery = localDataSource.getSynonyms()[searchQuery]?.toSearchKey() ?: searchQuery
+        if (resolvedQuery == searchQuery) return emptyList()
 
         return dictionaryItems.searchBy(resolvedQuery)
     }
@@ -81,22 +81,26 @@ constructor(
 
     override fun getCategories(): List<DisposalCategory> = DisposalCategory.entries.toList()
 
-    private fun WasteDictionaryItem.dictionarySearchRank(query: String): Int? =
-        when {
-            name.equals(query, ignoreCase = true) -> 0
+    private fun WasteDictionaryItem.dictionarySearchRank(query: String): Int? {
+        val nameSearchKey = name.toSearchKey()
+        val similarItemSearchKeys = similarItems.map { it.toSearchKey() }
 
-            name.startsWith(query, ignoreCase = true) -> 1
+        return when {
+            nameSearchKey.equals(query, ignoreCase = true) -> 0
 
-            name.contains(query, ignoreCase = true) -> 2
+            nameSearchKey.startsWith(query, ignoreCase = true) -> 1
 
-            similarItems.any { it.equals(query, ignoreCase = true) } -> 3
+            nameSearchKey.contains(query, ignoreCase = true) -> 2
 
-            similarItems.any { it.startsWith(query, ignoreCase = true) } -> 4
+            similarItemSearchKeys.any { it.equals(query, ignoreCase = true) } -> 3
 
-            similarItems.any { it.contains(query, ignoreCase = true) } -> 5
+            similarItemSearchKeys.any { it.startsWith(query, ignoreCase = true) } -> 4
+
+            similarItemSearchKeys.any { it.contains(query, ignoreCase = true) } -> 5
 
             else -> null
         }
+    }
 
     private fun Int.isEligibleDictionaryRank(bestRank: Int?): Boolean =
         when (bestRank) {
@@ -106,6 +110,8 @@ constructor(
             4, 5 -> this in 4..5
             else -> false
         }
+
+    private fun String.toSearchKey(): String = filterNot { it.isWhitespace() }
 
     private fun resolveCategory(
         guideDetail: ItemGuideDetail?,

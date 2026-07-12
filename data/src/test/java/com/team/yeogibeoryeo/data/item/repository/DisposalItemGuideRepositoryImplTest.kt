@@ -166,6 +166,30 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `유사 품목명 내부 공백 차이를 무시하고 검색한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "소형 폐가전",
+                                        similarItems = listOf("핸드폰 충전기"),
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("핸드폰충전기")
+
+            assertEquals(listOf("소형 폐가전"), results.map { it.name })
+        }
+
+    @Test
     fun `searchItemGuides는 직접 이름 결과가 있으면 유사 품목 결과보다 우선한다`() =
         runBlocking {
             val repository =
@@ -221,6 +245,64 @@ class DisposalItemGuideRepositoryImplTest {
             val results = repository.searchItemGuides("유리")
 
             assertEquals(listOf("유리"), results.map { it.name })
+        }
+
+    @Test
+    fun `품목명 내부 공백 차이를 무시하고 검색한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "태블릿 PC",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "핸드폰 충전기",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val tabletResults = repository.searchItemGuides("태블릿PC")
+            val chargerResults = repository.searchItemGuides("핸드폰충전기")
+
+            assertEquals(listOf("태블릿 PC"), tabletResults.map { it.name })
+            assertEquals(listOf("핸드폰 충전기"), chargerResults.map { it.name })
+        }
+
+    @Test
+    fun `공백 제거 후 정확 일치를 부분 일치보다 우선한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "AAA건전지",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전지류")),
+                                        dischargeMethods = listOf("전용 수거함에 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "AA 건전지",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전지류")),
+                                        dischargeMethods = listOf("전용 수거함에 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("AA건전지")
+
+            assertEquals(listOf("AA 건전지"), results.map { it.name })
         }
 
     @Test
