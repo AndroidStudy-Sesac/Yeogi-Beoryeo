@@ -7,6 +7,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavori
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveCollectionSpotFavoriteUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteCollectionSpotUiMapper
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteItemGuideUiMapper
@@ -28,6 +29,7 @@ class FavoritesViewModel
         observeFavoritesUseCase: ObserveFavoritesUseCase,
         observeCollectionSpotFavoritesUseCase: ObserveCollectionSpotFavoritesUseCase,
         observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
+        private val removeFavoriteUseCase: RemoveFavoriteUseCase,
         private val removeCollectionSpotFavoriteUseCase: RemoveCollectionSpotFavoriteUseCase,
         private val removeRegionalGuideFavoriteUseCase: RemoveRegionalGuideFavoriteUseCase,
         private val itemGuideUiMapper: FavoriteItemGuideUiMapper,
@@ -74,6 +76,12 @@ class FavoritesViewModel
 
         fun selectTab(tab: FavoriteTab) {
             selectedTab.value = tab
+        }
+
+        fun removeItemGuideFavorite(targetId: String) {
+            viewModelScope.launch {
+                removeFavoriteUseCase(FavoriteTargetType.ITEM_GUIDE, targetId)
+            }
         }
 
         fun removeCollectionSpotFavorite(targetId: String) {

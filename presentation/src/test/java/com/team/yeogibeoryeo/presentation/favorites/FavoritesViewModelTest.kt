@@ -13,6 +13,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavori
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveCollectionSpotFavoriteUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
@@ -53,11 +54,7 @@ class FavoritesViewModelTest {
     fun `즐겨찾기 원본 가이드를 조회해 UI 모델로 변환한다`() =
         runTest {
             val guide =
-                sampleGuide(
-                    id = "paper-pack",
-                    name = "종이팩",
-                    subCategory = DisposalSubCategory.MILK_CARTON,
-                )
+                sampleItemGuide()
             val viewModel =
                 createViewModel(
                     favoriteRepository =
@@ -355,6 +352,41 @@ class FavoritesViewModelTest {
         }
 
     @Test
+    fun `품목 즐겨찾기 해제 시 공통 Favorite를 삭제하고 UI 목록을 갱신한다`() =
+        runTest {
+            val guide =
+                sampleItemGuide()
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.ITEM_GUIDE,
+                                targetId = guide.id,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = listOf(guide)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(1, viewModel.uiState.value.selectedFavorites.size)
+
+            viewModel.removeItemGuideFavorite(guide.id)
+            advanceUntilIdle()
+
+            assertEquals(emptyList<FavoriteUiModel>(), viewModel.uiState.value.selectedFavorites)
+            assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.ITEM_GUIDE, guide.id))
+        }
+
+    @Test
     fun `탭을 변경하면 선택된 탭 상태를 반영한다`() =
         runTest {
             val viewModel =
@@ -492,6 +524,7 @@ class FavoritesViewModelTest {
                 ),
             observeRegionalGuideFavoriteSnapshotsUseCase =
                 ObserveRegionalGuideFavoriteSnapshotsUseCase(regionalGuideSnapshotRepository),
+            removeFavoriteUseCase = RemoveFavoriteUseCase(favoriteRepository),
             removeCollectionSpotFavoriteUseCase =
                 RemoveCollectionSpotFavoriteUseCase(
                     collectionSpotFavoriteRepository =
@@ -513,16 +546,12 @@ class FavoritesViewModelTest {
             regionalGuideUiMapper = FavoriteRegionalGuideUiMapper(),
         )
 
-    private fun sampleGuide(
-        id: String,
-        name: String,
-        subCategory: DisposalSubCategory? = null,
-    ): DisposalItemGuide =
+    private fun sampleItemGuide(): DisposalItemGuide =
         DisposalItemGuide(
-            id = id,
-            name = name,
+            id = "paper-pack",
+            name = "종이팩",
             category = DisposalCategory.PAPER_PACK,
-            subCategory = subCategory,
+            subCategory = DisposalSubCategory.MILK_CARTON,
             instructions = listOf(DisposalInstruction(method = "재활용폐기물")),
             steps = emptyList(),
             cautions = emptyList(),

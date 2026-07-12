@@ -31,6 +31,7 @@ fun FavoritesScreen(
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
+    onItemGuideFavoriteRemoveClick: (String) -> Unit,
     onCollectionSpotFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideFavoriteRemoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -104,6 +105,10 @@ fun FavoritesScreen(
                             }
                         },
                         onRemoveClick = when (favorite.type) {
+                            FavoriteTargetType.ITEM_GUIDE -> {
+                                { onItemGuideFavoriteRemoveClick(favorite.targetId) }
+                            }
+
                             FavoriteTargetType.COLLECTION_SPOT -> {
                                 { onCollectionSpotFavoriteRemoveClick(favorite.targetId) }
                             }
@@ -112,7 +117,6 @@ fun FavoritesScreen(
                                 { onRegionalGuideFavoriteRemoveClick(favorite.targetId) }
                             }
 
-                            FavoriteTargetType.ITEM_GUIDE -> null
                         },
                     )
                 }
