@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -91,6 +92,7 @@ fun RegionalGuideRoute(
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
+        onRestoreCandidates = viewModel::restoreCandidatesFromDetail,
         onFavoriteClick = viewModel::onFavoriteClick,
         modifier = modifier.statusBarsPadding(),
     )
@@ -109,13 +111,14 @@ fun RegionalGuideScreen(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
-    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
-    onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
-    onFavoriteClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
+    onRegionSelectorDropdownDismissed: () -> Unit = {},
+    onRestoreCandidates: () -> Boolean = { false },
+    onFavoriteClick: () -> Unit = {},
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
@@ -173,6 +176,19 @@ fun RegionalGuideScreen(
     }
 
     val collectionTypePanelScrollState = rememberScrollState()
+
+    BackHandler(
+        enabled = when (uiState) {
+            is RegionalGuideUiState.Loading -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Success -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Error -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Ambiguous,
+            is RegionalGuideUiState.GuideCandidates -> true
+            else -> false
+        }
+    ) {
+        onRestoreCandidates()
+    }
 
     Column(
         modifier = modifier
@@ -341,10 +357,10 @@ private fun String?.takeIfNotBlank(): String? =
 @Composable
 private fun RegionalGuideContent(
     uiState: RegionalGuideUiState,
-    modifier: Modifier = Modifier,
     onRetryClick: () -> Unit,
     onEmptyActionClick: (RegionalGuideEmptyActionType) -> Unit,
     onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     when (uiState) {
         RegionalGuideUiState.Idle -> {

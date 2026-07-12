@@ -6,6 +6,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -222,6 +223,193 @@ class RegionalGuideCandidateSelectionViewModelTest {
             assertEquals("울주군", selectedSigungu)
             assertNull(selectedEupmyeondong)
         }
+    }
+
+    @Test
+    fun `일반 후보 상세에서 뒤로가기를 요청하면 이전 후보 목록을 복원한다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "울주군")
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "범서, 온양, 웅촌, 언양, 삼남, 상북, 온산, 청량, 서생"
+                    ),
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "두동, 두서, 삼동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("울주군")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val candidate = (viewModel.uiState.value as RegionalGuideUiState.GuideCandidates)
+            .candidates
+            .first()
+
+        viewModel.onRegionalGuideCandidateSelected(candidate)
+
+        val successState = viewModel.uiState.value as RegionalGuideUiState.Success
+        assertTrue(successState.canRestoreCandidates)
+
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        val restoredState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+        assertEquals("울주군", restoredState.query)
+        assertEquals(RegionalGuideCandidateReason.MULTIPLE_CANDIDATES, restoredState.reason)
+        assertEquals(2, restoredState.candidates.size)
+        assertEquals("울주군", viewModel.searchKeyword.value)
+        assertEquals("울주군", viewModel.regionSelectorUiState.value.selectedSigungu)
+    }
+
+    @Test
+    fun `대체 수거 유형 후보 상세에서 뒤로가기를 요청하면 이전 후보 패널 상태를 복원한다`() = runTest {
+        val region = Region(
+            sido = "강원특별자치도",
+            sigungu = "강릉시",
+            eupmyeondong = "사천면"
+        )
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(resolvedRegion = region),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    RegionalDisposalGuide(
+                        region = region.copy(eupmyeondong = null),
+                        managementZoneName = "없음",
+                        targetRegionName = "없음",
+                        disposalPlaceType = "문전수거",
+                        schedules = emptyList()
+                    ),
+                    RegionalDisposalGuide(
+                        region = region.copy(eupmyeondong = null),
+                        managementZoneName = "없음",
+                        targetRegionName = "없음",
+                        disposalPlaceType = "거점수거",
+                        schedules = emptyList()
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("사천면")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val candidate = (viewModel.uiState.value as RegionalGuideUiState.GuideCandidates)
+            .candidates
+            .first()
+
+        viewModel.onRegionalGuideCandidateSelected(candidate)
+
+        val successState = viewModel.uiState.value as RegionalGuideUiState.Success
+        assertTrue(successState.canRestoreCandidates)
+
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        val restoredState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+        assertEquals(
+            RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
+            restoredState.reason
+        )
+        assertEquals(2, restoredState.candidates.size)
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("강원특별자치도", selectedSido)
+            assertEquals("강릉시", selectedSigungu)
+            assertEquals("사천면", selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `복수 정확 매칭 후보 상세에서 뒤로가기를 요청하면 이전 후보 목록을 복원한다`() = runTest {
+        val region = Region(
+            sido = "대전광역시",
+            sigungu = "유성구",
+            eupmyeondong = "반석동"
+        )
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(resolvedRegion = region),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    RegionalDisposalGuide(
+                        region = region,
+                        managementZoneName = "노은2동",
+                        targetRegionName = "반석동",
+                        schedules = emptyList()
+                    ),
+                    RegionalDisposalGuide(
+                        region = region,
+                        managementZoneName = "노은3동",
+                        targetRegionName = "반석동",
+                        schedules = emptyList()
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("반석동")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val candidate = (viewModel.uiState.value as RegionalGuideUiState.GuideCandidates)
+            .candidates
+            .first()
+
+        viewModel.onRegionalGuideCandidateSelected(candidate)
+
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        val restoredState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+        assertEquals(RegionalGuideCandidateReason.MULTIPLE_EXACT_MATCHES, restoredState.reason)
+        assertEquals(2, restoredState.candidates.size)
+        assertEquals("반석동", viewModel.searchKeyword.value)
+    }
+
+    @Test
+    fun `직접 조회 상세에서는 후보 목록 복원을 처리하지 않는다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(
+                    sido = "서울특별시",
+                    sigungu = "마포구",
+                    eupmyeondong = "합정동"
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    RegionalDisposalGuide(
+                        region = Region(
+                            sido = "서울특별시",
+                            sigungu = "마포구",
+                            eupmyeondong = "합정동"
+                        ),
+                        targetRegionName = "합정동",
+                        managementZoneName = "합정동",
+                        schedules = emptyList()
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("합정동")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertFalse(state.canRestoreCandidates)
+        assertFalse(viewModel.restoreCandidatesFromDetail())
     }
 
 }

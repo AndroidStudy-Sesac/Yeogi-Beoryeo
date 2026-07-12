@@ -10,13 +10,15 @@ sealed interface RegionalGuideUiState {
     data object Idle : RegionalGuideUiState
 
     data class Loading(
-        val query: String
+        val query: String,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Success(
         val query: String,
         val guide: RegionalGuideUiModel,
         val isFavorite: Boolean = false,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Empty(
@@ -35,12 +37,14 @@ sealed interface RegionalGuideUiState {
     data class GuideCandidates(
         val query: String,
         val reason: RegionalGuideCandidateReason,
-        val candidates: List<RegionalGuideCandidateUiModel>
+        val candidates: List<RegionalGuideCandidateUiModel>,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Error(
         val query: String,
-        val message: String
+        val message: String,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 }
 
