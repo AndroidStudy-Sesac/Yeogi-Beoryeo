@@ -110,6 +110,60 @@ class CollectionSpotGeocodingRepositoryImplTest {
     }
 
     @Test
+    fun `전남광주통합특별시 광주 5개 구 주소는 광주광역시 주소로 geocoding한다`() = runBlocking {
+        val spotGeocoder = FakeSpotGeocoder(
+            coordinatesByAddress = mapOf(
+                "광주광역시 광산구 하남대로 248-10" to Coordinate(
+                    latitude = 35.1771,
+                    longitude = 126.8062,
+                ),
+            ),
+        )
+        val repository = createRepository(spotGeocoder)
+
+        val spot = collectionSpot(
+            id = "gwangju-unnam",
+            address = "전남광주통합특별시 광산구 하남대로 248-10",
+        )
+        val result = repository.geocodeSpot(spot)
+
+        assertEquals(
+            listOf("광주광역시 광산구 하남대로 248-10"),
+            spotGeocoder.requestedAddresses,
+        )
+        assertEquals("전남광주통합특별시 광산구 하남대로 248-10", result.address)
+        assertEquals(35.1771, result.coordinate?.latitude)
+        assertEquals(126.8062, result.coordinate?.longitude)
+    }
+
+    @Test
+    fun `전남광주통합특별시 전남 시군 주소는 전라남도 주소로 geocoding한다`() = runBlocking {
+        val spotGeocoder = FakeSpotGeocoder(
+            coordinatesByAddress = mapOf(
+                "전라남도 광양시 금호동 1" to Coordinate(
+                    latitude = 34.9332,
+                    longitude = 127.7253,
+                ),
+            ),
+        )
+        val repository = createRepository(spotGeocoder)
+
+        val spot = collectionSpot(
+            id = "gwangyang-geumho",
+            address = "전남광주통합특별시 광양시 금호동 1",
+        )
+        val result = repository.geocodeSpot(spot)
+
+        assertEquals(
+            listOf("전라남도 광양시 금호동 1"),
+            spotGeocoder.requestedAddresses,
+        )
+        assertEquals("전남광주통합특별시 광양시 금호동 1", result.address)
+        assertEquals(34.9332, result.coordinate?.latitude)
+        assertEquals(127.7253, result.coordinate?.longitude)
+    }
+
+    @Test
     fun `공백 주소는 geocoding하지 않고 좌표 없이 유지한다`() = runBlocking {
         val spotGeocoder = FakeSpotGeocoder()
         val repository = createRepository(spotGeocoder)

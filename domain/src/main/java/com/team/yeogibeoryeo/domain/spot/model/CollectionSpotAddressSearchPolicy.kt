@@ -1,5 +1,7 @@
 package com.team.yeogibeoryeo.domain.spot.model
 
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
+
 object CollectionSpotAddressSearchPolicy {
     fun normalizeKeyword(keyword: String): String {
         val trimmedKeyword = keyword.trim()
@@ -41,20 +43,41 @@ object CollectionSpotAddressSearchPolicy {
     fun isEupMyeonDongCandidate(token: String): Boolean =
         token.hasEupMyeonDongShape()
 
-    fun normalizedSidoName(token: String): String? =
-        when (token) {
-            in SIDO_NAMES -> SIDO_ALIASES[token] ?: token
-            in SIDO_ALIASES -> SIDO_ALIASES[token]
-            else -> null
-        }
+    fun normalizedSidoName(
+        token: String,
+        sigungu: String? = null,
+    ): String? {
+        val sido = token.toRawSidoName() ?: return null
+
+        return RegionSidoAliasPolicy.normalizeSidoForInput(
+            sido = sido,
+            sigungu = sigungu,
+        ) ?: sido
+    }
 
     fun isSigunguLike(token: String): Boolean =
         token.endsWith(SIGUNGU_CITY_SUFFIX) ||
             token.endsWith(SIGUNGU_COUNTY_SUFFIX) ||
             token.endsWith(SIGUNGU_DISTRICT_SUFFIX)
 
-    fun sidoMatches(token: String, sido: String): Boolean =
-        normalizedSidoName(token) == sido || token == sido
+    fun sidoMatches(
+        token: String,
+        sido: String,
+        requestedSigungu: String? = null,
+        candidateSigungu: String? = requestedSigungu,
+    ): Boolean {
+        val tokenSido = token.toRawSidoName() ?: return token == sido
+        val requestedSido = RegionSidoAliasPolicy.normalizeSidoForInput(
+            sido = sido,
+            sigungu = requestedSigungu,
+        ) ?: sido
+
+        return RegionSidoAliasPolicy.isSameSido(
+            requestedSido = requestedSido,
+            candidateSido = tokenSido,
+            candidateSigungu = candidateSigungu,
+        )
+    }
 
     private fun String.cleanToken(): String =
         trim().trim('(', ')', '[', ']', ',', '.', ' ')
@@ -73,6 +96,13 @@ object CollectionSpotAddressSearchPolicy {
 
     private fun String.isLegalDongGaCandidate(): Boolean =
         LEGAL_DONG_GA_REGEX.matches(this)
+
+    private fun String.toRawSidoName(): String? =
+        when (this) {
+            in SIDO_NAMES -> SIDO_ALIASES[this] ?: this
+            in SIDO_ALIASES -> SIDO_ALIASES[this]
+            else -> null
+        }
 
     private const val ROAD_NAME_SUFFIX = "로"
     private const val ROAD_DETAIL_SUFFIX = "길"
@@ -109,6 +139,7 @@ object CollectionSpotAddressSearchPolicy {
         "전북특별자치도",
         "전라북도",
         "전라남도",
+        RegionSidoAliasPolicy.GWANGJU_JEONNAM_INTEGRATED_SIDO,
         "경상북도",
         "경상남도",
         "제주특별자치도",
