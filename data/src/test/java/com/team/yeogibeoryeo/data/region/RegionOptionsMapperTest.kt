@@ -582,7 +582,7 @@ class RegionOptionsMapperTest {
     }
 
     @Test
-    fun `eupmyeondong lookup excludes legal dong candidates with different sigungu codes`() {
+    fun `법정동 후보 생성 시 법정 행정 시군구 코드가 다른 후보는 제외한다`() {
         val regions = RegionOptionsMapper.findEupmyeondongRegions(
             administrativeRegions = emptyList(),
             legalAdminDongMappings = listOf(
