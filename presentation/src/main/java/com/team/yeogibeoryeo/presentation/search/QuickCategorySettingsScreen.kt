@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
+import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategorySettingsDisplayRow
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategorySettingsSelectedCategorySummary
 import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
@@ -44,12 +45,7 @@ internal fun QuickCategorySettingsScreen(
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     var keyword by rememberSaveable { mutableStateOf("") }
-    val categories =
-        quickCategoryOrder.filter { category ->
-            keyword.isBlank() ||
-                category.displayName.contains(keyword, ignoreCase = true) ||
-                category.representativeGuideName.contains(keyword, ignoreCase = true)
-        }
+    val categories = filterQuickCategorySettingsCategories(keyword)
 
     Scaffold(
         modifier = modifier,
@@ -124,6 +120,26 @@ internal fun QuickCategorySettingsScreen(
                     },
                 )
             }
+
+            if (keyword.isNotBlank() && categories.isEmpty()) {
+                item {
+                    EmptySearchResult(
+                        title = stringResource(R.string.quick_category_settings_empty_title),
+                        description = stringResource(R.string.quick_category_settings_empty_description),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
         }
     }
 }
+
+internal fun filterQuickCategorySettingsCategories(
+    keyword: String,
+    categories: List<RepresentativeGuideCategory> = quickCategoryOrder,
+): List<RepresentativeGuideCategory> =
+    categories.filter { category ->
+        keyword.isBlank() ||
+            category.displayName.contains(keyword, ignoreCase = true) ||
+            category.representativeGuideName.contains(keyword, ignoreCase = true)
+    }
