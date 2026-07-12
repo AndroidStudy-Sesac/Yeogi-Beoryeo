@@ -387,7 +387,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                     findAdminDongCandidatesForLegalDongUseCase =
                         FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                 ),
-            getTodayRegionalWasteSummaryUseCase = GetTodayRegionalWasteSummaryUseCase(),
+            buildHomeRegionalGuideSummaryUseCase = BuildHomeRegionalGuideSummaryUseCase(),
         )
 
     private fun sampleSnapshot(

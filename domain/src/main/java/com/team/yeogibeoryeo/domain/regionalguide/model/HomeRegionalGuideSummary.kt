@@ -10,14 +10,14 @@ data class HomeRegionalGuideSummary(
     val hasDifferentDisposalTime: Boolean,
 )
 
-sealed interface TodayRegionalWasteSummaryResult {
+sealed interface HomeRegionalGuideSummaryBuildResult {
     data class Summary(
         val summary: HomeRegionalGuideSummary,
-    ) : TodayRegionalWasteSummaryResult
+    ) : HomeRegionalGuideSummaryBuildResult
 
-    data object NoTodaySchedule : TodayRegionalWasteSummaryResult
+    data object NoRepresentativeSchedule : HomeRegionalGuideSummaryBuildResult
 
-    data object NeedsScheduleConfirmation : TodayRegionalWasteSummaryResult
+    data object RepresentativeScheduleNeedsConfirmation : HomeRegionalGuideSummaryBuildResult
 }
 
 sealed interface HomeRegionalGuideSummaryResult {
@@ -32,12 +32,12 @@ sealed interface HomeRegionalGuideSummaryResult {
         val summary: HomeRegionalGuideSummary,
     ) : HomeRegionalGuideSummaryResult
 
-    data class NoTodaySchedule(
+    data class NoRepresentativeSchedule(
         val targetId: String,
         val regionName: String,
     ) : HomeRegionalGuideSummaryResult
 
-    data class ScheduleNeedsConfirmation(
+    data class RepresentativeScheduleNeedsConfirmation(
         val targetId: String,
         val regionName: String,
     ) : HomeRegionalGuideSummaryResult

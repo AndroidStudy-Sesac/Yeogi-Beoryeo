@@ -1,26 +1,26 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummary
+import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryBuildResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
-import com.team.yeogibeoryeo.domain.regionalguide.model.TodayRegionalWasteSummaryResult
 import javax.inject.Inject
 
-class GetTodayRegionalWasteSummaryUseCase
+class BuildHomeRegionalGuideSummaryUseCase
     @Inject
     constructor() {
         operator fun invoke(
             targetId: String,
             regionName: String,
             guide: RegionalDisposalGuide,
-        ): TodayRegionalWasteSummaryResult {
+        ): HomeRegionalGuideSummaryBuildResult {
             val representativeSchedule =
                 guide.schedules.firstOrNull { schedule ->
                     schedule.wasteType == RegionalWasteType.GENERAL
                 }
 
-            return TodayRegionalWasteSummaryResult.Summary(
+            return HomeRegionalGuideSummaryBuildResult.Summary(
                 HomeRegionalGuideSummary(
                     targetId = targetId,
                     regionName = regionName,

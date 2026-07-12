@@ -6,9 +6,9 @@ import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryBuildResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
-import com.team.yeogibeoryeo.domain.regionalguide.model.TodayRegionalWasteSummaryResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -22,7 +22,7 @@ class ObserveHomeRegionalGuideSummaryUseCase
         private val observeFavoritesUseCase: ObserveFavoritesUseCase,
         private val observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
         private val getRegionalDisposalGuideUseCase: GetRegionalDisposalGuideUseCase,
-        private val getTodayRegionalWasteSummaryUseCase: GetTodayRegionalWasteSummaryUseCase,
+        private val buildHomeRegionalGuideSummaryUseCase: BuildHomeRegionalGuideSummaryUseCase,
     ) {
         @OptIn(ExperimentalCoroutinesApi::class)
         operator fun invoke(): Flow<HomeRegionalGuideSummaryResult> =
@@ -69,23 +69,23 @@ class ObserveHomeRegionalGuideSummaryUseCase
             ) {
                 is RegionalGuideLookupResult.Success -> {
                     when (
-                        val summaryResult = getTodayRegionalWasteSummaryUseCase(
+                        val summaryResult = buildHomeRegionalGuideSummaryUseCase(
                             targetId = snapshot.targetId,
                             regionName = regionName,
                             guide = result.guide,
                         )
                     ) {
-                        is TodayRegionalWasteSummaryResult.Summary ->
+                        is HomeRegionalGuideSummaryBuildResult.Summary ->
                             HomeRegionalGuideSummaryResult.Success(summaryResult.summary)
 
-                        TodayRegionalWasteSummaryResult.NoTodaySchedule ->
-                            HomeRegionalGuideSummaryResult.NoTodaySchedule(
+                        HomeRegionalGuideSummaryBuildResult.NoRepresentativeSchedule ->
+                            HomeRegionalGuideSummaryResult.NoRepresentativeSchedule(
                                 targetId = snapshot.targetId,
                                 regionName = regionName,
                             )
 
-                        TodayRegionalWasteSummaryResult.NeedsScheduleConfirmation ->
-                            HomeRegionalGuideSummaryResult.ScheduleNeedsConfirmation(
+                        HomeRegionalGuideSummaryBuildResult.RepresentativeScheduleNeedsConfirmation ->
+                            HomeRegionalGuideSummaryResult.RepresentativeScheduleNeedsConfirmation(
                                 targetId = snapshot.targetId,
                                 regionName = regionName,
                             )
