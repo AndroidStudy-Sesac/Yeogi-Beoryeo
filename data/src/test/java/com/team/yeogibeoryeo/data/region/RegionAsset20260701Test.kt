@@ -71,6 +71,49 @@ class RegionAsset20260701Test {
     }
 
     @Test
+    fun `법정동 행정동 매핑 자산의 법정 행정 코드는 10자리 숫자이다`() {
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
+
+        val invalidMappings = mappings.filter { mapping ->
+            !mapping.legalCode.matches(REGION_CODE_REGEX) ||
+                !mapping.adminCode.matches(REGION_CODE_REGEX)
+        }
+
+        assertTrue(
+            "법정동-행정동 매핑 코드 형식이 올바르지 않습니다: $invalidMappings",
+            invalidMappings.isEmpty()
+        )
+    }
+
+    @Test
+    fun `지도 검색 안양동 후보는 법정 행정 시군구 코드가 일치하는 후보만 노출한다`() {
+        val administrativeRegions =
+            decodeAsset<List<AdministrativeRegionDto>>(ADMINISTRATIVE_REGION_ASSET_PATH)
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
+
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = administrativeRegions,
+            legalAdminDongMappings = mappings,
+            keyword = "안양동"
+        )
+
+        assertTrue(
+            regions.any { region ->
+                region.sido == "경기도" &&
+                    region.sigungu == "안양시 만안구" &&
+                    region.eupmyeondong == "안양동"
+            }
+        )
+        assertFalse(
+            regions.any { region ->
+                region.sido == "경기도" &&
+                    region.sigungu == "안양시 동안구" &&
+                    region.eupmyeondong == "안양동"
+            }
+        )
+    }
+
+    @Test
     fun `법정동 행정동 매핑 자산은 복수 후보 매핑을 유지한다`() {
         val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
 
@@ -125,5 +168,6 @@ class RegionAsset20260701Test {
             "src/main/assets/region/legal_to_admin_mappings.20260701.json"
         const val REGIONAL_GUIDE_REGION_ASSET_PATH =
             "src/main/assets/region/regional_guide_regions.20260701.json"
+        val REGION_CODE_REGEX = """\d{10}""".toRegex()
     }
 }

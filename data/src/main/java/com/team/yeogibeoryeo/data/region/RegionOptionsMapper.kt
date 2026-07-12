@@ -96,6 +96,7 @@ internal object RegionOptionsMapper {
             }
 
         val legalMatches = legalAdminDongMappings
+            .filter { mapping -> mapping.hasSameSigunguCode() }
             .mapNotNull { mapping ->
                 val legalDongName = mapping.legalDongName
                     .trim()
@@ -334,6 +335,17 @@ internal object RegionOptionsMapper {
             last() in EUPMYEONDONG_SUFFIXES
     }
 
+    private fun LegalAdminDongMappingDto.hasSameSigunguCode(): Boolean {
+        val legalSigunguCode = legalCode.trim().sigunguCodePrefixOrNull() ?: return true
+        val adminSigunguCode = adminCode.trim().sigunguCodePrefixOrNull() ?: return true
+
+        return legalSigunguCode == adminSigunguCode
+    }
+
+    private fun String.sigunguCodePrefixOrNull(): String? =
+        takeIf { code -> code.length >= SIGUNGU_CODE_PREFIX_LENGTH }
+            ?.take(SIGUNGU_CODE_PREFIX_LENGTH)
+
     private fun String?.trimToNull(): String? =
         this
             ?.trim()
@@ -413,6 +425,7 @@ internal object RegionOptionsMapper {
     private const val SEJONG_SIDO = "세종특별자치시"
     private const val NO_SIGUNGU_NAME = "없음"
     private const val CITY_SUFFIX = "시"
+    private const val SIGUNGU_CODE_PREFIX_LENGTH = 5
     private val EUPMYEONDONG_SUFFIXES = setOf('읍', '면', '동')
     private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()
 }
