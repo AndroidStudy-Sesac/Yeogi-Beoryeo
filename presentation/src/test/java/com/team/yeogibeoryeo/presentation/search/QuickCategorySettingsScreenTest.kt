@@ -24,4 +24,20 @@ class QuickCategorySettingsScreenTest {
             filterQuickCategorySettingsCategories("전기전자제품"),
         )
     }
+
+    @Test
+    fun 공백_유무가_달라도_분류명으로_검색할_수_있다() {
+        assertEquals(
+            listOf(RepresentativeGuideCategory.CLOTHING),
+            filterQuickCategorySettingsCategories("의류및원단"),
+        )
+        assertEquals(
+            listOf(RepresentativeGuideCategory.CONSTRUCTION_WASTE),
+            filterQuickCategorySettingsCategories("공사장생활폐기물"),
+        )
+        assertEquals(
+            listOf(RepresentativeGuideCategory.HAZARDOUS),
+            filterQuickCategorySettingsCategories("생활계유해폐기물"),
+        )
+    }
 }

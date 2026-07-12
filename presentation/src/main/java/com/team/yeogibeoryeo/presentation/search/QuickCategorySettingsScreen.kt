@@ -137,9 +137,18 @@ internal fun QuickCategorySettingsScreen(
 internal fun filterQuickCategorySettingsCategories(
     keyword: String,
     categories: List<RepresentativeGuideCategory> = quickCategoryOrder,
-): List<RepresentativeGuideCategory> =
-    categories.filter { category ->
-        keyword.isBlank() ||
-            category.displayName.contains(keyword, ignoreCase = true) ||
-            category.representativeGuideName.contains(keyword, ignoreCase = true)
+): List<RepresentativeGuideCategory> {
+    val searchKey = keyword.toQuickCategorySearchKey()
+
+    return categories.filter { category ->
+        searchKey.isBlank() ||
+            category.displayName
+                .toQuickCategorySearchKey()
+                .contains(searchKey, ignoreCase = true) ||
+            category.representativeGuideName
+                .toQuickCategorySearchKey()
+                .contains(searchKey, ignoreCase = true)
     }
+}
+
+private fun String.toQuickCategorySearchKey(): String = filterNot { it.isWhitespace() }
