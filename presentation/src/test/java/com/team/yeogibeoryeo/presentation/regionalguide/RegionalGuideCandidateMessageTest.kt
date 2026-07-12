@@ -25,7 +25,7 @@ class RegionalGuideCandidateMessageTest {
     }
 
     @Test
-    fun `fallback 후보 안내는 선택 읍면동과 시군구를 문구 인자로 전달한다`() {
+    fun `대체 후보 안내는 선택 읍면동과 시군구를 문구 인자로 전달한다`() {
         val state = RegionalGuideUiState.GuideCandidates(
             query = "사천면",
             reason = RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
@@ -51,7 +51,7 @@ class RegionalGuideCandidateMessageTest {
     }
 
     @Test
-    fun `fallback 후보에 지역명이 없으면 기본 안내 문구를 사용한다`() {
+    fun `대체 후보에 지역명이 없으면 기본 안내 문구를 사용한다`() {
         val state = RegionalGuideUiState.GuideCandidates(
             query = "검색어",
             reason = RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,

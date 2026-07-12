@@ -10,7 +10,8 @@ sealed interface RegionalGuideUiState {
     data object Idle : RegionalGuideUiState
 
     data class Loading(
-        val query: String
+        val query: String,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Success(
@@ -42,7 +43,8 @@ sealed interface RegionalGuideUiState {
 
     data class Error(
         val query: String,
-        val message: String
+        val message: String,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 }
 

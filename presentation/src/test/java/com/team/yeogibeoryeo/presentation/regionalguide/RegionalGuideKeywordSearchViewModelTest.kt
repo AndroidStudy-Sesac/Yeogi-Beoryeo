@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandid
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -416,7 +417,55 @@ class RegionalGuideKeywordSearchViewModelTest {
     }
 
     @Test
-    fun `후보에서 파생된 조회가 실패하면 후보 복원 스택을 비운다`() = runTest {
+    fun `후보에서 파생된 조회가 로딩 중이면 뒤로가기로 이전 검색 후보 목록을 복원한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("중구")
+                ),
+                keywordRegions = listOf(
+                    Region(sido = "대전광역시", sigungu = "중구"),
+                    Region(sido = "서울특별시", sigungu = "중구")
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "대전광역시",
+                        sigungu = "중구",
+                        targetRegionName = "은행동"
+                    )
+                ),
+                delayMillis = 1_000L
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val searchCandidate = (viewModel.uiState.value as RegionalGuideUiState.Ambiguous)
+            .candidates
+            .first { candidate -> candidate.sido == "대전광역시" }
+
+        viewModel.onRegionCandidateSelected(searchCandidate)
+        runCurrent()
+
+        val loadingState = viewModel.uiState.value as RegionalGuideUiState.Loading
+        assertEquals("대전광역시 > 중구", loadingState.query)
+        assertTrue(loadingState.canRestoreCandidates)
+
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+        advanceUntilIdle()
+
+        val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
+        assertEquals("중구", restoredSearchCandidatesState.query)
+        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+    }
+
+    @Test
+    fun `후보에서 파생된 조회가 실패하면 뒤로가기로 이전 검색 후보 목록을 복원한다`() = runTest {
         val viewModel = createViewModel(
             regionOptionsRepository = FakeRegionOptionsRepository(
                 sigunguOptionsBySido = mapOf(
@@ -447,8 +496,128 @@ class RegionalGuideKeywordSearchViewModelTest {
         val errorState = viewModel.uiState.value as RegionalGuideUiState.Error
 
         assertEquals("대전광역시 > 중구", errorState.query)
+        assertTrue(errorState.canRestoreCandidates)
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
+        assertEquals("중구", restoredSearchCandidatesState.query)
+        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+    }
+
+    @Test
+    fun `후보에서 파생된 조회가 예외를 던지면 뒤로가기로 이전 검색 후보 목록을 복원한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("중구")
+                ),
+                keywordRegions = listOf(
+                    Region(sido = "대전광역시", sigungu = "중구"),
+                    Region(sido = "서울특별시", sigungu = "중구")
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                throwable = IllegalStateException("조회 실패")
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val searchCandidate = (viewModel.uiState.value as RegionalGuideUiState.Ambiguous)
+            .candidates
+            .first { candidate -> candidate.sido == "대전광역시" }
+
+        viewModel.onRegionCandidateSelected(searchCandidate)
+        advanceUntilIdle()
+
+        val errorState = viewModel.uiState.value as RegionalGuideUiState.Error
+
+        assertEquals("대전광역시 > 중구", errorState.query)
+        assertTrue(errorState.canRestoreCandidates)
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
+        assertEquals("중구", restoredSearchCandidatesState.query)
+        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+    }
+
+    @Test
+    fun `후보에서 파생된 조회 결과가 없으면 후보 복원 스택을 비운다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("중구")
+                ),
+                keywordRegions = listOf(
+                    Region(sido = "대전광역시", sigungu = "중구"),
+                    Region(sido = "서울특별시", sigungu = "중구")
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository()
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val searchCandidate = (viewModel.uiState.value as RegionalGuideUiState.Ambiguous)
+            .candidates
+            .first { candidate -> candidate.sido == "대전광역시" }
+
+        viewModel.onRegionCandidateSelected(searchCandidate)
+        advanceUntilIdle()
+
+        val emptyState = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals("대전광역시 > 중구", emptyState.query)
         assertFalse(viewModel.restoreCandidatesFromDetail())
-        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Error)
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
+    }
+
+    @Test
+    fun `후보에서 파생된 조회 후보가 선택 지역과 맞지 않으면 후보 복원 스택을 비운다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("중구")
+                ),
+                keywordRegions = listOf(
+                    Region(sido = "대전광역시", sigungu = "중구"),
+                    Region(sido = "서울특별시", sigungu = "중구")
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "서울특별시",
+                        sigungu = "중구",
+                        targetRegionName = "명동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val searchCandidate = (viewModel.uiState.value as RegionalGuideUiState.Ambiguous)
+            .candidates
+            .first { candidate -> candidate.sido == "대전광역시" }
+
+        viewModel.onRegionCandidateSelected(searchCandidate)
+        advanceUntilIdle()
+
+        val emptyState = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals("대전광역시 > 중구", emptyState.query)
+        assertFalse(viewModel.restoreCandidatesFromDetail())
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
     }
 
     @Test

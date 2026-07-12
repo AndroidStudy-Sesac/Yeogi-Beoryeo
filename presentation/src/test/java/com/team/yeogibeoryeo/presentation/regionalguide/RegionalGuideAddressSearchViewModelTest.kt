@@ -20,7 +20,7 @@ class RegionalGuideAddressSearchViewModelTest {
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
-    fun `address lookup normalizes administrative district before selector and guide lookup`() = runTest {
+    fun `주소 조회는 지역 선택 상태와 가이드 조회 전에 행정구역을 정규화한다`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
                 sampleGuide(
@@ -65,7 +65,7 @@ class RegionalGuideAddressSearchViewModelTest {
     }
 
     @Test
-    fun `keyword search with road address uses address lookup and keeps original input`() = runTest {
+    fun `도로명 주소 키워드 검색은 주소 조회를 사용하고 원본 입력값을 유지한다`() = runTest {
         val regionRepository = FakeRegionRepository(
             extractedRegion = Region(
                 sido = "서울특별시",
@@ -111,7 +111,7 @@ class RegionalGuideAddressSearchViewModelTest {
     }
 
     @Test
-    fun `keyword search with parenthesized road address uses address lookup`() = runTest {
+    fun `괄호 법정동이 있는 도로명 주소 키워드 검색은 주소 조회를 사용한다`() = runTest {
         val regionRepository = FakeRegionRepository(
             extractedRegion = Region(
                 sido = "서울특별시",
@@ -143,7 +143,7 @@ class RegionalGuideAddressSearchViewModelTest {
     }
 
     @Test
-    fun `retry after address keyword search uses last address lookup`() = runTest {
+    fun `주소 키워드 검색 후 재시도는 마지막 주소 조회를 사용한다`() = runTest {
         val regionRepository = FakeRegionRepository(
             extractedRegion = Region(
                 sido = "서울특별시",
@@ -180,7 +180,7 @@ class RegionalGuideAddressSearchViewModelTest {
     }
 
     @Test
-    fun `address-like keyword search without parsed region fails safely`() = runTest {
+    fun `지역을 파싱하지 못한 주소형 키워드 검색은 안전하게 실패한다`() = runTest {
         val regionRepository = FakeRegionRepository(extractedRegion = null)
         val viewModel = createViewModel(
             regionRepository = regionRepository,
@@ -228,7 +228,7 @@ class RegionalGuideAddressSearchViewModelTest {
     }
 
     @Test
-    fun `region keyword with sigungu only keeps keyword search flow`() = runTest {
+    fun `시군구만 있는 지역 키워드는 키워드 검색 흐름을 유지한다`() = runTest {
         val regionRepository = FakeRegionRepository(
             resolvedRegion = Region(
                 sigungu = "중구"
@@ -255,7 +255,7 @@ class RegionalGuideAddressSearchViewModelTest {
     }
 
     @Test
-    fun `keyword not found clears previous selected region`() = runTest {
+    fun `키워드 검색 결과가 없으면 이전 선택 지역을 초기화한다`() = runTest {
         val viewModel = createViewModel(
             regionRepository = FakeRegionRepository(
                 resolvedRegion = Region(sigungu = "중안구")

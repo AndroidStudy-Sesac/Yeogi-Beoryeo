@@ -463,6 +463,7 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                clearGuideCandidateBackStack()
                 _uiState.value = RegionalGuideUiState.Error(
                     query = "",
                     message = e.message ?: "저장된 지역 가이드를 불러오는 중 오류가 발생했습니다."
@@ -556,7 +557,10 @@ class RegionalGuideViewModel @Inject constructor(
                     region = regionalGuideRegion
                 )
 
-                _uiState.value = RegionalGuideUiState.Loading(query = query)
+                _uiState.value = RegionalGuideUiState.Loading(
+                    query = query,
+                    canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
+                )
 
                 loadRegionalGuide(
                     query = query,
@@ -567,7 +571,8 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = RegionalGuideUiState.Error(
                     query = query,
-                    message = e.message ?: "선택한 지역의 배출 가이드를 조회하는 중 오류가 발생했습니다."
+                    message = e.message ?: "선택한 지역의 배출 가이드를 조회하는 중 오류가 발생했습니다.",
+                    canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
                 )
             }
         }
@@ -735,35 +740,43 @@ class RegionalGuideViewModel @Inject constructor(
                     .sortedWith(regionalGuideCandidateDisplayComparator)
             )
 
-            RegionalGuideLookupResult.NotFound ->
-                if (emptyContext == RegionalGuideEmptyContext.FAVORITE_RESTORE) {
-                    favoriteRestoreFailedEmptyState(query)
-                } else {
-                    RegionalGuideUiState.Empty(
-                        query = query,
-                        titleResId = R.string.regional_guide_empty_info_not_found_title,
-                        messageResId = R.string.regional_guide_empty_info_not_found_message,
-                        action = selectRegionAction()
-                    )
-                }
+            RegionalGuideLookupResult.NotFound -> {
+                clearGuideCandidateBackStack()
+                when (emptyContext) {
+                    RegionalGuideEmptyContext.FAVORITE_RESTORE ->
+                        favoriteRestoreFailedEmptyState(query)
 
-            RegionalGuideLookupResult.CandidateNotFound ->
-                if (emptyContext == RegionalGuideEmptyContext.FAVORITE_RESTORE) {
-                    favoriteRestoreFailedEmptyState(query)
-                } else {
-                    RegionalGuideUiState.Empty(
-                        query = query,
-                        titleResId = R.string.regional_guide_empty_candidate_not_found_title,
-                        messageResId = R.string.regional_guide_empty_candidate_not_found_message,
-                        action = selectRegionAction()
-                    )
+                    RegionalGuideEmptyContext.DEFAULT ->
+                        RegionalGuideUiState.Empty(
+                            query = query,
+                            titleResId = R.string.regional_guide_empty_info_not_found_title,
+                            messageResId = R.string.regional_guide_empty_info_not_found_message,
+                            action = selectRegionAction()
+                        )
                 }
+            }
+
+            RegionalGuideLookupResult.CandidateNotFound -> {
+                clearGuideCandidateBackStack()
+                when (emptyContext) {
+                    RegionalGuideEmptyContext.FAVORITE_RESTORE ->
+                        favoriteRestoreFailedEmptyState(query)
+
+                    RegionalGuideEmptyContext.DEFAULT ->
+                        RegionalGuideUiState.Empty(
+                            query = query,
+                            titleResId = R.string.regional_guide_empty_candidate_not_found_title,
+                            messageResId = R.string.regional_guide_empty_candidate_not_found_message,
+                            action = selectRegionAction()
+                        )
+                }
+            }
 
             is RegionalGuideLookupResult.Failure -> {
-                clearGuideCandidateBackStack()
                 RegionalGuideUiState.Error(
                     query = query,
-                    message = reason.toErrorMessage()
+                    message = reason.toErrorMessage(),
+                    canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
                 )
             }
         }
@@ -890,12 +903,20 @@ class RegionalGuideViewModel @Inject constructor(
     private fun clearGuideCandidateBackStack() {
         guideCandidateBackStackEntries.clear()
         _uiState.update { state ->
-            if (state is RegionalGuideUiState.Success && state.canRestoreCandidates) {
-                state.copy(canRestoreCandidates = false)
-            } else if (state is RegionalGuideUiState.GuideCandidates && state.canRestoreCandidates) {
-                state.copy(canRestoreCandidates = false)
-            } else {
-                state
+            when (state) {
+                is RegionalGuideUiState.Success ->
+                    state.takeUnless { it.canRestoreCandidates }
+                        ?: state.copy(canRestoreCandidates = false)
+
+                is RegionalGuideUiState.GuideCandidates ->
+                    state.takeUnless { it.canRestoreCandidates }
+                        ?: state.copy(canRestoreCandidates = false)
+
+                is RegionalGuideUiState.Error ->
+                    state.takeUnless { it.canRestoreCandidates }
+                        ?: state.copy(canRestoreCandidates = false)
+
+                else -> state
             }
         }
     }

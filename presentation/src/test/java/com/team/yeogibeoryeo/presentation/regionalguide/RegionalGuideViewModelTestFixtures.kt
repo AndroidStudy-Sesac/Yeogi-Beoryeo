@@ -30,6 +30,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCan
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -206,6 +207,8 @@ internal class FakeRegionOptionsRepository(
 internal class FakeRegionalDisposalGuideRepository(
     private val candidates: List<RegionalDisposalGuide> = emptyList(),
     private val failure: Throwable? = null,
+    private val throwable: Throwable? = null,
+    private val delayMillis: Long = 0L,
 ) : RegionalDisposalGuideRepository {
     val queries = mutableListOf<RegionalGuideQuery>()
 
@@ -213,6 +216,8 @@ internal class FakeRegionalDisposalGuideRepository(
         query: RegionalGuideQuery
     ): Result<List<RegionalDisposalGuide>> {
         queries += query
+        if (delayMillis > 0) delay(delayMillis)
+        throwable?.let { throw it }
         failure?.let { return Result.failure(it) }
         return Result.success(candidates)
     }

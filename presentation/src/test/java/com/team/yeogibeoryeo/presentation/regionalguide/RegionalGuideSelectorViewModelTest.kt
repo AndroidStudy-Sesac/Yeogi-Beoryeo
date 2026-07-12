@@ -19,7 +19,7 @@ class RegionalGuideSelectorViewModelTest {
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
-    fun `sido selection resets lower selections and applies latest sigungu options`() = runTest {
+    fun `시도 선택은 하위 선택을 초기화하고 최신 시군구 옵션을 반영한다`() = runTest {
         val regionOptionsRepository = FakeRegionOptionsRepository(
             sigunguOptionsBySido = mapOf(
                 "서울특별시" to listOf("중구"),
@@ -51,7 +51,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `stale sigungu option loading does not override current sido selection`() = runTest {
+    fun `이전 시군구 옵션 로딩 결과는 현재 시도 선택을 덮어쓰지 않는다`() = runTest {
         val delayedSeoulOptions = CompletableDeferred<List<String>>()
         val regionOptionsRepository = FakeRegionOptionsRepository(
             sigunguOptionsBySido = mapOf(
@@ -78,7 +78,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `sigungu selection resets eupmyeondong and applies latest eupmyeondong options`() = runTest {
+    fun `시군구 선택은 읍면동 선택을 초기화하고 최신 읍면동 옵션을 반영한다`() = runTest {
         val regionOptionsRepository = FakeRegionOptionsRepository(
             sigunguOptionsBySido = mapOf(
                 "서울특별시" to listOf("중구", "종로구")
@@ -111,7 +111,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `selected region search maps success state and normalizes sigungu query`() = runTest {
+    fun `선택 지역 검색은 성공 상태를 매핑하고 시군구 조회값을 정규화한다`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
                 sampleGuide(
@@ -143,7 +143,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `selected region search updates search keyword to selected region text`() = runTest {
+    fun `선택 지역 검색은 검색어를 선택 지역 문구로 갱신한다`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
                 sampleGuide(
@@ -176,7 +176,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `keyword search collapses expanded region selector dropdown`() = runTest {
+    fun `키워드 검색은 열린 지역 선택 드롭다운을 접는다`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
@@ -195,7 +195,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `selected region search collapses expanded region selector dropdown`() = runTest {
+    fun `선택 지역 검색은 열린 지역 선택 드롭다운을 접는다`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
                 sampleGuide(
@@ -229,7 +229,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `retry last request repeats selected region lookup`() = runTest {
+    fun `마지막 요청 재시도는 선택 지역 조회를 반복한다`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
                 sampleGuide(
@@ -264,7 +264,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `selected region search without info result shows api empty guide action`() = runTest {
+    fun `안내 결과가 없는 선택 지역 검색은 API 빈 결과 안내 동작을 보여준다`() = runTest {
         val viewModel = createViewModel(
             regionOptionsRepository = FakeRegionOptionsRepository(
                 sigunguOptionsBySido = mapOf(
@@ -293,7 +293,7 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
-    fun `selected eupmyeondong without direct guide match does not expose fallback candidates`() = runTest {
+    fun `직접 안내가 없는 선택 읍면동 검색은 대체 후보를 노출하지 않는다`() = runTest {
         val viewModel = createViewModel(
             regionOptionsRepository = FakeRegionOptionsRepository(
                 sigunguOptionsBySido = mapOf(

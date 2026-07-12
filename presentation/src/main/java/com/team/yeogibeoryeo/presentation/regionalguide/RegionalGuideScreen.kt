@@ -111,14 +111,14 @@ fun RegionalGuideScreen(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
-    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
-    onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    modifier: Modifier = Modifier,
+    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
+    onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRestoreCandidates: () -> Boolean = { false },
     onFavoriteClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
@@ -179,7 +179,9 @@ fun RegionalGuideScreen(
 
     BackHandler(
         enabled = when (uiState) {
+            is RegionalGuideUiState.Loading -> uiState.canRestoreCandidates
             is RegionalGuideUiState.Success -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Error -> uiState.canRestoreCandidates
             is RegionalGuideUiState.Ambiguous,
             is RegionalGuideUiState.GuideCandidates -> true
             else -> false
@@ -355,10 +357,10 @@ private fun String?.takeIfNotBlank(): String? =
 @Composable
 private fun RegionalGuideContent(
     uiState: RegionalGuideUiState,
-    modifier: Modifier = Modifier,
     onRetryClick: () -> Unit,
     onEmptyActionClick: (RegionalGuideEmptyActionType) -> Unit,
     onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     when (uiState) {
         RegionalGuideUiState.Idle -> {

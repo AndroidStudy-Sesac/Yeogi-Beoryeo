@@ -272,7 +272,7 @@ class RegionalGuideCandidateSelectionViewModelTest {
     }
 
     @Test
-    fun `fallback 수거 유형 후보 상세에서 뒤로가기를 요청하면 이전 후보 패널 상태를 복원한다`() = runTest {
+    fun `대체 수거 유형 후보 상세에서 뒤로가기를 요청하면 이전 후보 패널 상태를 복원한다`() = runTest {
         val region = Region(
             sido = "강원특별자치도",
             sigungu = "강릉시",
