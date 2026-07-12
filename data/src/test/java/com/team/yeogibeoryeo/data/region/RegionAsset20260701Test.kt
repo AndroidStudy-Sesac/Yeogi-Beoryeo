@@ -71,6 +71,34 @@ class RegionAsset20260701Test {
     }
 
     @Test
+    fun `지도 검색 안양동 후보는 법정 행정 시군구 코드가 일치하는 후보만 노출한다`() {
+        val administrativeRegions =
+            decodeAsset<List<AdministrativeRegionDto>>(ADMINISTRATIVE_REGION_ASSET_PATH)
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
+
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = administrativeRegions,
+            legalAdminDongMappings = mappings,
+            keyword = "안양동"
+        )
+
+        assertTrue(
+            regions.any { region ->
+                region.sido == "경기도" &&
+                    region.sigungu == "안양시 만안구" &&
+                    region.eupmyeondong == "안양동"
+            }
+        )
+        assertFalse(
+            regions.any { region ->
+                region.sido == "경기도" &&
+                    region.sigungu == "안양시 동안구" &&
+                    region.eupmyeondong == "안양동"
+            }
+        )
+    }
+
+    @Test
     fun `법정동 행정동 매핑 자산은 복수 후보 매핑을 유지한다`() {
         val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
 

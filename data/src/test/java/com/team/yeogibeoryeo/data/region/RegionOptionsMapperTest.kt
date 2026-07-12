@@ -582,6 +582,39 @@ class RegionOptionsMapperTest {
     }
 
     @Test
+    fun `eupmyeondong lookup excludes legal dong candidates with different sigungu codes`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = emptyList(),
+            legalAdminDongMappings = listOf(
+                legalAdminMapping(
+                    legalCode = "4117110100",
+                    sidoName = "경기도",
+                    sigunguName = "안양시 만안구",
+                    legalDongName = "안양동",
+                    adminCode = "4117151000",
+                    adminDongName = "안양1동"
+                ),
+                legalAdminMapping(
+                    legalCode = "4117110100",
+                    sidoName = "경기도",
+                    sigunguName = "안양시 동안구",
+                    legalDongName = "안양동",
+                    adminCode = "4117351000",
+                    adminDongName = "비산1동"
+                )
+            ),
+            keyword = "안양동"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "경기도", sigungu = "안양시 만안구", eupmyeondong = "안양동")
+            ),
+            regions
+        )
+    }
+
+    @Test
     fun `접미사 없는 동 검색어도 행정동 후보로 반환한다`() {
         val regions = RegionOptionsMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
@@ -698,15 +731,17 @@ class RegionOptionsMapperTest {
     }
 
     private fun legalAdminMapping(
+        legalCode: String = "",
         sidoName: String,
         sigunguName: String,
         legalDongName: String,
+        adminCode: String = "",
         adminDongName: String
     ): LegalAdminDongMappingDto {
         return LegalAdminDongMappingDto(
-            legalCode = "",
+            legalCode = legalCode,
             legalDongName = legalDongName,
-            adminCode = "",
+            adminCode = adminCode,
             sidoName = sidoName,
             sigunguName = sigunguName,
             adminDongName = adminDongName,
