@@ -134,6 +134,7 @@
     <string name="item_guide_detail_load_failed_message">품목 정보를 불러오는 중 오류가 발생했습니다.</string>
     <string name="item_guide_detail_favorite_added_message">즐겨찾기에 추가되었습니다</string>
     <string name="item_guide_detail_favorite_removed_message">즐겨찾기에서 제외되었습니다</string>
+    <string name="item_guide_detail_favorite_update_failed_message">즐겨찾기를 변경하지 못했습니다. 다시 시도해 주세요.</string>
     <string name="item_guide_action_find_battery_bin">근처 폐건전지 수거함 찾기</string>
     <string name="item_guide_action_find_battery_bin_description">전용수거함 배출이 필요한 품목입니다.</string>
     <string name="item_guide_action_find_phone_drop_off">근처 폐휴대폰 수거처 찾기</string>
