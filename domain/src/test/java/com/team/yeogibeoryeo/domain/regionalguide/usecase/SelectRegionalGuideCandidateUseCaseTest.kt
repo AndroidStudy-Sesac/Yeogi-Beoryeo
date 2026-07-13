@@ -158,6 +158,62 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
     }
 
     @Test
+    fun `전남광주통합특별시 전남 선택값은 전라남도 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "전라남도",
+                    sigungu = "나주시",
+                    targetRegionName = "노안면"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "전남광주통합특별시",
+                    sigungu = "나주시",
+                    eupmyeondong = "노안면"
+                ),
+                sigunguQuery = "나주시"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("전남광주통합특별시", guide.region.sido)
+        assertEquals("나주시", guide.region.sigungu)
+        assertEquals("노안면", guide.region.eupmyeondong)
+        assertEquals("노안면", guide.targetRegionName)
+    }
+
+    @Test
+    fun `전남광주통합특별시 광주 선택값은 광주광역시 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "광주광역시",
+                    sigungu = "서구",
+                    targetRegionName = "금호동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "전남광주통합특별시",
+                    sigungu = "서구",
+                    eupmyeondong = "금호동"
+                ),
+                sigunguQuery = "서구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("전남광주통합특별시", guide.region.sido)
+        assertEquals("서구", guide.region.sigungu)
+        assertEquals("금호동", guide.region.eupmyeondong)
+        assertEquals("금호동", guide.targetRegionName)
+    }
+
+    @Test
     fun `대상지역 설명에 선택 읍면동이 포함되면 해당 후보를 선택하고 Region 읍면동은 선택값으로 유지한다`() {
         val result = useCase(
             candidates = listOf(

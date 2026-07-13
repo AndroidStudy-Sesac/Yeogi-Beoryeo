@@ -20,7 +20,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         if (candidates.isEmpty()) return RegionalGuideLookupResult.NotFound
 
         val filteredCandidates = candidates
-            .filterBySido(query.displayRegion.sido)
+            .filterBySido(query.displayRegion)
             .filterBySigungu(query.sigunguQuery)
             .mergeDuplicateCandidateRows()
 
@@ -67,13 +67,14 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     }
 
     private fun List<RegionalDisposalGuide>.filterBySido(
-        sido: String?
+        requestedRegion: Region
     ): List<RegionalDisposalGuide> {
-        if (sido.isNullOrBlank()) return this
+        if (requestedRegion.sido.isNullOrBlank()) return this
 
         return filter { guide ->
             RegionSidoAliasPolicy.isSameSido(
-                requestedSido = sido,
+                requestedSido = requestedRegion.sido,
+                requestedSigungu = requestedRegion.sigungu,
                 candidateSido = guide.region.sido,
                 candidateSigungu = guide.region.sigungu,
             )

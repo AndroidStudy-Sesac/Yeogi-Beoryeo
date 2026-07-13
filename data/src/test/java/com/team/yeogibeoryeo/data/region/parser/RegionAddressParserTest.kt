@@ -147,6 +147,17 @@ class RegionAddressParserTest {
     }
 
     @Test
+    fun `전남광주통합특별시 나주시 주소는 전라남도로 정규화된다`() {
+        val result = parser.parse(
+            "전남광주통합특별시 나주시 노안면"
+        )
+
+        assertEquals("전라남도", result.sido)
+        assertEquals("나주시", result.sigungu)
+        assertEquals("노안면", result.eupmyeondong)
+    }
+
+    @Test
     fun `과거 시도명은 현재 공식 시도명으로 정규화된다`() {
         val result = parser.parse(
             "강원도 춘천시 후평동"
@@ -155,6 +166,17 @@ class RegionAddressParserTest {
         assertEquals("강원특별자치도", result.sido)
         assertEquals("춘천시", result.sigungu)
         assertEquals("후평동", result.eupmyeondong)
+    }
+
+    @Test
+    fun `전라북도와 전북특별자치도 입력은 전북특별자치도로 정규화된다`() {
+        val legacyResult = parser.parse("전라북도 전주시 효자동")
+        val currentResult = parser.parse("전북특별자치도 전주시 효자동")
+
+        assertEquals("전북특별자치도", legacyResult.sido)
+        assertEquals("전북특별자치도", currentResult.sido)
+        assertEquals("전주시", legacyResult.sigungu)
+        assertEquals("전주시", currentResult.sigungu)
     }
 
     @Test

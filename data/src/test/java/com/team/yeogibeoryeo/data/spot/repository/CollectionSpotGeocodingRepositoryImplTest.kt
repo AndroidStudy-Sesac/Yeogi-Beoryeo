@@ -164,6 +164,33 @@ class CollectionSpotGeocodingRepositoryImplTest {
     }
 
     @Test
+    fun `전남광주통합특별시 나주시 주소는 전라남도 주소로 geocoding한다`() = runBlocking {
+        val spotGeocoder = FakeSpotGeocoder(
+            coordinatesByAddress = mapOf(
+                "전라남도 나주시 노안면" to Coordinate(
+                    latitude = 35.0825,
+                    longitude = 126.7186,
+                ),
+            ),
+        )
+        val repository = createRepository(spotGeocoder)
+
+        val spot = collectionSpot(
+            id = "naju-noan",
+            address = "전남광주통합특별시 나주시 노안면",
+        )
+        val result = repository.geocodeSpot(spot)
+
+        assertEquals(
+            listOf("전라남도 나주시 노안면"),
+            spotGeocoder.requestedAddresses,
+        )
+        assertEquals("전남광주통합특별시 나주시 노안면", result.address)
+        assertEquals(35.0825, result.coordinate?.latitude)
+        assertEquals(126.7186, result.coordinate?.longitude)
+    }
+
+    @Test
     fun `공백 주소는 geocoding하지 않고 좌표 없이 유지한다`() = runBlocking {
         val spotGeocoder = FakeSpotGeocoder()
         val repository = createRepository(spotGeocoder)
