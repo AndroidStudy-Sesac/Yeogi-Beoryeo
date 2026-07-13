@@ -56,7 +56,6 @@ import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScre
 fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    onClearLocationCacheClick: () -> Unit = {},
 ) {
     val currentContext by rememberUpdatedState(LocalContext.current)
     val layoutDirection = LocalLayoutDirection.current
@@ -259,7 +258,6 @@ fun YeogiBeoryeoNavHost(
                     onOpenAppSettingsClick = {
                         currentContext.openAppSettings()
                     },
-                    onClearLocationCacheClick = onClearLocationCacheClick,
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (isSettingsDetailScreen) {
                             isBottomBarVisible = isVisible

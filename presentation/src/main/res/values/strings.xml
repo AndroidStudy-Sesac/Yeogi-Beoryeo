@@ -229,6 +229,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.]]></string>
     <string name="settings_cache_confirm_description">현재 위치로 주변 수거 장소를 찾았을 때 임시 저장된 위치 캐시를 삭제합니다. 즐겨찾기와 품목 검색 기록은 삭제되지 않습니다.</string>
     <string name="settings_cache_delete_action">삭제</string>
+    <string name="settings_cache_deleting_action">삭제 중...</string>
+    <string name="settings_cache_delete_success_message">위치 캐시를 삭제했습니다.</string>
+    <string name="settings_cache_delete_failure_message">위치 캐시를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="map_search_placeholder">동/읍/면을 검색해주세요.</string>
     <string name="map_search_loading_title">검색중</string>
     <string name="map_search_loading_keyword">입력한 동/읍/면 주변을 찾고 있어요</string>
