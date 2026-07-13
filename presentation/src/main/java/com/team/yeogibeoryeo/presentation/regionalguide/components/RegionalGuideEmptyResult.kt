@@ -69,7 +69,7 @@ private fun RegionalGuideEmptyResultPreview() {
     MaterialTheme {
         RegionalGuideEmptyResult(
             title = "해당 지역의 배출 가이드를 찾지 못했어요.",
-            message = "다른 지역을 선택해 주세요.",
+            message = "공공데이터에 해당 지역 안내가 없거나 지자체 기준이 변경되었을 수 있어요.\n다른 지역을 선택해 다시 확인해 주세요.",
             actionLabel = "지역 다시 선택하기",
             onActionClick = {},
             modifier = Modifier.padding(16.dp),

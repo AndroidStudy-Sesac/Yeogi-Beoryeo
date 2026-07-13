@@ -22,6 +22,8 @@ data class RegionalGuideResponseDto(
 
 @Serializable
 data class RegionalGuideBodyDto(
+    @SerialName("pageNo") val pageNo: Int? = null,
+    @SerialName("numOfRows") val numOfRows: Int? = null,
     @SerialName("totalCount") val totalCount: Int? = null,
     @SerialName("items") val items: RegionalGuideItemsDto? = null
 )
