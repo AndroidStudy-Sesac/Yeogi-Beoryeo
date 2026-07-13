@@ -182,12 +182,14 @@
     <string name="settings_app_info_title">앱 정보</string>
     <string name="settings_location_permission_title">위치 권한</string>
     <string name="settings_terms_title">이용약관</string>
+    <string name="settings_privacy_policy_title">개인정보처리방침</string>
     <string name="settings_sources_title">출처 및 이용조건</string>
     <string name="settings_cache_title">캐시 삭제</string>
     <string name="settings_cache_detail_title">위치 캐시 삭제</string>
     <string name="settings_notice_empty_title">등록된 공지사항이 없습니다</string>
     <string name="settings_notice_empty_description">서비스 변경, 데이터 업데이트, 주요 오류 안내가 생기면 이곳에 표시됩니다.</string>
-    <string name="settings_contact_email_label">문의할 이메일 주소:</string>
+    <string name="settings_contact_email_label">이메일</string>
+    <string name="settings_contact_email" translatable="false">yeogi-beoryeo-support@googlegroups.com</string>
     <string name="settings_app_info_description">내 위치 기반 맞춤형 분리수거 가이드와 수거 장소 안내 서비스입니다.</string>
     <string name="settings_app_info_version_label">버전</string>
     <string name="settings_app_info_features_label">제공 기능</string>
@@ -202,7 +204,9 @@
     <string name="settings_terms_info">앱에서 제공하는 품목 정보와 지역별 안내는 공공데이터와 공식 안내를 바탕으로 구성됩니다.</string>
     <string name="settings_terms_location">위치 기반 기능은 사용자가 가까운 수거 장소를 찾을 때만 사용됩니다.</string>
     <string name="settings_terms_responsibility">지역별 배출 기준은 지방자치단체 정책에 따라 달라질 수 있습니다. 실제 배출 전에는 해당 지자체 안내를 함께 확인해 주세요.</string>
-    <string name="settings_terms_privacy">앱은 문의 화면에서 별도의 입력 정보를 수집하지 않습니다.</string>
+    <string name="settings_terms_privacy">앱 오류 분석과 위치 기반 기능에 관한 개인정보 처리 내용은 개인정보처리방침에서 확인할 수 있습니다.</string>
+    <string name="settings_privacy_policy_description">여기버려가 처리하는 위치 정보와 앱 오류 정보, 보관 기간, 문의 방법을 확인할 수 있습니다.</string>
+    <string name="settings_open_privacy_policy">개인정보처리방침 열기</string>
     <string name="settings_sources_data_title">데이터 출처</string>
     <string name="settings_sources_data_description">앱에서 제공하는 안내 정보는 정부 공공데이터와 공식 자료를 바탕으로 제공합니다.</string>
     <string name="settings_source_climate_ministry_title">기후에너지환경부</string>

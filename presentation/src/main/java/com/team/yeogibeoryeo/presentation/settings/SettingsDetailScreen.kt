@@ -24,6 +24,7 @@ import com.team.yeogibeoryeo.presentation.settings.detail.CacheDetail
 import com.team.yeogibeoryeo.presentation.settings.detail.ContactDetail
 import com.team.yeogibeoryeo.presentation.settings.detail.LocationPermissionDetail
 import com.team.yeogibeoryeo.presentation.settings.detail.NoticeDetail
+import com.team.yeogibeoryeo.presentation.settings.detail.PrivacyPolicyDetail
 import com.team.yeogibeoryeo.presentation.settings.detail.SourcesDetail
 import com.team.yeogibeoryeo.presentation.settings.detail.TermsDetail
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,6 +35,7 @@ internal fun SettingsDetailScreen(
     appVersionName: String,
     onBackClick: () -> Unit,
     onOpenAppSettingsClick: () -> Unit,
+    onOpenPrivacyPolicyClick: () -> Unit,
     onClearLocationCacheClick: () -> Unit,
     cacheUiState: SettingsCacheUiState,
     cacheEvents: SharedFlow<SettingsCacheEvent>,
@@ -90,6 +92,9 @@ internal fun SettingsDetailScreen(
                     LocationPermissionDetail(onOpenAppSettingsClick = onOpenAppSettingsClick)
                 }
                 SettingsDetailType.Terms -> item { TermsDetail() }
+                SettingsDetailType.PrivacyPolicy -> item {
+                    PrivacyPolicyDetail(onOpenPrivacyPolicyClick = onOpenPrivacyPolicyClick)
+                }
                 SettingsDetailType.Sources -> item { SourcesDetail() }
                 SettingsDetailType.Cache -> item {
                     CacheDetail(

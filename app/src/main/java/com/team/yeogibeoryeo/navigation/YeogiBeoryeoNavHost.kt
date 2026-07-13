@@ -258,6 +258,9 @@ fun YeogiBeoryeoNavHost(
                     onOpenAppSettingsClick = {
                         currentContext.openAppSettings()
                     },
+                    onOpenPrivacyPolicyClick = {
+                        currentContext.openUrl(PRIVACY_POLICY_URL)
+                    },
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (isSettingsDetailScreen) {
                             isBottomBarVisible = isVisible
@@ -329,6 +332,14 @@ fun YeogiBeoryeoNavHost(
 }
 
 private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
+private const val PRIVACY_POLICY_URL =
+    "https://androidstudy-sesac.github.io/Yeogi-Beoryeo/privacy-policy/"
+
+private fun android.content.Context.openUrl(url: String) {
+    runCatching {
+        startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+    }
+}
 
 private fun android.content.Context.openAppSettings() {
     val uri = Uri.fromParts("package", packageName, null)
