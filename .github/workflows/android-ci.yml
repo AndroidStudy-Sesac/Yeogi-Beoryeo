@@ -70,7 +70,8 @@ jobs:
 
       - name: Create Firebase config for CI
         run: |
-          cat > app/google-services.json <<'EOF'
+          mkdir -p app/src/debug
+          cat > app/src/debug/google-services.json <<'EOF'
           {
             "project_info": {
               "project_number": "000000000000",
