@@ -67,7 +67,7 @@ class SpotRemoteDataSource @Inject constructor(
                     pageNo = nextPageNo,
                     numOfRows = numOfRows,
                 )
-            } catch (exception: Throwable) {
+            } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
 
                 isPartial = true
@@ -85,13 +85,7 @@ class SpotRemoteDataSource @Inject constructor(
         )
 
         val mergeStartedAtNanos = System.nanoTime()
-        val dedupedItems = mergedItems.distinctBy { item ->
-            listOf(
-                item.spotNm.orEmpty().trim(),
-                item.addrBase.orEmpty().trim(),
-                item.addrDtl.orEmpty().trim(),
-            )
-        }
+        val dedupedItems = mergedItems.distinctBy { item -> item.toDedupKey() }
         mapSearchTimingLogger.log(
             "merge/dedup finished before=${mergedItems.size} after=${dedupedItems.size} " +
                 "elapsedMs=${mergeStartedAtNanos.elapsedMs()}",
@@ -111,17 +105,51 @@ class SpotRemoteDataSource @Inject constructor(
         pageNo: Int = 1,
         numOfRows: Int = 100,
     ): List<SpotItemDto> {
-        val response = apiService.getSpots(
+        val firstPage = fetchLocationPage(
             serviceKey = serviceKey,
             pageNo = pageNo,
             numOfRows = numOfRows,
-            addr = " ",
             latitude = latitude,
             longitude = longitude,
-            radius = radiusMeter,
+            radiusMeter = radiusMeter,
         )
+        val effectiveNumOfRows = firstPage.numOfRows ?: numOfRows
+        val currentPageNo = firstPage.pageNo ?: pageNo
+        val totalCount = firstPage.totalCount
+        val totalPages = if (totalCount == null || effectiveNumOfRows <= 0) {
+            currentPageNo
+        } else {
+            ((totalCount + effectiveNumOfRows - 1) / effectiveNumOfRows)
+                .coerceAtLeast(currentPageNo)
+        }
+        val lastPage = minOf(
+            totalPages,
+            currentPageNo + LOCATION_MAX_PAGE_COUNT - 1,
+        )
+        val mergedItems = firstPage.items.toMutableList()
 
-        return response.toSpotItemsOrEmpty()
+        for (nextPageNo in (currentPageNo + 1)..lastPage) {
+            val nextPage = try {
+                fetchLocationPage(
+                    serviceKey = serviceKey,
+                    pageNo = nextPageNo,
+                    numOfRows = numOfRows,
+                    latitude = latitude,
+                    longitude = longitude,
+                    radiusMeter = radiusMeter,
+                )
+            } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
+
+                break
+            }
+
+            mergedItems += nextPage.items
+        }
+
+        return mergedItems
+            .distinctBy { item -> item.toDedupKey() }
+            .take(LOCATION_MAX_RESULT_COUNT)
     }
 
     private suspend fun fetchKeywordPage(
@@ -135,6 +163,27 @@ class SpotRemoteDataSource @Inject constructor(
             pageNo = pageNo,
             numOfRows = numOfRows,
             addr = keyword,
+        )
+
+        return response.toSpotPageResult()
+    }
+
+    private suspend fun fetchLocationPage(
+        serviceKey: String,
+        pageNo: Int,
+        numOfRows: Int,
+        latitude: Double,
+        longitude: Double,
+        radiusMeter: Int,
+    ): SpotPageResult {
+        val response = apiService.getSpots(
+            serviceKey = serviceKey,
+            pageNo = pageNo,
+            numOfRows = numOfRows,
+            addr = LOCATION_SEARCH_ADDR_QUERY,
+            latitude = latitude,
+            longitude = longitude,
+            radius = radiusMeter,
         )
 
         return response.toSpotPageResult()
@@ -159,6 +208,14 @@ class SpotRemoteDataSource @Inject constructor(
         return response.body.items?.item.orEmpty()
     }
 
+    private fun SpotItemDto.toDedupKey(): List<String> {
+        return listOf(
+            spotNm.orEmpty().trim(),
+            addrBase.orEmpty().trim(),
+            addrDtl.orEmpty().trim(),
+        )
+    }
+
     private fun kotlinx.serialization.json.JsonElement?.toIntOrNull(): Int? {
         return (this as? JsonPrimitive)
             ?.content
@@ -175,6 +232,9 @@ class SpotRemoteDataSource @Inject constructor(
     private companion object {
         const val RESULT_CODE_NO_DATA = "03"
         const val UNKNOWN_TOTAL_COUNT = "unknown"
+        const val LOCATION_SEARCH_ADDR_QUERY = " "
+        const val LOCATION_MAX_PAGE_COUNT = 2
+        const val LOCATION_MAX_RESULT_COUNT = 120
     }
 }
 
