@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.domain.spot.usecase
 
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import com.team.yeogibeoryeo.domain.time.TimeProvider
@@ -101,9 +102,37 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             )
             val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
 
-            useCase()
+            val result = useCase()
 
+            assertEquals(RecentCurrentLocationSpotCacheClearResult.Deleted, result)
             assertNull(repository.entry)
+            assertEquals(1, repository.clearCallCount)
+        }
+
+    @Test
+    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제할 캐시가 없으면 캐시 없음 결과를 반환한다`() =
+        runBlocking {
+            val repository = FakeRecentCurrentLocationSpotCacheRepository()
+            val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
+
+            val result = useCase()
+
+            assertEquals(RecentCurrentLocationSpotCacheClearResult.NoCache, result)
+            assertNull(repository.entry)
+            assertEquals(1, repository.clearCallCount)
+        }
+
+    @Test
+    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제 실패 시 실패 결과를 반환한다`() =
+        runBlocking {
+            val repository = FakeRecentCurrentLocationSpotCacheRepository(
+                clearThrowable = IllegalStateException("삭제 실패"),
+            )
+            val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
+
+            val result = useCase()
+
+            assertEquals(RecentCurrentLocationSpotCacheClearResult.Failed, result)
             assertEquals(1, repository.clearCallCount)
         }
 
@@ -122,6 +151,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
 
     private class FakeRecentCurrentLocationSpotCacheRepository(
         var entry: RecentCurrentLocationSpotCacheEntry? = null,
+        private val clearThrowable: Throwable? = null,
     ) : RecentCurrentLocationSpotCacheRepository {
         var clearCallCount = 0
             private set
@@ -134,9 +164,18 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             this.entry = entry
         }
 
-        override suspend fun clearRecentCurrentLocationSpots() {
+        override suspend fun clearRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheClearResult {
             clearCallCount += 1
+            clearThrowable?.let { throwable -> throw throwable }
+
+            val hadCache = entry != null
             entry = null
+
+            return if (hadCache) {
+                RecentCurrentLocationSpotCacheClearResult.Deleted
+            } else {
+                RecentCurrentLocationSpotCacheClearResult.NoCache
+            }
         }
     }
 

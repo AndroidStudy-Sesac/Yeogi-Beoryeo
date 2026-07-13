@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import javax.inject.Inject
@@ -55,15 +56,24 @@ class DataStoreRecentCurrentLocationSpotCacheRepository @Inject constructor(
         }
     }
 
-    override suspend fun clearRecentCurrentLocationSpots() {
-        try {
+    override suspend fun clearRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheClearResult {
+        return try {
+            var hadCache = false
+
             dataStore.edit { preferences ->
+                hadCache = preferences[RECENT_CURRENT_LOCATION_SPOTS_KEY] != null
                 preferences.remove(RECENT_CURRENT_LOCATION_SPOTS_KEY)
+            }
+
+            if (hadCache) {
+                RecentCurrentLocationSpotCacheClearResult.Deleted
+            } else {
+                RecentCurrentLocationSpotCacheClearResult.NoCache
             }
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
-            // Cache invalidation failure can be ignored safely.
+            RecentCurrentLocationSpotCacheClearResult.Failed
         }
     }
 
