@@ -110,7 +110,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
         }
 
     @Test
-    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제할 캐시가 없으면 NoCache를 반환한다`() =
+    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제할 캐시가 없으면 캐시 없음 결과를 반환한다`() =
         runBlocking {
             val repository = FakeRecentCurrentLocationSpotCacheRepository()
             val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
@@ -123,10 +123,10 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
         }
 
     @Test
-    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제 실패 시 Failed를 반환한다`() =
+    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제 실패 시 실패 결과를 반환한다`() =
         runBlocking {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
-                clearThrowable = IllegalStateException("clear failed"),
+                clearThrowable = IllegalStateException("삭제 실패"),
             )
             val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
 

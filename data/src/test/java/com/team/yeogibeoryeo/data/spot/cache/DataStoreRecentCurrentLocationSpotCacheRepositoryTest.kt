@@ -17,12 +17,12 @@ import org.junit.Test
 class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
 
     @Test
-    fun `저장된 최근 현재 위치 캐시를 삭제하면 Deleted를 반환하고 캐시를 제거한다`() =
+    fun `저장된 최근 현재 위치 캐시를 삭제하면 삭제됨 결과를 반환하고 캐시를 제거한다`() =
         runBlocking {
             withRepository { repository ->
                 repository.saveRecentCurrentLocationSpots(
                     RecentCurrentLocationSpotCacheEntry(
-                        spots = listOf(sampleSpot("cached")),
+                        spots = listOf(sampleSpot("저장됨")),
                         savedAtMillis = 1_000L,
                     ),
                 )
@@ -35,7 +35,7 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
         }
 
     @Test
-    fun `저장된 최근 현재 위치 캐시가 없으면 NoCache를 반환한다`() =
+    fun `저장된 최근 현재 위치 캐시가 없으면 캐시 없음 결과를 반환한다`() =
         runBlocking {
             withRepository { repository ->
                 val result = repository.clearRecentCurrentLocationSpots()
@@ -46,7 +46,7 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
         }
 
     @Test
-    fun `삭제 작업 직전에 캐시가 저장되면 Deleted를 반환하고 캐시를 제거한다`() =
+    fun `삭제 작업 직전에 캐시가 저장되면 삭제됨 결과를 반환하고 캐시를 제거한다`() =
         runBlocking {
             val dataStore = InMemoryPreferencesDataStore()
             val repository = DataStoreRecentCurrentLocationSpotCacheRepository(dataStore)
@@ -54,7 +54,7 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
             dataStore.runBeforeNextUpdate {
                 repository.saveRecentCurrentLocationSpots(
                     RecentCurrentLocationSpotCacheEntry(
-                        spots = listOf(sampleSpot("concurrent")),
+                        spots = listOf(sampleSpot("동시저장")),
                         savedAtMillis = 1_000L,
                     ),
                 )

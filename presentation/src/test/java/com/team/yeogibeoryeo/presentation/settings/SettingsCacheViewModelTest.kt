@@ -52,7 +52,7 @@ class SettingsCacheViewModelTest {
     fun `위치 캐시 삭제 실패 시 실패 메시지를 표시한다`() =
         runTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
-                clearThrowable = IllegalStateException("clear failed"),
+                clearThrowable = IllegalStateException("삭제 실패"),
             )
             val viewModel = createViewModel(repository)
             val event = async { viewModel.events.first() }
