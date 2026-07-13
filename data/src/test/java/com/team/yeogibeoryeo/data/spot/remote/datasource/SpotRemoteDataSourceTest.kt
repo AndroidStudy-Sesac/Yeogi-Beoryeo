@@ -266,12 +266,150 @@ class SpotRemoteDataSourceTest {
     }
 
     @Test
-    fun `현재 위치 기반 조회는 totalCount가 커도 추가 페이지를 조회하지 않는다`() = runBlocking {
+    fun `좌표 기반 조회 시 totalCount가 numOfRows를 초과하면 2페이지까지 병합한다`() = runBlocking {
         val apiService = FakeSpotApiService(
-            response = createNormalResponse(
+            response = createResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 3,
+                items = listOf(
+                    spotItem("1페이지 수거함", "서울특별시 영등포구 문래동", "주민센터 앞"),
+                    spotItem("1페이지 재활용센터", "서울특별시 영등포구 문래동", "학교 앞"),
+                ),
+            ),
+            responsesByPage = mapOf(
+                2 to createResponse(
+                    pageNo = 2,
+                    numOfRows = 2,
+                    totalCount = 3,
+                    items = listOf(
+                        spotItem("2페이지 수거함", "서울특별시 영등포구 문래동", "공원 앞"),
+                    ),
+                ),
+            ),
+        )
+        val dataSource = SpotRemoteDataSource(apiService)
+
+        val result = dataSource.searchByLocation(
+            serviceKey = TEST_SERVICE_KEY,
+            latitude = 37.5182396969791,
+            longitude = 126.895880210522,
+            radiusMeter = 500,
+            numOfRows = 2,
+        )
+
+        assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        assertEquals(
+            listOf("1페이지 수거함", "1페이지 재활용센터", "2페이지 수거함"),
+            result.map { item -> item.spotNm },
+        )
+    }
+
+    @Test
+    fun `좌표 기반 조회는 totalCount가 커도 최대 2페이지만 조회한다`() = runBlocking {
+        val apiService = FakeSpotApiService(
+            response = createResponse(
+                pageNo = 1,
+                numOfRows = 1,
+                totalCount = 3,
+                items = listOf(
+                    spotItem("1페이지 수거함", "서울특별시 영등포구 문래동", "주민센터 앞"),
+                ),
+            ),
+            responsesByPage = mapOf(
+                2 to createResponse(
+                    pageNo = 2,
+                    numOfRows = 1,
+                    totalCount = 3,
+                    items = listOf(
+                        spotItem("2페이지 수거함", "서울특별시 영등포구 문래동", "공원 앞"),
+                    ),
+                ),
+                3 to createResponse(
+                    pageNo = 3,
+                    numOfRows = 1,
+                    totalCount = 3,
+                    items = listOf(
+                        spotItem("3페이지 수거함", "서울특별시 영등포구 문래동", "학교 앞"),
+                    ),
+                ),
+            ),
+        )
+        val dataSource = SpotRemoteDataSource(apiService)
+
+        val result = dataSource.searchByLocation(
+            serviceKey = TEST_SERVICE_KEY,
+            latitude = 37.5182396969791,
+            longitude = 126.895880210522,
+            radiusMeter = 500,
+            numOfRows = 1,
+        )
+
+        assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        assertEquals(
+            listOf("1페이지 수거함", "2페이지 수거함"),
+            result.map { item -> item.spotNm },
+        )
+    }
+
+    @Test
+    fun `좌표 기반 여러 페이지 결과는 기존 순서를 유지하며 중복을 제거한다`() = runBlocking {
+        val duplicateItem = spotItem("중복 수거함", "서울특별시 영등포구 문래동", "주민센터 앞")
+        val apiService = FakeSpotApiService(
+            response = createResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 3,
+                items = listOf(
+                    duplicateItem,
+                    spotItem("1페이지 재활용센터", "서울특별시 영등포구 문래동", "학교 앞"),
+                ),
+            ),
+            responsesByPage = mapOf(
+                2 to createResponse(
+                    pageNo = 2,
+                    numOfRows = 2,
+                    totalCount = 3,
+                    items = listOf(
+                        duplicateItem,
+                        spotItem("2페이지 수거함", "서울특별시 영등포구 문래동", "공원 앞"),
+                    ),
+                ),
+            ),
+        )
+        val dataSource = SpotRemoteDataSource(apiService)
+
+        val result = dataSource.searchByLocation(
+            serviceKey = TEST_SERVICE_KEY,
+            latitude = 37.5182396969791,
+            longitude = 126.895880210522,
+            radiusMeter = 500,
+            numOfRows = 2,
+        )
+
+        assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        assertEquals(
+            listOf("중복 수거함", "1페이지 재활용센터", "2페이지 수거함"),
+            result.map { item -> item.spotNm },
+        )
+    }
+
+    @Test
+    fun `좌표 기반 조회는 병합 결과를 최대 120개로 제한한다`() = runBlocking {
+        val apiService = FakeSpotApiService(
+            response = createResponse(
                 pageNo = 1,
                 numOfRows = 100,
-                totalCount = 300,
+                totalCount = 150,
+                items = numberedSpotItems(range = 1..100),
+            ),
+            responsesByPage = mapOf(
+                2 to createResponse(
+                    pageNo = 2,
+                    numOfRows = 100,
+                    totalCount = 150,
+                    items = numberedSpotItems(range = 101..150),
+                ),
             ),
         )
         val dataSource = SpotRemoteDataSource(apiService)
@@ -283,8 +421,37 @@ class SpotRemoteDataSourceTest {
             radiusMeter = 500,
         )
 
-        assertEquals(listOf(1), apiService.requestedPageNos)
-        assertEquals(1, result.size)
+        assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        assertEquals(120, result.size)
+        assertEquals("수거함 1", result.first().spotNm)
+        assertEquals("수거함 120", result.last().spotNm)
+    }
+
+    @Test
+    fun `좌표 기반 추가 페이지 실패 시 첫 페이지 결과를 반환한다`() = runBlocking {
+        val apiService = FakeSpotApiService(
+            response = createResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 3,
+                items = listOf(
+                    spotItem("1페이지 수거함", "서울특별시 영등포구 문래동", "주민센터 앞"),
+                ),
+            ),
+            failurePages = setOf(2),
+        )
+        val dataSource = SpotRemoteDataSource(apiService)
+
+        val result = dataSource.searchByLocation(
+            serviceKey = TEST_SERVICE_KEY,
+            latitude = 37.5182396969791,
+            longitude = 126.895880210522,
+            radiusMeter = 500,
+            numOfRows = 2,
+        )
+
+        assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        assertEquals(listOf("1페이지 수거함"), result.map { item -> item.spotNm })
     }
 
     private class FakeSpotApiService(
@@ -416,6 +583,16 @@ class SpotRemoteDataSourceTest {
                 addrBase = address,
                 addrDtl = detailAddress,
             )
+        }
+
+        fun numberedSpotItems(range: IntRange): List<SpotItemDto> {
+            return range.map { number ->
+                spotItem(
+                    name = "수거함 $number",
+                    address = "서울특별시 영등포구 문래동 $number",
+                    detailAddress = "상세 위치 $number",
+                )
+            }
         }
     }
 }
