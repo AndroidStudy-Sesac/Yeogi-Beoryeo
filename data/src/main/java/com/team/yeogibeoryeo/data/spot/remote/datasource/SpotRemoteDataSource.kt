@@ -67,7 +67,7 @@ class SpotRemoteDataSource @Inject constructor(
                     pageNo = nextPageNo,
                     numOfRows = numOfRows,
                 )
-            } catch (exception: Throwable) {
+            } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
 
                 isPartial = true
@@ -138,7 +138,7 @@ class SpotRemoteDataSource @Inject constructor(
                     longitude = longitude,
                     radiusMeter = radiusMeter,
                 )
-            } catch (exception: Throwable) {
+            } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
 
                 break
