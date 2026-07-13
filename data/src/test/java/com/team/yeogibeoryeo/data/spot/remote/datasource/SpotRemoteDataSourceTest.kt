@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class SpotRemoteDataSourceTest {
@@ -452,6 +453,26 @@ class SpotRemoteDataSourceTest {
 
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
         assertEquals(listOf("1페이지 수거함"), result.map { item -> item.spotNm })
+    }
+
+    @Test
+    fun `좌표 기반 첫 페이지 실패 시 예외를 전달한다`() {
+        val apiService = FakeSpotApiService(
+            response = createNormalResponse(),
+            failurePages = setOf(1),
+        )
+        val dataSource = SpotRemoteDataSource(apiService)
+
+        assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                dataSource.searchByLocation(
+                    serviceKey = TEST_SERVICE_KEY,
+                    latitude = 37.5182396969791,
+                    longitude = 126.895880210522,
+                    radiusMeter = 500,
+                )
+            }
+        }
     }
 
     private class FakeSpotApiService(
