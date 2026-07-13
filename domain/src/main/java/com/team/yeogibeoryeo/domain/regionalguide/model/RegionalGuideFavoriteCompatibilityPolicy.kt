@@ -3,7 +3,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.model
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 
-object RegionalGuideFavoriteCompatibilityPolicy {
+internal object RegionalGuideFavoriteCompatibilityPolicy {
 
     fun isSameFavoriteTarget(
         favoriteKey: RegionalGuideFavoriteKey,

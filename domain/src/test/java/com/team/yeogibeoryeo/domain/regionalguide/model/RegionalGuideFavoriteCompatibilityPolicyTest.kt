@@ -156,6 +156,31 @@ class RegionalGuideFavoriteCompatibilityPolicyTest {
     }
 
     @Test
+    fun `eupmyeondong이 다르면 같은 시군구와 대상지역이어도 incompatible 하다`() {
+        val favoriteKey = favoriteKey(
+            sido = "전라남도",
+            sigungu = "나주시",
+            eupmyeondong = "노안면",
+            targetRegionName = "노안면",
+            managementZoneName = "노안면",
+        )
+        val candidate = regionalDisposalGuide(
+            sido = "전라남도",
+            sigungu = "나주시",
+            eupmyeondong = "금천면",
+            targetRegionName = "노안면",
+            managementZoneName = "노안면",
+        )
+
+        assertFalse(
+            RegionalGuideFavoriteCompatibilityPolicy.isSameFavoriteTarget(
+                favoriteKey = favoriteKey,
+                candidate = candidate,
+            )
+        )
+    }
+
+    @Test
     fun `v2 key에서 managementZoneName이 다르면 incompatible 하다`() {
         val favoriteKey = favoriteKey(
             sido = "대전광역시",
