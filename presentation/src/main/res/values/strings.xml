@@ -164,6 +164,16 @@
     <string name="item_card_open_action_label">상세 보기</string>
     <string name="item_card_favorite_saved_state">즐겨찾기됨</string>
     <string name="item_card_favorite_not_saved_state">즐겨찾기 안 됨</string>
+    <string name="favorites_title">즐겨찾기</string>
+    <string name="favorites_tab_item">품목</string>
+    <string name="favorites_tab_collection_spot">장소</string>
+    <string name="favorites_tab_regional_guide">지역</string>
+    <string name="favorites_empty_item_title">아직 즐겨찾기한 품목이 없어요</string>
+    <string name="favorites_empty_item_description">품목 가이드 상세 화면에서 별을 누르면 여기에 모아볼 수 있어요.</string>
+    <string name="favorites_empty_collection_spot_title">즐겨찾기한 수거 장소가 없어요</string>
+    <string name="favorites_empty_collection_spot_description">지도에서 자주 확인하는 수거 장소를 즐겨찾기에 추가해 보세요.</string>
+    <string name="favorites_empty_regional_guide_title">아직 즐겨찾기한 지역 가이드가 없어요</string>
+    <string name="favorites_empty_regional_guide_description">지역 가이드 즐겨찾기 연결 후 이곳에서 모아볼 수 있어요.</string>
     <string name="quick_category_click_action">배출 방법 보기</string>
     <string name="settings_action">설정</string>
     <string name="settings_title">설정</string>

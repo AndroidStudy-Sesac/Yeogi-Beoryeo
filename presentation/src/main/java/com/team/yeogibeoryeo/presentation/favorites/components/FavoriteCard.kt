@@ -20,10 +20,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 import com.team.yeogibeoryeo.common.R as CommonR
 
@@ -79,7 +81,7 @@ fun FavoriteCard(
                 IconButton(onClick = onRemoveClick) {
                     Icon(
                         painter = painterResource(id = CommonR.drawable.ic_favorite_filled),
-                        contentDescription = "즐겨찾기 해제",
+                        contentDescription = stringResource(R.string.favorite_remove_action),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.tertiary,
                     )
