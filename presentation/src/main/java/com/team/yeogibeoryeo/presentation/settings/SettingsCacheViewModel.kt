@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.settings
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.usecase.ClearRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearNotifier
@@ -42,14 +43,16 @@ constructor(
 
             try {
                 recentCurrentLocationCacheClearNotifier.notifyClearRequested()
-                clearRecentCurrentLocationSpotsUseCase()
-                recentCurrentLocationCacheClearNotifier.notifyCleared()
+                val clearResult = clearRecentCurrentLocationSpotsUseCase()
+                if (clearResult == RecentCurrentLocationSpotCacheClearResult.Deleted) {
+                    recentCurrentLocationCacheClearNotifier.notifyCleared()
+                }
                 _uiState.update {
                     it.copy(isClearingLocationCache = false)
                 }
                 _events.emit(
                     SettingsCacheEvent.ShowLocationCacheMessage(
-                        R.string.settings_cache_delete_success_message,
+                        clearResult.toMessageResId(),
                     ),
                 )
             } catch (exception: CancellationException) {
@@ -64,6 +67,20 @@ constructor(
                     ),
                 )
             }
+        }
+    }
+
+    @StringRes
+    private fun RecentCurrentLocationSpotCacheClearResult.toMessageResId(): Int {
+        return when (this) {
+            RecentCurrentLocationSpotCacheClearResult.Deleted ->
+                R.string.settings_cache_delete_success_message
+
+            RecentCurrentLocationSpotCacheClearResult.NoCache ->
+                R.string.settings_cache_delete_no_cache_message
+
+            RecentCurrentLocationSpotCacheClearResult.Failed ->
+                R.string.settings_cache_delete_failure_message
         }
     }
 }

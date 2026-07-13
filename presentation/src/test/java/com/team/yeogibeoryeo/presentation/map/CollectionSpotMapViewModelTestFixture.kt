@@ -14,6 +14,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotGeocodingRepository
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
@@ -235,9 +236,16 @@ internal class FakeRecentCurrentLocationSpotCacheRepository(
         this.entry = entry
     }
 
-    override suspend fun clearRecentCurrentLocationSpots() {
+    override suspend fun clearRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheClearResult {
         clearCallCount += 1
+        val hadCache = entry != null
         entry = null
+
+        return if (hadCache) {
+            RecentCurrentLocationSpotCacheClearResult.Deleted
+        } else {
+            RecentCurrentLocationSpotCacheClearResult.NoCache
+        }
     }
 }
 

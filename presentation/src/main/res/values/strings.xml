@@ -229,6 +229,7 @@ SOFTWARE.]]></string>
     <string name="settings_cache_delete_action">삭제</string>
     <string name="settings_cache_deleting_action">삭제 중...</string>
     <string name="settings_cache_delete_success_message">위치 캐시를 삭제했습니다.</string>
+    <string name="settings_cache_delete_no_cache_message">삭제할 위치 캐시가 없습니다.</string>
     <string name="settings_cache_delete_failure_message">위치 캐시를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="map_search_placeholder">동/읍/면을 검색해주세요.</string>
     <string name="map_search_loading_title">검색중</string>
