@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.favorites
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -15,7 +16,6 @@ import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteRegionalGuide
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 class FavoritesViewModel
     @Inject
     constructor(
+        private val savedStateHandle: SavedStateHandle,
         observeFavoritesUseCase: ObserveFavoritesUseCase,
         observeCollectionSpotFavoritesUseCase: ObserveCollectionSpotFavoritesUseCase,
         observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
@@ -36,7 +37,8 @@ class FavoritesViewModel
         private val collectionSpotUiMapper: FavoriteCollectionSpotUiMapper,
         private val regionalGuideUiMapper: FavoriteRegionalGuideUiMapper,
     ) : ViewModel() {
-        private val selectedTab = MutableStateFlow(FavoriteTab.ITEM_GUIDE)
+        private val selectedTab =
+            savedStateHandle.getStateFlow(SELECTED_TAB_KEY, FavoriteTab.ITEM_GUIDE)
 
         val uiState: StateFlow<FavoritesUiState> =
             combine(
@@ -75,7 +77,7 @@ class FavoritesViewModel
                 )
 
         fun selectTab(tab: FavoriteTab) {
-            selectedTab.value = tab
+            savedStateHandle[SELECTED_TAB_KEY] = tab
         }
 
         fun removeItemGuideFavorite(targetId: String) {
@@ -94,5 +96,9 @@ class FavoritesViewModel
             viewModelScope.launch {
                 removeRegionalGuideFavoriteUseCase(targetId)
             }
+        }
+
+        private companion object {
+            const val SELECTED_TAB_KEY = "selected_tab"
         }
     }
