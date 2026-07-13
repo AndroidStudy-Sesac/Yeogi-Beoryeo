@@ -11,14 +11,26 @@ import com.team.yeogibeoryeo.presentation.settings.components.SettingsSection
 @Composable
 internal fun CacheDetail(
     onClearLocationCacheClick: () -> Unit,
+    isClearingLocationCache: Boolean,
 ) {
     SettingsDetailContent {
         SettingsSection(
             title = stringResource(R.string.settings_cache_detail_title),
             description = stringResource(R.string.settings_cache_confirm_description),
         )
-        Button(onClick = onClearLocationCacheClick) {
-            Text(text = stringResource(R.string.settings_cache_delete_action))
+        Button(
+            onClick = onClearLocationCacheClick,
+            enabled = !isClearingLocationCache,
+        ) {
+            Text(
+                text = stringResource(
+                    if (isClearingLocationCache) {
+                        R.string.settings_cache_deleting_action
+                    } else {
+                        R.string.settings_cache_delete_action
+                    },
+                ),
+            )
         }
     }
 }

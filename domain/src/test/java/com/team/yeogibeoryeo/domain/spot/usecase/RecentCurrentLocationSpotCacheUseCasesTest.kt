@@ -90,6 +90,23 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             assertEquals(TEST_NOW_MILLIS, repository.entry?.savedAtMillis)
         }
 
+    @Test
+    fun `ClearRecentCurrentLocationSpotsUseCase는 캐시를 삭제한다`() =
+        runBlocking {
+            val repository = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = RecentCurrentLocationSpotCacheEntry(
+                    spots = listOf(sampleSpot("cached")),
+                    savedAtMillis = TEST_NOW_MILLIS,
+                ),
+            )
+            val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
+
+            useCase()
+
+            assertNull(repository.entry)
+            assertEquals(1, repository.clearCallCount)
+        }
+
     private fun sampleSpot(id: String): CollectionSpot {
         return CollectionSpot(
             id = id,

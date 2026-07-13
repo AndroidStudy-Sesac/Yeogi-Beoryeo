@@ -29,6 +29,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsU
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
 import com.team.yeogibeoryeo.domain.time.TimeProvider
+import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearNotifier
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
@@ -55,6 +56,8 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
+        RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
     return createViewModel(
         repository = repository,
@@ -65,6 +68,7 @@ internal fun createViewModel(
         favoriteRepository = favoriteRepository,
         regionOptionsRepository = regionOptionsRepository,
         snapshotRepository = snapshotRepository,
+        recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
     )
 }
 
@@ -79,6 +83,8 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
+        RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
     val normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase()
 
@@ -119,6 +125,7 @@ internal fun createViewModel(
                 ),
         ),
         calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
+        recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
     )
 }
 

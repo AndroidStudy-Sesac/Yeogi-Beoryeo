@@ -21,6 +21,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.ResolveMapRegionSearchCandidate
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
+import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearNotifier
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
@@ -50,6 +51,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private val observeFavoritesUseCase: ObserveFavoritesUseCase,
     private val toggleCollectionSpotFavoriteUseCase: ToggleCollectionSpotFavoriteUseCase,
     private val calculateDistanceMeterUseCase: CalculateDistanceMeterUseCase,
+    private val recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier,
     private val mapSearchTimingLogger: MapSearchTimingLogger = MapSearchTimingLogger.NoOp,
 ) : ViewModel() {
 
@@ -65,6 +67,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     init {
         observeCollectionSpotFavorites()
+        observeRecentCurrentLocationCacheClearEvents()
     }
 
     fun onSearchKeywordChanged(keyword: String) {
@@ -569,6 +572,32 @@ class CollectionSpotMapViewModel @Inject constructor(
         clearRecentCurrentLocationSpotsUseCase()
     }
 
+    private fun clearCurrentLocationSearchMemoryState() {
+        if (uiState.value.searchMode != MapSearchMode.CURRENT_LOCATION) return
+
+        currentLocationRefreshJob?.cancel()
+        spotSearchJob?.cancel()
+        originalSpots = emptyList()
+        hasRequestedInitialCurrentLocationSearch = false
+
+        _uiState.update {
+            it.copy(
+                spots = emptyList(),
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                searchKeyword = EMPTY_SEARCH_KEYWORD,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
+                locationNotice = null,
+                regionSearchCandidates = emptyList(),
+                regionDetailSearchCandidate = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+            )
+        }
+    }
+
     private suspend fun handleLocationPermissionDenied() {
         clearRecentCurrentLocationCache()
         showLocationPermissionDeniedNotice()
@@ -916,6 +945,14 @@ class CollectionSpotMapViewModel @Inject constructor(
                     favoriteSpotIds = favorites.map { favorite -> favorite.targetId }.toSet()
                     applyFavoriteStateToCurrentResults()
                 }
+        }
+    }
+
+    private fun observeRecentCurrentLocationCacheClearEvents() {
+        viewModelScope.launch {
+            recentCurrentLocationCacheClearNotifier.events.collect {
+                clearCurrentLocationSearchMemoryState()
+            }
         }
     }
 
