@@ -317,6 +317,130 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
         }
 
     @Test
+    fun `전남광주통합특별시 광주 후보 선택 시 광주광역시 결과를 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-current-sido",
+                address = "광주광역시 서구 금호동 1",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "jeonnam-geumho",
+                address = "전라남도 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전남광주통합특별시",
+                        sigungu = "서구",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("gwangju-current-sido"), repository.geocodedSpotIds)
+            assertEquals(listOf("gwangju-current-sido"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남광주통합특별시 전남 후보 선택 시 전라남도 결과를 유지한다`() =
+        runSuspendTest {
+            val jeonnamSpot = collectionSpot(
+                id = "naju-current-sido",
+                address = "전라남도 나주시 노안면",
+                coordinate = null,
+            )
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-unnam",
+                address = "광주광역시 광산구 운남동",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(jeonnamSpot, gwangjuSpot)
+
+            val result = useCase(
+                keyword = "노안면",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전남광주통합특별시",
+                        sigungu = "나주시",
+                        eupmyeondong = "노안면",
+                    ),
+                    searchKeyword = "노안면",
+                ),
+            )
+
+            assertEquals(listOf("naju-current-sido"), repository.geocodedSpotIds)
+            assertEquals(listOf("naju-current-sido"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `광주 축약 후보 선택 시 전남광주통합특별시 광주 5개 구 결과를 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "integrated-gwangju",
+                address = "전남광주통합특별시 서구 금호동",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "integrated-jeonnam",
+                address = "전남광주통합특별시 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "광주광역시",
+                        sigungu = "서구",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("integrated-gwangju"), repository.geocodedSpotIds)
+            assertEquals(listOf("integrated-gwangju"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남 축약 후보 선택 시 전남광주통합특별시 전남 시군 결과를 유지한다`() =
+        runSuspendTest {
+            val jeonnamSpot = collectionSpot(
+                id = "integrated-naju",
+                address = "전남광주통합특별시 나주시 노안면",
+                coordinate = null,
+            )
+            val gwangjuSpot = collectionSpot(
+                id = "integrated-gwangju",
+                address = "전남광주통합특별시 광산구 운남동",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(jeonnamSpot, gwangjuSpot)
+
+            val result = useCase(
+                keyword = "노안면",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전라남도",
+                        sigungu = "나주시",
+                        eupmyeondong = "노안면",
+                    ),
+                    searchKeyword = "노안면",
+                ),
+            )
+
+            assertEquals(listOf("integrated-naju"), repository.geocodedSpotIds)
+            assertEquals(listOf("integrated-naju"), result.map { spot -> spot.id })
+        }
+
+    @Test
     fun `선택 지역 후보가 있어도 지역 범위가 불명확한 도로명 주소 결과는 유지한다`() =
         runSuspendTest {
             val roadAddressSpot = collectionSpot(
