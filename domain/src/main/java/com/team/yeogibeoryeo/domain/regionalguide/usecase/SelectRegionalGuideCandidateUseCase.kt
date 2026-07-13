@@ -1,11 +1,13 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFavoriteCompatibilityPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
-import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import javax.inject.Inject
 
 class SelectRegionalGuideCandidateUseCase @Inject constructor() {
@@ -15,6 +17,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         query: RegionalGuideQuery,
         preferredTargetRegionName: String? = null,
         preferredManagementZoneName: String? = null,
+        favoriteKey: RegionalGuideFavoriteKey? = null,
         mappedAdminDongCandidates: List<Region> = emptyList(),
     ): RegionalGuideLookupResult {
         if (candidates.isEmpty()) return RegionalGuideLookupResult.NotFound
@@ -26,6 +29,16 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         if (filteredCandidates.isEmpty()) {
             return RegionalGuideLookupResult.CandidateNotFound
+        }
+
+        if (favoriteKey != null) {
+            return filteredCandidates
+                .filterByFavoriteKey(favoriteKey)
+                .toSingleSuccessOrCandidates(
+                    displayRegion = query.displayRegion,
+                    candidateReason = RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES
+                )
+                ?: RegionalGuideLookupResult.CandidateNotFound
         }
 
         if (!preferredTargetRegionName.isNullOrBlank() || !preferredManagementZoneName.isNullOrBlank()) {
@@ -271,6 +284,16 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             targetMatches && managementMatches
         }
     }
+
+    private fun List<RegionalDisposalGuide>.filterByFavoriteKey(
+        favoriteKey: RegionalGuideFavoriteKey
+    ): List<RegionalDisposalGuide> =
+        filter { guide ->
+            RegionalGuideFavoriteCompatibilityPolicy.isSameFavoriteTarget(
+                favoriteKey = favoriteKey,
+                candidate = guide,
+            )
+        }
 
     private fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRows(): List<RegionalDisposalGuide> =
         groupBy { guide -> guide.toCandidateKey() }

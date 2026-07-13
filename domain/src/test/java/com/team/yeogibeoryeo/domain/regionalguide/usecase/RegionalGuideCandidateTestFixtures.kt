@@ -19,6 +19,7 @@ internal fun regionalDisposalGuide(
     sigungu: String?,
     targetRegionName: String?,
     managementZoneName: String? = null,
+    eupmyeondong: String? = null,
     schedules: List<RegionalWasteSchedule> = emptyList(),
     disposalPlaceType: String? = null,
     disposalPlaceDescription: String? = null,
@@ -29,7 +30,8 @@ internal fun regionalDisposalGuide(
     RegionalDisposalGuide(
         region = Region(
             sido = sido,
-            sigungu = sigungu
+            sigungu = sigungu,
+            eupmyeondong = eupmyeondong
         ),
         managementZoneName = managementZoneName,
         targetRegionName = targetRegionName,

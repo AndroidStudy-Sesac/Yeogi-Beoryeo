@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.domain.region.usecase
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.region.repository.RegionRepository
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLegacyRegionCompatibilityPolicy
 import javax.inject.Inject
 
 class ResolveRegionFromKeywordUseCase @Inject constructor(
@@ -11,13 +12,23 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(keyword: String): ResolveRegionFromKeywordResult {
         val parsedRegion = repository.resolveRegionFromKeyword(keyword)
+        val legacyCandidates = parsedRegion
+            ?.let(RegionalGuideLegacyRegionCompatibilityPolicy::replacementRegions)
+            .orEmpty()
 
         if (parsedRegion?.hasSido() == true) {
+            if (legacyCandidates.isNotEmpty()) {
+                return legacyCandidates.toResolveResult()
+            }
+
             return ResolveRegionFromKeywordResult.Resolved(parsedRegion)
         }
 
         if (parsedRegion?.hasOnlySigungu() == true) {
-            return resolveSigunguOnlyRegion(parsedRegion)
+            return resolveSigunguOnlyRegion(
+                parsedRegion = parsedRegion,
+                legacyCandidates = legacyCandidates
+            )
         }
 
         val eupmyeondongKeyword = parsedRegion?.eupmyeondong ?: keyword
@@ -25,7 +36,8 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
             eupmyeondongKeyword
         )
         val sigunguCandidates = regionOptionsRepository.findRegionsBySigunguKeyword(keyword)
-        val candidates = (sigunguCandidates + eupmyeondongCandidates)
+        val keywordLegacyCandidates = RegionalGuideLegacyRegionCompatibilityPolicy.keywordReplacementRegions(keyword)
+        val candidates = (sigunguCandidates + eupmyeondongCandidates + legacyCandidates + keywordLegacyCandidates)
             .distinctBy { region ->
                 listOf(
                     region.sido.orEmpty(),
@@ -44,10 +56,23 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
     }
 
     private suspend fun resolveSigunguOnlyRegion(
-        parsedRegion: Region
+        parsedRegion: Region,
+        legacyCandidates: List<Region>,
     ): ResolveRegionFromKeywordResult {
         val sigungu = parsedRegion.sigungu.orEmpty()
-        val candidates = regionOptionsRepository.findRegionsBySigunguKeyword(sigungu)
+        val candidates = (
+                regionOptionsRepository.findRegionsBySigunguKeyword(sigungu) +
+                legacyCandidates +
+                RegionalGuideLegacyRegionCompatibilityPolicy.keywordReplacementRegions(sigungu)
+            )
+            .distinctBy { region ->
+                listOf(
+                    region.sido.orEmpty(),
+                    region.sigungu.orEmpty(),
+                    region.eupmyeondong.orEmpty()
+                )
+            }
+            .sortedWith(REGION_CANDIDATE_COMPARATOR)
 
         return when {
             candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())
@@ -69,6 +94,15 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
         sido.isNullOrBlank() &&
             !sigungu.isNullOrBlank() &&
             eupmyeondong.isNullOrBlank()
+
+    private fun List<Region>.toResolveResult(): ResolveRegionFromKeywordResult =
+        when (size) {
+            0 -> ResolveRegionFromKeywordResult.NotFound
+            1 -> ResolveRegionFromKeywordResult.Resolved(first())
+            else -> ResolveRegionFromKeywordResult.Ambiguous(
+                candidates = sortedWith(REGION_CANDIDATE_COMPARATOR)
+            )
+        }
 
     private fun String.isAdministrativeDistrictName(): Boolean =
         endsWith(ADMINISTRATIVE_DISTRICT_SUFFIX)

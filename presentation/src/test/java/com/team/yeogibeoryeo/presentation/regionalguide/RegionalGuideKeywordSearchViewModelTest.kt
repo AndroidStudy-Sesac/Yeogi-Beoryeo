@@ -129,7 +129,7 @@ class RegionalGuideKeywordSearchViewModelTest {
     }
 
     @Test
-    fun `IME로 현재 입력값이 보정되어도 검색 실행 키워드를 복원한다`() = runTest {
+    fun `입력기로 현재 입력값이 보정되어도 검색 실행 키워드를 복원한다`() = runTest {
         val viewModel = createViewModel(
             regionRepository = FakeRegionRepository(
                 resolvedRegion = Region(sigungu = "중안구")
@@ -403,7 +403,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
         assertEquals("중구", viewModel.searchKeyword.value)
 
         assertTrue(viewModel.restoreCandidatesFromDetail())
@@ -461,7 +461,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
     }
 
     @Test
@@ -501,7 +501,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
     }
 
     @Test
@@ -541,7 +541,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
     }
 
     @Test

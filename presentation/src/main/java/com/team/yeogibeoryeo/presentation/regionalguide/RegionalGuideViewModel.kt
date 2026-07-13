@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.regionalguide
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSnapshotUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
@@ -17,8 +18,8 @@ import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGui
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
@@ -458,6 +459,7 @@ class RegionalGuideViewModel @Inject constructor(
                     region = regionalGuideRegion,
                     preferredTargetRegionName = snapshot.targetRegionName,
                     preferredManagementZoneName = snapshot.managementZoneName,
+                    favoriteKey = snapshot.key,
                     emptyContext = RegionalGuideEmptyContext.FAVORITE_RESTORE,
                 )
             } catch (e: CancellationException) {
@@ -690,12 +692,14 @@ class RegionalGuideViewModel @Inject constructor(
         region: Region,
         preferredTargetRegionName: String? = null,
         preferredManagementZoneName: String? = null,
+        favoriteKey: RegionalGuideFavoriteKey? = null,
         emptyContext: RegionalGuideEmptyContext = RegionalGuideEmptyContext.DEFAULT,
     ) {
         val result = getRegionalDisposalGuideUseCase(
             region = region,
             preferredTargetRegionName = preferredTargetRegionName,
             preferredManagementZoneName = preferredManagementZoneName,
+            favoriteKey = favoriteKey,
         )
 
         _uiState.value = result.toUiState(
@@ -867,7 +871,7 @@ class RegionalGuideViewModel @Inject constructor(
         val region = toRegion()
 
         return RegionalGuideFavoriteSnapshot(
-            targetId = com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey(
+            targetId = RegionalGuideFavoriteKey(
                 sido = region.sido,
                 sigungu = region.sigungu,
                 eupmyeondong = region.eupmyeondong,
@@ -882,7 +886,7 @@ class RegionalGuideViewModel @Inject constructor(
 
     private fun RegionalDisposalGuide.toFavoriteSnapshot(): RegionalGuideFavoriteSnapshot {
         return RegionalGuideFavoriteSnapshot(
-            targetId = com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey(
+            targetId = RegionalGuideFavoriteKey(
                 sido = region.sido,
                 sigungu = region.sigungu,
                 eupmyeondong = region.eupmyeondong,
