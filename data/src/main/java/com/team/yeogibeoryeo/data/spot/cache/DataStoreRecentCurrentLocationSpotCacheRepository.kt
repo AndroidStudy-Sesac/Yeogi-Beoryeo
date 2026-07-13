@@ -58,9 +58,10 @@ class DataStoreRecentCurrentLocationSpotCacheRepository @Inject constructor(
 
     override suspend fun clearRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheClearResult {
         return try {
-            val hadCache = dataStore.data.first()[RECENT_CURRENT_LOCATION_SPOTS_KEY] != null
+            var hadCache = false
 
             dataStore.edit { preferences ->
+                hadCache = preferences[RECENT_CURRENT_LOCATION_SPOTS_KEY] != null
                 preferences.remove(RECENT_CURRENT_LOCATION_SPOTS_KEY)
             }
 

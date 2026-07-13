@@ -45,6 +45,27 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
             }
         }
 
+    @Test
+    fun `삭제 작업 직전에 캐시가 저장되면 Deleted를 반환하고 캐시를 제거한다`() =
+        runBlocking {
+            val dataStore = InMemoryPreferencesDataStore()
+            val repository = DataStoreRecentCurrentLocationSpotCacheRepository(dataStore)
+
+            dataStore.runBeforeNextUpdate {
+                repository.saveRecentCurrentLocationSpots(
+                    RecentCurrentLocationSpotCacheEntry(
+                        spots = listOf(sampleSpot("concurrent")),
+                        savedAtMillis = 1_000L,
+                    ),
+                )
+            }
+
+            val result = repository.clearRecentCurrentLocationSpots()
+
+            assertEquals(RecentCurrentLocationSpotCacheClearResult.Deleted, result)
+            assertNull(repository.getRecentCurrentLocationSpots())
+        }
+
     private fun sampleSpot(id: String): CollectionSpot {
         return CollectionSpot(
             id = id,
@@ -69,12 +90,21 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
 
     private class InMemoryPreferencesDataStore : DataStore<Preferences> {
         private val preferences = MutableStateFlow<Preferences>(emptyPreferences())
+        private var beforeNextUpdate: (suspend () -> Unit)? = null
 
         override val data: Flow<Preferences> = preferences
+
+        fun runBeforeNextUpdate(block: suspend () -> Unit) {
+            beforeNextUpdate = block
+        }
 
         override suspend fun updateData(
             transform: suspend (t: Preferences) -> Preferences,
         ): Preferences {
+            val beforeUpdate = beforeNextUpdate
+            beforeNextUpdate = null
+            beforeUpdate?.invoke()
+
             val updatedPreferences = transform(preferences.value)
             preferences.value = updatedPreferences
             return updatedPreferences
