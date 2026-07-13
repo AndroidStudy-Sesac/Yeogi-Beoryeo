@@ -121,6 +121,33 @@ class ItemGuideDetailViewModelTest {
         }
 
     @Test
+    fun `즐겨찾기 변경에 실패하면 실패 메시지 이벤트를 보낸다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = guide),
+                    favoriteRepository =
+                        FakeFavoriteRepository(toggleError = IllegalStateException("저장 실패")),
+                )
+
+            viewModel.loadGuide(guide.id)
+            advanceUntilIdle()
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
+            viewModel.toggleFavorite()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
+            val messageEvent = event.await() as ItemGuideDetailEvent.ShowMessage
+            assertFalse(state.isFavorite)
+            assertEquals(
+                R.string.item_guide_detail_favorite_update_failed_message,
+                messageEvent.messageResId,
+            )
+            assertEquals(ItemGuideDetailMessageIcon.Warning, messageEvent.icon)
+        }
+
+    @Test
     fun `공식 안내 실행 실패 메시지 이벤트를 보낸다`() =
         runTest {
             val viewModel =
@@ -214,6 +241,7 @@ class ItemGuideDetailViewModelTest {
 
     private class FakeFavoriteRepository(
         initialFavorites: List<Favorite> = emptyList(),
+        private val toggleError: Throwable? = null,
     ) : FavoriteRepository {
         private val favorites = MutableStateFlow(initialFavorites)
 
@@ -234,6 +262,7 @@ class ItemGuideDetailViewModelTest {
             favorites.value.any { it.type == type && it.targetId == targetId }
 
         override suspend fun toggleFavorite(favorite: Favorite): Boolean {
+            toggleError?.let { throw it }
             return if (isFavorite(favorite.type, favorite.targetId)) {
                 removeFavorite(favorite.type, favorite.targetId)
                 false
