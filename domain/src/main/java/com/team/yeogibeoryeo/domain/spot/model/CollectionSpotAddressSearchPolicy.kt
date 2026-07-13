@@ -47,7 +47,7 @@ object CollectionSpotAddressSearchPolicy {
         token: String,
         sigungu: String? = null,
     ): String? {
-        val sido = token.toRawSidoName() ?: return null
+        val sido = token.toNormalizedSidoName() ?: return null
 
         return RegionSidoAliasPolicy.normalizeSidoForInput(
             sido = sido,
@@ -66,7 +66,7 @@ object CollectionSpotAddressSearchPolicy {
         requestedSigungu: String? = null,
         candidateSigungu: String? = requestedSigungu,
     ): Boolean {
-        val tokenSido = token.toRawSidoName() ?: return token == sido
+        val tokenSido = token.toNormalizedSidoName() ?: return token == sido
         val requestedSido = RegionSidoAliasPolicy.normalizeSidoForInput(
             sido = sido,
             sigungu = requestedSigungu,
@@ -97,12 +97,10 @@ object CollectionSpotAddressSearchPolicy {
     private fun String.isLegalDongGaCandidate(): Boolean =
         LEGAL_DONG_GA_REGEX.matches(this)
 
-    private fun String.toRawSidoName(): String? =
-        when (this) {
-            in SIDO_NAMES -> SIDO_ALIASES[this] ?: this
-            in SIDO_ALIASES -> SIDO_ALIASES[this]
-            else -> null
-        }
+    private fun String.toNormalizedSidoName(): String? =
+        RegionSidoAliasPolicy
+            .normalizeSidoName(this)
+            ?.takeIf { RegionSidoAliasPolicy.isSidoName(this) }
 
     private const val ROAD_NAME_SUFFIX = "로"
     private const val ROAD_DETAIL_SUFFIX = "길"
@@ -122,57 +120,4 @@ object CollectionSpotAddressSearchPolicy {
         """[가-힣]+\d*[$EUP_SUFFIX$MYEON_SUFFIX$DONG_SUFFIX]""".toRegex()
     private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+$LEGAL_DONG_GA_SUFFIX""".toRegex()
 
-    private val SIDO_NAMES = setOf(
-        "서울특별시",
-        "부산광역시",
-        "대구광역시",
-        "인천광역시",
-        "광주광역시",
-        "대전광역시",
-        "울산광역시",
-        "세종특별자치시",
-        "경기도",
-        "강원특별자치도",
-        "강원도",
-        "충청북도",
-        "충청남도",
-        "전북특별자치도",
-        "전라북도",
-        "전라남도",
-        RegionSidoAliasPolicy.GWANGJU_JEONNAM_INTEGRATED_SIDO,
-        "경상북도",
-        "경상남도",
-        "제주특별자치도",
-        "제주도",
-    )
-
-    private val SIDO_ALIASES = mapOf(
-        "서울" to "서울특별시",
-        "서울시" to "서울특별시",
-        "부산" to "부산광역시",
-        "부산시" to "부산광역시",
-        "대구" to "대구광역시",
-        "대구시" to "대구광역시",
-        "인천" to "인천광역시",
-        "인천시" to "인천광역시",
-        "광주" to "광주광역시",
-        "대전" to "대전광역시",
-        "대전시" to "대전광역시",
-        "울산" to "울산광역시",
-        "울산시" to "울산광역시",
-        "세종" to "세종특별자치시",
-        "세종시" to "세종특별자치시",
-        "경기" to "경기도",
-        "강원" to "강원특별자치도",
-        "강원도" to "강원특별자치도",
-        "충북" to "충청북도",
-        "충남" to "충청남도",
-        "전북" to "전북특별자치도",
-        "전라북도" to "전북특별자치도",
-        "전남" to "전라남도",
-        "경북" to "경상북도",
-        "경남" to "경상남도",
-        "제주" to "제주특별자치도",
-        "제주도" to "제주특별자치도",
-    )
 }

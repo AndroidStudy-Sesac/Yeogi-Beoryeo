@@ -20,6 +20,28 @@ class RegionNormalizerTest {
     }
 
     @Test
+    fun `과거 시도명과 축약명은 공통 정책으로 공식 명칭 변환된다`() {
+        val cases = mapOf(
+            "광주" to "광주광역시",
+            "전남" to "전라남도",
+            "전북" to "전북특별자치도",
+            "강원도" to "강원특별자치도",
+            "전라북도" to "전북특별자치도",
+        )
+
+        cases.forEach { (input, expected) ->
+            val result = RegionNormalizer.normalize(
+                Region(
+                    sido = input,
+                    sigungu = "테스트시",
+                )
+            )
+
+            assertEquals(expected, result.sido)
+        }
+    }
+
+    @Test
     fun `세종특별자치시는 sigungu가 제거된다`() {
         val region = Region(
             sido = "세종",

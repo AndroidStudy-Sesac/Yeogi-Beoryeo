@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.spot.repository
 
 import com.team.yeogibeoryeo.data.spot.geocoder.SpotGeocoder
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import com.team.yeogibeoryeo.domain.spot.log.MapSearchTimingLogger
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
@@ -104,35 +105,24 @@ class CollectionSpotGeocodingRepositoryImpl @Inject constructor(
     }
 
     private fun String.normalizeIntegratedGwangjuJeonnamAddress(): String {
-        if (!startsWith(GWANGJU_JEONNAM_INTEGRATED_SIDO)) return this
+        if (!startsWith(RegionSidoAliasPolicy.GWANGJU_JEONNAM_INTEGRATED_SIDO)) return this
 
         val sigungu = split(WHITESPACE_REGEX)
             .getOrNull(INTEGRATED_SIDO_SIGUNGU_INDEX)
             .orEmpty()
-        val normalizedSido = if (sigungu in GWANGJU_SIGUNGU_NAMES) {
-            GWANGJU_SIDO
-        } else {
-            JEONNAM_SIDO
-        }
+        val normalizedSido = RegionSidoAliasPolicy.resolveIntegratedSido(sigungu)
 
-        return replaceFirst(GWANGJU_JEONNAM_INTEGRATED_SIDO, normalizedSido)
+        return replaceFirst(
+            oldValue = RegionSidoAliasPolicy.GWANGJU_JEONNAM_INTEGRATED_SIDO,
+            newValue = normalizedSido,
+        )
     }
 
     private companion object {
         const val GEOCODING_CONCURRENCY_LIMIT = 4
-        const val GWANGJU_JEONNAM_INTEGRATED_SIDO = "전남광주통합특별시"
-        const val GWANGJU_SIDO = "광주광역시"
-        const val JEONNAM_SIDO = "전라남도"
         const val INTEGRATED_SIDO_SIGUNGU_INDEX = 1
         val PARENTHESIZED_TEXT_REGEX = "\\([^)]*\\)".toRegex()
         val WHITESPACE_REGEX = "\\s+".toRegex()
-        val GWANGJU_SIGUNGU_NAMES = setOf(
-            "동구",
-            "서구",
-            "남구",
-            "북구",
-            "광산구",
-        )
     }
 }
 

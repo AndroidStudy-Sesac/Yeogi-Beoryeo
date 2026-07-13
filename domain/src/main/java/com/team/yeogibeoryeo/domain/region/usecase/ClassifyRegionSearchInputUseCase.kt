@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.domain.region.usecase
 
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import javax.inject.Inject
 
 class ClassifyRegionSearchInputUseCase @Inject constructor() {
@@ -33,7 +34,7 @@ class ClassifyRegionSearchInputUseCase @Inject constructor() {
         trim().trim('(', ')', '[', ']', ',', '.', ' ')
 
     private fun String.isSidoLike(): Boolean =
-        this in SIDO_NAMES || this in SIDO_ALIASES
+        RegionSidoAliasPolicy.isSidoName(this)
 
     private fun String.isSigunguLike(): Boolean =
         endsWith("시") || endsWith("군") || endsWith("구")
@@ -51,55 +52,6 @@ class ClassifyRegionSearchInputUseCase @Inject constructor() {
         private val DIGIT_REGEX = "\\d+".toRegex()
         private val ADDRESS_NUMBER_REGEX = """\d+(-\d+)?""".toRegex()
 
-        private val SIDO_NAMES = setOf(
-            "서울특별시",
-            "부산광역시",
-            "대구광역시",
-            "인천광역시",
-            "광주광역시",
-            "대전광역시",
-            "울산광역시",
-            "세종특별자치시",
-            "경기도",
-            "강원특별자치도",
-            "강원도",
-            "충청북도",
-            "충청남도",
-            "전북특별자치도",
-            "전라북도",
-            "전라남도",
-            "경상북도",
-            "경상남도",
-            "제주특별자치도",
-            "제주도"
-        )
-
-        private val SIDO_ALIASES = setOf(
-            "서울",
-            "서울시",
-            "부산",
-            "부산시",
-            "대구",
-            "대구시",
-            "인천",
-            "인천시",
-            "광주",
-            "대전",
-            "대전시",
-            "울산",
-            "울산시",
-            "세종",
-            "세종시",
-            "경기",
-            "강원",
-            "충북",
-            "충남",
-            "전북",
-            "전남",
-            "경북",
-            "경남",
-            "제주"
-        )
     }
 }
 
