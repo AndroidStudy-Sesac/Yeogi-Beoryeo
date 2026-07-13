@@ -18,7 +18,7 @@ import java.io.IOException
 class RegionalGuideRemoteDataSourceUnitTest {
 
     @Test
-    fun `totalCount가 numOfRows 이하면 첫 페이지만 조회한다`() = runBlocking {
+    fun `전체 건수가 페이지 크기 이하면 첫 페이지만 조회한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
                 pageNo = 1,
@@ -40,7 +40,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
-    fun `totalCount가 numOfRows를 초과하면 필요한 추가 페이지를 모두 조회해 병합한다`() = runBlocking {
+    fun `전체 건수가 페이지 크기를 초과하면 필요한 추가 페이지를 모두 조회해 병합한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
                 pageNo = 1,
@@ -76,7 +76,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
-    fun `totalCount가 2페이지를 초과하면 마지막 페이지까지 조회한다`() = runBlocking {
+    fun `전체 건수가 두 페이지를 초과하면 마지막 페이지까지 조회한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
                 pageNo = 1,
@@ -115,7 +115,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
-    fun `응답 pageNo가 요청 pageNo와 달라도 요청 pageNo 기준으로 다음 페이지를 조회한다`() = runBlocking {
+    fun `응답 페이지 번호가 요청 페이지 번호와 달라도 요청 페이지 번호 기준으로 다음 페이지를 조회한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
                 pageNo = 3,
@@ -154,6 +154,39 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
+    fun `응답 페이지 크기가 요청 페이지 크기보다 크면 요청 페이지 크기 기준으로 추가 페이지를 조회한다`() = runBlocking {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 150,
+                totalCount = 150,
+                items = listOf(regionalGuideItem("1페이지")),
+            ),
+            responsesByPage = mapOf(
+                2 to regionalGuideResponse(
+                    pageNo = 2,
+                    numOfRows = 150,
+                    totalCount = 150,
+                    items = listOf(regionalGuideItem("2페이지")),
+                ),
+            ),
+        )
+        val dataSource = RegionalGuideRemoteDataSource(
+            apiService = apiService,
+            keyProvider = FakePublicDataKeyProvider,
+        )
+
+        val result = dataSource.fetchRegionalGuides(SIGUNGU_NAME)
+
+        assertTrue(result.isSuccess)
+        assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        assertEquals(
+            listOf("1페이지", "2페이지"),
+            result.getOrThrow().map { item -> item.managementZoneName },
+        )
+    }
+
+    @Test
     fun `빈 응답이면 빈 리스트를 반환하고 추가 페이지를 조회하지 않는다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
@@ -176,7 +209,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
-    fun `totalCount가 없으면 첫 페이지만 반환한다`() = runBlocking {
+    fun `전체 건수가 없으면 첫 페이지만 반환한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
                 pageNo = 1,
@@ -198,7 +231,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
-    fun `numOfRows가 없으면 요청한 기본 page size 기준으로 추가 페이지를 조회한다`() = runBlocking {
+    fun `페이지 크기가 없으면 요청한 기본 페이지 크기 기준으로 추가 페이지를 조회한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
                 pageNo = 1,
@@ -228,7 +261,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
-    fun `numOfRows가 비정상 값이면 첫 페이지만 반환한다`() = runBlocking {
+    fun `페이지 크기가 비정상 값이면 첫 페이지만 반환한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
                 pageNo = 1,

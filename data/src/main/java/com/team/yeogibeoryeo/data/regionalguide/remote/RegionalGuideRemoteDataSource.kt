@@ -81,7 +81,9 @@ class RegionalGuideRemoteDataSource @Inject constructor(
         return RegionalGuidePage(
             items = body?.items?.item.orEmpty(),
             pageNo = pageNo,
-            numOfRows = body?.numOfRows ?: numOfRows,
+            numOfRows = body?.numOfRows
+                ?.coerceAtMost(numOfRows)
+                ?: numOfRows,
             totalCount = body?.totalCount,
         )
     }
