@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.favorites
 
+import androidx.lifecycle.SavedStateHandle
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -405,6 +406,58 @@ class FavoritesViewModelTest {
         }
 
     @Test
+    fun `저장된 탭이 없으면 품목 탭을 기본값으로 사용한다`() =
+        runTest {
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = FakeFavoriteRepository(),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(FavoriteTab.ITEM_GUIDE, viewModel.uiState.value.selectedTab)
+        }
+
+    @Test
+    fun `ViewModel을 다시 만들면 저장된 탭을 복원한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val favoriteRepository = FakeFavoriteRepository()
+            val itemRepository = FakeItemRepository(guides = emptyList())
+            val firstViewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = itemRepository,
+                    savedStateHandle = savedStateHandle,
+                )
+
+            firstViewModel.selectTab(FavoriteTab.REGIONAL_GUIDE)
+
+            val restoredSavedStateHandle =
+                SavedStateHandle(
+                    savedStateHandle.keys().associateWith { key ->
+                        savedStateHandle.get<Any?>(key)
+                    },
+                )
+
+            val restoredViewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = itemRepository,
+                    savedStateHandle = restoredSavedStateHandle,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                restoredViewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(FavoriteTab.REGIONAL_GUIDE, restoredViewModel.uiState.value.selectedTab)
+        }
+
+    @Test
     fun `regional guide favorites are mapped from snapshots in favorite order`() =
         runTest {
             val olderSnapshot =
@@ -510,12 +563,14 @@ class FavoritesViewModelTest {
     private fun createViewModel(
         favoriteRepository: FakeFavoriteRepository,
         itemRepository: FakeItemRepository,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
         collectionSpotSnapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
             FakeCollectionSpotFavoriteSnapshotRepository(),
         regionalGuideSnapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
             FakeRegionalGuideFavoriteSnapshotRepository(),
     ): FavoritesViewModel =
         FavoritesViewModel(
+            savedStateHandle = savedStateHandle,
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
             observeCollectionSpotFavoritesUseCase =
                 ObserveCollectionSpotFavoritesUseCase(
