@@ -38,6 +38,7 @@ fun SettingsDetailRoute(
         onOpenAppSettingsClick = onOpenAppSettingsClick,
         onClearLocationCacheClick = cacheViewModel::clearLocationCache,
         cacheUiState = cacheUiState,
+        cacheEvents = cacheViewModel.events,
         modifier = modifier,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
     )

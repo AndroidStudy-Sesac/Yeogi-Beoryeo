@@ -10,8 +10,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -25,6 +28,8 @@ constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsCacheUiState())
     val uiState: StateFlow<SettingsCacheUiState> = _uiState.asStateFlow()
+    private val _events = MutableSharedFlow<SettingsCacheEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<SettingsCacheEvent> = _events.asSharedFlow()
     private var clearLocationCacheJob: Job? = null
 
     fun clearLocationCache() {
@@ -32,30 +37,31 @@ constructor(
 
         clearLocationCacheJob = viewModelScope.launch {
             _uiState.update {
-                it.copy(
-                    isClearingLocationCache = true,
-                    locationCacheMessageResId = null,
-                )
+                it.copy(isClearingLocationCache = true)
             }
 
             try {
-                clearRecentCurrentLocationSpotsUseCase()
                 recentCurrentLocationCacheClearNotifier.notifyCleared()
+                clearRecentCurrentLocationSpotsUseCase()
                 _uiState.update {
-                    it.copy(
-                        isClearingLocationCache = false,
-                        locationCacheMessageResId = R.string.settings_cache_delete_success_message,
-                    )
+                    it.copy(isClearingLocationCache = false)
                 }
+                _events.emit(
+                    SettingsCacheEvent.ShowLocationCacheMessage(
+                        R.string.settings_cache_delete_success_message,
+                    ),
+                )
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Throwable) {
                 _uiState.update {
-                    it.copy(
-                        isClearingLocationCache = false,
-                        locationCacheMessageResId = R.string.settings_cache_delete_failure_message,
-                    )
+                    it.copy(isClearingLocationCache = false)
                 }
+                _events.emit(
+                    SettingsCacheEvent.ShowLocationCacheMessage(
+                        R.string.settings_cache_delete_failure_message,
+                    ),
+                )
             }
         }
     }
@@ -63,5 +69,10 @@ constructor(
 
 data class SettingsCacheUiState(
     val isClearingLocationCache: Boolean = false,
-    @param:StringRes val locationCacheMessageResId: Int? = null,
 )
+
+sealed interface SettingsCacheEvent {
+    data class ShowLocationCacheMessage(
+        @param:StringRes val messageResId: Int,
+    ) : SettingsCacheEvent
+}

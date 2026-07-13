@@ -77,6 +77,42 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
         }
 
     @Test
+    fun `현재 위치 검색 중 캐시 삭제 이벤트가 발생하면 완료된 검색 결과를 캐시에 다시 저장하지 않는다`() =
+        runTest {
+            val notifier = RecentCurrentLocationCacheClearNotifier()
+            val searchResult = CompletableDeferred<List<CollectionSpot>>()
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository()
+            val repository = FakeCollectionSpotRepository(
+                locationSearchResultProvider = {
+                    searchResult.await()
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+                recentCurrentLocationSpotCacheRepository = cache,
+                recentCurrentLocationCacheClearNotifier = notifier,
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+            assertEquals(1, repository.locationSearchCallCount)
+
+            notifier.notifyCleared()
+            searchResult.complete(listOf(locationSpot))
+            advanceUntilIdle()
+
+            assertEquals(0, cache.saveCallCount)
+            assertNull(cache.entry)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
     fun `현재 위치 검색은 신선한 캐시가 있으면 캐시를 먼저 표시하고 조용히 갱신한다`() =
         runTest {
             val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)

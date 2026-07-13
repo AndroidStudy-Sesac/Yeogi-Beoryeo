@@ -62,6 +62,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var spotSearchJob: Job? = null
     private var currentLocationRefreshJob: Job? = null
     private var hasRequestedInitialCurrentLocationSearch = false
+    private var currentLocationSearchGeneration = 0
     private var favoriteSpotIds: Set<String> = emptySet()
     private val consumedFavoriteSpotMoveRequestIds = mutableSetOf<String>()
 
@@ -374,6 +375,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     fun searchByCurrentLocation() {
         currentLocationRefreshJob?.cancel()
         spotSearchJob?.cancel()
+        val searchGeneration = ++currentLocationSearchGeneration
         _uiState.update {
             it.copy(searchKeyword = EMPTY_SEARCH_KEYWORD)
         }
@@ -394,6 +396,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             searchByCurrentLocationInternal(
                 showLoading = true,
                 preservePreviousResultOnFailure = false,
+                searchGeneration = searchGeneration,
             )
         }
     }
@@ -447,6 +450,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private suspend fun searchByLocation(
         coordinate: Coordinate,
         preservePreviousResultOnFailure: Boolean,
+        searchGeneration: Int,
     ) {
         val searchStartedAtNanos = System.nanoTime()
         mapSearchTimingLogger.log(
@@ -460,7 +464,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 types = emptySet(),
             )
 
-            if (!canApplyCurrentLocationResult()) return
+            if (!canApplyCurrentLocationResult(searchGeneration)) return
 
             val spotsWithDistance = spots.withDistanceFrom(coordinate)
 
@@ -573,6 +577,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     private fun clearCurrentLocationSearchMemoryState() {
+        currentLocationSearchGeneration += 1
         if (uiState.value.searchMode != MapSearchMode.CURRENT_LOCATION) return
 
         currentLocationRefreshJob?.cancel()
@@ -653,6 +658,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
 
         spotSearchJob?.cancel()
+        val searchGeneration = ++currentLocationSearchGeneration
         spotSearchJob = viewModelScope.launch {
             val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
 
@@ -666,6 +672,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchByCurrentLocationInternal(
                     showLoading = true,
                     preservePreviousResultOnFailure = false,
+                    searchGeneration = searchGeneration,
                 )
             }
         }
@@ -843,7 +850,10 @@ class CollectionSpotMapViewModel @Inject constructor(
     private suspend fun searchByCurrentLocationInternal(
         showLoading: Boolean,
         preservePreviousResultOnFailure: Boolean,
+        searchGeneration: Int,
     ) {
+        if (searchGeneration != currentLocationSearchGeneration) return
+
         if (showLoading) {
             _uiState.update {
                 it.copy(
@@ -862,11 +872,15 @@ class CollectionSpotMapViewModel @Inject constructor(
             }
         }
 
-        when (val result = currentLocationProvider.getCurrentLocation()) {
+        val result = currentLocationProvider.getCurrentLocation()
+        if (searchGeneration != currentLocationSearchGeneration) return
+
+        when (result) {
             is CurrentLocationResult.Found -> {
                 searchByLocation(
                     coordinate = result.coordinate,
                     preservePreviousResultOnFailure = preservePreviousResultOnFailure,
+                    searchGeneration = searchGeneration,
                 )
             }
 
@@ -916,10 +930,12 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private fun refreshCurrentLocationSilently() {
         currentLocationRefreshJob?.cancel()
+        val searchGeneration = currentLocationSearchGeneration
         currentLocationRefreshJob = viewModelScope.launch {
             searchByCurrentLocationInternal(
                 showLoading = false,
                 preservePreviousResultOnFailure = true,
+                searchGeneration = searchGeneration,
             )
         }
     }
@@ -932,10 +948,11 @@ class CollectionSpotMapViewModel @Inject constructor(
             locationPermissionChecker.hasFineLocationPermission()
     }
 
-    private fun canApplyCurrentLocationResult(): Boolean {
+    private fun canApplyCurrentLocationResult(searchGeneration: Int): Boolean {
         val currentState = uiState.value
 
-        return currentState.searchMode == MapSearchMode.CURRENT_LOCATION
+        return currentState.searchMode == MapSearchMode.CURRENT_LOCATION &&
+            searchGeneration == currentLocationSearchGeneration
     }
 
     private fun observeCollectionSpotFavorites() {

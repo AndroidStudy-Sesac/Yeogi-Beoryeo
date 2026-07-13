@@ -8,11 +8,12 @@ import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearN
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -27,6 +28,7 @@ class SettingsCacheViewModelTest {
         runTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository()
             val viewModel = createViewModel(repository)
+            val event = async { viewModel.events.first() }
 
             viewModel.clearLocationCache()
             advanceUntilIdle()
@@ -35,7 +37,7 @@ class SettingsCacheViewModelTest {
             assertFalse(viewModel.uiState.value.isClearingLocationCache)
             assertEquals(
                 R.string.settings_cache_delete_success_message,
-                viewModel.uiState.value.locationCacheMessageResId,
+                (event.await() as SettingsCacheEvent.ShowLocationCacheMessage).messageResId,
             )
         }
 
@@ -46,6 +48,7 @@ class SettingsCacheViewModelTest {
                 clearThrowable = IllegalStateException("clear failed"),
             )
             val viewModel = createViewModel(repository)
+            val event = async { viewModel.events.first() }
 
             viewModel.clearLocationCache()
             advanceUntilIdle()
@@ -54,7 +57,7 @@ class SettingsCacheViewModelTest {
             assertFalse(viewModel.uiState.value.isClearingLocationCache)
             assertEquals(
                 R.string.settings_cache_delete_failure_message,
-                viewModel.uiState.value.locationCacheMessageResId,
+                (event.await() as SettingsCacheEvent.ShowLocationCacheMessage).messageResId,
             )
         }
 
@@ -70,27 +73,54 @@ class SettingsCacheViewModelTest {
             viewModel.clearLocationCache()
             repository.clearStarted.await()
             assertTrue(viewModel.uiState.value.isClearingLocationCache)
-            assertNull(viewModel.uiState.value.locationCacheMessageResId)
 
             viewModel.clearLocationCache()
             assertEquals(1, repository.clearCallCount)
 
+            val event = async { viewModel.events.first() }
             clearCompletion.complete(Unit)
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.isClearingLocationCache)
             assertEquals(
                 R.string.settings_cache_delete_success_message,
-                viewModel.uiState.value.locationCacheMessageResId,
+                (event.await() as SettingsCacheEvent.ShowLocationCacheMessage).messageResId,
             )
+        }
+
+    @Test
+    fun `위치 캐시 삭제 요청 시 영속 캐시 삭제 완료 전 현재 위치 검색 무효화 이벤트를 전송한다`() =
+        runTest {
+            val notifier = RecentCurrentLocationCacheClearNotifier()
+            val clearCompletion = CompletableDeferred<Unit>()
+            val repository = FakeRecentCurrentLocationSpotCacheRepository(
+                clearCompletion = clearCompletion,
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                recentCurrentLocationCacheClearNotifier = notifier,
+            )
+            val clearEvent = async { notifier.events.first() }
+
+            viewModel.clearLocationCache()
+            repository.clearStarted.await()
+
+            clearEvent.await()
+            assertTrue(viewModel.uiState.value.isClearingLocationCache)
+
+            clearCompletion.complete(Unit)
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isClearingLocationCache)
         }
 
     private fun createViewModel(
         repository: RecentCurrentLocationSpotCacheRepository,
+        recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
+            RecentCurrentLocationCacheClearNotifier(),
     ): SettingsCacheViewModel {
         return SettingsCacheViewModel(
             clearRecentCurrentLocationSpotsUseCase =
                 ClearRecentCurrentLocationSpotsUseCase(repository),
-            recentCurrentLocationCacheClearNotifier = RecentCurrentLocationCacheClearNotifier(),
+            recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
         )
     }
 
