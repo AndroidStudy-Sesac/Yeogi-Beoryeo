@@ -49,10 +49,14 @@ object RegionSidoAliasPolicy {
 
     fun isSameSido(
         requestedSido: String?,
+        requestedSigungu: String?,
         candidateSido: String?,
         candidateSigungu: String?,
     ): Boolean {
-        val requested = normalizeSidoName(requestedSido) ?: return true
+        val requested = normalizeSidoForInput(
+            sido = requestedSido,
+            sigungu = requestedSigungu,
+        ) ?: return true
         val candidate = normalizeSidoForInput(
             sido = candidateSido,
             sigungu = candidateSigungu,
@@ -60,16 +64,6 @@ object RegionSidoAliasPolicy {
 
         return requested == candidate
     }
-
-    fun toComparisonKey(region: Region): String =
-        listOf(
-            normalizeSidoForInput(
-                sido = region.sido,
-                sigungu = region.sigungu,
-            ).orEmpty(),
-            region.sigungu.normalizeRegionName().orEmpty(),
-            region.eupmyeondong.normalizeRegionName().orEmpty(),
-        ).joinToString(COMPARISON_KEY_DELIMITER)
 
     private fun String?.normalizeRegionName(): String? =
         this
@@ -82,8 +76,6 @@ object RegionSidoAliasPolicy {
     const val GWANGJU_SIDO = "광주광역시"
     const val JEONNAM_SIDO = "전라남도"
     const val GWANGJU_JEONNAM_INTEGRATED_SIDO = "전남광주통합특별시"
-
-    private const val COMPARISON_KEY_DELIMITER = "|"
 
     private val OFFICIAL_SIDO_NAMES = setOf(
         "서울특별시",

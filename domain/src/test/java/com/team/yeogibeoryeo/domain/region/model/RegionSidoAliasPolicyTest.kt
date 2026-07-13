@@ -55,6 +55,7 @@ class RegionSidoAliasPolicyTest {
             assertTrue(
                 RegionSidoAliasPolicy.isSameSido(
                     requestedSido = "광주광역시",
+                    requestedSigungu = sigungu,
                     candidateSido = "전남광주통합특별시",
                     candidateSigungu = sigungu,
                 )
@@ -67,6 +68,7 @@ class RegionSidoAliasPolicyTest {
         assertFalse(
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = "광주광역시",
+                requestedSigungu = "고흥군",
                 candidateSido = "전남광주통합특별시",
                 candidateSigungu = "고흥군",
             )
@@ -78,6 +80,7 @@ class RegionSidoAliasPolicyTest {
         assertTrue(
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = "전라남도",
+                requestedSigungu = "고흥군",
                 candidateSido = "전남광주통합특별시",
                 candidateSigungu = "고흥군",
             )
@@ -89,6 +92,7 @@ class RegionSidoAliasPolicyTest {
         assertTrue(
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = "광주",
+                requestedSigungu = "서구",
                 candidateSido = "전남광주통합특별시",
                 candidateSigungu = "서구",
             )
@@ -96,6 +100,7 @@ class RegionSidoAliasPolicyTest {
         assertTrue(
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = "전남",
+                requestedSigungu = "광양시",
                 candidateSido = "전남광주통합특별시",
                 candidateSigungu = "광양시",
             )
@@ -103,38 +108,27 @@ class RegionSidoAliasPolicyTest {
     }
 
     @Test
-    fun `비교용 key는 시도 축약명과 통합 시도명을 같은 기준으로 생성한다`() {
-        val gwangjuAliasKey = RegionSidoAliasPolicy.toComparisonKey(
-            Region(
-                sido = "광주",
-                sigungu = "서구",
-                eupmyeondong = "금호동",
+    fun `전남광주통합특별시 광주 요청은 현재 광주광역시 후보와 같은 시도로 비교된다`() {
+        assertTrue(
+            RegionSidoAliasPolicy.isSameSido(
+                requestedSido = "전남광주통합특별시",
+                requestedSigungu = "서구",
+                candidateSido = "광주광역시",
+                candidateSigungu = "서구",
             )
         )
-        val gwangjuIntegratedKey = RegionSidoAliasPolicy.toComparisonKey(
-            Region(
-                sido = "전남광주통합특별시",
-                sigungu = "서구",
-                eupmyeondong = "금호동",
-            )
-        )
-        val jeonnamAliasKey = RegionSidoAliasPolicy.toComparisonKey(
-            Region(
-                sido = "전남",
-                sigungu = "광양시",
-                eupmyeondong = "금호동",
-            )
-        )
-        val jeonnamIntegratedKey = RegionSidoAliasPolicy.toComparisonKey(
-            Region(
-                sido = "전남광주통합특별시",
-                sigungu = "광양시",
-                eupmyeondong = "금호동",
-            )
-        )
+    }
 
-        assertEquals(gwangjuAliasKey, gwangjuIntegratedKey)
-        assertEquals(jeonnamAliasKey, jeonnamIntegratedKey)
+    @Test
+    fun `전남광주통합특별시 전남 요청은 현재 전라남도 후보와 같은 시도로 비교된다`() {
+        assertTrue(
+            RegionSidoAliasPolicy.isSameSido(
+                requestedSido = "전남광주통합특별시",
+                requestedSigungu = "나주시",
+                candidateSido = "전라남도",
+                candidateSigungu = "나주시",
+            )
+        )
     }
 
     @Test
@@ -142,6 +136,7 @@ class RegionSidoAliasPolicyTest {
         assertTrue(
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = "서울특별시",
+                requestedSigungu = "중구",
                 candidateSido = "서울특별시",
                 candidateSigungu = "중구",
             )
@@ -149,6 +144,7 @@ class RegionSidoAliasPolicyTest {
         assertFalse(
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = "서울특별시",
+                requestedSigungu = "중구",
                 candidateSido = "대구광역시",
                 candidateSigungu = "중구",
             )

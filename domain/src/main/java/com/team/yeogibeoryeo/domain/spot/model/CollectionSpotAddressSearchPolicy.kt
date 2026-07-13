@@ -74,6 +74,7 @@ object CollectionSpotAddressSearchPolicy {
 
         return RegionSidoAliasPolicy.isSameSido(
             requestedSido = requestedSido,
+            requestedSigungu = requestedSigungu,
             candidateSido = tokenSido,
             candidateSigungu = candidateSigungu,
         )
