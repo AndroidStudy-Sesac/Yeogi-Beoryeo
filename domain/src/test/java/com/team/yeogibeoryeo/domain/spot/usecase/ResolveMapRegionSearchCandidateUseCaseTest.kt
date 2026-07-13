@@ -21,6 +21,18 @@ class ResolveMapRegionSearchCandidateUseCaseTest {
                 Region(sido = "광주광역시", sigungu = "서구", eupmyeondong = "금호동"),
                 Region(sido = "전라남도", sigungu = "광양시", eupmyeondong = "금호동"),
             ),
+            "운남동" to listOf(
+                Region(sido = "광주광역시", sigungu = "광산구", eupmyeondong = "운남동"),
+            ),
+            "노안면" to listOf(
+                Region(sido = "전라남도", sigungu = "나주시", eupmyeondong = "노안면"),
+            ),
+            "농성동" to listOf(
+                Region(sido = "전남광주통합특별시", sigungu = "서구", eupmyeondong = "농성동"),
+            ),
+            "왕곡면" to listOf(
+                Region(sido = "전남광주통합특별시", sigungu = "나주시", eupmyeondong = "왕곡면"),
+            ),
             "문래동" to listOf(
                 Region(sido = "서울특별시", sigungu = "영등포구", eupmyeondong = "문래동"),
             ),
@@ -123,6 +135,72 @@ class ResolveMapRegionSearchCandidateUseCaseTest {
     fun `전남광주통합특별시 전남 시군 입력은 전남 후보로 좁혀 검색한다`() =
         runSuspendTest {
             val result = useCase("전남광주통합특별시 광양시 금호동")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("금호동", result.searchKeyword)
+            assertEquals("전라남도 광양시 금호동", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `전남광주통합특별시 광주 5개 구 입력은 현재 광주광역시 후보와 매칭된다`() =
+        runSuspendTest {
+            val result = useCase("전남광주통합특별시 광산구 운남동")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("운남동", result.searchKeyword)
+            assertEquals("광주광역시 광산구 운남동", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `전남광주통합특별시 전남 시군 입력은 현재 전라남도 후보와 매칭된다`() =
+        runSuspendTest {
+            val result = useCase("전남광주통합특별시 나주시 노안면")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("노안면", result.searchKeyword)
+            assertEquals("전라남도 나주시 노안면", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `광주광역시 입력은 전남광주통합특별시 광주 5개 구 후보와 매칭된다`() =
+        runSuspendTest {
+            val result = useCase("광주광역시 서구 농성동")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("농성동", result.searchKeyword)
+            assertEquals("전남광주통합특별시 서구 농성동", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `전라남도 입력은 전남광주통합특별시 전남 시군 후보와 매칭된다`() =
+        runSuspendTest {
+            val result = useCase("전라남도 나주시 왕곡면")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("왕곡면", result.searchKeyword)
+            assertEquals("전남광주통합특별시 나주시 왕곡면", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `광주 축약명 입력은 광주광역시 후보로 좁혀 검색한다`() =
+        runSuspendTest {
+            val result = useCase("광주 서구 금호동")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("금호동", result.searchKeyword)
+            assertEquals("광주광역시 서구 금호동", result.selectedCandidate?.displayName)
+        }
+
+    @Test
+    fun `전남 축약명 입력은 전라남도 후보로 좁혀 검색한다`() =
+        runSuspendTest {
+            val result = useCase("전남 광양시 금호동")
 
             assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
             result as MapRegionSearchCandidateResult.ReadyToSearch

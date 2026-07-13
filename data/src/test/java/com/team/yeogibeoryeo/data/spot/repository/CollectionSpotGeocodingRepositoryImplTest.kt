@@ -191,6 +191,40 @@ class CollectionSpotGeocodingRepositoryImplTest {
     }
 
     @Test
+    fun `통합 시도 주소와 현재 시도 주소가 같은 요청 key이면 한 번만 geocoding한다`() = runBlocking {
+        val spotGeocoder = FakeSpotGeocoder(
+            coordinatesByAddress = mapOf(
+                "전라남도 나주시 노안면" to Coordinate(
+                    latitude = 35.0825,
+                    longitude = 126.7186,
+                ),
+            ),
+        )
+        val repository = createRepository(spotGeocoder)
+
+        val result = repository.geocodeSpots(
+            listOf(
+                collectionSpot(
+                    id = "integrated-naju-noan",
+                    address = "전남광주통합특별시 나주시 노안면",
+                ),
+                collectionSpot(
+                    id = "current-naju-noan",
+                    address = "전라남도 나주시 노안면",
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("전라남도 나주시 노안면"),
+            spotGeocoder.requestedAddresses,
+        )
+        assertEquals("전남광주통합특별시 나주시 노안면", result[0].address)
+        assertEquals("전라남도 나주시 노안면", result[1].address)
+        assertEquals(result[0].coordinate, result[1].coordinate)
+    }
+
+    @Test
     fun `공백 주소는 geocoding하지 않고 좌표 없이 유지한다`() = runBlocking {
         val spotGeocoder = FakeSpotGeocoder()
         val repository = createRepository(spotGeocoder)
