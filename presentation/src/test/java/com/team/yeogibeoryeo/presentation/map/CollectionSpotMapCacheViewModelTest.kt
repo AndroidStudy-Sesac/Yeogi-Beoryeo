@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -77,6 +78,33 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
         }
 
     @Test
+    fun `위치 캐시 삭제 요청 이벤트만 발생하면 현재 위치 검색 화면 상태를 유지한다`() =
+        runTest {
+            val notifier = RecentCurrentLocationCacheClearNotifier()
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                recentCurrentLocationSpotCacheRepository =
+                    FakeRecentCurrentLocationSpotCacheRepository(
+                        entry = freshCacheEntry(listOf(cachedSpot)),
+                    ),
+                recentCurrentLocationCacheClearNotifier = notifier,
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+
+            notifier.notifyClearRequested()
+            advanceUntilIdle()
+
+            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
     fun `현재 위치 검색 중 캐시 삭제 이벤트가 발생하면 완료된 검색 결과를 캐시에 다시 저장하지 않는다`() =
         runTest {
             val notifier = RecentCurrentLocationCacheClearNotifier()
@@ -98,7 +126,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             )
 
             viewModel.searchByCurrentLocation()
-            advanceUntilIdle()
+            runCurrent()
             assertEquals(1, repository.locationSearchCallCount)
 
             notifier.notifyCleared()
@@ -107,6 +135,67 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
 
             assertEquals(0, cache.saveCallCount)
             assertNull(cache.entry)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `현재 위치 캐시 조회 중 삭제 요청 이벤트가 발생하면 조회된 캐시를 화면에 표시하지 않는다`() =
+        runTest {
+            val notifier = RecentCurrentLocationCacheClearNotifier()
+            val getCompletion = CompletableDeferred<Unit>()
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = freshCacheEntry(listOf(cachedSpot)),
+                getCompletion = getCompletion,
+            )
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                recentCurrentLocationSpotCacheRepository = cache,
+                recentCurrentLocationCacheClearNotifier = notifier,
+            )
+
+            viewModel.searchByCurrentLocation()
+            runCurrent()
+            assertEquals(1, cache.getCallCount)
+
+            notifier.notifyClearRequested()
+            getCompletion.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `초기 지도 진입 캐시 조회 중 삭제 요청 이벤트가 발생하면 조회된 캐시를 화면에 표시하지 않는다`() =
+        runTest {
+            val notifier = RecentCurrentLocationCacheClearNotifier()
+            val getCompletion = CompletableDeferred<Unit>()
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = freshCacheEntry(listOf(cachedSpot)),
+                getCompletion = getCompletion,
+            )
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                hasFineLocationPermission = true,
+                recentCurrentLocationSpotCacheRepository = cache,
+                recentCurrentLocationCacheClearNotifier = notifier,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            runCurrent()
+            assertEquals(1, cache.getCallCount)
+
+            notifier.notifyClearRequested()
+            getCompletion.complete(Unit)
+            advanceUntilIdle()
+
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.hasSearched)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)

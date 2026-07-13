@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
-import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSnapshotUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleRegionalGuideFavoriteUseCase
@@ -19,6 +18,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
@@ -877,6 +877,21 @@ class RegionalGuideViewModel @Inject constructor(
             region = region,
             targetRegionName = guide.targetRegionName,
             managementZoneName = guide.managementZoneName,
+        )
+    }
+
+    private fun RegionalDisposalGuide.toFavoriteSnapshot(): RegionalGuideFavoriteSnapshot {
+        return RegionalGuideFavoriteSnapshot(
+            targetId = com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey(
+                sido = region.sido,
+                sigungu = region.sigungu,
+                eupmyeondong = region.eupmyeondong,
+                targetRegionName = targetRegionName,
+                managementZoneName = managementZoneName,
+            ).encode(),
+            region = region,
+            targetRegionName = targetRegionName?.trim()?.takeIf { it.isNotBlank() },
+            managementZoneName = managementZoneName?.trim()?.takeIf { it.isNotBlank() },
         )
     }
 

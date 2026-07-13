@@ -21,6 +21,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.ResolveMapRegionSearchCandidate
 import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
+import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearEvent
 import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearNotifier
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
@@ -388,6 +389,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
 
             if (cachedEntry != null) {
+                if (searchGeneration != currentLocationSearchGeneration) return@launch
                 showCachedCurrentLocationSpots(cachedEntry.spots)
                 refreshCurrentLocationSilently()
                 return@launch
@@ -577,7 +579,6 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     private fun clearCurrentLocationSearchMemoryState() {
-        currentLocationSearchGeneration += 1
         if (uiState.value.searchMode != MapSearchMode.CURRENT_LOCATION) return
 
         currentLocationRefreshJob?.cancel()
@@ -663,6 +664,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             val cachedEntry = getFreshRecentCurrentLocationSpotsUseCase()
 
             if (cachedEntry != null && canStartInitialCurrentLocationSearch()) {
+                if (searchGeneration != currentLocationSearchGeneration) return@launch
                 showCachedCurrentLocationSpots(cachedEntry.spots)
                 refreshCurrentLocationSilently()
                 return@launch
@@ -967,8 +969,17 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private fun observeRecentCurrentLocationCacheClearEvents() {
         viewModelScope.launch {
-            recentCurrentLocationCacheClearNotifier.events.collect {
-                clearCurrentLocationSearchMemoryState()
+            recentCurrentLocationCacheClearNotifier.events.collect { event ->
+                when (event) {
+                    RecentCurrentLocationCacheClearEvent.ClearRequested -> {
+                        currentLocationSearchGeneration += 1
+                    }
+
+                    RecentCurrentLocationCacheClearEvent.ClearSucceeded -> {
+                        currentLocationSearchGeneration += 1
+                        clearCurrentLocationSearchMemoryState()
+                    }
+                }
             }
         }
     }

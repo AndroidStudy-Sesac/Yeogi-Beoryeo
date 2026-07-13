@@ -41,8 +41,9 @@ constructor(
             }
 
             try {
-                recentCurrentLocationCacheClearNotifier.notifyCleared()
+                recentCurrentLocationCacheClearNotifier.notifyClearRequested()
                 clearRecentCurrentLocationSpotsUseCase()
+                recentCurrentLocationCacheClearNotifier.notifyCleared()
                 _uiState.update {
                     it.copy(isClearingLocationCache = false)
                 }

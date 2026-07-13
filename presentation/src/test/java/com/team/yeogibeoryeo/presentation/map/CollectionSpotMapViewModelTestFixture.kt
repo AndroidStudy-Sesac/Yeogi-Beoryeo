@@ -3,7 +3,6 @@ package com.team.yeogibeoryeo.presentation.map
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
@@ -183,6 +182,16 @@ internal fun sampleFavoriteSpotMapMoveRequest(
     )
 }
 
+internal fun CollectionSpot.toFavoriteSnapshot(): CollectionSpotFavoriteSnapshot =
+    CollectionSpotFavoriteSnapshot(
+        targetId = id,
+        name = name,
+        type = type,
+        address = address,
+        detailLocation = detailLocation,
+        coordinate = coordinate,
+    )
+
 internal class FakeCurrentLocationProvider(
     internal val resultProvider: suspend () -> CurrentLocationResult,
 ) : CurrentLocationProvider {
@@ -206,6 +215,7 @@ internal class FakeTimeProvider(
 
 internal class FakeRecentCurrentLocationSpotCacheRepository(
     var entry: RecentCurrentLocationSpotCacheEntry? = null,
+    private val getCompletion: kotlinx.coroutines.CompletableDeferred<Unit>? = null,
 ) : RecentCurrentLocationSpotCacheRepository {
     var getCallCount = 0
         private set
@@ -216,6 +226,7 @@ internal class FakeRecentCurrentLocationSpotCacheRepository(
 
     override suspend fun getRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheEntry? {
         getCallCount += 1
+        getCompletion?.await()
         return entry
     }
 

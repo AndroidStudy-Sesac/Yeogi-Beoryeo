@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -29,6 +30,7 @@ class SettingsCacheViewModelTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository()
             val viewModel = createViewModel(repository)
             val event = async { viewModel.events.first() }
+            runCurrent()
 
             viewModel.clearLocationCache()
             advanceUntilIdle()
@@ -49,6 +51,7 @@ class SettingsCacheViewModelTest {
             )
             val viewModel = createViewModel(repository)
             val event = async { viewModel.events.first() }
+            runCurrent()
 
             viewModel.clearLocationCache()
             advanceUntilIdle()
@@ -78,6 +81,7 @@ class SettingsCacheViewModelTest {
             assertEquals(1, repository.clearCallCount)
 
             val event = async { viewModel.events.first() }
+            runCurrent()
             clearCompletion.complete(Unit)
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.isClearingLocationCache)
@@ -100,6 +104,7 @@ class SettingsCacheViewModelTest {
                 recentCurrentLocationCacheClearNotifier = notifier,
             )
             val clearEvent = async { notifier.events.first() }
+            runCurrent()
 
             viewModel.clearLocationCache()
             repository.clearStarted.await()

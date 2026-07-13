@@ -4,7 +4,6 @@ import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
-import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.presentation.R
@@ -425,6 +424,23 @@ class RegionalGuideFavoriteViewModelTest {
         assertNull(snapshotRepository.getSnapshot(currentSnapshot.targetId))
     }
 
+}
+
+private fun RegionalDisposalGuide.toFavoriteSnapshot(): RegionalGuideFavoriteSnapshot {
+    val key = RegionalGuideFavoriteKey(
+        sido = region.sido,
+        sigungu = region.sigungu,
+        eupmyeondong = region.eupmyeondong,
+        targetRegionName = targetRegionName,
+        managementZoneName = managementZoneName,
+    )
+
+    return RegionalGuideFavoriteSnapshot(
+        targetId = key.encode(),
+        region = region,
+        targetRegionName = targetRegionName?.trim()?.takeIf { it.isNotBlank() },
+        managementZoneName = managementZoneName?.trim()?.takeIf { it.isNotBlank() },
+    )
 }
 
 

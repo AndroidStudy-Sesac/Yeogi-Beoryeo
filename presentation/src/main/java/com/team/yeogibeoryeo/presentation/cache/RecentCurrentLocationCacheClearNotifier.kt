@@ -10,10 +10,19 @@ import kotlinx.coroutines.flow.asSharedFlow
 class RecentCurrentLocationCacheClearNotifier
 @Inject
 constructor() {
-    private val _events = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val events: SharedFlow<Unit> = _events.asSharedFlow()
+    private val _events = MutableSharedFlow<RecentCurrentLocationCacheClearEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<RecentCurrentLocationCacheClearEvent> = _events.asSharedFlow()
+
+    fun notifyClearRequested() {
+        _events.tryEmit(RecentCurrentLocationCacheClearEvent.ClearRequested)
+    }
 
     fun notifyCleared() {
-        _events.tryEmit(Unit)
+        _events.tryEmit(RecentCurrentLocationCacheClearEvent.ClearSucceeded)
     }
+}
+
+sealed interface RecentCurrentLocationCacheClearEvent {
+    data object ClearRequested : RecentCurrentLocationCacheClearEvent
+    data object ClearSucceeded : RecentCurrentLocationCacheClearEvent
 }
