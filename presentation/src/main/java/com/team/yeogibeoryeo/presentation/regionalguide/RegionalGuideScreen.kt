@@ -83,6 +83,9 @@ fun RegionalGuideRoute(
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val regionSelectorUiState by viewModel.regionSelectorUiState.collectAsStateWithLifecycle()
     val currentContext by rememberUpdatedState(LocalContext.current)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
+    val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
 
     LaunchedEffect(initialKeyword, initialAddress, initialFavoriteTargetId) {
         when {
@@ -91,6 +94,16 @@ fun RegionalGuideRoute(
             !initialKeyword.isNullOrBlank() -> {
                 viewModel.onSearchKeywordChanged(initialKeyword)
                 viewModel.searchByKeyword(initialKeyword)
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.events) {
+        viewModel.events.collect { event ->
+            when (event) {
+                RegionalGuideEvent.FavoriteUpdateFailed -> {
+                    snackbarHostState.showSnackbar(currentFavoriteUpdateFailedMessage)
+                }
             }
         }
     }
@@ -120,6 +133,7 @@ fun RegionalGuideRoute(
                 )
             }.isSuccess
         },
+        snackbarHostState = snackbarHostState,
         modifier = modifier.statusBarsPadding(),
     )
 }
@@ -146,11 +160,11 @@ fun RegionalGuideScreen(
     onRestoreCandidates: () -> Boolean = { false },
     onFavoriteClick: () -> Unit = {},
     onPublicNoticeClick: () -> Boolean = { true },
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val publicNoticeOpenFailedMessage = stringResource(R.string.item_guide_action_open_failed_message)
     val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous

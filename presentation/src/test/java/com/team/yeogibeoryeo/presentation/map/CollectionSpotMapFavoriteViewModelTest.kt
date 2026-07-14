@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.map
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
@@ -10,7 +11,11 @@ import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -129,6 +134,68 @@ class CollectionSpotMapFavoriteViewModelTest : CollectionSpotMapViewModelTestFix
             assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, spot.id))
             assertEquals(emptyList<CollectionSpotFavoriteSnapshot>(), snapshotRepository.snapshots.value)
             assertEquals(false, viewModel.uiState.value.spots.single().isBookmarked)
+        }
+
+    @Test
+    fun `즐겨찾기 변경 실패 시 상태를 유지하고 실패 이벤트를 보낸다`() =
+        runTest {
+            val spot = sampleSpot("spot", CollectionSpotType.BATTERY_BIN)
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(keywordSpots = listOf(spot)),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                collectionSpotFavoriteRepository = FailingCollectionSpotFavoriteRepository(),
+            )
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+            val event = async(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.events.first()
+            }
+
+            viewModel.onSpotFavoriteClick(spot)
+            advanceUntilIdle()
+
+            assertEquals(CollectionSpotMapEvent.FavoriteUpdateFailed, event.await())
+            assertEquals(false, viewModel.uiState.value.spots.single().isBookmarked)
+        }
+
+    @Test
+    fun `같은 장소를 빠르게 두 번 누르면 처리 중 중복 요청을 무시한다`() =
+        runTest {
+            val spot = sampleSpot("spot", CollectionSpotType.BATTERY_BIN)
+            val favoriteRepository = FakeFavoriteRepository()
+            val snapshotRepository = FakeCollectionSpotFavoriteSnapshotRepository()
+            val firstToggleStarted = CompletableDeferred<Unit>()
+            val continueFirstToggle = CompletableDeferred<Unit>()
+            val favoriteToggleRepository = PausingCollectionSpotFavoriteRepository(
+                delegate = FakeCollectionSpotFavoriteRepository(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = snapshotRepository,
+                ),
+                firstToggleStarted = firstToggleStarted,
+                continueFirstToggle = continueFirstToggle,
+            )
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(keywordSpots = listOf(spot)),
+                currentLocationResult = CurrentLocationResult.NotFound,
+                favoriteRepository = favoriteRepository,
+                snapshotRepository = snapshotRepository,
+                collectionSpotFavoriteRepository = favoriteToggleRepository,
+            )
+            viewModel.onSearchKeywordChanged("문래동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.onSpotFavoriteClick(spot)
+            runCurrent()
+            firstToggleStarted.await()
+            viewModel.onSpotFavoriteClick(spot)
+            continueFirstToggle.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(1, favoriteToggleRepository.toggleCallCount)
+            assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, spot.id))
+            assertEquals(true, viewModel.uiState.value.spots.single().isBookmarked)
         }
 
     @Test
@@ -344,4 +411,34 @@ class CollectionSpotMapFavoriteViewModelTest : CollectionSpotMapViewModelTestFix
             assertEquals(null, viewModel.uiState.value.selectedSpot)
         }
 
+}
+
+private class FailingCollectionSpotFavoriteRepository : CollectionSpotFavoriteRepository {
+    override suspend fun toggleFavorite(spot: CollectionSpot): Boolean {
+        throw IllegalStateException("저장 실패")
+    }
+
+    override suspend fun removeFavorite(targetId: String) = Unit
+}
+
+private class PausingCollectionSpotFavoriteRepository(
+    private val delegate: CollectionSpotFavoriteRepository,
+    private val firstToggleStarted: CompletableDeferred<Unit>,
+    private val continueFirstToggle: CompletableDeferred<Unit>,
+) : CollectionSpotFavoriteRepository {
+    var toggleCallCount = 0
+        private set
+
+    override suspend fun toggleFavorite(spot: CollectionSpot): Boolean {
+        toggleCallCount += 1
+        if (toggleCallCount == 1) {
+            firstToggleStarted.complete(Unit)
+            continueFirstToggle.await()
+        }
+        return delegate.toggleFavorite(spot)
+    }
+
+    override suspend fun removeFavorite(targetId: String) {
+        delegate.removeFavorite(targetId)
+    }
 }
