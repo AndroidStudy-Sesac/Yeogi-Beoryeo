@@ -13,17 +13,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlin.math.roundToInt
 
 @Composable
@@ -32,9 +38,28 @@ internal fun <T> RegionalGuideCandidateList(
     key: (T) -> Any,
     onCandidateClick: (T) -> Unit,
     modifier: Modifier = Modifier,
+    scrollStateKey: Any = candidates.candidateListContentKey(key),
+    initialScrollPosition: RegionalGuideCandidateListScrollPosition =
+        RegionalGuideCandidateListScrollPosition.Initial,
+    onScrollPositionChange: (RegionalGuideCandidateListScrollPosition) -> Unit = {},
     itemContent: @Composable (T) -> Unit,
 ) {
-    val listState = rememberLazyListState()
+    val restoredScrollPosition = initialScrollPosition.coerceIn(candidates.indices)
+    val listState = remember(scrollStateKey) {
+        LazyListState(
+            firstVisibleItemIndex = restoredScrollPosition.firstVisibleItemIndex,
+            firstVisibleItemScrollOffset = restoredScrollPosition.firstVisibleItemScrollOffset,
+        )
+    }
+    val currentOnScrollPositionChange by rememberUpdatedState(onScrollPositionChange)
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.toScrollPosition() }
+            .distinctUntilChanged()
+            .collect { position ->
+                currentOnScrollPositionChange(position)
+            }
+    }
 
     Box(
         modifier = modifier
@@ -55,6 +80,7 @@ internal fun <T> RegionalGuideCandidateList(
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
                         .clickable {
+                            currentOnScrollPositionChange(listState.toScrollPosition())
                             onCandidateClick(candidate)
                         }
                 ) {
@@ -74,6 +100,27 @@ internal fun <T> RegionalGuideCandidateList(
                 .padding(end = 2.dp)
         )
     }
+}
+
+private fun <T> List<T>.candidateListContentKey(key: (T) -> Any): String =
+    mapIndexed { index, candidate -> "${key(candidate)}#$index" }
+        .joinToString(separator = "|")
+
+private fun LazyListState.toScrollPosition(): RegionalGuideCandidateListScrollPosition =
+    RegionalGuideCandidateListScrollPosition(
+        firstVisibleItemIndex = firstVisibleItemIndex,
+        firstVisibleItemScrollOffset = firstVisibleItemScrollOffset,
+    )
+
+private fun RegionalGuideCandidateListScrollPosition.coerceIn(
+    indices: IntRange
+): RegionalGuideCandidateListScrollPosition {
+    if (indices.isEmpty()) return RegionalGuideCandidateListScrollPosition.Initial
+
+    return copy(
+        firstVisibleItemIndex = firstVisibleItemIndex.coerceIn(indices),
+        firstVisibleItemScrollOffset = firstVisibleItemScrollOffset.coerceAtLeast(0),
+    )
 }
 
 @Composable

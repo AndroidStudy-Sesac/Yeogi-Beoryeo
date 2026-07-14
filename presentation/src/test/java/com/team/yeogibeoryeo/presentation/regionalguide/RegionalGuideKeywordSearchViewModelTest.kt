@@ -626,12 +626,24 @@ class RegionalGuideKeywordSearchViewModelTest {
         val searchCandidate = (viewModel.uiState.value as RegionalGuideUiState.Ambiguous)
             .candidates
             .first { candidate -> candidate.sido == "대전광역시" }
+        val searchCandidateScrollPosition = RegionalGuideCandidateListScrollPosition(
+            firstVisibleItemIndex = 1,
+            firstVisibleItemScrollOffset = 18,
+        )
+
+        viewModel.onCandidateListScrollPositionChanged(searchCandidateScrollPosition)
 
         viewModel.onRegionCandidateSelected(searchCandidate)
         advanceUntilIdle()
 
         val guideCandidatesState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
         assertTrue(guideCandidatesState.canRestoreCandidates)
+        val guideCandidateScrollPosition = RegionalGuideCandidateListScrollPosition(
+            firstVisibleItemIndex = 1,
+            firstVisibleItemScrollOffset = 28,
+        )
+
+        viewModel.onCandidateListScrollPositionChanged(guideCandidateScrollPosition)
 
         viewModel.onRegionalGuideCandidateSelected(guideCandidatesState.candidates.first())
 
@@ -644,12 +656,20 @@ class RegionalGuideKeywordSearchViewModelTest {
         assertEquals("대전광역시 > 중구", restoredGuideCandidatesState.query)
         assertEquals(2, restoredGuideCandidatesState.candidates.size)
         assertTrue(restoredGuideCandidatesState.canRestoreCandidates)
+        assertEquals(
+            guideCandidateScrollPosition,
+            restoredGuideCandidatesState.candidateListScrollPosition
+        )
 
         assertTrue(viewModel.restoreCandidatesFromDetail())
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
         assertEquals(4, restoredSearchCandidatesState.candidates.size)
+        assertEquals(
+            searchCandidateScrollPosition,
+            restoredSearchCandidatesState.candidateListScrollPosition
+        )
         assertEquals("중구", viewModel.searchKeyword.value)
 
         assertTrue(viewModel.restoreCandidatesFromDetail())

@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateCollectionTypeHint
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateDistinguishingLabel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateDistinguishingText
@@ -31,13 +32,18 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiMod
 fun RegionalGuideCandidateResult(
     candidates: List<RegionalGuideCandidateUiModel>,
     onCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialScrollPosition: RegionalGuideCandidateListScrollPosition =
+        RegionalGuideCandidateListScrollPosition.Initial,
+    onScrollPositionChange: (RegionalGuideCandidateListScrollPosition) -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         RegionalGuideCandidateList(
             candidates = candidates,
             key = { candidate -> candidate.stableKey },
             onCandidateClick = onCandidateClick,
+            initialScrollPosition = initialScrollPosition,
+            onScrollPositionChange = onScrollPositionChange,
         ) { candidate ->
             RegionalGuideCandidateRowText(
                 text = candidate.displayText,

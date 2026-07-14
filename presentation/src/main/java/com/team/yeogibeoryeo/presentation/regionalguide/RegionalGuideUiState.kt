@@ -31,7 +31,9 @@ sealed interface RegionalGuideUiState {
     data class Ambiguous(
         val query: String,
         val message: String,
-        val candidates: List<RegionSearchCandidateUiModel>
+        val candidates: List<RegionSearchCandidateUiModel>,
+        val candidateListScrollPosition: RegionalGuideCandidateListScrollPosition =
+            RegionalGuideCandidateListScrollPosition.Initial,
     ) : RegionalGuideUiState
 
     data class GuideCandidates(
@@ -39,6 +41,8 @@ sealed interface RegionalGuideUiState {
         val reason: RegionalGuideCandidateReason,
         val candidates: List<RegionalGuideCandidateUiModel>,
         val canRestoreCandidates: Boolean = false,
+        val candidateListScrollPosition: RegionalGuideCandidateListScrollPosition =
+            RegionalGuideCandidateListScrollPosition.Initial,
     ) : RegionalGuideUiState
 
     data class Error(
@@ -63,4 +67,16 @@ enum class RegionalGuideCandidateReason {
     MULTIPLE_EXACT_MATCHES,
     FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
     FAVORITE_RESTORE_AMBIGUOUS,
+}
+
+data class RegionalGuideCandidateListScrollPosition(
+    val firstVisibleItemIndex: Int,
+    val firstVisibleItemScrollOffset: Int,
+) {
+    companion object {
+        val Initial = RegionalGuideCandidateListScrollPosition(
+            firstVisibleItemIndex = 0,
+            firstVisibleItemScrollOffset = 0,
+        )
+    }
 }

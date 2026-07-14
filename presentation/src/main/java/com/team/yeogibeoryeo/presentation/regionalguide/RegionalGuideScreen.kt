@@ -124,6 +124,7 @@ fun RegionalGuideRoute(
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
+        onCandidateListScrollPositionChange = viewModel::onCandidateListScrollPositionChanged,
         onRestoreCandidates = viewModel::restoreCandidatesFromDetail,
         onFavoriteClick = viewModel::onFavoriteClick,
         onPublicNoticeClick = {
@@ -154,6 +155,7 @@ fun RegionalGuideScreen(
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
+    onCandidateListScrollPositionChange: (RegionalGuideCandidateListScrollPosition) -> Unit = {},
     modifier: Modifier = Modifier,
     onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
     onRegionSelectorDropdownDismissed: () -> Unit = {},
@@ -313,6 +315,10 @@ fun RegionalGuideScreen(
                             if (ambiguousState != null) {
                                 RegionalGuideAmbiguousResult(
                                     candidates = ambiguousState.candidates,
+                                    initialScrollPosition =
+                                        ambiguousState.candidateListScrollPosition,
+                                    onScrollPositionChange =
+                                        onCandidateListScrollPositionChange,
                                     onCandidateClick = { candidate ->
                                         clearSearchFocus()
                                         collapseRegionSelector()
@@ -325,6 +331,10 @@ fun RegionalGuideScreen(
                             if (listGuideCandidatesState != null) {
                                 RegionalGuideCandidateResult(
                                     candidates = listGuideCandidatesState.candidates,
+                                    initialScrollPosition =
+                                        listGuideCandidatesState.candidateListScrollPosition,
+                                    onScrollPositionChange =
+                                        onCandidateListScrollPositionChange,
                                     onCandidateClick = { candidate ->
                                         clearSearchFocus()
                                         collapseRegionSelector()

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 import org.junit.Rule
@@ -77,4 +78,58 @@ class RegionalGuideScreenTest {
         composeTestRule.onNodeWithText("- 장소 A").assertIsDisplayed()
         composeTestRule.onNodeWithText("- 장소 B").assertIsDisplayed()
     }
+    @Test
+    fun 후보_목록은_저장된_스크롤_위치에서_시작한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalGuideScreen(
+                    uiState = RegionalGuideUiState.GuideCandidates(
+                        query = "candidate-query",
+                        reason = RegionalGuideCandidateReason.MULTIPLE_CANDIDATES,
+                        candidates = (0 until 20).map { index ->
+                            candidate(label = "zone-$index")
+                        },
+                        candidateListScrollPosition = RegionalGuideCandidateListScrollPosition(
+                            firstVisibleItemIndex = 8,
+                            firstVisibleItemScrollOffset = 0,
+                        ),
+                    ),
+                    searchKeyword = "candidate-query",
+                    regionSelectorUiState = RegionSelectorUiState(),
+                    onSearchKeywordChange = {},
+                    onSearchClick = {},
+                    onRetryClick = {},
+                    onEmptySearchActionClick = {},
+                    onSidoSelected = {},
+                    onSigunguSelected = {},
+                    onEupmyeondongSelected = {},
+                    onRegionSelectionSearchClick = {},
+                    onCandidateClick = {},
+                    onGuideCandidateClick = {},
+                )
+            }
+        }
+
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("zone-0").assertDoesNotExist()
+        composeTestRule.onNodeWithText("zone-8").assertIsDisplayed()
+    }
 }
+
+private fun candidate(label: String): RegionalGuideCandidateUiModel =
+    RegionalGuideCandidateUiModel(
+        guide = RegionalGuideUiModel(
+            regionName = "test-region",
+            managementZoneName = null,
+            targetRegionName = label,
+            disposalPlaceType = null,
+            disposalPlaceDescription = null,
+            schedules = emptyList(),
+            uncollectedDays = null,
+            departmentInfo = null,
+        ),
+        sido = "test-sido",
+        sigungu = "test-sigungu",
+        eupmyeondong = null,
+    )
