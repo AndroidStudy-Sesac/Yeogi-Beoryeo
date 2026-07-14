@@ -28,16 +28,11 @@ class LegalAdminDongMappingLocalDataSource @Inject constructor(
     private suspend fun loadMappings(): List<LegalAdminDongMappingDto> {
         return withContext(Dispatchers.IO) {
             val jsonText = context.assets
-                .open(MAPPING_ASSET_PATH)
+                .open(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
                 .bufferedReader()
                 .use { reader -> reader.readText() }
 
             json.decodeFromString<List<LegalAdminDongMappingDto>>(jsonText)
         }
-    }
-
-    companion object {
-        private const val MAPPING_ASSET_PATH =
-            "region/legal_to_admin_mappings.20260701.json"
     }
 }
