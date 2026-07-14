@@ -54,6 +54,7 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.REGIONAL_GUIDE_LINKS_URL
 import com.team.yeogibeoryeo.presentation.common.components.MessageSnackbar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionSelectorSection
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideAmbiguousResult
@@ -115,7 +116,7 @@ fun RegionalGuideRoute(
         onPublicNoticeClick = {
             runCatching {
                 currentContext.startActivity(
-                    Intent(Intent.ACTION_VIEW, RegionalGuidePublicNoticeUrl.toUri()),
+                    Intent(Intent.ACTION_VIEW, REGIONAL_GUIDE_LINKS_URL.toUri()),
                 )
             }.isSuccess
         },
@@ -914,6 +915,3 @@ private fun previewRegionalGuide(
     )
 
 private val SnackbarIconSize = 20.dp
-
-private const val RegionalGuidePublicNoticeUrl =
-    "https://wasteguide.or.kr/front/support/bannerCollection.do"
