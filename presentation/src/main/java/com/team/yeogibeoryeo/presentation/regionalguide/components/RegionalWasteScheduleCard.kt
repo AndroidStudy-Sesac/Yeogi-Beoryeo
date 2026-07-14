@@ -30,11 +30,20 @@ fun RegionalWasteScheduleCard(
     disposalPlaces: List<String> = listOfNotNull(schedule.disposalPlace),
     modifier: Modifier = Modifier
 ) {
-    var isDisposalPlaceExpanded by rememberSaveable { mutableStateOf(false) }
     val normalizedDisposalPlaces = disposalPlaces
         .map { disposalPlace -> disposalPlace.trim() }
         .filter { disposalPlace -> disposalPlace.isNotEmpty() }
         .distinct()
+    val disposalPlaceExpansionKey = listOf(
+        schedule.wasteTypeName,
+        schedule.disposalDays.orEmpty(),
+        schedule.disposalTime.orEmpty(),
+        schedule.disposalMethod.orEmpty(),
+        normalizedDisposalPlaces.joinToString(DISPOSAL_PLACE_KEY_DELIMITER),
+    ).joinToString(DISPOSAL_PLACE_KEY_DELIMITER)
+    var isDisposalPlaceExpanded by rememberSaveable(disposalPlaceExpansionKey) {
+        mutableStateOf(false)
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -125,6 +134,8 @@ fun RegionalWasteScheduleCard(
         }
     }
 }
+
+private const val DISPOSAL_PLACE_KEY_DELIMITER = "\u001F"
 
 @Preview(showBackground = true)
 @Composable

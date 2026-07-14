@@ -1,6 +1,9 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.components
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -78,5 +81,33 @@ class RegionalWasteScheduleCardTest {
         composeTestRule.onNodeWithText("- 장소 A").assertIsDisplayed()
         composeTestRule.onNodeWithText("- 장소 B").assertIsDisplayed()
         composeTestRule.onNodeWithText("접기").assertIsDisplayed()
+    }
+
+    @Test
+    fun 배출장소_그룹이_바뀌면_펼침_상태를_초기화한다() {
+        var disposalPlaces by mutableStateOf(listOf("장소 A", "장소 B"))
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalWasteScheduleCard(
+                    schedule = RegionalWasteScheduleUiModel(
+                        wasteTypeName = "대형폐기물",
+                    ),
+                    disposalPlaces = disposalPlaces,
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("자세히 보기").performClick()
+        composeTestRule.onNodeWithText("- 장소 A").assertIsDisplayed()
+        composeTestRule.onNodeWithText("- 장소 B").assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            disposalPlaces = listOf("장소 C", "장소 D")
+        }
+
+        composeTestRule.onNodeWithText("자세히 보기").assertIsDisplayed()
+        composeTestRule.onNodeWithText("- 장소 C").assertDoesNotExist()
+        composeTestRule.onNodeWithText("- 장소 D").assertDoesNotExist()
     }
 }
