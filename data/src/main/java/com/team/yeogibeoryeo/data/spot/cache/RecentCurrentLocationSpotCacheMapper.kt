@@ -17,7 +17,7 @@ internal fun RecentCurrentLocationSpotCacheDto.toDomain(): RecentCurrentLocation
     return RecentCurrentLocationSpotCacheEntry(
         spots = spots.map(CollectionSpotCacheDto::toDomain),
         searchCoordinate = requireNotNull(searchCoordinate) {
-            "Recent current location cache is missing searchCoordinate"
+            "최근 현재 위치 캐시에 검색 기준 좌표가 없습니다"
         }.toDomain(),
         savedAtMillis = savedAtMillis,
     )

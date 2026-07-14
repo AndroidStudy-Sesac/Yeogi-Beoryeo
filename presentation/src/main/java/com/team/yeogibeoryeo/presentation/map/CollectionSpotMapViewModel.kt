@@ -933,7 +933,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             if (cachedEntry != null) {
                 if (cachedEntry.isWithinDistanceFrom(coordinate)) {
-                    showCachedCurrentLocationSpots(cachedEntry.spots)
+                    showCachedCurrentLocationSpots(cachedEntry.spots.withDistanceFrom(coordinate))
                     refreshCurrentLocationSilently(
                         coordinate = coordinate,
                         searchGeneration = searchGeneration,

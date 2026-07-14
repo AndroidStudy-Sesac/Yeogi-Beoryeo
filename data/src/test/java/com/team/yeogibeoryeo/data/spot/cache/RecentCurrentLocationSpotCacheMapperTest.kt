@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Test
 
 class RecentCurrentLocationSpotCacheMapperTest {
@@ -79,7 +80,7 @@ class RecentCurrentLocationSpotCacheMapperTest {
         assertNull(restoredEntry.spots.first().coordinate)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `기준 좌표가 없는 dto는 domain cache entry로 복원하지 않는다`() {
         val dto = RecentCurrentLocationSpotCacheDto(
             spots = emptyList(),
@@ -87,7 +88,12 @@ class RecentCurrentLocationSpotCacheMapperTest {
             savedAtMillis = 1_200_000L,
         )
 
-        dto.toDomain()
+        try {
+            dto.toDomain()
+            fail("기준 좌표가 없으면 예외가 발생해야 한다")
+        } catch (exception: IllegalArgumentException) {
+            assertEquals("최근 현재 위치 캐시에 검색 기준 좌표가 없습니다", exception.message)
+        }
     }
 
     private fun sampleSpot(
