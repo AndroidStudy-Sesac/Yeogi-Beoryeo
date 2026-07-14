@@ -545,14 +545,45 @@ private fun RegionalGuideSuccessContent(
             )
         }
 
-        items(
-            items = guide.schedules,
-            key = { schedule -> schedule.wasteTypeName }
-        ) { schedule ->
-            RegionalWasteScheduleCard(schedule = schedule)
+        items(items = guide.schedules.groupForDisplay()) { scheduleGroup ->
+            RegionalWasteScheduleCard(
+                schedule = scheduleGroup.schedule,
+                disposalPlaces = scheduleGroup.disposalPlaces,
+            )
         }
     }
 }
+
+private fun List<RegionalWasteScheduleUiModel>.groupForDisplay(): List<RegionalWasteScheduleDisplayGroup> =
+    groupBy { schedule ->
+        RegionalWasteScheduleDisplayKey(
+            wasteTypeName = schedule.wasteTypeName,
+            disposalDays = schedule.disposalDays,
+            disposalTime = schedule.disposalTime,
+            disposalMethod = schedule.disposalMethod,
+        )
+    }
+        .values
+        .map { schedules ->
+            RegionalWasteScheduleDisplayGroup(
+                schedule = schedules.first(),
+                disposalPlaces = schedules.mapNotNull { schedule ->
+                    schedule.disposalPlace.takeIfNotBlank()
+                }.distinct(),
+            )
+        }
+
+private data class RegionalWasteScheduleDisplayKey(
+    val wasteTypeName: String,
+    val disposalDays: String?,
+    val disposalTime: String?,
+    val disposalMethod: String?,
+)
+
+private data class RegionalWasteScheduleDisplayGroup(
+    val schedule: RegionalWasteScheduleUiModel,
+    val disposalPlaces: List<String>,
+)
 
 @Composable
 private fun RegionalGuideErrorContent(

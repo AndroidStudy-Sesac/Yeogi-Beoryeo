@@ -10,18 +10,32 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 
 @Composable
 fun RegionalWasteScheduleCard(
     schedule: RegionalWasteScheduleUiModel,
+    disposalPlaces: List<String> = listOfNotNull(schedule.disposalPlace),
     modifier: Modifier = Modifier
 ) {
+    var isDisposalPlaceExpanded by rememberSaveable { mutableStateOf(false) }
+    val normalizedDisposalPlaces = disposalPlaces
+        .map { disposalPlace -> disposalPlace.trim() }
+        .filter { disposalPlace -> disposalPlace.isNotEmpty() }
+        .distinct()
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -44,30 +58,69 @@ fun RegionalWasteScheduleCard(
 
             schedule.disposalDays?.let { disposalDays ->
                 RegionalGuideInfoRow(
-                    title = "요일",
+                    title = stringResource(id = R.string.regional_waste_schedule_days_label),
                     value = disposalDays
                 )
             }
 
             schedule.disposalTime?.let { disposalTime ->
                 RegionalGuideInfoRow(
-                    title = "시간",
+                    title = stringResource(id = R.string.regional_waste_schedule_time_label),
                     value = disposalTime
                 )
             }
 
             schedule.disposalMethod?.let { disposalMethod ->
                 RegionalGuideInfoRow(
-                    title = "방법",
+                    title = stringResource(id = R.string.regional_waste_schedule_method_label),
                     value = disposalMethod
                 )
             }
 
-            schedule.disposalPlace?.let { disposalPlace ->
+            if (normalizedDisposalPlaces.size == 1) {
                 RegionalGuideInfoRow(
-                    title = "장소",
-                    value = disposalPlace
+                    title = stringResource(id = R.string.regional_waste_schedule_place_label),
+                    value = normalizedDisposalPlaces.single()
                 )
+            }
+
+            if (normalizedDisposalPlaces.size > 1) {
+                RegionalGuideInfoRow(
+                    title = stringResource(id = R.string.regional_waste_schedule_place_label),
+                    value = stringResource(
+                        id = R.string.regional_waste_schedule_place_count_format,
+                        normalizedDisposalPlaces.size,
+                    )
+                )
+
+                TextButton(
+                    onClick = { isDisposalPlaceExpanded = !isDisposalPlaceExpanded },
+                    modifier = Modifier.padding(top = 0.dp)
+                ) {
+                    Text(
+                        text = stringResource(
+                            id = if (isDisposalPlaceExpanded) {
+                                R.string.regional_waste_schedule_place_collapse_action
+                            } else {
+                                R.string.regional_waste_schedule_place_expand_action
+                            }
+                        )
+                    )
+                }
+
+                if (isDisposalPlaceExpanded) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        normalizedDisposalPlaces.forEach { disposalPlace ->
+                            Text(
+                                text = "- $disposalPlace",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

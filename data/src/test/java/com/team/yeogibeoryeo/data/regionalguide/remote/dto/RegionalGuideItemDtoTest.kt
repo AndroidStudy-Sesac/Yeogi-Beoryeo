@@ -13,7 +13,7 @@ class RegionalGuideItemDtoTest {
     }
 
     @Test
-    fun `info 실제 응답 필드로 배출장소 관리부서 연락처 대형폐기물 배출장소를 파싱한다`() {
+    fun `실제 info 응답 필드로 배출장소 관리부서 연락처 대형폐기물 배출장소를 파싱한다`() {
         val dto = json.decodeFromString<RegionalGuideItemDto>(
             """
             {
