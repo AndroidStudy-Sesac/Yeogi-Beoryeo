@@ -44,6 +44,14 @@ object RegionalGuideLegacyRegionCompatibilityPolicy {
     fun isSplitReplacement(region: Region): Boolean =
         replacementRegions(region).size > 1
 
+    fun shouldPreserveDisplayRegion(region: Region): Boolean {
+        val normalizedRegion = region.normalized()
+
+        return normalizedRegion.sido == GYEONGGI_SIDO &&
+            normalizedRegion.sigungu == ANYANG_MANANGU &&
+            normalizedRegion.eupmyeondong in ANYANG_REPLACEMENT_DONG_NAMES
+    }
+
     fun isSameRegion(
         requestedRegion: Region,
         candidateRegion: Region,
@@ -193,4 +201,5 @@ object RegionalGuideLegacyRegionCompatibilityPolicy {
     private const val ANYANG_MYEONGHAKDONG = "명학동"
     private const val ANYANG_BYEONGMOKANDONG = "병목안동"
     private val ANYANG_SIGUNGU_NAMES = setOf(ANYANG_MANANGU, ANYANG_SIGUNGU)
+    private val ANYANG_REPLACEMENT_DONG_NAMES = setOf(ANYANG_MYEONGHAKDONG, ANYANG_BYEONGMOKANDONG)
 }

@@ -14,7 +14,6 @@ import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCa
 import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
@@ -22,6 +21,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLo
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideDisplayRegionUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
@@ -50,7 +50,7 @@ class RegionalGuideViewModel @Inject constructor(
     private val getSidoOptionsUseCase: GetSidoOptionsUseCase,
     private val getSigunguOptionsUseCase: GetSigunguOptionsUseCase,
     private val getEupmyeondongOptionsUseCase: GetEupmyeondongOptionsUseCase,
-    private val normalizeRegionForRegionalGuideUseCase: NormalizeRegionForRegionalGuideUseCase,
+    private val normalizeRegionalGuideDisplayRegionUseCase: NormalizeRegionalGuideDisplayRegionUseCase,
     private val observeFavoriteUseCase: ObserveFavoriteUseCase,
     private val toggleRegionalGuideFavoriteUseCase: ToggleRegionalGuideFavoriteUseCase,
     private val getRegionalGuideFavoriteSnapshotUseCase: GetRegionalGuideFavoriteSnapshotUseCase
@@ -581,7 +581,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     private suspend fun normalizeAndApplyRegionSelection(region: Region): Region {
-        val regionalGuideRegion = normalizeRegionForRegionalGuideUseCase(region)
+        val regionalGuideRegion = normalizeRegionalGuideDisplayRegionUseCase(region)
 
         applyRegionSelection(regionalGuideRegion)
 

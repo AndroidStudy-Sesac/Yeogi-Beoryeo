@@ -25,6 +25,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideDisplayRegionUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
@@ -76,8 +77,8 @@ internal fun createViewModel(
         getSidoOptionsUseCase = GetSidoOptionsUseCase(regionOptionsRepository),
         getSigunguOptionsUseCase = GetSigunguOptionsUseCase(regionOptionsRepository),
         getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
-        normalizeRegionForRegionalGuideUseCase = NormalizeRegionForRegionalGuideUseCase(
-            regionOptionsRepository
+        normalizeRegionalGuideDisplayRegionUseCase = NormalizeRegionalGuideDisplayRegionUseCase(
+            NormalizeRegionForRegionalGuideUseCase(regionOptionsRepository)
         ),
         observeFavoriteUseCase = ObserveFavoriteUseCase(favoriteRepository),
         toggleRegionalGuideFavoriteUseCase = ToggleRegionalGuideFavoriteUseCase(regionalGuideFavoriteRepository),
