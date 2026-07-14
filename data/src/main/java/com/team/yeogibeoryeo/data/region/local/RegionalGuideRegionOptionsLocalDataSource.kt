@@ -28,16 +28,11 @@ class RegionalGuideRegionOptionsLocalDataSource @Inject constructor(
     private suspend fun loadRegions(): List<RegionalGuideRegionDto> {
         return withContext(Dispatchers.IO) {
             val jsonText = context.assets
-                .open(REGIONAL_GUIDE_REGION_ASSET_PATH)
+                .open(RegionAssetContract.REGIONAL_GUIDE_REGION_ASSET_PATH)
                 .bufferedReader()
                 .use { reader -> reader.readText() }
 
             json.decodeFromString<List<RegionalGuideRegionDto>>(jsonText)
         }
-    }
-
-    private companion object {
-        const val REGIONAL_GUIDE_REGION_ASSET_PATH =
-            "region/regional_guide_regions.20260701.json"
     }
 }

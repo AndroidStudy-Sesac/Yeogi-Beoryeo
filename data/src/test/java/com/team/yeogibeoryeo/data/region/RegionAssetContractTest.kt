@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.region
 
+import com.team.yeogibeoryeo.data.region.local.RegionAssetContract
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
@@ -9,15 +10,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-class RegionAsset20260701Test {
+class RegionAssetContractTest {
 
     private val json = Json {
         ignoreUnknownKeys = true
     }
 
     @Test
-    fun `행정구역 자산에 20260701 기준 지역 변경이 반영된다`() {
-        val regions = decodeAsset<List<AdministrativeRegionDto>>(ADMINISTRATIVE_REGION_ASSET_PATH)
+    fun `행정구역 자산에 현재 기준 지역 변경이 반영된다`() {
+        val regions = decodeAsset<List<AdministrativeRegionDto>>(
+            assetFilePath(RegionAssetContract.ADMINISTRATIVE_REGION_ASSET_PATH)
+        )
 
         val incheonSigunguNames = regions
             .filter { region -> region.sidoName == "인천광역시" }
@@ -39,8 +42,12 @@ class RegionAsset20260701Test {
 
     @Test
     fun `행정구역과 법정동 매핑 자산에 안양 행정동 변경이 반영된다`() {
-        val regions = decodeAsset<List<AdministrativeRegionDto>>(ADMINISTRATIVE_REGION_ASSET_PATH)
-        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        val regions = decodeAsset<List<AdministrativeRegionDto>>(
+            assetFilePath(RegionAssetContract.ADMINISTRATIVE_REGION_ASSET_PATH)
+        )
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
 
         val anyangAdminDongNames = regions
             .filter { region ->
@@ -72,7 +79,9 @@ class RegionAsset20260701Test {
 
     @Test
     fun `법정동 행정동 매핑 자산의 법정 행정 코드는 10자리 숫자이다`() {
-        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
 
         val invalidMappings = mappings.filter { mapping ->
             !mapping.legalCode.matches(REGION_CODE_REGEX) ||
@@ -88,8 +97,12 @@ class RegionAsset20260701Test {
     @Test
     fun `지도 검색 안양동 후보는 법정 행정 시군구 코드가 일치하는 후보만 노출한다`() {
         val administrativeRegions =
-            decodeAsset<List<AdministrativeRegionDto>>(ADMINISTRATIVE_REGION_ASSET_PATH)
-        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
+            decodeAsset<List<AdministrativeRegionDto>>(
+                assetFilePath(RegionAssetContract.ADMINISTRATIVE_REGION_ASSET_PATH)
+            )
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
 
         val regions = RegionOptionsMapper.findEupmyeondongRegions(
             administrativeRegions = administrativeRegions,
@@ -115,7 +128,9 @@ class RegionAsset20260701Test {
 
     @Test
     fun `법정동 행정동 매핑 자산은 복수 후보 매핑을 유지한다`() {
-        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
 
         val geumhoAdminDongNames = mappings
             .filter { mapping ->
@@ -131,8 +146,10 @@ class RegionAsset20260701Test {
     }
 
     @Test
-    fun `지역 가이드 지역 자산은 20260701 기준 지역명을 따른다`() {
-        val regions = decodeAsset<List<RegionalGuideRegionDto>>(REGIONAL_GUIDE_REGION_ASSET_PATH)
+    fun `지역 가이드 지역 자산은 현재 기준 지역명을 따른다`() {
+        val regions = decodeAsset<List<RegionalGuideRegionDto>>(
+            assetFilePath(RegionAssetContract.REGIONAL_GUIDE_REGION_ASSET_PATH)
+        )
 
         val incheonSigunguNames = regions
             .filter { region -> region.sidoName == "인천광역시" }
@@ -161,13 +178,11 @@ class RegionAsset20260701Test {
         return json.decodeFromString(File(path).readText())
     }
 
+    private fun assetFilePath(assetPath: String): String {
+        return "src/main/assets/$assetPath"
+    }
+
     private companion object {
-        const val ADMINISTRATIVE_REGION_ASSET_PATH =
-            "src/main/assets/region/administrative_regions.20260701.json"
-        const val LEGAL_ADMIN_MAPPING_ASSET_PATH =
-            "src/main/assets/region/legal_to_admin_mappings.20260701.json"
-        const val REGIONAL_GUIDE_REGION_ASSET_PATH =
-            "src/main/assets/region/regional_guide_regions.20260701.json"
         val REGION_CODE_REGEX = """\d{10}""".toRegex()
     }
 }
