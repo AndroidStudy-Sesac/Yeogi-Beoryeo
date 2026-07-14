@@ -985,6 +985,310 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     }
 
     @Test
+    fun `정확 매칭 후보가 있으면 넓은 행정동명 후보보다 우선한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "직접관리",
+                    targetRegionName = "두류1.2동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "권역관리",
+                    targetRegionName = "두류동+감삼동+신당동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    eupmyeondong = "두류1.2동"
+                ),
+                sigunguQuery = "달서구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("직접관리", guide.managementZoneName)
+        assertEquals("두류1.2동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `세분화 행정동은 API의 넓은 동명 관리구역과 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "두류동+감삼동+신당동",
+                    targetRegionName = "두류동+감삼동+신당동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    eupmyeondong = "두류1.2동"
+                ),
+                sigunguQuery = "달서구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("두류1.2동", guide.region.eupmyeondong)
+        assertEquals("두류동+감삼동+신당동", guide.managementZoneName)
+    }
+
+    @Test
+    fun `점 대신 가운데점으로 묶인 세분화 행정동도 넓은 동명 관리구역과 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "두류동",
+                    targetRegionName = "두류동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    eupmyeondong = "두류1·2동"
+                ),
+                sigunguQuery = "달서구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("두류1·2동", guide.region.eupmyeondong)
+        assertEquals("두류동", guide.targetRegionName)
+    }
+
+    @Test
+    fun `일동 계열 행정동은 API의 넓은 동명 관리구역과 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "상인동",
+                    targetRegionName = "상인동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    eupmyeondong = "상인1동"
+                ),
+                sigunguQuery = "달서구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("상인1동", guide.region.eupmyeondong)
+        assertEquals("상인동", guide.managementZoneName)
+    }
+
+    @Test
+    fun `전역 일부 괄호 설명이 붙은 관리구역명도 비교 가능한 동명 token으로 매칭한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "송현동(공동주택 일부)",
+                    targetRegionName = "송현동 전역+상인1동 일부"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    eupmyeondong = "송현1동"
+                ),
+                sigunguQuery = "달서구"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("송현1동", guide.region.eupmyeondong)
+        assertEquals("송현동(공동주택 일부)", guide.managementZoneName)
+    }
+
+    @Test
+    fun `넓은 동명 완화 매칭 후보가 여러 개이면 후보 목록을 반환한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "1권역",
+                    targetRegionName = "성당동+두류동+본리동+감삼동+죽전동+장기동+용산동+이곡동+신당동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "2권역",
+                    targetRegionName = "두류동+감삼동+신당동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    eupmyeondong = "두류1.2동"
+                ),
+                sigunguQuery = "달서구"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals(listOf("1권역", "2권역"), candidates.map { guide -> guide.managementZoneName })
+    }
+
+    @Test
+    fun `다른 세부 행정동 token은 넓은 동명 완화 매칭으로 선택하지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    managementZoneName = "상인3동",
+                    targetRegionName = "상인3동 일부"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달서구",
+                    eupmyeondong = "상인1동"
+                ),
+                sigunguQuery = "달서구"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
+    fun `동지역 관리구역은 동으로 끝나는 행정동과 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    managementZoneName = "김천시",
+                    targetRegionName = "동지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    eupmyeondong = "율곡동"
+                ),
+                sigunguQuery = "김천시"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("율곡동", guide.region.eupmyeondong)
+        assertEquals("동지역", guide.targetRegionName)
+    }
+
+    @Test
+    fun `동지역 관리구역은 읍면 선택과 매칭하지 않는다`() {
+        val eupResult = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    managementZoneName = "김천시",
+                    targetRegionName = "동지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    eupmyeondong = "아포읍"
+                ),
+                sigunguQuery = "김천시"
+            )
+        )
+        val myeonResult = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    managementZoneName = "김천시",
+                    targetRegionName = "동지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    eupmyeondong = "봉산면"
+                ),
+                sigunguQuery = "김천시"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, eupResult)
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, myeonResult)
+    }
+
+    @Test
+    fun `동지역 관리구역 후보가 여러 개이면 후보 목록을 반환한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    managementZoneName = "김천시 동지역 1권역",
+                    targetRegionName = "동지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    managementZoneName = "김천시 동지역 2권역",
+                    targetRegionName = "동지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경상북도",
+                    sigungu = "김천시",
+                    eupmyeondong = "율곡동"
+                ),
+                sigunguQuery = "김천시"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals(
+            listOf("김천시 동지역 1권역", "김천시 동지역 2권역"),
+            candidates.map { guide -> guide.managementZoneName }
+        )
+    }
+
+    @Test
     fun `직접 선택한 행정동이 여러 축약 후보와 매칭되면 후보 목록을 반환한다`() {
         val result = useCase(
             candidates = listOf(

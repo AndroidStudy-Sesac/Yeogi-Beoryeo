@@ -353,6 +353,14 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return true
         }
 
+        if (targetRegionName.matchesBroadAdministrativeDong(eupmyeondong)) {
+            return true
+        }
+
+        if (targetRegionName.matchesDongArea(eupmyeondong)) {
+            return true
+        }
+
         val normalizedEupmyeondong = eupmyeondong.removeAdministrativeSuffix()
         val allowSuffixlessTokenMatch = !targetRegionName.hasCondensedAdminDongExpression()
 
@@ -366,6 +374,23 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                     allowSuffixlessTokenMatch &&
                     token == normalizedEupmyeondong
             }
+    }
+
+    private fun String.matchesBroadAdministrativeDong(
+        eupmyeondong: String
+    ): Boolean {
+        val broadDongName = eupmyeondong.toBroadAdministrativeDongName() ?: return false
+
+        return toManagementZoneTokens().any { token -> token == broadDongName }
+    }
+
+    private fun String.matchesDongArea(
+        eupmyeondong: String
+    ): Boolean {
+        val requestedEupmyeondong = eupmyeondong.trim()
+
+        return requestedEupmyeondong.endsWith(DONG) &&
+            replace(WHITESPACE_REGEX, "") == DONG_AREA
     }
 
     private fun String?.isExactRegionName(
@@ -429,6 +454,16 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return setOf(value)
+    }
+
+    private fun String.toBroadAdministrativeDongName(): String? {
+        val value = replace(WHITESPACE_REGEX, "")
+            .replace(ADMIN_DONG_NUMBER_MARKER_REGEX, "")
+
+        val match = ADMIN_DONG_SUBDIVISION_REGEX.matchEntire(value) ?: return null
+        val baseName = match.groupValues[1].takeIf { name -> name.isNotBlank() } ?: return null
+
+        return "$baseName$DONG"
     }
 
     private fun String.expandSingleCondensedAdminDongName(): Set<String>? {
@@ -524,6 +559,18 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             .removeSuffix(MYEON)
             .removeSuffix(DONG)
 
+    private fun String.toManagementZoneTokens(): List<String> =
+        replace(PARENTHESIZED_DESCRIPTION_REGEX, "")
+            .split(TARGET_REGION_GROUP_DELIMITER)
+            .mapNotNull { token -> token.toManagementZoneTokenOrNull() }
+
+    private fun String.toManagementZoneTokenOrNull(): String? =
+        replace(WHITESPACE_REGEX, "")
+            .removeSuffix(OVERALL_WHOLE_AREA)
+            .removeSuffix(PARTIAL_AREA)
+            .removeSuffix(OVERALL_ALL)
+            .takeIf { token -> token.isNotBlank() }
+
     private fun String.hasAdministrativeSuffix(): Boolean =
         endsWith(EUP) || endsWith(MYEON) || endsWith(DONG)
 
@@ -554,7 +601,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     }
 
     private fun String?.isSejongDongArea(): Boolean =
-        this?.trim() == SEJONG_DONG_AREA
+        this?.trim() == DONG_AREA
 
     private data class CandidateKey(
         val sido: String?,
@@ -570,11 +617,12 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
     private companion object {
         const val SEJONG_SIGUNGU_QUERY = "없음"
-        const val SEJONG_DONG_AREA = "동지역"
+        const val DONG_AREA = "동지역"
 
         const val OVERALL_NONE = "없음"
         const val OVERALL_ALL = "전체"
         const val OVERALL_WHOLE_AREA = "전역"
+        const val PARTIAL_AREA = "일부"
         const val OVERALL_WITHIN_REGION = "관내"
         const val EUP = "읍"
         const val MYEON = "면"
@@ -585,8 +633,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         val ADMIN_DONG_NUMBER_MARKER_REGEX = Regex("제(?=\\d)")
         val ADMIN_DONG_RANGE_REGEX = Regex("^([^\\d,+/~～-]+?)(\\d+)\\s*[~～-]\\s*(\\d+)([읍면동])$")
         val ADMIN_DONG_GROUP_REGEX = Regex("^([^\\d,+/~～-]+?)(\\d+(?:,\\d+)+)([읍면동])$")
+        val ADMIN_DONG_SUBDIVISION_REGEX = Regex("^([^\\d,+/~～.·ㆍ-]+?)\\d+(?:[.·ㆍ]\\d+)?동$")
         val ADMIN_DONG_RANGE_EXPRESSION_REGEX = Regex("([^\\d,+/~～-]+?)(\\d+)\\s*[~～-]\\s*(\\d+)([읍면동])")
         val ADMIN_DONG_GROUP_EXPRESSION_REGEX = Regex("([^\\d,+/~～-]+?)(\\d+(?:,\\d+)+)([읍면동])")
+        val PARENTHESIZED_DESCRIPTION_REGEX = Regex("\\([^)]*\\)|（[^）]*）")
         val ADMIN_DONG_CONDENSED_REGEXES = listOf(
             ADMIN_DONG_RANGE_EXPRESSION_REGEX,
             ADMIN_DONG_GROUP_EXPRESSION_REGEX,
