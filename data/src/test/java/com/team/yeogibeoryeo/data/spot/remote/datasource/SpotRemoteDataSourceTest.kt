@@ -93,6 +93,25 @@ class SpotRemoteDataSourceTest {
     }
 
     @Test
+    fun `정상과 데이터 없음 외 응답 코드는 예외를 전달한다`() {
+        val apiService = FakeSpotApiService(
+            response = createErrorResponse(),
+        )
+        val dataSource = SpotRemoteDataSource(apiService)
+
+        val exception = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                dataSource.searchByKeyword(
+                    serviceKey = TEST_SERVICE_KEY,
+                    keyword = "문래동",
+                )
+            }
+        }
+
+        assertEquals("수거 장소 API 오류(30): SERVICE_KEY_IS_NOT_REGISTERED_ERROR", exception.message)
+    }
+
+    @Test
     fun `items가 null이면 빈 리스트를 반환한다`() = runBlocking {
         val apiService = FakeSpotApiService(
             response = createNormalResponseWithNullItems(),
@@ -553,6 +572,20 @@ class SpotRemoteDataSourceTest {
                         numOfRows = null,
                         pageNo = null,
                         totalCount = null,
+                    ),
+                ),
+            )
+        }
+
+        fun createErrorResponse(): SpotResponseDto {
+            return SpotResponseDto(
+                response = SpotResponseBodyDto(
+                    header = SpotHeaderDto(
+                        resultCode = "30",
+                        resultMsg = "SERVICE_KEY_IS_NOT_REGISTERED_ERROR",
+                    ),
+                    body = SpotBodyDto(
+                        items = null,
                     ),
                 ),
             )

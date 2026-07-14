@@ -34,8 +34,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -60,6 +63,8 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(CollectionSpotMapUiState())
     val uiState: StateFlow<CollectionSpotMapUiState> = _uiState.asStateFlow()
+    private val _events = MutableSharedFlow<CollectionSpotMapEvent>()
+    val events: SharedFlow<CollectionSpotMapEvent> = _events.asSharedFlow()
 
     private var originalSpots: List<CollectionSpot> = emptyList()
     private var spotSearchJob: Job? = null
@@ -69,6 +74,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var currentLocationSearchGeneration = 0
     private var favoriteSpotIds: Set<String> = emptySet()
     private val consumedFavoriteSpotMoveRequestIds = mutableSetOf<String>()
+    private val favoriteToggleJobs = mutableMapOf<String, Job>()
 
     init {
         observeCollectionSpotFavorites()
@@ -556,8 +562,18 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onSpotFavoriteClick(spot: CollectionSpot) {
-        viewModelScope.launch {
-            toggleCollectionSpotFavoriteUseCase(spot)
+        if (favoriteToggleJobs[spot.id]?.isActive == true) return
+
+        favoriteToggleJobs[spot.id] = viewModelScope.launch {
+            try {
+                toggleCollectionSpotFavoriteUseCase(spot)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Throwable) {
+                _events.emit(CollectionSpotMapEvent.FavoriteUpdateFailed)
+            } finally {
+                favoriteToggleJobs.remove(spot.id)
+            }
         }
     }
 
@@ -1109,6 +1125,10 @@ class CollectionSpotMapViewModel @Inject constructor(
         const val EMPTY_SEARCH_KEYWORD = ""
         const val NO_SELECTED_REGION = "none"
     }
+}
+
+sealed interface CollectionSpotMapEvent {
+    data object FavoriteUpdateFailed : CollectionSpotMapEvent
 }
 
 private fun Long.elapsedMs(): Long =

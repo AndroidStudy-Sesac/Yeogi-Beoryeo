@@ -56,6 +56,7 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    collectionSpotFavoriteRepository: CollectionSpotFavoriteRepository? = null,
     recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
         RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
@@ -68,6 +69,7 @@ internal fun createViewModel(
         favoriteRepository = favoriteRepository,
         regionOptionsRepository = regionOptionsRepository,
         snapshotRepository = snapshotRepository,
+        collectionSpotFavoriteRepository = collectionSpotFavoriteRepository,
         recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
     )
 }
@@ -83,6 +85,7 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    collectionSpotFavoriteRepository: CollectionSpotFavoriteRepository? = null,
     recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
         RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
@@ -119,10 +122,11 @@ internal fun createViewModel(
         observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
         toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
             collectionSpotFavoriteRepository =
-                FakeCollectionSpotFavoriteRepository(
-                    favoriteRepository = favoriteRepository,
-                    snapshotRepository = snapshotRepository,
-                ),
+                collectionSpotFavoriteRepository
+                    ?: FakeCollectionSpotFavoriteRepository(
+                        favoriteRepository = favoriteRepository,
+                        snapshotRepository = snapshotRepository,
+                    ),
         ),
         calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
         recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,

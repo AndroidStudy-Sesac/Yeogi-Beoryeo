@@ -77,14 +77,17 @@ class RegionalGuideRemoteDataSource @Inject constructor(
         }
 
         val body = response.body()?.response?.body
+            ?: throw RegionalGuideLookupException(
+                reason = RegionalGuideFailureReason.API,
+            )
 
         return RegionalGuidePage(
-            items = body?.items?.item.orEmpty(),
+            items = body.items?.item.orEmpty(),
             pageNo = pageNo,
-            numOfRows = body?.numOfRows
+            numOfRows = body.numOfRows
                 ?.coerceAtMost(numOfRows)
                 ?: numOfRows,
-            totalCount = body?.totalCount,
+            totalCount = body.totalCount,
         )
     }
 
