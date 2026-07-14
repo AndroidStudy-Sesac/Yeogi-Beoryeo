@@ -236,15 +236,15 @@ class GetRegionalDisposalGuideUseCaseTest {
 
     @Test
     fun `과거 안양8동 즐겨찾기 키는 최신 명학동 후보로 복원한다`() = runBlocking {
-        val useCase = createUseCase(
-            repositoryResult = Result.success(emptyList()),
-            repositoryResultsBySigungu = mapOf(
+        val repository = FakeRegionalDisposalGuideRepository(
+            result = Result.success(emptyList()),
+            resultsBySigungu = mapOf(
                 "안양시" to Result.success(
                     listOf(
                         RegionalDisposalGuide(
                             region = Region(
                                 sido = "경기도",
-                                sigungu = "안양시",
+                                sigungu = "안양시 만안구",
                                 eupmyeondong = "명학동"
                             ),
                             targetRegionName = "명학동",
@@ -255,6 +255,7 @@ class GetRegionalDisposalGuideUseCaseTest {
                 )
             )
         )
+        val useCase = createUseCase(repository = repository)
 
         val result = useCase(
             region = Region(
@@ -273,6 +274,8 @@ class GetRegionalDisposalGuideUseCaseTest {
 
         val guide = (result as RegionalGuideLookupResult.Success).guide
 
+        assertEquals("안양시", repository.requestedSigungu.single())
+        assertEquals("안양시 만안구", guide.region.sigungu)
         assertEquals("명학동", guide.region.eupmyeondong)
         assertEquals("명학동", guide.targetRegionName)
     }
@@ -282,11 +285,21 @@ class GetRegionalDisposalGuideUseCaseTest {
         repositoryResultsBySigungu: Map<String, Result<List<RegionalDisposalGuide>>> = emptyMap(),
         adminDongCandidates: List<Region> = emptyList()
     ): GetRegionalDisposalGuideUseCase {
-        return GetRegionalDisposalGuideUseCase(
+        return createUseCase(
             repository = FakeRegionalDisposalGuideRepository(
                 result = repositoryResult,
                 resultsBySigungu = repositoryResultsBySigungu,
             ),
+            adminDongCandidates = adminDongCandidates,
+        )
+    }
+
+    private fun createUseCase(
+        repository: FakeRegionalDisposalGuideRepository,
+        adminDongCandidates: List<Region> = emptyList()
+    ): GetRegionalDisposalGuideUseCase {
+        return GetRegionalDisposalGuideUseCase(
+            repository = repository,
             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
             selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(),
             findAdminDongCandidatesForLegalDongUseCase = FindAdminDongCandidatesForLegalDongUseCase(
@@ -299,10 +312,14 @@ class GetRegionalDisposalGuideUseCaseTest {
         private val result: Result<List<RegionalDisposalGuide>>,
         private val resultsBySigungu: Map<String, Result<List<RegionalDisposalGuide>>> = emptyMap(),
     ) : RegionalDisposalGuideRepository {
+        val requestedSigungu = mutableListOf<String?>()
 
         override suspend fun getRegionalDisposalGuideCandidates(
             query: RegionalGuideQuery
-        ): Result<List<RegionalDisposalGuide>> = resultsBySigungu[query.sigunguQuery] ?: result
+        ): Result<List<RegionalDisposalGuide>> {
+            requestedSigungu += query.sigunguQuery
+            return resultsBySigungu[query.sigunguQuery] ?: result
+        }
     }
 
     private class FakeRegionOptionsRepository(

@@ -116,7 +116,7 @@ class RegionalGuideFavoriteCompatibilityPolicyTest {
         )
         val candidate = regionalDisposalGuide(
             sido = "경기도",
-            sigungu = "안양시",
+            sigungu = "안양시 만안구",
             eupmyeondong = "명학동",
             targetRegionName = "명학동",
             managementZoneName = "명학동",
@@ -141,7 +141,7 @@ class RegionalGuideFavoriteCompatibilityPolicyTest {
         )
         val candidate = regionalDisposalGuide(
             sido = "경기도",
-            sigungu = "안양시",
+            sigungu = "안양시 만안구",
             eupmyeondong = "병목안동",
             targetRegionName = "병목안동 전체",
             managementZoneName = "병목안동 전체",

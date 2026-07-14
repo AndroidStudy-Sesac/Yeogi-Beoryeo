@@ -17,12 +17,12 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
-import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
@@ -44,7 +44,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RegionalGuideViewModel @Inject constructor(
     private val classifyRegionSearchInputUseCase: ClassifyRegionSearchInputUseCase,
-    private val resolveRegionFromKeywordUseCase: ResolveRegionFromKeywordUseCase,
+    private val resolveRegionFromKeywordUseCase: ResolveRegionalGuideRegionFromKeywordUseCase,
     private val extractRegionFromAddressUseCase: ExtractRegionFromAddressUseCase,
     private val getRegionalDisposalGuideUseCase: GetRegionalDisposalGuideUseCase,
     private val getSidoOptionsUseCase: GetSidoOptionsUseCase,

@@ -26,6 +26,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -57,9 +58,11 @@ internal fun createViewModel(
 ): RegionalGuideViewModel {
     return RegionalGuideViewModel(
         classifyRegionSearchInputUseCase = ClassifyRegionSearchInputUseCase(),
-        resolveRegionFromKeywordUseCase = ResolveRegionFromKeywordUseCase(
-            repository = regionRepository,
-            regionOptionsRepository = regionOptionsRepository
+        resolveRegionFromKeywordUseCase = ResolveRegionalGuideRegionFromKeywordUseCase(
+            resolveRegionFromKeywordUseCase = ResolveRegionFromKeywordUseCase(
+                repository = regionRepository,
+                regionOptionsRepository = regionOptionsRepository
+            )
         ),
         extractRegionFromAddressUseCase = ExtractRegionFromAddressUseCase(regionRepository),
         getRegionalDisposalGuideUseCase = GetRegionalDisposalGuideUseCase(

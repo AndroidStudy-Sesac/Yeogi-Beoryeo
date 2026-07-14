@@ -8,6 +8,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLo
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFavoriteCompatibilityPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
 import javax.inject.Inject
 
 class SelectRegionalGuideCandidateUseCase @Inject constructor() {
@@ -24,7 +25,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         val filteredCandidates = candidates
             .filterBySido(query.displayRegion)
-            .filterBySigungu(query.sigunguQuery)
+            .filterBySigungu(query)
             .mergeDuplicateCandidateRows()
 
         if (filteredCandidates.isEmpty()) {
@@ -95,11 +96,24 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     }
 
     private fun List<RegionalDisposalGuide>.filterBySigungu(
-        sigunguQuery: String
+        query: RegionalGuideQuery
     ): List<RegionalDisposalGuide> {
+        val sigunguQuery = query.sigunguQuery
         if (sigunguQuery == SEJONG_SIGUNGU_QUERY) return this
 
-        return filter { guide -> guide.region.sigungu == sigunguQuery }
+        return filter { guide ->
+            guide.region.sigungu == sigunguQuery ||
+                guide.matchesDisplayRegionSigungu(query)
+        }
+    }
+
+    private fun RegionalDisposalGuide.matchesDisplayRegionSigungu(
+        query: RegionalGuideQuery
+    ): Boolean {
+        if (query.displayRegion.eupmyeondong.isNullOrBlank()) return false
+
+        return region.sigungu == query.displayRegion.sigungu &&
+            region.sigungu?.let(RegionalGuideRegionKeyNormalizer::normalizeSigungu) == query.sigunguQuery
     }
 
     private fun selectByTargetRegion(

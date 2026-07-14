@@ -172,7 +172,7 @@ object RegionalGuideLegacyRegionCompatibilityPolicy {
     private fun anyangRegion(eupmyeondong: String): Region =
         Region(
             sido = GYEONGGI_SIDO,
-            sigungu = ANYANG_SIGUNGU,
+            sigungu = ANYANG_MANANGU,
             eupmyeondong = eupmyeondong,
         )
 

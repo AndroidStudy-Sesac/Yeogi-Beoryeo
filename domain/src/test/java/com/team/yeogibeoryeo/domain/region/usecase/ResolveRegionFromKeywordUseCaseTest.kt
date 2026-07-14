@@ -287,7 +287,7 @@ class ResolveRegionFromKeywordUseCaseTest {
     }
 
     @Test
-    fun `시도 없는 기존 인천 구명 검색은 기존 동일 구명과 최신 인천 후보를 함께 안내한다`() = runBlocking {
+    fun `시도 없는 구명 검색은 기존 동일 구명 후보를 안내한다`() = runBlocking {
         val useCase = ResolveRegionFromKeywordUseCase(
             repository = FakeRegionRepository(
                 resolvedRegion = Region(sigungu = "중구")
@@ -313,9 +313,7 @@ class ResolveRegionFromKeywordUseCaseTest {
         assertEquals(
             listOf(
                 Region(sido = "대구광역시", sigungu = "중구"),
-                Region(sido = "서울특별시", sigungu = "중구"),
-                Region(sido = "인천광역시", sigungu = "영종구"),
-                Region(sido = "인천광역시", sigungu = "제물포구")
+                Region(sido = "서울특별시", sigungu = "중구")
             ),
             candidates
         )
@@ -381,123 +379,6 @@ class ResolveRegionFromKeywordUseCaseTest {
         assertEquals("울산광역시", region.sido)
         assertEquals("울주군", region.sigungu)
         assertEquals(null, region.eupmyeondong)
-    }
-
-    @Test
-    fun `인천광역시 중구 검색은 최신 영종구와 제물포구 후보로 안내한다`() = runBlocking {
-        val useCase = ResolveRegionFromKeywordUseCase(
-            repository = FakeRegionRepository(
-                resolvedRegion = Region(sido = "인천광역시", sigungu = "중구")
-            ),
-            regionOptionsRepository = FakeRegionOptionsRepository(regions = emptyList())
-        )
-
-        val result = useCase("인천광역시 중구")
-
-        val candidates = (result as ResolveRegionFromKeywordResult.Ambiguous).candidates
-
-        assertEquals(
-            listOf(
-                Region(sido = "인천광역시", sigungu = "영종구"),
-                Region(sido = "인천광역시", sigungu = "제물포구")
-            ),
-            candidates
-        )
-    }
-
-    @Test
-    fun `인천광역시 동구 검색은 최신 제물포구로 보완한다`() = runBlocking {
-        val useCase = ResolveRegionFromKeywordUseCase(
-            repository = FakeRegionRepository(
-                resolvedRegion = Region(sido = "인천광역시", sigungu = "동구")
-            ),
-            regionOptionsRepository = FakeRegionOptionsRepository(regions = emptyList())
-        )
-
-        val result = useCase("인천광역시 동구")
-
-        assertEquals(
-            ResolveRegionFromKeywordResult.Resolved(
-                Region(sido = "인천광역시", sigungu = "제물포구")
-            ),
-            result
-        )
-    }
-
-    @Test
-    fun `인천광역시 서구 검색은 최신 서해구와 검단구 후보로 안내한다`() = runBlocking {
-        val useCase = ResolveRegionFromKeywordUseCase(
-            repository = FakeRegionRepository(
-                resolvedRegion = Region(sido = "인천광역시", sigungu = "서구")
-            ),
-            regionOptionsRepository = FakeRegionOptionsRepository(regions = emptyList())
-        )
-
-        val result = useCase("인천광역시 서구")
-
-        val candidates = (result as ResolveRegionFromKeywordResult.Ambiguous).candidates
-
-        assertEquals(
-            listOf(
-                Region(sido = "인천광역시", sigungu = "검단구"),
-                Region(sido = "인천광역시", sigungu = "서해구")
-            ),
-            candidates
-        )
-    }
-
-    @Test
-    fun `안양8동 검색은 최신 명학동으로 보완한다`() = runBlocking {
-        val useCase = ResolveRegionFromKeywordUseCase(
-            repository = FakeRegionRepository(
-                resolvedRegion = Region(
-                    sido = "경기도",
-                    sigungu = "안양시 만안구",
-                    eupmyeondong = "안양8동"
-                )
-            ),
-            regionOptionsRepository = FakeRegionOptionsRepository(regions = emptyList())
-        )
-
-        val result = useCase("경기도 안양시 만안구 안양8동")
-
-        assertEquals(
-            ResolveRegionFromKeywordResult.Resolved(
-                Region(
-                    sido = "경기도",
-                    sigungu = "안양시",
-                    eupmyeondong = "명학동"
-                )
-            ),
-            result
-        )
-    }
-
-    @Test
-    fun `안양9동 검색은 최신 병목안동으로 보완한다`() = runBlocking {
-        val useCase = ResolveRegionFromKeywordUseCase(
-            repository = FakeRegionRepository(
-                resolvedRegion = Region(
-                    sido = "경기도",
-                    sigungu = "안양시 만안구",
-                    eupmyeondong = "안양9동"
-                )
-            ),
-            regionOptionsRepository = FakeRegionOptionsRepository(regions = emptyList())
-        )
-
-        val result = useCase("경기도 안양시 만안구 안양9동")
-
-        assertEquals(
-            ResolveRegionFromKeywordResult.Resolved(
-                Region(
-                    sido = "경기도",
-                    sigungu = "안양시",
-                    eupmyeondong = "병목안동"
-                )
-            ),
-            result
-        )
     }
 
     private class FakeRegionRepository(
