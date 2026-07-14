@@ -59,6 +59,7 @@ internal fun SettingsDetailType.toRouteType(): SettingsDetailRouteType =
         SettingsDetailType.AppInfo -> SettingsDetailRouteType.AppInfo
         SettingsDetailType.LocationPermission -> SettingsDetailRouteType.LocationPermission
         SettingsDetailType.Terms -> SettingsDetailRouteType.Terms
+        SettingsDetailType.PrivacyPolicy -> SettingsDetailRouteType.PrivacyPolicy
         SettingsDetailType.Sources -> SettingsDetailRouteType.Sources
         SettingsDetailType.Cache -> SettingsDetailRouteType.Cache
     }
@@ -70,6 +71,7 @@ internal fun SettingsDetailRouteType.toScreenType(): SettingsDetailType =
         SettingsDetailRouteType.AppInfo -> SettingsDetailType.AppInfo
         SettingsDetailRouteType.LocationPermission -> SettingsDetailType.LocationPermission
         SettingsDetailRouteType.Terms -> SettingsDetailType.Terms
+        SettingsDetailRouteType.PrivacyPolicy -> SettingsDetailType.PrivacyPolicy
         SettingsDetailRouteType.Sources -> SettingsDetailType.Sources
         SettingsDetailRouteType.Cache -> SettingsDetailType.Cache
     }

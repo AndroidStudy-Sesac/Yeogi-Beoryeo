@@ -20,6 +20,7 @@ internal fun SettingsScaffold(
     modifier: Modifier = Modifier,
     listState: LazyListState? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     if (listState != null) {
@@ -32,6 +33,7 @@ internal fun SettingsScaffold(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = snackbarHost,
         topBar = {
             AppTopBar(
                 navigationIcon = {

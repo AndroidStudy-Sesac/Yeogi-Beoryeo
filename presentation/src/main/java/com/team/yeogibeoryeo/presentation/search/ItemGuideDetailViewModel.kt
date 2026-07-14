@@ -78,28 +78,36 @@ constructor(
         val guide = currentState.guide
 
         viewModelScope.launch {
-            val isFavorite =
-                toggleFavoriteUseCase(
-                    Favorite(
-                        type = FavoriteTargetType.ITEM_GUIDE,
-                        targetId = guide.id,
-                        savedAtMillis = System.currentTimeMillis(),
-                    ),
-                )
-            val messageResId =
-                if (isFavorite) {
-                    R.string.item_guide_detail_favorite_added_message
-                } else {
-                    R.string.item_guide_detail_favorite_removed_message
+            val event =
+                try {
+                    val isFavorite =
+                        toggleFavoriteUseCase(
+                            Favorite(
+                                type = FavoriteTargetType.ITEM_GUIDE,
+                                targetId = guide.id,
+                                savedAtMillis = System.currentTimeMillis(),
+                            ),
+                        )
+                    ItemGuideDetailEvent.ShowMessage(
+                        messageResId =
+                            if (isFavorite) {
+                                R.string.item_guide_detail_favorite_added_message
+                            } else {
+                                R.string.item_guide_detail_favorite_removed_message
+                            },
+                        icon = ItemGuideDetailMessageIcon.Favorite,
+                    )
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (_: Throwable) {
+                    ItemGuideDetailEvent.ShowMessage(
+                        messageResId = R.string.item_guide_detail_favorite_update_failed_message,
+                        icon = ItemGuideDetailMessageIcon.Warning,
+                    )
                 }
             val latestState = uiState.value
             if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
-                _events.emit(
-                    ItemGuideDetailEvent.ShowMessage(
-                        messageResId = messageResId,
-                        icon = ItemGuideDetailMessageIcon.Favorite,
-                    ),
-                )
+                _events.emit(event)
             }
         }
     }

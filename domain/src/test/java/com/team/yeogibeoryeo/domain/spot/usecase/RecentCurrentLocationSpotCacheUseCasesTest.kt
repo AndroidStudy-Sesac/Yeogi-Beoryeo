@@ -2,6 +2,8 @@ package com.team.yeogibeoryeo.domain.spot.usecase
 
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import com.team.yeogibeoryeo.domain.time.TimeProvider
@@ -19,6 +21,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = cachedSpots,
+                    searchCoordinate = TEST_COORDINATE,
                     savedAtMillis = TEST_NOW_MILLIS - FIVE_MINUTES_MILLIS,
                 ),
             )
@@ -38,6 +41,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = listOf(sampleSpot("expired")),
+                    searchCoordinate = TEST_COORDINATE,
                     savedAtMillis = TEST_NOW_MILLIS - ELEVEN_MINUTES_MILLIS,
                 ),
             )
@@ -59,6 +63,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = listOf(sampleSpot("future")),
+                    searchCoordinate = TEST_COORDINATE,
                     savedAtMillis = TEST_NOW_MILLIS + 1L,
                 ),
             )
@@ -84,10 +89,60 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
                 timeProvider = FakeTimeProvider(TEST_NOW_MILLIS),
             )
 
-            useCase(spots)
+            useCase(
+                spots = spots,
+                searchCoordinate = TEST_COORDINATE,
+            )
 
             assertEquals(spots, repository.entry?.spots)
+            assertEquals(TEST_COORDINATE, repository.entry?.searchCoordinate)
             assertEquals(TEST_NOW_MILLIS, repository.entry?.savedAtMillis)
+        }
+
+    @Test
+    fun `ClearRecentCurrentLocationSpotsUseCase는 캐시를 삭제한다`() =
+        runBlocking {
+            val repository = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = RecentCurrentLocationSpotCacheEntry(
+                    spots = listOf(sampleSpot("cached")),
+                    searchCoordinate = TEST_COORDINATE,
+                    savedAtMillis = TEST_NOW_MILLIS,
+                ),
+            )
+            val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
+
+            val result = useCase()
+
+            assertEquals(RecentCurrentLocationSpotCacheClearResult.Deleted, result)
+            assertNull(repository.entry)
+            assertEquals(1, repository.clearCallCount)
+        }
+
+    @Test
+    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제할 캐시가 없으면 캐시 없음 결과를 반환한다`() =
+        runBlocking {
+            val repository = FakeRecentCurrentLocationSpotCacheRepository()
+            val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
+
+            val result = useCase()
+
+            assertEquals(RecentCurrentLocationSpotCacheClearResult.NoCache, result)
+            assertNull(repository.entry)
+            assertEquals(1, repository.clearCallCount)
+        }
+
+    @Test
+    fun `ClearRecentCurrentLocationSpotsUseCase는 삭제 실패 시 실패 결과를 반환한다`() =
+        runBlocking {
+            val repository = FakeRecentCurrentLocationSpotCacheRepository(
+                clearThrowable = IllegalStateException("삭제 실패"),
+            )
+            val useCase = ClearRecentCurrentLocationSpotsUseCase(repository)
+
+            val result = useCase()
+
+            assertEquals(RecentCurrentLocationSpotCacheClearResult.Failed, result)
+            assertEquals(1, repository.clearCallCount)
         }
 
     private fun sampleSpot(id: String): CollectionSpot {
@@ -105,6 +160,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
 
     private class FakeRecentCurrentLocationSpotCacheRepository(
         var entry: RecentCurrentLocationSpotCacheEntry? = null,
+        private val clearThrowable: Throwable? = null,
     ) : RecentCurrentLocationSpotCacheRepository {
         var clearCallCount = 0
             private set
@@ -117,9 +173,18 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             this.entry = entry
         }
 
-        override suspend fun clearRecentCurrentLocationSpots() {
+        override suspend fun clearRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheClearResult {
             clearCallCount += 1
+            clearThrowable?.let { throwable -> throw throwable }
+
+            val hadCache = entry != null
             entry = null
+
+            return if (hadCache) {
+                RecentCurrentLocationSpotCacheClearResult.Deleted
+            } else {
+                RecentCurrentLocationSpotCacheClearResult.NoCache
+            }
         }
     }
 
@@ -133,5 +198,6 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
         const val TEST_NOW_MILLIS = 20 * 60 * 1_000L
         const val FIVE_MINUTES_MILLIS = 5 * 60 * 1_000L
         const val ELEVEN_MINUTES_MILLIS = 11 * 60 * 1_000L
+        val TEST_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
     }
 }

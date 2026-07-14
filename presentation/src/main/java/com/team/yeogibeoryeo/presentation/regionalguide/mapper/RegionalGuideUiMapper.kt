@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.mapper
 
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
@@ -36,9 +37,10 @@ fun RegionalDisposalGuide.toUiModel(): RegionalGuideUiModel {
 private fun RegionalWasteSchedule.toUiModel(): RegionalWasteScheduleUiModel {
     return RegionalWasteScheduleUiModel(
         wasteTypeName = wasteType.description,
-        disposalDays = disposalDays.orInfoEmpty(),
+        disposalDays = disposalDays.takeIfNotBlank(),
         disposalTime = displayTime(),
-        disposalMethod = disposalMethod.orInfoEmpty()
+        disposalMethod = disposalMethod.takeIfNotBlank(),
+        disposalPlace = disposalPlace.takeIfNotBlank(),
     )
 }
 
@@ -46,7 +48,7 @@ private fun RegionalDisposalGuide.displayRegionName(): String {
     val regionName = listOfNotNull(
         region.sido,
         region.sigungu,
-        region.eupmyeondong
+        displayEupmyeondongName()
     ).filter { it.isNotBlank() }
         .joinToString(" ")
 
@@ -57,7 +59,30 @@ private fun RegionalDisposalGuide.displayRegionName(): String {
     }
 }
 
-private fun RegionalWasteSchedule.displayTime(): String {
+private fun RegionalDisposalGuide.displayEupmyeondongName(): String? {
+    val eupmyeondong = region.eupmyeondong?.trim()?.takeIf { it.isNotBlank() }
+        ?: return null
+    val apiCompatibleName = RegionalGuideEupmyeondongNamePolicy
+        .toApiCompatibleDisplayName(eupmyeondong)
+        ?: return eupmyeondong
+    if (apiCompatibleName == eupmyeondong) return eupmyeondong
+
+    return listOf(targetRegionName, managementZoneName)
+        .firstNotNullOfOrNull { value ->
+            value
+                ?.split(REGION_NAME_DELIMITER)
+                ?.map { token -> token.trim() }
+                ?.firstOrNull { token ->
+                    RegionalGuideEupmyeondongNamePolicy.isSameName(
+                        first = token,
+                        second = apiCompatibleName,
+                    )
+                }
+        }
+        ?: eupmyeondong
+}
+
+private fun RegionalWasteSchedule.displayTime(): String? {
     val startTime = disposalStartTime
     val endTime = disposalEndTime
 
@@ -65,12 +90,11 @@ private fun RegionalWasteSchedule.displayTime(): String {
         !startTime.isNullOrBlank() && !endTime.isNullOrBlank() -> "$startTime ~ $endTime"
         !startTime.isNullOrBlank() -> "$startTime 이후"
         !endTime.isNullOrBlank() -> "$endTime 이전"
-        else -> "시간 정보 없음"
+        else -> null
     }
 }
 
-private fun String?.orInfoEmpty(): String =
-    if (isNullOrBlank()) "정보 없음" else this
-
 private fun String?.takeIfNotBlank(): String? =
-    this?.takeIf { it.isNotBlank() }
+    this?.trim()?.takeIf { it.isNotBlank() }
+
+private val REGION_NAME_DELIMITER = Regex("[,+/]+")

@@ -1,46 +1,67 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.REGIONAL_GUIDE_LINKS_URL
+import com.team.yeogibeoryeo.presentation.common.components.MessageSnackbar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionSelectorSection
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideAmbiguousResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideCandidateResult
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideCollectionTypeCandidateResult
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideEmptyResult
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuidePublicNoticeCta
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSearchBar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalWasteScheduleCard
@@ -48,6 +69,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandid
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegionalGuideRoute(
@@ -60,6 +82,10 @@ fun RegionalGuideRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val regionSelectorUiState by viewModel.regionSelectorUiState.collectAsStateWithLifecycle()
+    val currentContext by rememberUpdatedState(LocalContext.current)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
+    val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
 
     LaunchedEffect(initialKeyword, initialAddress, initialFavoriteTargetId) {
         when {
@@ -68,6 +94,16 @@ fun RegionalGuideRoute(
             !initialKeyword.isNullOrBlank() -> {
                 viewModel.onSearchKeywordChanged(initialKeyword)
                 viewModel.searchByKeyword(initialKeyword)
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.events) {
+        viewModel.events.collect { event ->
+            when (event) {
+                RegionalGuideEvent.FavoriteUpdateFailed -> {
+                    snackbarHostState.showSnackbar(currentFavoriteUpdateFailedMessage)
+                }
             }
         }
     }
@@ -88,7 +124,16 @@ fun RegionalGuideRoute(
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
+        onRestoreCandidates = viewModel::restoreCandidatesFromDetail,
         onFavoriteClick = viewModel::onFavoriteClick,
+        onPublicNoticeClick = {
+            runCatching {
+                currentContext.startActivity(
+                    Intent(Intent.ACTION_VIEW, REGIONAL_GUIDE_LINKS_URL.toUri()),
+                )
+            }.isSuccess
+        },
+        snackbarHostState = snackbarHostState,
         modifier = modifier.statusBarsPadding(),
     )
 }
@@ -106,20 +151,29 @@ fun RegionalGuideScreen(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
-    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
-    onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
-    onFavoriteClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
+    onRegionSelectorDropdownDismissed: () -> Unit = {},
+    onRestoreCandidates: () -> Boolean = { false },
+    onFavoriteClick: () -> Unit = {},
+    onPublicNoticeClick: () -> Boolean = { true },
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val coroutineScope = rememberCoroutineScope()
+    val publicNoticeOpenFailedMessage = stringResource(R.string.item_guide_action_open_failed_message)
     val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous
     val guideCandidatesState = uiState as? RegionalGuideUiState.GuideCandidates
-    val hasSearchCandidates = ambiguousState != null || guideCandidatesState != null
+    val collectionTypeGuideCandidatesState = guideCandidatesState
+        ?.takeIf { state -> state.shouldShowCollectionTypeSelectionPanel() }
+    val listGuideCandidatesState = guideCandidatesState
+        ?.takeUnless { state -> state.shouldShowCollectionTypeSelectionPanel() }
+    val hasSearchCandidates = ambiguousState != null || listGuideCandidatesState != null
     val compactRegionText = when (uiState) {
         is RegionalGuideUiState.Success ->
             regionSelectorUiState.selectedRegionText ?: uiState.query
@@ -133,21 +187,33 @@ fun RegionalGuideScreen(
             !isRegionSelectorExpanded &&
             compactRegionText != null
 
-    LaunchedEffect(uiState) {
-        if (uiState is RegionalGuideUiState.Loading) {
-            isRegionSelectorExpanded = false
-        }
-    }
-
     fun clearSearchFocus() {
         focusManager.clearFocus()
         keyboardController?.hide()
     }
 
+    fun collapseRegionSelector() {
+        if (isRegionSelectorExpanded) {
+            isRegionSelectorExpanded = false
+        }
+    }
+
+    fun showPublicNoticeOpenFailedMessage() {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(publicNoticeOpenFailedMessage)
+        }
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState is RegionalGuideUiState.Loading) {
+            collapseRegionSelector()
+        }
+    }
+
     fun handleEmptyAction(actionType: RegionalGuideEmptyActionType) {
         when (actionType) {
             RegionalGuideEmptyActionType.SEARCH_AGAIN -> {
-                isRegionSelectorExpanded = false
+                collapseRegionSelector()
                 onRegionSelectorDropdownDismissed()
                 onEmptySearchActionClick()
             }
@@ -159,109 +225,183 @@ fun RegionalGuideScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+    val collectionTypePanelScrollState = rememberScrollState()
+
+    BackHandler(
+        enabled = when (uiState) {
+            is RegionalGuideUiState.Loading -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Success -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Error -> uiState.canRestoreCandidates
+            is RegionalGuideUiState.Ambiguous,
+            is RegionalGuideUiState.GuideCandidates -> true
+            else -> false
+        }
     ) {
+        onRestoreCandidates()
+    }
+
+    Scaffold(
+        modifier = modifier,
+        contentWindowInsets = WindowInsets(0.dp),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { snackbarData ->
+                MessageSnackbar(
+                    message = snackbarData.visuals.message,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.ErrorOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(SnackbarIconSize),
+                            tint = MaterialTheme.colorScheme.tertiary,
+                        )
+                    },
+                )
+            }
+        },
+    ) { innerPadding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(innerPadding)
+        ) {
+            val headerModifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(top = 20.dp)
-        ) {
-            Text(
-                text = "지역별 배출 가이드",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "지역명을 입력하면 생활쓰레기, 음식물쓰레기, 재활용품 배출 정보를 확인할 수 있어요.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            RegionalGuideSearchBar(
-                keyword = searchKeyword,
-                onKeywordChange = onSearchKeywordChange,
-                onSearchClick = { submittedKeyword ->
-                    clearSearchFocus()
-                    isRegionSelectorExpanded = false
-                    onRegionSelectorDropdownDismissed()
-                    onSearchClick(submittedKeyword)
-                },
-                candidateContent = if (hasSearchCandidates) {
-                    {
-                        if (ambiguousState != null) {
-                            RegionalGuideAmbiguousResult(
-                                candidates = ambiguousState.candidates,
-                                onCandidateClick = { candidate ->
-                                    clearSearchFocus()
-                                    isRegionSelectorExpanded = false
-                                    onRegionSelectorDropdownDismissed()
-                                    onCandidateClick(candidate)
-                                },
-                            )
-                        }
-
-                        if (guideCandidatesState != null) {
-                            RegionalGuideCandidateResult(
-                                candidates = guideCandidatesState.candidates,
-                                onCandidateClick = { candidate ->
-                                    clearSearchFocus()
-                                    isRegionSelectorExpanded = false
-                                    onRegionSelectorDropdownDismissed()
-                                    onGuideCandidateClick(candidate)
-                                },
-                            )
-                        }
+                .then(
+                    if (collectionTypeGuideCandidatesState != null) {
+                        Modifier
+                            .weight(1f)
+                            .verticalScroll(collectionTypePanelScrollState)
+                    } else {
+                        Modifier
                     }
-                } else {
-                    null
-                },
-            )
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                modifier = headerModifier
+            ) {
+                Text(
+                    text = "지역별 배출 가이드",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
 
-            RegionSelectorSection(
-                uiState = regionSelectorUiState,
-                compact = isRegionSelectorCompact,
-                compactRegionText = compactRegionText,
-                onSidoSelected = onSidoSelected,
-                onSigunguSelected = onSigunguSelected,
-                onEupmyeondongSelected = onEupmyeondongSelected,
-                onDropdownExpanded = onRegionSelectorDropdownExpanded,
-                onDropdownDismissed = onRegionSelectorDropdownDismissed,
-                onSearchClick = {
-                    isRegionSelectorExpanded = false
-                    onRegionSelectorDropdownDismissed()
-                    onRegionSelectionSearchClick()
-                },
-                onChangeClick = {
-                    isRegionSelectorExpanded = true
-                },
-            )
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "지역명을 입력하면 생활쓰레기, 음식물쓰레기, 재활용품 배출 정보를 확인할 수 있어요.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                RegionalGuideSearchBar(
+                    keyword = searchKeyword,
+                    onKeywordChange = onSearchKeywordChange,
+                    onSearchClick = { submittedKeyword ->
+                        clearSearchFocus()
+                        collapseRegionSelector()
+                        onRegionSelectorDropdownDismissed()
+                        onSearchClick(submittedKeyword)
+                    },
+                    candidateContent = if (hasSearchCandidates) {
+                        {
+                            if (ambiguousState != null) {
+                                RegionalGuideAmbiguousResult(
+                                    candidates = ambiguousState.candidates,
+                                    onCandidateClick = { candidate ->
+                                        clearSearchFocus()
+                                        collapseRegionSelector()
+                                        onRegionSelectorDropdownDismissed()
+                                        onCandidateClick(candidate)
+                                    },
+                                )
+                            }
+
+                            if (listGuideCandidatesState != null) {
+                                RegionalGuideCandidateResult(
+                                    candidates = listGuideCandidatesState.candidates,
+                                    onCandidateClick = { candidate ->
+                                        clearSearchFocus()
+                                        collapseRegionSelector()
+                                        onRegionSelectorDropdownDismissed()
+                                        onGuideCandidateClick(candidate)
+                                    },
+                                )
+                            }
+                        }
+                    } else {
+                        null
+                    },
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (collectionTypeGuideCandidatesState != null) {
+                    val candidateMessageSpec =
+                        collectionTypeGuideCandidatesState.collectionTypeSelectionMessageSpec()
+
+                    RegionalGuideCollectionTypeCandidateResult(
+                        message = candidateMessageSpec.title(),
+                        messageDescription = candidateMessageSpec.description(),
+                        sectionTitle = candidateMessageSpec.sectionTitle(),
+                        selectedRegionText = regionSelectorUiState.selectedRegionText
+                            ?: collectionTypeGuideCandidatesState.selectedRegionText(),
+                        candidates = collectionTypeGuideCandidatesState.candidates,
+                        onCandidateClick = { candidate ->
+                            clearSearchFocus()
+                            collapseRegionSelector()
+                            onRegionSelectorDropdownDismissed()
+                            onGuideCandidateClick(candidate)
+                        },
+                    )
+                }
+
+                if (collectionTypeGuideCandidatesState == null) {
+                    RegionSelectorSection(
+                        uiState = regionSelectorUiState,
+                        compact = isRegionSelectorCompact,
+                        compactRegionText = compactRegionText,
+                        onSidoSelected = onSidoSelected,
+                        onSigunguSelected = onSigunguSelected,
+                        onEupmyeondongSelected = onEupmyeondongSelected,
+                        onDropdownExpanded = onRegionSelectorDropdownExpanded,
+                        onDropdownDismissed = onRegionSelectorDropdownDismissed,
+                        onSearchClick = {
+                            collapseRegionSelector()
+                            onRegionSelectorDropdownDismissed()
+                            onRegionSelectionSearchClick()
+                        },
+                        onChangeClick = {
+                            isRegionSelectorExpanded = true
+                        },
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+
+            if (collectionTypeGuideCandidatesState == null) {
+                RegionalGuideContent(
+                    uiState = uiState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 20.dp),
+                    onRetryClick = onRetryClick,
+                    onEmptyActionClick = ::handleEmptyAction,
+                    onFavoriteClick = onFavoriteClick,
+                    onPublicNoticeClick = {
+                        if (!onPublicNoticeClick()) {
+                            showPublicNoticeOpenFailedMessage()
+                        }
+                    },
+                )
+            }
         }
-
-        RegionalGuideContent(
-            uiState = uiState,
-            onRetryClick = onRetryClick,
-            onEmptyActionClick = ::handleEmptyAction,
-            onCandidateClick = onCandidateClick,
-            onGuideCandidateClick = onGuideCandidateClick,
-            onFavoriteClick = onFavoriteClick,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 20.dp),
-        )
     }
 }
 
@@ -276,15 +416,28 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
         is RegionalGuideUiState.Error -> query
     }?.takeIf { query -> query.isNotBlank() }
 
+private fun RegionalGuideUiState.GuideCandidates.selectedRegionText(): String? =
+    candidates.firstNotNullOfOrNull { candidate ->
+        listOfNotNull(
+            candidate.sido.takeIfNotBlank(),
+            candidate.sigungu.takeIfNotBlank(),
+            candidate.eupmyeondong.takeIfNotBlank(),
+        )
+            .takeIf { parts -> parts.isNotEmpty() }
+            ?.joinToString(" > ")
+    }
+
+private fun String?.takeIfNotBlank(): String? =
+    this?.takeIf { value -> value.isNotBlank() }
+
 @Composable
 private fun RegionalGuideContent(
     uiState: RegionalGuideUiState,
     onRetryClick: () -> Unit,
     onEmptyActionClick: (RegionalGuideEmptyActionType) -> Unit,
-    onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
-    onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onPublicNoticeClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     when (uiState) {
         RegionalGuideUiState.Idle -> {
@@ -303,6 +456,7 @@ private fun RegionalGuideContent(
                 guide = uiState.guide,
                 isFavorite = uiState.isFavorite,
                 onFavoriteClick = onFavoriteClick,
+                onPublicNoticeClick = onPublicNoticeClick,
                 modifier = modifier
             )
         }
@@ -377,6 +531,7 @@ private fun RegionalGuideSuccessContent(
     guide: RegionalGuideUiModel,
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
+    onPublicNoticeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -392,6 +547,10 @@ private fun RegionalGuideSuccessContent(
         }
 
         item {
+            RegionalGuidePublicNoticeCta(onClick = onPublicNoticeClick)
+        }
+
+        item {
             Text(
                 text = "배출 요일 및 시간",
                 style = MaterialTheme.typography.titleMedium,
@@ -400,14 +559,45 @@ private fun RegionalGuideSuccessContent(
             )
         }
 
-        items(
-            items = guide.schedules,
-            key = { schedule -> schedule.wasteTypeName }
-        ) { schedule ->
-            RegionalWasteScheduleCard(schedule = schedule)
+        items(items = guide.schedules.groupForDisplay()) { scheduleGroup ->
+            RegionalWasteScheduleCard(
+                schedule = scheduleGroup.schedule,
+                disposalPlaces = scheduleGroup.disposalPlaces,
+            )
         }
     }
 }
+
+private fun List<RegionalWasteScheduleUiModel>.groupForDisplay(): List<RegionalWasteScheduleDisplayGroup> =
+    groupBy { schedule ->
+        RegionalWasteScheduleDisplayKey(
+            wasteTypeName = schedule.wasteTypeName,
+            disposalDays = schedule.disposalDays,
+            disposalTime = schedule.disposalTime,
+            disposalMethod = schedule.disposalMethod,
+        )
+    }
+        .values
+        .map { schedules ->
+            RegionalWasteScheduleDisplayGroup(
+                schedule = schedules.first(),
+                disposalPlaces = schedules.mapNotNull { schedule ->
+                    schedule.disposalPlace.takeIfNotBlank()
+                }.distinct(),
+            )
+        }
+
+private data class RegionalWasteScheduleDisplayKey(
+    val wasteTypeName: String,
+    val disposalDays: String?,
+    val disposalTime: String?,
+    val disposalMethod: String?,
+)
+
+private data class RegionalWasteScheduleDisplayGroup(
+    val schedule: RegionalWasteScheduleUiModel,
+    val disposalPlaces: List<String>,
+)
 
 @Composable
 private fun RegionalGuideErrorContent(
@@ -635,7 +825,7 @@ private fun RegionalGuideScreenGuideCandidatesPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.GuideCandidates(
                 query = "울주군",
-                message = "여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해주세요.",
+                reason = RegionalGuideCandidateReason.MULTIPLE_CANDIDATES,
                 candidates = listOf(
                     RegionalGuideCandidateUiModel(
                         guide = previewRegionalGuide(
@@ -660,6 +850,58 @@ private fun RegionalGuideScreenGuideCandidatesPreview() {
             searchKeyword = "울주군",
             regionSelectorUiState = RegionSelectorUiState(
                 sidoOptions = listOf("서울특별시", "울산광역시", "경기도"),
+            ),
+            onSearchKeywordChange = {},
+            onSearchClick = {},
+            onRetryClick = {},
+            onEmptySearchActionClick = {},
+            onSidoSelected = {},
+            onSigunguSelected = {},
+            onEupmyeondongSelected = {},
+            onRegionSelectionSearchClick = {},
+            onCandidateClick = {},
+            onGuideCandidateClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RegionalGuideScreenFallbackGuideCandidatesPreview() {
+    MaterialTheme {
+        RegionalGuideScreen(
+            uiState = RegionalGuideUiState.GuideCandidates(
+                query = "사천면",
+                reason = RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
+                candidates = listOf(
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "강원특별자치도 강릉시",
+                            targetRegionName = "없음"
+                        ),
+                        sido = "강원특별자치도",
+                        sigungu = "강릉시",
+                        eupmyeondong = "사천면"
+                    ),
+                    RegionalGuideCandidateUiModel(
+                        guide = previewRegionalGuide(
+                            regionName = "강원특별자치도 강릉시",
+                            targetRegionName = "없음"
+                        ).copy(disposalPlaceType = "거점수거"),
+                        sido = "강원특별자치도",
+                        sigungu = "강릉시",
+                        eupmyeondong = "사천면"
+                    ),
+                )
+            ),
+            searchKeyword = "사천면",
+            regionSelectorUiState = RegionSelectorUiState(
+                sidoOptions = listOf("강원특별자치도"),
+                sigunguOptions = listOf("강릉시"),
+                eupmyeondongOptions = listOf("사천면"),
+                selectedSido = "강원특별자치도",
+                selectedSigungu = "강릉시",
+                selectedEupmyeondong = "사천면",
             ),
             onSearchKeywordChange = {},
             onSearchClick = {},
@@ -716,3 +958,5 @@ private fun previewRegionalGuide(
         uncollectedDays = "토, 일",
         departmentInfo = "환경자원과"
     )
+
+private val SnackbarIconSize = 20.dp

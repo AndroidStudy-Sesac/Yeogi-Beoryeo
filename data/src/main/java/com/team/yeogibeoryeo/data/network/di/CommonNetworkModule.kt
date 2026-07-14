@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.network.di
 
+import com.team.yeogibeoryeo.data.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,7 +37,11 @@ object CommonNetworkModule {
         httpLoggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient {
         return OkHttpClient.Builder()
-            .addInterceptor(httpLoggingInterceptor)
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(httpLoggingInterceptor)
+                }
+            }
             .build()
     }
 }

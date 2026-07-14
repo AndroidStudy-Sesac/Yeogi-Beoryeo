@@ -29,6 +29,13 @@ class ClassifyRegionSearchInputUseCaseTest {
     }
 
     @Test
+    fun `통합 시도명과 상세 주소가 있으면 주소 입력으로 분류한다`() {
+        val result = useCase("전남광주통합특별시 서구 풍금로151번길 14")
+
+        assertEquals(RegionSearchInputType.ADDRESS, result)
+    }
+
+    @Test
     fun `지번 주소 형태는 주소 입력으로 분류한다`() {
         val result = useCase("서울특별시 중구 남대문로2가 123-4")
 

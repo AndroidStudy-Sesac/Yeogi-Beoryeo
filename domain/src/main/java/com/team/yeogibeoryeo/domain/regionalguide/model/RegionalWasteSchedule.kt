@@ -5,5 +5,6 @@ data class RegionalWasteSchedule(
     val disposalDays: String? = null,
     val disposalStartTime: String? = null,
     val disposalEndTime: String? = null,
-    val disposalMethod: String? = null
+    val disposalMethod: String? = null,
+    val disposalPlace: String? = null,
 )

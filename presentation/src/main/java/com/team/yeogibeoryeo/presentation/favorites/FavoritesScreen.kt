@@ -16,9 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.components.EmptyFavoritesCard
 import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteCard
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
@@ -31,6 +33,7 @@ fun FavoritesScreen(
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
+    onItemGuideFavoriteRemoveClick: (String) -> Unit,
     onCollectionSpotFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideFavoriteRemoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -46,7 +49,7 @@ fun FavoritesScreen(
     ) {
         item {
             Text(
-                text = "즐겨찾기",
+                text = stringResource(R.string.favorites_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -76,8 +79,8 @@ fun FavoritesScreen(
             uiState.selectedFavorites.isEmpty() -> {
                 item {
                     EmptyFavoritesCard(
-                        title = uiState.selectedTab.emptyTitle,
-                        description = uiState.selectedTab.emptyDescription,
+                        title = stringResource(uiState.selectedTab.emptyTitleResId),
+                        description = stringResource(uiState.selectedTab.emptyDescriptionResId),
                     )
                 }
             }
@@ -104,6 +107,10 @@ fun FavoritesScreen(
                             }
                         },
                         onRemoveClick = when (favorite.type) {
+                            FavoriteTargetType.ITEM_GUIDE -> {
+                                { onItemGuideFavoriteRemoveClick(favorite.targetId) }
+                            }
+
                             FavoriteTargetType.COLLECTION_SPOT -> {
                                 { onCollectionSpotFavoriteRemoveClick(favorite.targetId) }
                             }
@@ -112,7 +119,6 @@ fun FavoritesScreen(
                                 { onRegionalGuideFavoriteRemoveClick(favorite.targetId) }
                             }
 
-                            FavoriteTargetType.ITEM_GUIDE -> null
                         },
                     )
                 }
@@ -137,7 +143,7 @@ private fun FavoriteTabRow(
                 onClick = { onTabClick(tab) },
                 text = {
                     Text(
-                        text = tab.label,
+                        text = stringResource(tab.labelResId),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                     )

@@ -17,16 +17,20 @@ internal fun BottomBarVisibilityOnScrollEffect(
 
     LaunchedEffect(scrollState) {
         var previousOffset = 0
+        var previousVisibility = true
         onBottomBarVisibilityChangedState(true)
 
         snapshotFlow { scrollState.value }
             .collect { currentOffset ->
-                when {
-                    currentOffset == 0 -> onBottomBarVisibilityChangedState(true)
-                    currentOffset > previousOffset -> onBottomBarVisibilityChangedState(false)
-                    currentOffset < previousOffset -> {
-                        onBottomBarVisibilityChangedState(true)
-                    }
+                val isVisible = when {
+                    currentOffset == 0 -> true
+                    currentOffset > previousOffset -> false
+                    currentOffset < previousOffset -> true
+                    else -> previousVisibility
+                }
+                if (isVisible != previousVisibility) {
+                    onBottomBarVisibilityChangedState(isVisible)
+                    previousVisibility = isVisible
                 }
                 previousOffset = currentOffset
             }
@@ -42,6 +46,7 @@ internal fun BottomBarVisibilityOnScrollEffect(
 
     LaunchedEffect(listState) {
         var previousPosition = 0L
+        var previousVisibility = true
         onBottomBarVisibilityChangedState(true)
 
         snapshotFlow {
@@ -49,12 +54,15 @@ internal fun BottomBarVisibilityOnScrollEffect(
                 listState.firstVisibleItemScrollOffset
             position to (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0)
         }.collect { (currentPosition, isAtTop) ->
-            when {
-                isAtTop -> onBottomBarVisibilityChangedState(true)
-                currentPosition > previousPosition -> onBottomBarVisibilityChangedState(false)
-                currentPosition < previousPosition -> {
-                    onBottomBarVisibilityChangedState(true)
-                }
+            val isVisible = when {
+                isAtTop -> true
+                currentPosition > previousPosition -> false
+                currentPosition < previousPosition -> true
+                else -> previousVisibility
+            }
+            if (isVisible != previousVisibility) {
+                onBottomBarVisibilityChangedState(isVisible)
+                previousVisibility = isVisible
             }
             previousPosition = currentPosition
         }

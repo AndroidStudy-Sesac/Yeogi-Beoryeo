@@ -25,11 +25,15 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideEupmyeondongOptionsUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideDisplayRegionUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -45,6 +49,7 @@ internal fun createViewModel(
     regionRepository: RegionRepository = FakeRegionRepository(),
     regionOptionsRepository: RegionOptionsRepository = FakeRegionOptionsRepository(),
     regionalGuideRepository: RegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
+    regionalGuideOptionRepository: RegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
     favoriteRepository: FavoriteRepository = FakeFavoriteRepository(),
     regionalGuideSnapshotRepository: RegionalGuideFavoriteSnapshotRepository =
         FakeRegionalGuideFavoriteSnapshotRepository(),
@@ -56,9 +61,11 @@ internal fun createViewModel(
 ): RegionalGuideViewModel {
     return RegionalGuideViewModel(
         classifyRegionSearchInputUseCase = ClassifyRegionSearchInputUseCase(),
-        resolveRegionFromKeywordUseCase = ResolveRegionFromKeywordUseCase(
-            repository = regionRepository,
-            regionOptionsRepository = regionOptionsRepository
+        resolveRegionFromKeywordUseCase = ResolveRegionalGuideRegionFromKeywordUseCase(
+            resolveRegionFromKeywordUseCase = ResolveRegionFromKeywordUseCase(
+                repository = regionRepository,
+                regionOptionsRepository = regionOptionsRepository
+            )
         ),
         extractRegionFromAddressUseCase = ExtractRegionFromAddressUseCase(regionRepository),
         getRegionalDisposalGuideUseCase = GetRegionalDisposalGuideUseCase(
@@ -71,9 +78,13 @@ internal fun createViewModel(
         ),
         getSidoOptionsUseCase = GetSidoOptionsUseCase(regionOptionsRepository),
         getSigunguOptionsUseCase = GetSigunguOptionsUseCase(regionOptionsRepository),
-        getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
-        normalizeRegionForRegionalGuideUseCase = NormalizeRegionForRegionalGuideUseCase(
-            regionOptionsRepository
+        getRegionalGuideEupmyeondongOptionsUseCase = GetRegionalGuideEupmyeondongOptionsUseCase(
+            getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
+            normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
+            repository = regionalGuideOptionRepository,
+        ),
+        normalizeRegionalGuideDisplayRegionUseCase = NormalizeRegionalGuideDisplayRegionUseCase(
+            NormalizeRegionForRegionalGuideUseCase(regionOptionsRepository)
         ),
         observeFavoriteUseCase = ObserveFavoriteUseCase(favoriteRepository),
         toggleRegionalGuideFavoriteUseCase = ToggleRegionalGuideFavoriteUseCase(regionalGuideFavoriteRepository),
@@ -204,7 +215,10 @@ internal class FakeRegionOptionsRepository(
 }
 
 internal class FakeRegionalDisposalGuideRepository(
-    private val candidates: List<RegionalDisposalGuide> = emptyList()
+    private val candidates: List<RegionalDisposalGuide> = emptyList(),
+    private val failure: Throwable? = null,
+    private val throwable: Throwable? = null,
+    private val delayMillis: Long = 0L,
 ) : RegionalDisposalGuideRepository {
     val queries = mutableListOf<RegionalGuideQuery>()
 
@@ -212,6 +226,9 @@ internal class FakeRegionalDisposalGuideRepository(
         query: RegionalGuideQuery
     ): Result<List<RegionalDisposalGuide>> {
         queries += query
+        if (delayMillis > 0) delay(delayMillis)
+        throwable?.let { throw it }
+        failure?.let { return Result.failure(it) }
         return Result.success(candidates)
     }
 }

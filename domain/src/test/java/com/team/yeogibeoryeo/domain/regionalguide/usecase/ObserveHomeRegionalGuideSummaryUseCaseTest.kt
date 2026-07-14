@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteSnapshotRepository
@@ -149,6 +150,67 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                 ),
                 result,
             )
+        }
+
+    @Test
+    fun `홈 요약은 실제 기존 안양8동 즐겨찾기 키로 최신 명학동 후보를 복원한다`() =
+        runBlocking {
+            val favoriteKey =
+                RegionalGuideFavoriteKey(
+                    sido = "경기도",
+                    sigungu = "안양시 만안구",
+                    eupmyeondong = "안양8동",
+                    targetRegionName = "안양8동",
+                    managementZoneName = "안양8동",
+                )
+            val snapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = favoriteKey.encode(),
+                    region = favoriteKey.toRegion(),
+                    targetRegionName = favoriteKey.targetRegionName,
+                    managementZoneName = favoriteKey.managementZoneName,
+                )
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val regionalRepository =
+                FakeRegionalDisposalGuideRepository(
+                    result =
+                        Result.success(
+                            listOf(
+                                sampleGuide(
+                                    region = Region(
+                                        sido = "경기도",
+                                        sigungu = "안양시 만안구",
+                                        eupmyeondong = "명학동",
+                                    ),
+                                    targetRegionName = "명학동",
+                                    managementZoneName = "명학동",
+                                ),
+                            ),
+                        ),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(listOf(snapshot)),
+                    regionalRepository = regionalRepository,
+                )
+
+            val result = useCase().drop(1).first()
+
+            require(result is HomeRegionalGuideSummaryResult.Success)
+            assertEquals(snapshot.targetId, result.summary.targetId)
+            assertEquals("경기도 > 안양시 만안구 > 안양8동", result.summary.regionName)
+            assertEquals(listOf("안양시"), regionalRepository.requestedSigungu)
         }
 
     @Test
@@ -387,7 +449,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                     findAdminDongCandidatesForLegalDongUseCase =
                         FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                 ),
-            getTodayRegionalWasteSummaryUseCase = GetTodayRegionalWasteSummaryUseCase(),
+            buildHomeRegionalGuideSummaryUseCase = BuildHomeRegionalGuideSummaryUseCase(),
         )
 
     private fun sampleSnapshot(

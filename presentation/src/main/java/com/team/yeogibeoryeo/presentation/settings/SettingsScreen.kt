@@ -53,6 +53,7 @@ private val SettingsMenuItems = listOf(
     SettingsDetailType.AppInfo,
     SettingsDetailType.LocationPermission,
     SettingsDetailType.Terms,
+    SettingsDetailType.PrivacyPolicy,
     SettingsDetailType.Sources,
     SettingsDetailType.Cache,
 )

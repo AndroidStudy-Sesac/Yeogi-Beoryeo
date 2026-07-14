@@ -18,6 +18,7 @@ private fun FavoritesScreenLoadingPreview() {
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
+            onItemGuideFavoriteRemoveClick = {},
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
         )
@@ -34,6 +35,7 @@ private fun FavoritesScreenEmptyPreview() {
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
+            onItemGuideFavoriteRemoveClick = {},
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
         )
@@ -50,6 +52,7 @@ private fun FavoritesScreenSpotEmptyPreview() {
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
+            onItemGuideFavoriteRemoveClick = {},
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
         )
@@ -89,6 +92,7 @@ private fun FavoritesScreenListPreview() {
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
+            onItemGuideFavoriteRemoveClick = {},
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
         )

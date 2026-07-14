@@ -10,8 +10,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -41,6 +47,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.components.MessageSnackbar
 import com.team.yeogibeoryeo.presentation.map.components.CollectionSpotNaverMap
 import com.team.yeogibeoryeo.presentation.map.components.MapSearchLoadingOverlay
 import com.team.yeogibeoryeo.presentation.map.components.MapCenterSearchButton
@@ -68,6 +75,9 @@ fun CollectionSpotMapScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
+    val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
     val hasFineLocationPermission = rememberFineLocationPermissionGranted()
     var hasGrantedLocationPermissionInSession by rememberSaveable {
         mutableStateOf(false)
@@ -133,31 +143,60 @@ fun CollectionSpotMapScreen(
         }
     }
 
-    CollectionSpotMapContent(
-        uiState = uiState,
-        isLocationPermissionGranted = isLocationPermissionGranted,
-        locationTrackingMode = locationTrackingMode,
-        onLocationTrackingModeChange = { mode ->
-            locationTrackingMode = mode
-        },
-        onKeywordChanged = viewModel::onSearchKeywordChanged,
-        onSearchClick = viewModel::searchByKeyword,
-        onRegionCandidateClick = viewModel::onRegionSearchCandidateClick,
-        onCurrentLocationClick = {
-            requestCurrentLocationSearch()
-        },
-        onMapCenterSearchClick = viewModel::searchByMapCenter,
-        onLocationNoticeActionClick = { action ->
-            context.startActivity(action.toIntent(context.packageName))
-        },
-        onTypeClick = viewModel::onSpotTypeClick,
-        onSpotClick = viewModel::onSpotClick,
-        onSpotDetailDismiss = viewModel::clearSelectedSpot,
-        onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
-        onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
-        onRegionalGuideClick = onRegionalGuideClick,
-        modifier = modifier,
-    )
+    LaunchedEffect(viewModel.events) {
+        viewModel.events.collect { event ->
+            when (event) {
+                CollectionSpotMapEvent.FavoriteUpdateFailed -> {
+                    snackbarHostState.showSnackbar(currentFavoriteUpdateFailedMessage)
+                }
+            }
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        CollectionSpotMapContent(
+            uiState = uiState,
+            isLocationPermissionGranted = isLocationPermissionGranted,
+            locationTrackingMode = locationTrackingMode,
+            onLocationTrackingModeChange = { mode ->
+                locationTrackingMode = mode
+            },
+            onKeywordChanged = viewModel::onSearchKeywordChanged,
+            onSearchClick = viewModel::searchByKeyword,
+            onRegionCandidateClick = viewModel::onRegionSearchCandidateClick,
+            onRegionDetailAllClick = viewModel::onRegionDetailSearchAllClick,
+            onRegionDetailKeywordClick = viewModel::onRegionDetailSearchKeywordClick,
+            onRegionDetailBackClick = viewModel::onRegionDetailSearchBack,
+            onCurrentLocationClick = requestCurrentLocationSearch,
+            onMapCenterSearchClick = viewModel::searchByMapCenter,
+            onLocationNoticeActionClick = { action ->
+                context.startActivity(action.toIntent(context.packageName))
+            },
+            onTypeClick = viewModel::onSpotTypeClick,
+            onSpotClick = viewModel::onSpotClick,
+            onSpotDetailDismiss = viewModel::clearSelectedSpot,
+            onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
+            onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+            onRegionalGuideClick = onRegionalGuideClick,
+            modifier = Modifier.fillMaxSize(),
+        )
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) { snackbarData ->
+            MessageSnackbar(
+                message = snackbarData.visuals.message,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Filled.ErrorOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(FavoriteSnackbarIconSize),
+                        tint = MaterialTheme.colorScheme.tertiary,
+                    )
+                },
+            )
+        }
+    }
 }
 
 @Composable
@@ -169,6 +208,9 @@ private fun CollectionSpotMapContent(
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
     onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
+    onRegionDetailAllClick: () -> Unit,
+    onRegionDetailKeywordClick: (String) -> Unit,
+    onRegionDetailBackClick: () -> Unit,
     onCurrentLocationClick: () -> Unit,
     onMapCenterSearchClick: (Coordinate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
@@ -197,6 +239,8 @@ private fun CollectionSpotMapContent(
     val hasNoticeOrError = uiState.locationNotice != null ||
         uiState.errorMessageResId != null
     val hasRegionCandidates = uiState.regionSearchCandidates.isNotEmpty()
+    val hasRegionDetailSelection = uiState.regionDetailSearchCandidate != null
+    val hasRegionSelection = hasRegionCandidates || hasRegionDetailSelection
     val isNoticeOrErrorOnly = hasNoticeOrError &&
         uiState.spots.isEmpty() &&
         selectedSpot == null
@@ -207,7 +251,15 @@ private fun CollectionSpotMapContent(
     }
     val hasResultListToReturn = uiState.hasSearched ||
         uiState.spots.isNotEmpty() ||
-        hasRegionCandidates
+        hasRegionSelection
+
+    BackHandler(enabled = hasRegionDetailSelection) {
+        onRegionDetailBackClick()
+        if (!hasRegionCandidates) {
+            mapUiMode = MapUiMode.Browsing
+            sheetLevel = MapSheetLevel.Hidden
+        }
+    }
 
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
@@ -218,6 +270,16 @@ private fun CollectionSpotMapContent(
             sheetLevel = MapSheetLevel.Hidden
             MapUiMode.Browsing
         }
+    }
+
+    BackHandler(
+        enabled = mapUiMode == MapUiMode.ResultList &&
+            sheetLevel != MapSheetLevel.Hidden &&
+            shouldShowBottomSheet &&
+            !hasRegionDetailSelection,
+    ) {
+        mapUiMode = MapUiMode.Browsing
+        sheetLevel = MapSheetLevel.Hidden
     }
 
     LaunchedEffect(isLocationPermissionGranted) {
@@ -233,9 +295,10 @@ private fun CollectionSpotMapContent(
         uiState.errorMessageResId,
         uiState.locationNotice,
         uiState.regionSearchCandidates,
+        uiState.regionDetailSearchCandidate,
     ) {
         when {
-            hasRegionCandidates -> {
+            hasRegionSelection -> {
                 mapUiMode = MapUiMode.ResultList
                 sheetLevel = MapSheetLevel.Half
             }
@@ -446,11 +509,15 @@ private fun CollectionSpotMapContent(
                             hasSearched = uiState.hasSearched,
                             selectedTypes = uiState.selectedTypes,
                             regionSearchCandidates = uiState.regionSearchCandidates,
+                            regionDetailSearchCandidate = uiState.regionDetailSearchCandidate,
                             locationNotice = uiState.locationNotice,
                             errorMessageResId = uiState.errorMessageResId,
                             partialWarningMessageResId = uiState.partialWarningMessageResId,
                             onTypeClick = onTypeClick,
                             onRegionCandidateClick = onRegionCandidateClick,
+                            onRegionDetailAllClick = onRegionDetailAllClick,
+                            onRegionDetailKeywordClick = onRegionDetailKeywordClick,
+                            onRegionDetailBackClick = onRegionDetailBackClick,
                             onLocationNoticeActionClick = onLocationNoticeActionClick,
                             onSpotFavoriteClick = onSpotFavoriteClick,
                             onSpotClick = { spot ->
@@ -476,6 +543,7 @@ private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
         locationNotice != null ||
         errorMessageResId != null ||
         regionSearchCandidates.isNotEmpty() ||
+        regionDetailSearchCandidate != null ||
         hasSearched ||
         spots.isNotEmpty() ||
         selectedSpot != null
@@ -517,6 +585,9 @@ private fun CollectionSpotMapContentPreview() {
                 onKeywordChanged = {},
                 onSearchClick = {},
                 onRegionCandidateClick = {},
+                onRegionDetailAllClick = {},
+                onRegionDetailKeywordClick = {},
+                onRegionDetailBackClick = {},
                 onCurrentLocationClick = {},
                 onMapCenterSearchClick = {},
                 onLocationNoticeActionClick = {},
@@ -545,6 +616,7 @@ private val MyLocationButtonHorizontalPadding = 16.dp
 private val MyLocationButtonBottomPadding = 16.dp
 private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
+private val FavoriteSnackbarIconSize = 20.dp
 
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
     return when (this) {

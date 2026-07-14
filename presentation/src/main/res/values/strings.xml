@@ -1,10 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="item_search_query_label">무엇을 버리시나요?</string>
+    <string name="item_search_screen_title">품목 검색</string>
     <string name="item_search_title">여기 버려</string>
     <string name="item_search_description">품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.</string>
     <string name="item_search_greeting">어서오세요!</string>
     <string name="item_search_prompt">무엇을 도와드릴까요?</string>
     <string name="search_action">검색</string>
+    <string name="scroll_to_top_action">맨 위로 이동</string>
     <string name="loading_action">로딩 중</string>
     <string name="retry_later_message">잠시 후 다시 시도해주세요.</string>
     <string name="search_load_failed_message">검색 결과를 불러오지 못했어요.</string>
@@ -16,6 +18,8 @@
     <string name="quick_category_settings_description">홈에 표시할 분리배출 분류를 선택하세요.</string>
     <string name="quick_category_search_placeholder">분류 또는 품목 검색</string>
     <string name="quick_category_selected_count">홈에 표시할 분류 %1$d/%2$d개 선택됨</string>
+    <string name="quick_category_settings_empty_title">검색 결과가 없어요.</string>
+    <string name="quick_category_settings_empty_description">다른 분류나 품목 이름으로 다시 검색해 주세요.</string>
     <string name="item_useful_guide_section_title">안내 사항</string>
     <string name="item_useful_guide_small_e_waste_label">지도</string>
     <string name="item_useful_guide_small_e_waste_title">중소형 폐가전 수거함 안내</string>
@@ -67,15 +71,14 @@
     <string name="home_regional_guide_summary_open_detail_action">지역 가이드 상세 보기</string>
     <string name="home_regional_guide_summary_different_by_waste_type_notice">품목별 다름</string>
     <string name="home_regional_guide_summary_general_waste_basis_detail">일반쓰레기 기준입니다.\n상세 안내에서 확인해 주세요.</string>
-    <string name="home_regional_guide_summary_no_today_schedule_detail">배출 기준 확인이 필요해요.\n상세 안내에서 확인해 주세요.</string>
-    <string name="home_regional_guide_summary_schedule_needs_confirmation_detail">배출 요일 정보 확인이 필요해요.\n상세 안내에서 배출 기준을 확인해 주세요.</string>
+    <string name="home_regional_guide_summary_no_representative_schedule_detail">배출 기준 확인이 필요해요.\n상세 안내에서 확인해 주세요.</string>
+    <string name="home_regional_guide_summary_representative_schedule_needs_confirmation_detail">배출 요일 정보 확인이 필요해요.\n상세 안내에서 배출 기준을 확인해 주세요.</string>
     <string name="home_regional_guide_summary_restore_failed_description">저장된 지역 정보를 다시 확인해 주세요.</string>
     <string name="home_regional_guide_summary_load_failed_description">최신 배출 정보를 불러오지 못했어요.</string>
     <string name="home_regional_guide_summary_retry_detail">눌러서 다시 시도해 주세요.</string>
     <string name="home_regional_guide_summary_retry_action">배출 정보 다시 불러오기</string>
     <string name="no_search_results_title">검색 결과가 없어요.</string>
     <string name="no_search_results_description">다른 이름으로 다시 검색해보세요.</string>
-    <string name="search_results_count">검색 결과 %1$d건</string>
     <string name="disposal_method_title">버리는 방법</string>
     <string name="features_title">품목 특징</string>
     <string name="disposal_steps_title">배출 절차</string>
@@ -99,18 +102,49 @@
     <string name="regional_guide_empty_favorite_restore_failed_title">저장된 지역 정보를 다시 불러오지 못했어요.</string>
     <string name="regional_guide_empty_favorite_restore_failed_message">지역을 다시 선택해 주세요.</string>
     <string name="regional_guide_empty_info_not_found_title">해당 지역의 배출 가이드를 찾지 못했어요.</string>
-    <string name="regional_guide_empty_info_not_found_message">다른 지역을 선택해 주세요.</string>
+    <string name="regional_guide_empty_info_not_found_message">공공데이터에 해당 지역 안내가 없거나 지자체 기준이 변경되었을 수 있어요.\n다른 지역을 선택해 다시 확인해 주세요.</string>
     <string name="regional_guide_empty_candidate_not_found_title">선택한 읍면동 기준의 배출 가이드를 찾지 못했어요.</string>
     <string name="regional_guide_empty_candidate_not_found_message">지역을 다시 선택해 주세요.</string>
+    <string name="regional_guide_empty_unavailable_eupmyeondong_title">선택한 읍면동 기준 안내를 찾지 못했어요.</string>
+    <string name="regional_guide_empty_unavailable_eupmyeondong_message">공공데이터에서 해당 읍면동 기준 안내를 제공하지 않아요.\n제공되는 권역을 선택해 다시 확인해 주세요.</string>
     <string name="regional_guide_empty_action_search_again">다시 검색하기</string>
     <string name="regional_guide_empty_action_select_region">지역 다시 선택하기</string>
     <string name="regional_guide_loading_default_message">배출 가이드를 불러오는 중입니다.</string>
     <string name="regional_guide_loading_region_message">\"%1$s\" 배출 가이드를 불러오는 중입니다.</string>
+    <string name="regional_guide_candidate_multiple_message">여러 배출 권역이 검색됩니다. 해당하는 권역을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_multiple_exact_message">선택한 지역에 여러 배출 기준이 있어요. 해당하는 권역을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_fallback_message">선택한 읍면동의 직접 안내를 찾지 못했어요. 같은 시군구 기준 수거 유형을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_fallback_panel_title">직접 안내를 찾지 못했어요</string>
+    <string name="regional_guide_candidate_fallback_panel_description">%1$s의 직접 배출 안내가 없어 %2$s 기준 수거 유형을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_fallback_panel_description_without_region">선택한 지역의 직접 배출 안내가 없어 같은 시군구 기준 수거 유형을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_collection_type_panel_title">수거 유형을 선택해 주세요</string>
+    <string name="regional_guide_candidate_collection_type_panel_description">%1$s 기준 수거 유형을 선택하면 안내를 확인할 수 있어요.</string>
+    <string name="regional_guide_candidate_collection_type_panel_description_without_region">수거 유형을 선택하면 안내를 확인할 수 있어요.</string>
+    <string name="regional_guide_candidate_selected_region_label">선택한 지역</string>
+    <string name="regional_guide_candidate_fallback_section_title">수거 유형 선택</string>
+    <string name="regional_guide_candidate_select_action">선택</string>
+    <string name="regional_guide_candidate_favorite_restore_ambiguous_message">저장된 지역과 일치하는 배출 기준이 여러 개 있어요. 다시 확인할 권역을 선택해 주세요.</string>
+    <string name="regional_guide_candidate_door_to_door_supporting_text">집 앞 또는 지정된 배출장소에 배출하는 지역</string>
+    <string name="regional_guide_candidate_base_point_supporting_text">마을 거점 또는 지정 수거 장소를 이용하는 지역</string>
+    <string name="regional_guide_candidate_distinguishing_format">%1$s: %2$s</string>
+    <string name="regional_guide_candidate_distinguishing_disposal_place">배출장소</string>
+    <string name="regional_guide_candidate_distinguishing_uncollected_days">미수거일</string>
+    <string name="regional_guide_candidate_distinguishing_schedule">배출 기준</string>
+    <string name="regional_guide_candidate_distinguishing_department">담당부서</string>
+    <string name="regional_waste_schedule_days_label">요일</string>
+    <string name="regional_waste_schedule_time_label">시간</string>
+    <string name="regional_waste_schedule_method_label">방법</string>
+    <string name="regional_waste_schedule_place_label">장소</string>
+    <string name="regional_waste_schedule_place_count_format">%1$d곳</string>
+    <string name="regional_waste_schedule_place_expand_action">자세히 보기</string>
+    <string name="regional_waste_schedule_place_collapse_action">접기</string>
+    <string name="regional_guide_public_notice_cta">공공 안내에서 지자체 안내 링크 보기</string>
     <string name="item_guide_detail_not_found_title">품목 가이드를 찾을 수 없습니다</string>
     <string name="item_guide_detail_select_again_message">다시 검색해서 품목을 선택해주세요.</string>
     <string name="item_guide_detail_load_failed_message">품목 정보를 불러오는 중 오류가 발생했습니다.</string>
     <string name="item_guide_detail_favorite_added_message">즐겨찾기에 추가되었습니다</string>
     <string name="item_guide_detail_favorite_removed_message">즐겨찾기에서 제외되었습니다</string>
+    <string name="item_guide_detail_favorite_update_failed_message">즐겨찾기를 변경하지 못했습니다. 다시 시도해 주세요.</string>
     <string name="item_guide_action_find_battery_bin">근처 폐건전지 수거함 찾기</string>
     <string name="item_guide_action_find_battery_bin_description">전용수거함 배출이 필요한 품목입니다.</string>
     <string name="item_guide_action_find_phone_drop_off">근처 폐휴대폰 수거처 찾기</string>
@@ -140,6 +174,16 @@
     <string name="item_card_open_action_label">상세 보기</string>
     <string name="item_card_favorite_saved_state">즐겨찾기됨</string>
     <string name="item_card_favorite_not_saved_state">즐겨찾기 안 됨</string>
+    <string name="favorites_title">즐겨찾기</string>
+    <string name="favorites_tab_item">품목</string>
+    <string name="favorites_tab_collection_spot">장소</string>
+    <string name="favorites_tab_regional_guide">지역</string>
+    <string name="favorites_empty_item_title">아직 즐겨찾기한 품목이 없어요</string>
+    <string name="favorites_empty_item_description">품목 가이드 상세 화면에서 별을 누르면 여기에 모아볼 수 있어요.</string>
+    <string name="favorites_empty_collection_spot_title">즐겨찾기한 수거 장소가 없어요</string>
+    <string name="favorites_empty_collection_spot_description">지도에서 자주 확인하는 수거 장소를 즐겨찾기에 추가해 보세요.</string>
+    <string name="favorites_empty_regional_guide_title">아직 즐겨찾기한 지역 가이드가 없어요</string>
+    <string name="favorites_empty_regional_guide_description">지역 가이드 즐겨찾기 연결 후 이곳에서 모아볼 수 있어요.</string>
     <string name="quick_category_click_action">배출 방법 보기</string>
     <string name="settings_action">설정</string>
     <string name="settings_title">설정</string>
@@ -148,12 +192,14 @@
     <string name="settings_app_info_title">앱 정보</string>
     <string name="settings_location_permission_title">위치 권한</string>
     <string name="settings_terms_title">이용약관</string>
+    <string name="settings_privacy_policy_title">개인정보처리방침</string>
     <string name="settings_sources_title">출처 및 이용조건</string>
     <string name="settings_cache_title">캐시 삭제</string>
     <string name="settings_cache_detail_title">위치 캐시 삭제</string>
     <string name="settings_notice_empty_title">등록된 공지사항이 없습니다</string>
     <string name="settings_notice_empty_description">서비스 변경, 데이터 업데이트, 주요 오류 안내가 생기면 이곳에 표시됩니다.</string>
-    <string name="settings_contact_email_label">문의할 이메일 주소:</string>
+    <string name="settings_contact_email_label">이메일</string>
+    <string name="settings_contact_email" translatable="false">yeogi-beoryeo-support@googlegroups.com</string>
     <string name="settings_app_info_description">내 위치 기반 맞춤형 분리수거 가이드와 수거 장소 안내 서비스입니다.</string>
     <string name="settings_app_info_version_label">버전</string>
     <string name="settings_app_info_features_label">제공 기능</string>
@@ -168,17 +214,17 @@
     <string name="settings_terms_info">앱에서 제공하는 품목 정보와 지역별 안내는 공공데이터와 공식 안내를 바탕으로 구성됩니다.</string>
     <string name="settings_terms_location">위치 기반 기능은 사용자가 가까운 수거 장소를 찾을 때만 사용됩니다.</string>
     <string name="settings_terms_responsibility">지역별 배출 기준은 지방자치단체 정책에 따라 달라질 수 있습니다. 실제 배출 전에는 해당 지자체 안내를 함께 확인해 주세요.</string>
-    <string name="settings_terms_privacy">앱은 문의 화면에서 별도의 입력 정보를 수집하지 않습니다.</string>
-    <string name="settings_sources_data_description">앱의 안내 정보는 공공데이터포털 Open API와 공식 분리배출 안내 자료를 바탕으로 제공합니다.</string>
-    <string name="settings_source_disposal_home_title">생활폐기물 분리배출 누리집</string>
-    <string name="settings_source_disposal_home_description">품목별 배출 방법, 대표 분류별 안내</string>
-    <string name="settings_source_recycling_api_title">공공데이터포털 Open API</string>
-    <string name="settings_source_recycling_api_description">기후에너지환경부 분리배출 정보조회 서비스</string>
-    <string name="settings_source_household_api_title">공공데이터포털 Open API</string>
-    <string name="settings_source_household_api_description">행정안전부 생활쓰레기배출정보 조회서비스</string>
-    <string name="settings_source_admin_region_title">행정안전부 행정구역 데이터</string>
-    <string name="settings_source_admin_region_description">원본 자료명: 행정안전부 행정기관 및 관할구역 코드 자료\n기준일: 2026-03-25\n가공 여부: JSON 형태로 가공\n문서 위치: GitHub 저장소의 DATA_SOURCES.md</string>
-    <string name="settings_sources_usage_condition_description">앱에서 사용하는 정보의 출처, 기준일, 가공 여부는 GitHub 저장소의 DATA_SOURCES.md에 정리되어 있습니다.</string>
+    <string name="settings_terms_privacy">앱 오류 분석과 위치 기반 기능에 관한 개인정보 처리 내용은 개인정보처리방침에서 확인할 수 있습니다.</string>
+    <string name="settings_privacy_policy_description">여기버려가 처리하는 위치 정보와 앱 오류 정보, 보관 기간, 문의 방법을 확인할 수 있습니다.</string>
+    <string name="settings_open_privacy_policy">개인정보처리방침 열기</string>
+    <string name="settings_sources_data_title">데이터 출처</string>
+    <string name="settings_sources_data_description">앱에서 제공하는 안내 정보는 정부 공공데이터와 공식 자료를 바탕으로 제공합니다.</string>
+    <string name="settings_source_climate_ministry_title">기후에너지환경부</string>
+    <string name="settings_source_climate_ministry_description">출처\n• 생활폐기물 분리배출 누리집\n• 분리배출 정보조회 서비스\n\n데이터 확인일\n2026-05-31\n\n가공 여부\n품목명, 유사 품목, 분류 경로, 배출 방법 등 텍스트 정보를 앱 사용 목적에 맞게 가공했습니다.</string>
+    <string name="settings_source_interior_ministry_title">행정안전부</string>
+    <string name="settings_source_interior_ministry_description">출처\n• 생활쓰레기배출정보 조회서비스\n• 행정기관 및 관할구역 코드 자료\n\n데이터 기준\n행정구역 데이터: 2026-07-01\n지역별 배출 정보: 공공데이터포털 Open API 생활쓰레기배출정보 조회서비스\n\n가공 여부\n행정구역 데이터는 앱 사용 목적에 맞게 가공했습니다.\n지역별 배출 정보는 API 응답을 화면에 맞게 변환하여 제공합니다.</string>
+    <string name="settings_sources_usage_title">이용 안내</string>
+    <string name="settings_sources_usage_description">원본 데이터의 출처와 기준일을 함께 표시합니다.\n가공 데이터는 앱 사용 목적에 맞게 편집한 정보입니다.\n분리배출 기준과 행정구역 정보는 정책 변경에 따라 달라질 수 있습니다.\n자세한 출처와 이용조건은 공개 GitHub 저장소의 DATA_SOURCES.md에서 확인할 수 있습니다.</string>
     <string name="settings_open_source_title">오픈소스 라이선스</string>
     <string name="settings_tabler_icons_title">Tabler Icons</string>
     <string name="settings_tabler_usage_title">MIT License</string>
@@ -204,8 +250,119 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.]]></string>
+    <string name="settings_pretendard_title">Pretendard</string>
+    <string name="settings_pretendard_license_title">SIL Open Font License 1.1</string>
+    <string name="settings_pretendard_usage_description">앱의 전체 글꼴은 Pretendard를 사용합니다.</string>
+    <string name="settings_pretendard_license_text" tools:ignore="TypographyOther"><![CDATA[Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard),
+with Reserved Font Name \'Pretendard\'.
+
+Copyright 2014-2021 Adobe (http://www.adobe.com/),
+with Reserved Font Name \'Source\'.
+Source is a trademark of Adobe in the United States and/or other countries.
+
+Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter),
+with Reserved Font Name \'Inter\'.
+
+Copyright 2021 The M+ FONTS Project Authors (https://github.com/coz-m/MPLUS_FONTS),
+with Reserved Font Name \'M PLUS 1\'.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+\"Font Software\" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+\"Reserved Font Name\" refers to any names specified as such after the
+copyright statement(s).
+
+\"Original Version\" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+\"Modified Version\" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+\"Author\" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.]]></string>
     <string name="settings_cache_confirm_description">현재 위치로 주변 수거 장소를 찾았을 때 임시 저장된 위치 캐시를 삭제합니다. 즐겨찾기와 품목 검색 기록은 삭제되지 않습니다.</string>
     <string name="settings_cache_delete_action">삭제</string>
+    <string name="settings_cache_deleting_action">삭제 중...</string>
+    <string name="settings_cache_delete_success_message">위치 캐시를 삭제했습니다.</string>
+    <string name="settings_cache_delete_no_cache_message">삭제할 위치 캐시가 없습니다.</string>
+    <string name="settings_cache_delete_failure_message">위치 캐시를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="map_search_placeholder">동/읍/면을 검색해주세요.</string>
     <string name="map_search_loading_title">검색중</string>
     <string name="map_search_loading_keyword">입력한 동/읍/면 주변을 찾고 있어요</string>
@@ -219,6 +376,11 @@ SOFTWARE.]]></string>
     <string name="map_spot_result_count">검색 결과 %1$d개</string>
     <string name="map_region_candidate_title">지역을 선택해주세요</string>
     <string name="map_region_candidate_description">같은 이름의 지역이 여러 곳 있어요.</string>
+    <string name="map_region_detail_title">세부 지역을 선택해주세요</string>
+    <string name="map_region_detail_description">세부 지역을 선택하면 더 빠르게 검색할 수 있어요.</string>
+    <string name="map_region_detail_all_label">%1$s 전체 보기</string>
+    <string name="map_region_detail_all_description">결과가 많아 오래 걸릴 수 있어요.</string>
+    <string name="map_region_detail_back_to_candidates">지역 목록으로</string>
     <string name="map_empty_spot_result_title">검색 결과가 없습니다.</string>
     <string name="map_empty_spot_result_description">동/읍/면 이름으로 다시 검색해 주세요.\n예: 문래동, 역삼동</string>
     <string name="map_location_permission_denied_title">위치 권한이 필요합니다.</string>
@@ -233,4 +395,5 @@ SOFTWARE.]]></string>
     <string name="map_regional_guide_action">이 지역 배출 정보 보기</string>
     <string name="map_nearby_list_loading">주변 목록 준비 중</string>
     <string name="map_spot_detail_back_to_list">목록으로</string>
+    <string name="favorite_update_failed_message">즐겨찾기를 변경하지 못했어요. 다시 시도해 주세요.</string>
 </resources>

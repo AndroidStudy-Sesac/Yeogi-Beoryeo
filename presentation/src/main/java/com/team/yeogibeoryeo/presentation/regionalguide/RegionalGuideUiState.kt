@@ -2,21 +2,23 @@ package com.team.yeogibeoryeo.presentation.regionalguide
 
 import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 sealed interface RegionalGuideUiState {
     data object Idle : RegionalGuideUiState
 
     data class Loading(
-        val query: String
+        val query: String,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Success(
         val query: String,
         val guide: RegionalGuideUiModel,
         val isFavorite: Boolean = false,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Empty(
@@ -34,13 +36,15 @@ sealed interface RegionalGuideUiState {
 
     data class GuideCandidates(
         val query: String,
-        val message: String,
-        val candidates: List<RegionalGuideCandidateUiModel>
+        val reason: RegionalGuideCandidateReason,
+        val candidates: List<RegionalGuideCandidateUiModel>,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Error(
         val query: String,
-        val message: String
+        val message: String,
+        val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 }
 
@@ -52,4 +56,11 @@ data class RegionalGuideEmptyActionUiModel(
 enum class RegionalGuideEmptyActionType {
     SEARCH_AGAIN,
     SELECT_REGION,
+}
+
+enum class RegionalGuideCandidateReason {
+    MULTIPLE_CANDIDATES,
+    MULTIPLE_EXACT_MATCHES,
+    FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND,
+    FAVORITE_RESTORE_AMBIGUOUS,
 }

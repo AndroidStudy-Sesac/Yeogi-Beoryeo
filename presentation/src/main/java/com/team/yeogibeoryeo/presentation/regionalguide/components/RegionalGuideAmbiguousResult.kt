@@ -24,7 +24,7 @@ fun RegionalGuideAmbiguousResult(
 
     RegionalGuideCandidateList(
         candidates = validCandidates,
-        key = { candidate -> candidate.displayText },
+        key = { candidate -> candidate.stableKey },
         onCandidateClick = onCandidateClick,
         modifier = modifier
     ) { candidate ->

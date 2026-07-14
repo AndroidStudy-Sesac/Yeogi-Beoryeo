@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.presentation.search.model
 
 import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.REGIONAL_GUIDE_LINKS_URL
 
 data class ItemUsefulGuideContent(
     val type: ItemUsefulGuideType,
@@ -55,7 +56,7 @@ val itemUsefulGuideContents: List<ItemUsefulGuideContent> =
                 ),
                 ItemUsefulGuideSite(
                     labelResId = R.string.item_useful_guide_site_regional_links,
-                    url = RegionalLinksUrl,
+                    url = REGIONAL_GUIDE_LINKS_URL,
                 ),
             ),
         ),
@@ -107,7 +108,6 @@ private const val DictionaryUrl = "https://xn--oy2b29bd3a601b.kr/front/discharge
 private const val DisposalMethodsUrl =
     "https://xn--oy2b29bd3a601b.kr/front/dischargeMethod/typeItem.do?searchCnd=11"
 private const val RegionalMapUrl = "https://xn--oy2b29bd3a601b.kr/front/region/location.do"
-private const val RegionalLinksUrl = "https://xn--oy2b29bd3a601b.kr/front/support/bannerCollection.do"
 private const val FaqUrl = "https://xn--oy2b29bd3a601b.kr/front/bbsList.do?bbsId=BBS_0002"
 private const val DisposalGuidelinesUrl =
     "https://xn--oy2b29bd3a601b.kr/front/bbsList.do?bbsId=BBS_0003"

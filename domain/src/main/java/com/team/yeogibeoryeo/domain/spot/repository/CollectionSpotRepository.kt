@@ -7,30 +7,14 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 
 interface CollectionSpotRepository {
 
-    suspend fun searchByKeyword(
+    suspend fun searchRawByKeyword(
         keyword: String,
         types: Set<CollectionSpotType> = emptySet()
-    ): List<CollectionSpot>
+    ): CollectionSpotSearchResult
 
-    suspend fun searchByKeywordResult(
-        keyword: String,
-        types: Set<CollectionSpotType> = emptySet()
-    ): CollectionSpotSearchResult {
-        return CollectionSpotSearchResult(
-            spots = searchByKeyword(
-                keyword = keyword,
-                types = types,
-            ),
-        )
-    }
-
-    suspend fun searchByLocation(
+    suspend fun searchRawByLocation(
         coordinate: Coordinate,
         radiusMeter: Int,
         types: Set<CollectionSpotType> = emptySet()
     ): List<CollectionSpot>
-
-    suspend fun geocodeSpot(
-        spot: CollectionSpot
-    ): CollectionSpot
 }

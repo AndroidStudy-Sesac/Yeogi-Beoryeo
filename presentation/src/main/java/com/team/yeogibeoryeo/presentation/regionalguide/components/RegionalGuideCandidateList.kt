@@ -48,7 +48,7 @@ internal fun <T> RegionalGuideCandidateList(
         ) {
             itemsIndexed(
                 items = candidates,
-                key = { index, candidate -> "${key(candidate)}-$index" }
+                key = { index, candidate -> "${key(candidate)}#$index" }
             ) { index, candidate ->
                 Box(
                     modifier = Modifier

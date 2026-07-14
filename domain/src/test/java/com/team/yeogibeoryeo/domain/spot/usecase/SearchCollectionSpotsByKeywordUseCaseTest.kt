@@ -2,9 +2,11 @@ package com.team.yeogibeoryeo.domain.spot.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
+import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotGeocodingRepository
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -14,6 +16,7 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
     private val repository = FakeCollectionSpotRepository()
     private val useCase = SearchCollectionSpotsByKeywordUseCase(
         repository = repository,
+        geocodingRepository = repository,
         normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase(),
     )
 
@@ -34,6 +37,28 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
 
             assertEquals(listOf("명동"), repository.keywords)
             assertEquals(listOf(myeongDongSpot), result)
+        }
+
+    @Test
+    fun `명시 지역 필터에서 제외되는 결과는 geocoding하지 않는다`() =
+        runSuspendTest {
+            val myeongDongSpot = collectionSpot(
+                id = "myeongdong",
+                address = "서울특별시 중구 명동길 26 (명동)",
+                coordinate = null,
+            )
+            val bongMyeongDongSpot = collectionSpot(
+                id = "bongmyeongdong",
+                address = "충청북도 청주시 흥덕구 송절로124번길 65 (봉명동)",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(myeongDongSpot, bongMyeongDongSpot)
+
+            val result = useCase(keyword = "명동")
+
+            assertEquals(listOf("myeongdong"), repository.geocodedSpotIds)
+            assertEquals(listOf("myeongdong"), result.map { spot -> spot.id })
+            assertEquals(DEFAULT_COORDINATE, result.first().coordinate)
         }
 
     @Test
@@ -136,6 +161,286 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
         }
 
     @Test
+    fun `선택 지역 필터에서 제외되는 결과는 geocoding하지 않는다`() =
+        runSuspendTest {
+            val seoulSpot = collectionSpot(
+                id = "seoul-myeongdong",
+                address = "서울특별시 중구 명동길 3",
+                coordinate = null,
+            )
+            val jecheonSpot = collectionSpot(
+                id = "jecheon-myeongdong",
+                address = "충청북도 제천시 명동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(seoulSpot, jecheonSpot)
+
+            val result = useCase(
+                keyword = "명동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "서울특별시",
+                        sigungu = "중구",
+                        eupmyeondong = "명동",
+                    ),
+                    searchKeyword = "명동",
+                ),
+            )
+
+            assertEquals(listOf("seoul-myeongdong"), repository.geocodedSpotIds)
+            assertEquals(listOf("seoul-myeongdong"), result.map { spot -> spot.id })
+            assertEquals(DEFAULT_COORDINATE, result.first().coordinate)
+        }
+
+    @Test
+    fun `광주 후보 선택 시 전남광주통합특별시 광주 5개 구 결과만 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-geumho",
+                address = "전남광주통합특별시 서구 풍금로151번길 14(금호동)",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "gwangyang-geumho",
+                address = "전남광주통합특별시 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "광주광역시",
+                        sigungu = "서구",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("gwangju-geumho"), repository.geocodedSpotIds)
+            assertEquals(listOf("gwangju-geumho"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남광주통합특별시 광주 후보 선택 시 광주 5개 구 결과만 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-geumho",
+                address = "전남광주통합특별시 서구 풍금로151번길 14(금호동)",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "gwangyang-geumho",
+                address = "전남광주통합특별시 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전남광주통합특별시",
+                        sigungu = "서구",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("gwangju-geumho"), repository.geocodedSpotIds)
+            assertEquals(listOf("gwangju-geumho"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남 후보 선택 시 전남광주통합특별시 전남 시군 결과만 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-geumho",
+                address = "전남광주통합특별시 서구 풍금로151번길 14(금호동)",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "gwangyang-geumho",
+                address = "전남광주통합특별시 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전라남도",
+                        sigungu = "광양시",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("gwangyang-geumho"), repository.geocodedSpotIds)
+            assertEquals(listOf("gwangyang-geumho"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남광주통합특별시 전남 후보 선택 시 전남 시군 결과만 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-geumho",
+                address = "전남광주통합특별시 서구 풍금로151번길 14(금호동)",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "gwangyang-geumho",
+                address = "전남광주통합특별시 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전남광주통합특별시",
+                        sigungu = "광양시",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("gwangyang-geumho"), repository.geocodedSpotIds)
+            assertEquals(listOf("gwangyang-geumho"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남광주통합특별시 광주 후보 선택 시 광주광역시 결과를 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-current-sido",
+                address = "광주광역시 서구 금호동 1",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "jeonnam-geumho",
+                address = "전라남도 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전남광주통합특별시",
+                        sigungu = "서구",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("gwangju-current-sido"), repository.geocodedSpotIds)
+            assertEquals(listOf("gwangju-current-sido"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남광주통합특별시 전남 후보 선택 시 전라남도 결과를 유지한다`() =
+        runSuspendTest {
+            val jeonnamSpot = collectionSpot(
+                id = "gwangyang-current-sido",
+                address = "전라남도 광양시 금호동 1",
+                coordinate = null,
+            )
+            val gwangjuSpot = collectionSpot(
+                id = "gwangju-current-sido",
+                address = "광주광역시 서구 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(jeonnamSpot, gwangjuSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전남광주통합특별시",
+                        sigungu = "광양시",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("gwangyang-current-sido"), repository.geocodedSpotIds)
+            assertEquals(listOf("gwangyang-current-sido"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `광주 축약 후보 선택 시 전남광주통합특별시 광주 5개 구 결과를 유지한다`() =
+        runSuspendTest {
+            val gwangjuSpot = collectionSpot(
+                id = "integrated-gwangju",
+                address = "전남광주통합특별시 서구 금호동",
+                coordinate = null,
+            )
+            val jeonnamSpot = collectionSpot(
+                id = "integrated-jeonnam",
+                address = "전남광주통합특별시 광양시 금호동 1",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(gwangjuSpot, jeonnamSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "광주광역시",
+                        sigungu = "서구",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("integrated-gwangju"), repository.geocodedSpotIds)
+            assertEquals(listOf("integrated-gwangju"), result.map { spot -> spot.id })
+        }
+
+    @Test
+    fun `전남 축약 후보 선택 시 전남광주통합특별시 전남 시군 결과를 유지한다`() =
+        runSuspendTest {
+            val jeonnamSpot = collectionSpot(
+                id = "integrated-gwangyang",
+                address = "전남광주통합특별시 광양시 금호동 1",
+                coordinate = null,
+            )
+            val gwangjuSpot = collectionSpot(
+                id = "integrated-gwangju",
+                address = "전남광주통합특별시 서구 금호동",
+                coordinate = null,
+            )
+            repository.keywordSpots = listOf(jeonnamSpot, gwangjuSpot)
+
+            val result = useCase(
+                keyword = "금호동",
+                selectedRegionCandidate = MapRegionSearchCandidate(
+                    region = Region(
+                        sido = "전라남도",
+                        sigungu = "광양시",
+                        eupmyeondong = "금호동",
+                    ),
+                    searchKeyword = "금호동",
+                ),
+            )
+
+            assertEquals(listOf("integrated-gwangyang"), repository.geocodedSpotIds)
+            assertEquals(listOf("integrated-gwangyang"), result.map { spot -> spot.id })
+        }
+
+    @Test
     fun `선택 지역 후보가 있어도 지역 범위가 불명확한 도로명 주소 결과는 유지한다`() =
         runSuspendTest {
             val roadAddressSpot = collectionSpot(
@@ -168,6 +473,7 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
     private fun collectionSpot(
         id: String,
         address: String,
+        coordinate: Coordinate? = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
     ): CollectionSpot {
         return CollectionSpot(
             id = id,
@@ -175,28 +481,39 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
             type = CollectionSpotType.STANDARD_BAG_STORE,
             address = address,
             detailLocation = null,
-            coordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+            coordinate = coordinate,
         )
     }
 
-    private class FakeCollectionSpotRepository : CollectionSpotRepository {
+    private class FakeCollectionSpotRepository : CollectionSpotRepository, CollectionSpotGeocodingRepository {
         var keywordSpots: List<CollectionSpot> = emptyList()
         val keywords = mutableListOf<String>()
+        val geocodedSpotIds = mutableListOf<String>()
 
-        override suspend fun searchByKeyword(
+        override suspend fun searchRawByKeyword(
             keyword: String,
             types: Set<CollectionSpotType>,
-        ): List<CollectionSpot> {
+        ) = CollectionSpotSearchResult(
+            spots = keywordSpots,
+        ).also {
             keywords += keyword
-            return keywordSpots
         }
 
-        override suspend fun searchByLocation(
+        override suspend fun searchRawByLocation(
             coordinate: Coordinate,
             radiusMeter: Int,
             types: Set<CollectionSpotType>,
         ): List<CollectionSpot> = emptyList()
 
-        override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot = spot
+        override suspend fun geocodeSpot(spot: CollectionSpot): CollectionSpot {
+            geocodedSpotIds += spot.id
+            return spot.copy(
+                coordinate = spot.coordinate ?: DEFAULT_COORDINATE,
+            )
+        }
+    }
+
+    private companion object {
+        val DEFAULT_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
     }
 }

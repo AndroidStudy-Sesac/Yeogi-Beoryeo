@@ -39,7 +39,7 @@ internal fun quickCategoryGridMetricsSpec(
 ): QuickCategoryGridMetricsSpec {
     val spacing = ItemSearchLayoutDefaults.spacing
     val size = ItemSearchLayoutDefaults.size
-    val useLargeFontLayout = fontScale >= QuickCategoryGridBreakpoints.LargeFontScale
+    val useLargeFontLayout = fontScale >= QuickCategoryGridBreakpoints.LARGE_FONT_SCALE
     val useFourColumnCompactVisuals =
         !useLargeFontLayout &&
             maxWidth >= QuickCategoryGridBreakpoints.NarrowContentWidth &&
@@ -105,11 +105,20 @@ internal fun quickCategoryGridMetricsSpec(
     }
     val maxColumnCount =
         if (useNarrowLargeFontLayout) {
-            QuickCategoryGridDefaults.NarrowLargeFontMaxColumnCount
+            QuickCategoryGridDefaults.NARROW_LARGE_FONT_MAX_COLUMN_COUNT
+        } else if (
+            useLargeFontLayout &&
+            maxWidth >= QuickCategoryGridBreakpoints.MediumLandscapeContentWidth
+        ) {
+            QuickCategoryGridDefaults.LANDSCAPE_MAX_COLUMN_COUNT
         } else if (useLargeFontLayout) {
-            QuickCategoryGridDefaults.LargeFontMaxColumnCount
+            QuickCategoryGridDefaults.LARGE_FONT_MAX_COLUMN_COUNT
+        } else if (maxWidth >= QuickCategoryGridBreakpoints.LandscapeContentWidth) {
+            QuickCategoryGridDefaults.LANDSCAPE_MAX_COLUMN_COUNT
+        } else if (maxWidth >= QuickCategoryGridBreakpoints.MediumLandscapeContentWidth) {
+            QuickCategoryGridDefaults.MEDIUM_LANDSCAPE_MAX_COLUMN_COUNT
         } else {
-            QuickCategoryGridDefaults.MaxColumnCount
+            QuickCategoryGridDefaults.MAX_COLUMN_COUNT
         }
     val columnCount =
         (maxWidth / cellSize)
@@ -160,9 +169,11 @@ internal val LocalQuickCategoryGridMetrics = compositionLocalOf<QuickCategoryGri
 }
 
 private object QuickCategoryGridDefaults {
-    const val MaxColumnCount = 4
-    const val NarrowLargeFontMaxColumnCount = 2
-    const val LargeFontMaxColumnCount = 3
+    const val MAX_COLUMN_COUNT = 4
+    const val MEDIUM_LANDSCAPE_MAX_COLUMN_COUNT = 5
+    const val LANDSCAPE_MAX_COLUMN_COUNT = 6
+    const val NARROW_LARGE_FONT_MAX_COLUMN_COUNT = 2
+    const val LARGE_FONT_MAX_COLUMN_COUNT = 3
     val NarrowLargeFontCellSize = 128.dp
     val WideLargeFontCellSize = 112.dp
     val NarrowCellSize = 80.dp
@@ -187,6 +198,8 @@ private object QuickCategoryGridBreakpoints {
     val WidePhoneContentWidth = 336.dp
     val LargePhoneContentWidth = 352.dp
     val ExpandedWidePhoneContentWidth = 360.dp
+    val MediumLandscapeContentWidth = 450.dp
+    val LandscapeContentWidth = 560.dp
     val WideLargeFontContentWidth = 352.dp
-    const val LargeFontScale = 1.3f
+    const val LARGE_FONT_SCALE = 1.3f
 }

@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.data.regionalguide.mapper
 
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -147,10 +148,18 @@ class RegionalGuideMapperTest {
     @Test
     fun `시간파싱_유효하지 않은 입력은 null 반환한다`() {
         assertNull(RegionalWasteScheduleMapper.parseTime("00:00"))
+        assertNull(RegionalWasteScheduleMapper.parseTime("0000"))
         assertNull(RegionalWasteScheduleMapper.parseTime("   "))
         assertNull(RegionalWasteScheduleMapper.parseTime(null))
 
         assertEquals("18:00", RegionalWasteScheduleMapper.parseTime(" 18:00 "))
+    }
+
+    @Test
+    fun `콜론 없는 시간은 시와 분을 구분해 표시한다`() {
+        assertEquals("18:30", RegionalWasteScheduleMapper.parseTime("1830"))
+        assertEquals("24:00", RegionalWasteScheduleMapper.parseTime("2400"))
+        assertEquals("2460", RegionalWasteScheduleMapper.parseTime("2460"))
     }
 
     @Test
@@ -164,5 +173,49 @@ class RegionalGuideMapperTest {
     fun `배출 방법 파싱_과도한 공백과 줄바꿈을 하나의 공백으로 치환한다`() {
         val rawMethod = "종량제 봉투에 담아 \n   지정된 장소에 배출"
         assertEquals("종량제 봉투에 담아 지정된 장소에 배출", RegionalWasteScheduleMapper.parseMethod(rawMethod))
+    }
+
+    @Test
+    fun `관리 부서와 연락처는 도메인 모델로 전달한다`() {
+        val result = RegionalGuideMapper.mapToDomain(
+            baseRegion = Region(sido = "서울특별시", sigungu = "중구"),
+            dto = RegionalGuideItemDto(
+                departmentName = "청소행정과",
+                departmentPhoneNumber = "02-1234-5678",
+            )
+        )
+
+        assertEquals("청소행정과", result.departmentName)
+        assertEquals("02-1234-5678", result.departmentPhoneNumber)
+    }
+
+    @Test
+    fun `EMSN_PLC 배출장소는 이번 범위에서 도메인 표시 모델로 전달하지 않는다`() {
+        val result = RegionalGuideMapper.mapToDomain(
+            baseRegion = Region(sido = "서울특별시", sigungu = "중구"),
+            dto = RegionalGuideItemDto(
+                disposalPlaceType = "문전수거",
+                disposalPlace = "문 앞 지정 장소",
+            )
+        )
+
+        assertEquals("문전수거", result.disposalPlaceType)
+        assertNull(result.disposalPlaceDescription)
+    }
+
+    @Test
+    fun `대형폐기물 배출장소는 요일과 분리해 일정 장소로 전달한다`() {
+        val result = RegionalGuideMapper.mapToDomain(
+            baseRegion = Region(sido = "서울특별시", sigungu = "중구"),
+            dto = RegionalGuideItemDto(
+                largeItemDisposalPlace = "대형폐기물 지정 장소",
+            )
+        )
+
+        val schedule = result.schedules.single()
+        assertEquals(RegionalWasteType.LARGE_ITEM, schedule.wasteType)
+        assertNull(schedule.disposalDays)
+        assertNull(schedule.disposalMethod)
+        assertEquals("대형폐기물 지정 장소", schedule.disposalPlace)
     }
 }

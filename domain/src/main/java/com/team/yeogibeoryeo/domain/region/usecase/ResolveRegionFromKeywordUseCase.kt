@@ -44,10 +44,18 @@ class ResolveRegionFromKeywordUseCase @Inject constructor(
     }
 
     private suspend fun resolveSigunguOnlyRegion(
-        parsedRegion: Region
+        parsedRegion: Region,
     ): ResolveRegionFromKeywordResult {
         val sigungu = parsedRegion.sigungu.orEmpty()
         val candidates = regionOptionsRepository.findRegionsBySigunguKeyword(sigungu)
+            .distinctBy { region ->
+                listOf(
+                    region.sido.orEmpty(),
+                    region.sigungu.orEmpty(),
+                    region.eupmyeondong.orEmpty()
+                )
+            }
+            .sortedWith(REGION_CANDIDATE_COMPARATOR)
 
         return when {
             candidates.size == 1 -> ResolveRegionFromKeywordResult.Resolved(candidates.first())

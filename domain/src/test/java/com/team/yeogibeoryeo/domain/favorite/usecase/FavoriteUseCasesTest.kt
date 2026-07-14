@@ -85,6 +85,23 @@ class FavoriteUseCasesTest {
             assertFalse(repository.isFavorite(FavoriteTargetType.ITEM_GUIDE, "종이"))
         }
 
+    @Test
+    fun `RemoveFavoriteUseCase는 대상 타입과 id에 맞는 즐겨찾기를 제거한다`() =
+        runBlocking {
+            val favorite = sampleFavorite("종이")
+            val otherFavorite =
+                sampleFavorite(
+                    targetId = "spot-1",
+                    type = FavoriteTargetType.COLLECTION_SPOT,
+                )
+            val repository =
+                FakeFavoriteRepository(initialFavorites = listOf(favorite, otherFavorite))
+
+            RemoveFavoriteUseCase(repository).invoke(FavoriteTargetType.ITEM_GUIDE, "종이")
+
+            assertEquals(listOf(otherFavorite), repository.observeFavorites().first())
+        }
+
     private fun sampleFavorite(
         targetId: String,
         type: FavoriteTargetType = FavoriteTargetType.ITEM_GUIDE,

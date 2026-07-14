@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.favorites
 
+import androidx.lifecycle.SavedStateHandle
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -13,6 +14,7 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveCollectionSpotFavori
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoritesUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavoriteSnapshotsUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveCollectionSpotFavoriteUseCase
+import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveRegionalGuideFavoriteUseCase
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
@@ -31,14 +33,18 @@ import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpot
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -53,11 +59,7 @@ class FavoritesViewModelTest {
     fun `즐겨찾기 원본 가이드를 조회해 UI 모델로 변환한다`() =
         runTest {
             val guide =
-                sampleGuide(
-                    id = "paper-pack",
-                    name = "종이팩",
-                    subCategory = DisposalSubCategory.MILK_CARTON,
-                )
+                sampleItemGuide()
             val viewModel =
                 createViewModel(
                     favoriteRepository =
@@ -355,6 +357,41 @@ class FavoritesViewModelTest {
         }
 
     @Test
+    fun `품목 즐겨찾기 해제 시 공통 Favorite를 삭제하고 UI 목록을 갱신한다`() =
+        runTest {
+            val guide =
+                sampleItemGuide()
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.ITEM_GUIDE,
+                                targetId = guide.id,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = listOf(guide)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(1, viewModel.uiState.value.selectedFavorites.size)
+
+            viewModel.removeItemGuideFavorite(guide.id)
+            advanceUntilIdle()
+
+            assertEquals(emptyList<FavoriteUiModel>(), viewModel.uiState.value.selectedFavorites)
+            assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.ITEM_GUIDE, guide.id))
+        }
+
+    @Test
     fun `탭을 변경하면 선택된 탭 상태를 반영한다`() =
         runTest {
             val viewModel =
@@ -370,6 +407,58 @@ class FavoritesViewModelTest {
             advanceUntilIdle()
 
             assertEquals(FavoriteTab.COLLECTION_SPOT, viewModel.uiState.value.selectedTab)
+        }
+
+    @Test
+    fun `저장된 탭이 없으면 품목 탭을 기본값으로 사용한다`() =
+        runTest {
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = FakeFavoriteRepository(),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(FavoriteTab.ITEM_GUIDE, viewModel.uiState.value.selectedTab)
+        }
+
+    @Test
+    fun `ViewModel을 다시 만들면 저장된 탭을 복원한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val favoriteRepository = FakeFavoriteRepository()
+            val itemRepository = FakeItemRepository(guides = emptyList())
+            val firstViewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = itemRepository,
+                    savedStateHandle = savedStateHandle,
+                )
+
+            firstViewModel.selectTab(FavoriteTab.REGIONAL_GUIDE)
+
+            val restoredSavedStateHandle =
+                SavedStateHandle(
+                    savedStateHandle.keys().associateWith { key ->
+                        savedStateHandle.get<Any?>(key)
+                    },
+                )
+
+            val restoredViewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = itemRepository,
+                    savedStateHandle = restoredSavedStateHandle,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                restoredViewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(FavoriteTab.REGIONAL_GUIDE, restoredViewModel.uiState.value.selectedTab)
         }
 
     @Test
@@ -475,15 +564,198 @@ class FavoritesViewModelTest {
             assertEquals(emptyList<RegionalGuideFavoriteSnapshot>(), snapshotRepository.snapshots.value)
         }
 
+    @Test
+    fun `품목 즐겨찾기 삭제 실패 시 목록을 유지하고 실패 이벤트를 보낸다`() =
+        runTest {
+            val guide = sampleItemGuide()
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.ITEM_GUIDE,
+                                targetId = guide.id,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                    removeFailure = IllegalStateException("삭제 실패"),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = listOf(guide)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+            val event =
+                async(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.events.first()
+                }
+
+            viewModel.removeItemGuideFavorite(guide.id)
+            advanceUntilIdle()
+
+            assertEquals(FavoritesEvent.FavoriteUpdateFailed, event.await())
+            assertEquals(listOf(guide.id), viewModel.uiState.value.selectedFavorites.map { it.targetId })
+            assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.ITEM_GUIDE, guide.id))
+        }
+
+    @Test
+    fun `수거 장소 즐겨찾기 삭제 실패 시 목록과 스냅샷을 유지한다`() =
+        runTest {
+            val snapshot =
+                CollectionSpotFavoriteSnapshot(
+                    targetId = "spot-1",
+                    name = "폐건전지 수거함",
+                    type = CollectionSpotType.BATTERY_BIN,
+                    address = "서울특별시 영등포구 문래동",
+                    detailLocation = "주민센터 앞",
+                    coordinate = Coordinate(latitude = 37.5, longitude = 126.9),
+                )
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.COLLECTION_SPOT,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val snapshotRepository =
+                FakeCollectionSpotFavoriteSnapshotRepository(snapshots = listOf(snapshot))
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    collectionSpotSnapshotRepository = snapshotRepository,
+                    collectionSpotRemoveFailure = IllegalStateException("삭제 실패"),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+            viewModel.selectTab(FavoriteTab.COLLECTION_SPOT)
+            val event =
+                async(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.events.first()
+                }
+
+            viewModel.removeCollectionSpotFavorite(snapshot.targetId)
+            advanceUntilIdle()
+
+            assertEquals(FavoritesEvent.FavoriteUpdateFailed, event.await())
+            assertEquals(listOf(snapshot.targetId), viewModel.uiState.value.selectedFavorites.map { it.targetId })
+            assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, snapshot.targetId))
+            assertEquals(listOf(snapshot), snapshotRepository.snapshots.value)
+        }
+
+    @Test
+    fun `지역 안내 즐겨찾기 삭제 실패 시 목록과 스냅샷을 유지한다`() =
+        runTest {
+            val snapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-v1|4:서울시2:중구-1:4:권역A",
+                    region = Region(sido = "서울시", sigungu = "중구"),
+                    targetRegionName = "권역A",
+                    managementZoneName = "관리구역A",
+                )
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val snapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot))
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository = snapshotRepository,
+                    regionalGuideRemoveFailure = IllegalStateException("삭제 실패"),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+            viewModel.selectTab(FavoriteTab.REGIONAL_GUIDE)
+            val event =
+                async(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.events.first()
+                }
+
+            viewModel.removeRegionalGuideFavorite(snapshot.targetId)
+            advanceUntilIdle()
+
+            assertEquals(FavoritesEvent.FavoriteUpdateFailed, event.await())
+            assertEquals(listOf(snapshot.targetId), viewModel.uiState.value.selectedFavorites.map { it.targetId })
+            assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
+            assertEquals(listOf(snapshot), snapshotRepository.snapshots.value)
+        }
+
+    @Test
+    fun `같은 품목을 빠르게 두 번 삭제하면 한 번만 요청한다`() =
+        runTest {
+            val guide = sampleItemGuide()
+            val removeStarted = CompletableDeferred<Unit>()
+            val continueRemove = CompletableDeferred<Unit>()
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.ITEM_GUIDE,
+                                targetId = guide.id,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                    removeStarted = removeStarted,
+                    continueRemove = continueRemove,
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = listOf(guide)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.removeItemGuideFavorite(guide.id)
+            runCurrent()
+            removeStarted.await()
+            viewModel.removeItemGuideFavorite(guide.id)
+            continueRemove.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(1, favoriteRepository.removeCallCount)
+            assertEquals(emptyList<FavoriteUiModel>(), viewModel.uiState.value.selectedFavorites)
+            assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.ITEM_GUIDE, guide.id))
+        }
+
     private fun createViewModel(
         favoriteRepository: FakeFavoriteRepository,
         itemRepository: FakeItemRepository,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
         collectionSpotSnapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
             FakeCollectionSpotFavoriteSnapshotRepository(),
         regionalGuideSnapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
             FakeRegionalGuideFavoriteSnapshotRepository(),
+        collectionSpotRemoveFailure: Exception? = null,
+        regionalGuideRemoveFailure: Exception? = null,
     ): FavoritesViewModel =
         FavoritesViewModel(
+            savedStateHandle = savedStateHandle,
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
             observeCollectionSpotFavoritesUseCase =
                 ObserveCollectionSpotFavoritesUseCase(
@@ -492,12 +764,14 @@ class FavoritesViewModelTest {
                 ),
             observeRegionalGuideFavoriteSnapshotsUseCase =
                 ObserveRegionalGuideFavoriteSnapshotsUseCase(regionalGuideSnapshotRepository),
+            removeFavoriteUseCase = RemoveFavoriteUseCase(favoriteRepository),
             removeCollectionSpotFavoriteUseCase =
                 RemoveCollectionSpotFavoriteUseCase(
                     collectionSpotFavoriteRepository =
                         FakeCollectionSpotFavoriteRepository(
                             favoriteRepository = favoriteRepository,
                             snapshotRepository = collectionSpotSnapshotRepository,
+                            removeFailure = collectionSpotRemoveFailure,
                         ),
                 ),
             removeRegionalGuideFavoriteUseCase =
@@ -506,6 +780,7 @@ class FavoritesViewModelTest {
                         FakeRegionalGuideFavoriteRepository(
                             favoriteRepository = favoriteRepository,
                             snapshotRepository = regionalGuideSnapshotRepository,
+                            removeFailure = regionalGuideRemoveFailure,
                         ),
                 ),
             itemGuideUiMapper = FavoriteItemGuideUiMapper(GetDisposalItemGuideUseCase(itemRepository)),
@@ -513,16 +788,12 @@ class FavoritesViewModelTest {
             regionalGuideUiMapper = FavoriteRegionalGuideUiMapper(),
         )
 
-    private fun sampleGuide(
-        id: String,
-        name: String,
-        subCategory: DisposalSubCategory? = null,
-    ): DisposalItemGuide =
+    private fun sampleItemGuide(): DisposalItemGuide =
         DisposalItemGuide(
-            id = id,
-            name = name,
+            id = "paper-pack",
+            name = "종이팩",
             category = DisposalCategory.PAPER_PACK,
-            subCategory = subCategory,
+            subCategory = DisposalSubCategory.MILK_CARTON,
             instructions = listOf(DisposalInstruction(method = "재활용폐기물")),
             steps = emptyList(),
             cautions = emptyList(),
@@ -547,8 +818,13 @@ class FavoritesViewModelTest {
 
     private class FakeFavoriteRepository(
         initialFavorites: List<Favorite> = emptyList(),
+        private val removeFailure: Exception? = null,
+        private val removeStarted: CompletableDeferred<Unit>? = null,
+        private val continueRemove: CompletableDeferred<Unit>? = null,
     ) : FavoriteRepository {
         private val favorites = MutableStateFlow(initialFavorites)
+        var removeCallCount: Int = 0
+            private set
 
         override fun observeFavorites(): Flow<List<Favorite>> = favorites
 
@@ -586,6 +862,10 @@ class FavoritesViewModelTest {
             type: FavoriteTargetType,
             targetId: String,
         ) {
+            removeCallCount += 1
+            removeStarted?.complete(Unit)
+            continueRemove?.await()
+            removeFailure?.let { throw it }
             favorites.value =
                 favorites.value.filterNot { it.type == type && it.targetId == targetId }
         }
@@ -615,10 +895,12 @@ class FavoritesViewModelTest {
     private class FakeCollectionSpotFavoriteRepository(
         private val favoriteRepository: FakeFavoriteRepository,
         private val snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository,
+        private val removeFailure: Exception? = null,
     ) : CollectionSpotFavoriteRepository {
         override suspend fun toggleFavorite(spot: CollectionSpot): Boolean = false
 
         override suspend fun removeFavorite(targetId: String) {
+            removeFailure?.let { throw it }
             favoriteRepository.removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId)
             snapshotRepository.deleteSnapshot(targetId)
         }
@@ -648,10 +930,12 @@ class FavoritesViewModelTest {
     private class FakeRegionalGuideFavoriteRepository(
         private val favoriteRepository: FakeFavoriteRepository,
         private val snapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository,
+        private val removeFailure: Exception? = null,
     ) : RegionalGuideFavoriteRepository {
         override suspend fun toggleFavorite(snapshot: RegionalGuideFavoriteSnapshot): Boolean = false
 
         override suspend fun removeFavorite(targetId: String) {
+            removeFailure?.let { throw it }
             favoriteRepository.removeFavorite(FavoriteTargetType.REGIONAL_GUIDE, targetId)
             snapshotRepository.deleteSnapshot(targetId)
         }

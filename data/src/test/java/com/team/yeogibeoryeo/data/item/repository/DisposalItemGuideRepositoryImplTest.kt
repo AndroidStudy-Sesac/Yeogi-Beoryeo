@@ -6,14 +6,49 @@ import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DisposalItemGuideRepositoryImplTest {
+    @Test
+    fun `searchItemGuides는 local 조회를 지정된 dispatcher에서 실행한다`() =
+        runBlocking {
+            val callingThread = Thread.currentThread()
+            var sourceThread: Thread? = null
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val repository =
+                    DisposalItemGuideRepositoryImpl(
+                        localDataSource =
+                            FakeLocalSource(
+                                wasteDictionaryItems =
+                                    listOf(
+                                        sampleDictionaryItem(
+                                            name = "종이",
+                                            categoryPaths = listOf(listOf("재활용폐기물", "종이류")),
+                                            dischargeMethods = listOf("종이류로 배출합니다."),
+                                        ),
+                                    ),
+                                onGetWasteDictionaryItems = { sourceThread = Thread.currentThread() },
+                            ),
+                        ioDispatcher = dispatcher,
+                    )
+
+                repository.searchItemGuides("종이")
+            }
+
+            assertNotNull(sourceThread)
+            assertNotSame(callingThread, sourceThread)
+        }
+
     @Test
     fun `searchItemGuides는 원문 검색 결과가 없을 때 동의어로 다시 검색한다`() =
         runBlocking {
@@ -166,6 +201,30 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `유사 품목명 내부 공백 차이를 무시하고 검색한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "소형 폐가전",
+                                        similarItems = listOf("핸드폰 충전기"),
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("핸드폰충전기")
+
+            assertEquals(listOf("소형 폐가전"), results.map { it.name })
+        }
+
+    @Test
     fun `searchItemGuides는 직접 이름 결과가 있으면 유사 품목 결과보다 우선한다`() =
         runBlocking {
             val repository =
@@ -221,6 +280,64 @@ class DisposalItemGuideRepositoryImplTest {
             val results = repository.searchItemGuides("유리")
 
             assertEquals(listOf("유리"), results.map { it.name })
+        }
+
+    @Test
+    fun `품목명 내부 공백 차이를 무시하고 검색한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "태블릿 PC",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "핸드폰 충전기",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자제품")),
+                                        dischargeMethods = listOf("폐가전 수거 기준에 따라 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val tabletResults = repository.searchItemGuides("태블릿PC")
+            val chargerResults = repository.searchItemGuides("핸드폰충전기")
+
+            assertEquals(listOf("태블릿 PC"), tabletResults.map { it.name })
+            assertEquals(listOf("핸드폰 충전기"), chargerResults.map { it.name })
+        }
+
+    @Test
+    fun `공백 제거 후 정확 일치를 부분 일치보다 우선한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "AAA건전지",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전지류")),
+                                        dischargeMethods = listOf("전용 수거함에 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "AA 건전지",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전지류")),
+                                        dischargeMethods = listOf("전용 수거함에 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("AA건전지")
+
+            assertEquals(listOf("AA 건전지"), results.map { it.name })
         }
 
     @Test
@@ -570,11 +687,15 @@ class DisposalItemGuideRepositoryImplTest {
         private val synonyms: Map<String, String> = emptyMap(),
         private val guideDetails: Map<String, ItemGuideDetail> = emptyMap(),
         private val wasteDictionaryItems: List<WasteDictionaryItem> = emptyList(),
+        private val onGetWasteDictionaryItems: () -> Unit = {},
     ) : ItemCategoryLocalSource {
         override fun getSynonyms() = synonyms
 
         override fun getGuideDetails() = guideDetails
 
-        override fun getWasteDictionaryItems() = wasteDictionaryItems
+        override fun getWasteDictionaryItems(): List<WasteDictionaryItem> {
+            onGetWasteDictionaryItems()
+            return wasteDictionaryItems
+        }
     }
 }

@@ -3,7 +3,6 @@ package com.team.yeogibeoryeo.presentation.map
 import com.team.yeogibeoryeo.domain.favorite.model.CollectionSpotFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
-import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
@@ -15,7 +14,9 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
+import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
+import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotGeocodingRepository
 import com.team.yeogibeoryeo.domain.spot.repository.CollectionSpotRepository
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
 import com.team.yeogibeoryeo.domain.spot.usecase.CalculateDistanceMeterUseCase
@@ -28,6 +29,7 @@ import com.team.yeogibeoryeo.domain.spot.usecase.SaveRecentCurrentLocationSpotsU
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByKeywordUseCase
 import com.team.yeogibeoryeo.domain.spot.usecase.SearchCollectionSpotsByLocationUseCase
 import com.team.yeogibeoryeo.domain.time.TimeProvider
+import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearNotifier
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationProvider
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import com.team.yeogibeoryeo.presentation.map.location.LocationPermissionChecker
@@ -54,6 +56,9 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    collectionSpotFavoriteRepository: CollectionSpotFavoriteRepository? = null,
+    recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
+        RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
     return createViewModel(
         repository = repository,
@@ -64,6 +69,8 @@ internal fun createViewModel(
         favoriteRepository = favoriteRepository,
         regionOptionsRepository = regionOptionsRepository,
         snapshotRepository = snapshotRepository,
+        collectionSpotFavoriteRepository = collectionSpotFavoriteRepository,
+        recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
     )
 }
 
@@ -78,6 +85,9 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    collectionSpotFavoriteRepository: CollectionSpotFavoriteRepository? = null,
+    recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
+        RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
     val normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase()
 
@@ -88,9 +98,13 @@ internal fun createViewModel(
         ),
         searchCollectionSpotsByKeywordUseCase = SearchCollectionSpotsByKeywordUseCase(
             repository = repository,
+            geocodingRepository = repository,
             normalizeKeywordUseCase = normalizeKeywordUseCase,
         ),
-        searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(repository),
+        searchCollectionSpotsByLocationUseCase = SearchCollectionSpotsByLocationUseCase(
+            repository = repository,
+            geocodingRepository = repository,
+        ),
         filterCollectionSpotsUseCase = FilterCollectionSpotsUseCase(),
         currentLocationProvider = currentLocationProvider,
         locationPermissionChecker = FakeLocationPermissionChecker(hasFineLocationPermission),
@@ -108,20 +122,24 @@ internal fun createViewModel(
         observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
         toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
             collectionSpotFavoriteRepository =
-                FakeCollectionSpotFavoriteRepository(
-                    favoriteRepository = favoriteRepository,
-                    snapshotRepository = snapshotRepository,
-                ),
+                collectionSpotFavoriteRepository
+                    ?: FakeCollectionSpotFavoriteRepository(
+                        favoriteRepository = favoriteRepository,
+                        snapshotRepository = snapshotRepository,
+                    ),
         ),
         calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
+        recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
     )
 }
 
 internal fun freshCacheEntry(
     spots: List<CollectionSpot>,
+    searchCoordinate: Coordinate = DEFAULT_CURRENT_COORDINATE,
 ): RecentCurrentLocationSpotCacheEntry {
     return RecentCurrentLocationSpotCacheEntry(
         spots = spots,
+        searchCoordinate = searchCoordinate,
         savedAtMillis = TEST_NOW_MILLIS,
     )
 }
@@ -171,6 +189,16 @@ internal fun sampleFavoriteSpotMapMoveRequest(
     )
 }
 
+internal fun CollectionSpot.toFavoriteSnapshot(): CollectionSpotFavoriteSnapshot =
+    CollectionSpotFavoriteSnapshot(
+        targetId = id,
+        name = name,
+        type = type,
+        address = address,
+        detailLocation = detailLocation,
+        coordinate = coordinate,
+    )
+
 internal class FakeCurrentLocationProvider(
     internal val resultProvider: suspend () -> CurrentLocationResult,
 ) : CurrentLocationProvider {
@@ -194,6 +222,7 @@ internal class FakeTimeProvider(
 
 internal class FakeRecentCurrentLocationSpotCacheRepository(
     var entry: RecentCurrentLocationSpotCacheEntry? = null,
+    private val getCompletion: kotlinx.coroutines.CompletableDeferred<Unit>? = null,
 ) : RecentCurrentLocationSpotCacheRepository {
     var getCallCount = 0
         private set
@@ -204,6 +233,7 @@ internal class FakeRecentCurrentLocationSpotCacheRepository(
 
     override suspend fun getRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheEntry? {
         getCallCount += 1
+        getCompletion?.await()
         return entry
     }
 
@@ -212,9 +242,16 @@ internal class FakeRecentCurrentLocationSpotCacheRepository(
         this.entry = entry
     }
 
-    override suspend fun clearRecentCurrentLocationSpots() {
+    override suspend fun clearRecentCurrentLocationSpots(): RecentCurrentLocationSpotCacheClearResult {
         clearCallCount += 1
+        val hadCache = entry != null
         entry = null
+
+        return if (hadCache) {
+            RecentCurrentLocationSpotCacheClearResult.Deleted
+        } else {
+            RecentCurrentLocationSpotCacheClearResult.NoCache
+        }
     }
 }
 
@@ -225,35 +262,25 @@ internal class FakeCollectionSpotRepository(
     internal val keywordSearchThrowable: Throwable? = null,
     internal val locationSearchThrowable: Throwable? = null,
     internal val locationSearchResultProvider: (suspend () -> List<CollectionSpot>)? = null,
-) : CollectionSpotRepository {
+) : CollectionSpotRepository, CollectionSpotGeocodingRepository {
     val keywords = mutableListOf<String>()
     var locationSearchCallCount = 0
     var lastLocationCoordinate: Coordinate? = null
     var lastRadiusMeter: Int? = null
 
-    override suspend fun searchByKeyword(
-        keyword: String,
-        types: Set<CollectionSpotType>,
-    ): List<CollectionSpot> {
-        keywords += keyword
-        keywordSearchThrowable?.let { throw it }
-        return keywordSpots
-    }
-
-    override suspend fun searchByKeywordResult(
+    override suspend fun searchRawByKeyword(
         keyword: String,
         types: Set<CollectionSpotType>,
     ): CollectionSpotSearchResult {
+        keywords += keyword
+        keywordSearchThrowable?.let { throw it }
         return CollectionSpotSearchResult(
-            spots = searchByKeyword(
-                keyword = keyword,
-                types = types,
-            ),
+            spots = keywordSpots,
             isPartial = isKeywordSearchPartial,
         )
     }
 
-    override suspend fun searchByLocation(
+    override suspend fun searchRawByLocation(
         coordinate: Coordinate,
         radiusMeter: Int,
         types: Set<CollectionSpotType>,
@@ -416,3 +443,4 @@ internal class FakeCollectionSpotFavoriteRepository(
 }
 
 internal const val TEST_NOW_MILLIS = 20 * 60 * 1_000L
+internal val DEFAULT_CURRENT_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)

@@ -21,14 +21,14 @@ fun HomeRegionalGuideSummaryResult.toUiState(): HomeRegionalGuideSummaryUiState 
                 hasDifferentDisposalTime = summary.hasDifferentDisposalTime,
             )
 
-        is HomeRegionalGuideSummaryResult.NoTodaySchedule ->
-            HomeRegionalGuideSummaryUiState.NoTodaySchedule(
+        is HomeRegionalGuideSummaryResult.NoRepresentativeSchedule ->
+            HomeRegionalGuideSummaryUiState.NoRepresentativeSchedule(
                 targetId = targetId,
                 regionName = regionName,
             )
 
-        is HomeRegionalGuideSummaryResult.ScheduleNeedsConfirmation ->
-            HomeRegionalGuideSummaryUiState.ScheduleNeedsConfirmation(
+        is HomeRegionalGuideSummaryResult.RepresentativeScheduleNeedsConfirmation ->
+            HomeRegionalGuideSummaryUiState.RepresentativeScheduleNeedsConfirmation(
                 targetId = targetId,
                 regionName = regionName,
             )

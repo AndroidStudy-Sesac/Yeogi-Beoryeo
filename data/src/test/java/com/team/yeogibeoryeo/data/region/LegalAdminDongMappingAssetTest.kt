@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.region
 
+import com.team.yeogibeoryeo.data.region.local.RegionAssetContract
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -15,9 +16,11 @@ class LegalAdminDongMappingAssetTest {
     }
 
     @Test
-    fun `legal admin mapping asset can be decoded and contains haggye mappings`() {
+    fun `법정동 행정동 매핑 자산을 파싱하고 하계 매핑을 확인할 수 있다`() {
         val mappings = json.decodeFromString<List<LegalAdminDongMappingDto>>(
-            File(ASSET_PATH).readText()
+            File(
+                assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+            ).readText()
         )
 
         val haggyeAdminDongNames = mappings
@@ -35,7 +38,7 @@ class LegalAdminDongMappingAssetTest {
     }
 
     @Test
-    fun `legal admin mapping dto requires lookup key fields`() {
+    fun `법정동 행정동 매핑 dto는 조회 키 필드를 유지한다`() {
         assertThrows(SerializationException::class.java) {
             json.decodeFromString<List<LegalAdminDongMappingDto>>(
                 """
@@ -49,8 +52,7 @@ class LegalAdminDongMappingAssetTest {
         }
     }
 
-    private companion object {
-        const val ASSET_PATH =
-            "src/main/assets/region/legal_to_admin_mappings.20260325.json"
+    private fun assetFilePath(assetPath: String): String {
+        return "src/main/assets/$assetPath"
     }
 }

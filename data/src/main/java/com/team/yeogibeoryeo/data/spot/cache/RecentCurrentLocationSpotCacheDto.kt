@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class RecentCurrentLocationSpotCacheDto(
     val spots: List<CollectionSpotCacheDto>,
+    val searchCoordinate: CoordinateCacheDto? = null,
     val savedAtMillis: Long,
 )
 

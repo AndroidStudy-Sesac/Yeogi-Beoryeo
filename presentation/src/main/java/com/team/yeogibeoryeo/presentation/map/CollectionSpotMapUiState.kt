@@ -10,6 +10,7 @@ data class CollectionSpotMapUiState(
     val searchMode: MapSearchMode = MapSearchMode.KEYWORD,
     val spots: List<CollectionSpot> = emptyList(),
     val regionSearchCandidates: List<MapRegionSearchCandidate> = emptyList(),
+    val regionDetailSearchCandidate: MapRegionSearchCandidate? = null,
     val selectedSpot: CollectionSpot? = null,
     val selectedTypes: Set<CollectionSpotType> = emptySet(),
     val isLoading: Boolean = false,

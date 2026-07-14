@@ -12,7 +12,7 @@ interface LocationPermissionChecker {
 }
 
 class AndroidLocationPermissionChecker @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : LocationPermissionChecker {
 
     override fun hasFineLocationPermission(): Boolean {

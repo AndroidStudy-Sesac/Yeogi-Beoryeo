@@ -1,0 +1,188 @@
+package com.team.yeogibeoryeo.data.region
+
+import com.team.yeogibeoryeo.data.region.local.RegionAssetContract
+import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
+import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
+import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
+import kotlinx.serialization.json.Json
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.File
+
+class RegionAssetContractTest {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+    }
+
+    @Test
+    fun `행정구역 자산에 현재 기준 지역 변경이 반영된다`() {
+        val regions = decodeAsset<List<AdministrativeRegionDto>>(
+            assetFilePath(RegionAssetContract.ADMINISTRATIVE_REGION_ASSET_PATH)
+        )
+
+        val incheonSigunguNames = regions
+            .filter { region -> region.sidoName == "인천광역시" }
+            .map { region -> region.sigunguName }
+            .toSet()
+
+        assertTrue("영종구" in incheonSigunguNames)
+        assertTrue("제물포구" in incheonSigunguNames)
+        assertTrue("서해구" in incheonSigunguNames)
+        assertTrue("검단구" in incheonSigunguNames)
+        assertFalse("중구" in incheonSigunguNames)
+        assertFalse("동구" in incheonSigunguNames)
+        assertFalse("서구" in incheonSigunguNames)
+
+        assertTrue(regions.any { region -> region.sidoName == "전남광주통합특별시" })
+        assertFalse(regions.any { region -> region.sidoName == "광주광역시" })
+        assertFalse(regions.any { region -> region.sidoName == "전라남도" })
+    }
+
+    @Test
+    fun `행정구역과 법정동 매핑 자산에 안양 행정동 변경이 반영된다`() {
+        val regions = decodeAsset<List<AdministrativeRegionDto>>(
+            assetFilePath(RegionAssetContract.ADMINISTRATIVE_REGION_ASSET_PATH)
+        )
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
+
+        val anyangAdminDongNames = regions
+            .filter { region ->
+                region.sidoName == "경기도" &&
+                    region.sigunguName == "안양시 만안구"
+            }
+            .map { region -> region.eupmyeondongName }
+            .toSet()
+
+        assertTrue("명학동" in anyangAdminDongNames)
+        assertTrue("병목안동" in anyangAdminDongNames)
+        assertFalse("안양8동" in anyangAdminDongNames)
+        assertFalse("안양9동" in anyangAdminDongNames)
+
+        val anyangMappingAdminDongNames = mappings
+            .filter { mapping ->
+                mapping.sidoName == "경기도" &&
+                    mapping.sigunguName == "안양시 만안구" &&
+                    mapping.legalDongName == "안양동"
+            }
+            .map { mapping -> mapping.adminDongName }
+            .toSet()
+
+        assertTrue("명학동" in anyangMappingAdminDongNames)
+        assertTrue("병목안동" in anyangMappingAdminDongNames)
+        assertFalse("안양8동" in anyangMappingAdminDongNames)
+        assertFalse("안양9동" in anyangMappingAdminDongNames)
+    }
+
+    @Test
+    fun `법정동 행정동 매핑 자산의 법정 행정 코드는 10자리 숫자이다`() {
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
+
+        val invalidMappings = mappings.filter { mapping ->
+            !mapping.legalCode.matches(REGION_CODE_REGEX) ||
+                !mapping.adminCode.matches(REGION_CODE_REGEX)
+        }
+
+        assertTrue(
+            "법정동-행정동 매핑 코드 형식이 올바르지 않습니다: $invalidMappings",
+            invalidMappings.isEmpty()
+        )
+    }
+
+    @Test
+    fun `지도 검색 안양동 후보는 법정 행정 시군구 코드가 일치하는 후보만 노출한다`() {
+        val administrativeRegions =
+            decodeAsset<List<AdministrativeRegionDto>>(
+                assetFilePath(RegionAssetContract.ADMINISTRATIVE_REGION_ASSET_PATH)
+            )
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
+
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = administrativeRegions,
+            legalAdminDongMappings = mappings,
+            keyword = "안양동"
+        )
+
+        assertTrue(
+            regions.any { region ->
+                region.sido == "경기도" &&
+                    region.sigungu == "안양시 만안구" &&
+                    region.eupmyeondong == "안양동"
+            }
+        )
+        assertFalse(
+            regions.any { region ->
+                region.sido == "경기도" &&
+                    region.sigungu == "안양시 동안구" &&
+                    region.eupmyeondong == "안양동"
+            }
+        )
+    }
+
+    @Test
+    fun `법정동 행정동 매핑 자산은 복수 후보 매핑을 유지한다`() {
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
+
+        val geumhoAdminDongNames = mappings
+            .filter { mapping ->
+                mapping.sidoName == "전남광주통합특별시" &&
+                    mapping.sigunguName == "서구" &&
+                    mapping.legalDongName == "금호동"
+            }
+            .map { mapping -> mapping.adminDongName }
+            .toSet()
+
+        assertTrue("금호1동" in geumhoAdminDongNames)
+        assertTrue("금호2동" in geumhoAdminDongNames)
+    }
+
+    @Test
+    fun `지역 가이드 지역 자산은 현재 기준 지역명을 따른다`() {
+        val regions = decodeAsset<List<RegionalGuideRegionDto>>(
+            assetFilePath(RegionAssetContract.REGIONAL_GUIDE_REGION_ASSET_PATH)
+        )
+
+        val incheonSigunguNames = regions
+            .filter { region -> region.sidoName == "인천광역시" }
+            .map { region -> region.sigunguName }
+            .toSet()
+
+        assertTrue("영종구" in incheonSigunguNames)
+        assertTrue("제물포구" in incheonSigunguNames)
+        assertTrue("서해구" in incheonSigunguNames)
+        assertTrue("검단구" in incheonSigunguNames)
+        assertFalse("중구" in incheonSigunguNames)
+        assertFalse("동구" in incheonSigunguNames)
+        assertFalse("서구" in incheonSigunguNames)
+
+        assertTrue(
+            regions.any { region ->
+                region.sidoName == "전남광주통합특별시" &&
+                    region.sigunguName == "광산구"
+            }
+        )
+        assertFalse(regions.any { region -> region.sidoName == "광주광역시" })
+        assertFalse(regions.any { region -> region.sidoName == "전라남도" })
+    }
+
+    private inline fun <reified T> decodeAsset(path: String): T {
+        return json.decodeFromString(File(path).readText())
+    }
+
+    private fun assetFilePath(assetPath: String): String {
+        return "src/main/assets/$assetPath"
+    }
+
+    private companion object {
+        val REGION_CODE_REGEX = """\d{10}""".toRegex()
+    }
+}
