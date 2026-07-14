@@ -11,6 +11,7 @@ import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -49,8 +50,13 @@ class CollectionSpotMapFavoriteViewModelTest : CollectionSpotMapViewModelTestFix
         runTest {
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val refreshResult = CompletableDeferred<List<CollectionSpot>>()
             val viewModel = createViewModel(
-                repository = FakeCollectionSpotRepository(),
+                repository = FakeCollectionSpotRepository(
+                    locationSearchResultProvider = {
+                        refreshResult.await()
+                    },
+                ),
                 currentLocationProvider = FakeCurrentLocationProvider {
                     locationResult.await()
                 },
@@ -65,7 +71,8 @@ class CollectionSpotMapFavoriteViewModelTest : CollectionSpotMapViewModelTestFix
             advanceUntilIdle()
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
-            advanceUntilIdle()
+            locationResult.complete(CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE))
+            runCurrent()
 
             assertEquals(true, viewModel.uiState.value.spots.single().isBookmarked)
         }

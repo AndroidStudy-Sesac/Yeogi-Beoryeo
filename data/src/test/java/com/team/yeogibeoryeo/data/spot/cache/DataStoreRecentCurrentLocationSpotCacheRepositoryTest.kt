@@ -3,8 +3,11 @@ package com.team.yeogibeoryeo.data.spot.cache
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.mutablePreferencesOf
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +26,7 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
                 repository.saveRecentCurrentLocationSpots(
                     RecentCurrentLocationSpotCacheEntry(
                         spots = listOf(sampleSpot("저장됨")),
+                        searchCoordinate = TEST_COORDINATE,
                         savedAtMillis = 1_000L,
                     ),
                 )
@@ -55,6 +59,7 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
                 repository.saveRecentCurrentLocationSpots(
                     RecentCurrentLocationSpotCacheEntry(
                         spots = listOf(sampleSpot("동시저장")),
+                        searchCoordinate = TEST_COORDINATE,
                         savedAtMillis = 1_000L,
                     ),
                 )
@@ -64,6 +69,26 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
 
             assertEquals(RecentCurrentLocationSpotCacheClearResult.Deleted, result)
             assertNull(repository.getRecentCurrentLocationSpots())
+        }
+
+    @Test
+    fun `기준 좌표가 없는 기존 캐시는 조회 시 무효 처리한다`() =
+        runBlocking {
+            val dataStore = InMemoryPreferencesDataStore()
+            val repository = DataStoreRecentCurrentLocationSpotCacheRepository(dataStore)
+
+            dataStore.putString(
+                key = "recent_current_location_spots",
+                value = """{"spots":[],"savedAtMillis":1000}""",
+            )
+
+            val result = repository.getRecentCurrentLocationSpots()
+
+            assertNull(result)
+            assertEquals(
+                RecentCurrentLocationSpotCacheClearResult.NoCache,
+                repository.clearRecentCurrentLocationSpots(),
+            )
         }
 
     private fun sampleSpot(id: String): CollectionSpot {
@@ -98,6 +123,13 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
             beforeNextUpdate = block
         }
 
+        fun putString(
+            key: String,
+            value: String,
+        ) {
+            preferences.value = mutablePreferencesOf(stringPreferencesKey(key) to value)
+        }
+
         override suspend fun updateData(
             transform: suspend (t: Preferences) -> Preferences,
         ): Preferences {
@@ -109,5 +141,9 @@ class DataStoreRecentCurrentLocationSpotCacheRepositoryTest {
             preferences.value = updatedPreferences
             return updatedPreferences
         }
+    }
+
+    private companion object {
+        val TEST_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
     }
 }

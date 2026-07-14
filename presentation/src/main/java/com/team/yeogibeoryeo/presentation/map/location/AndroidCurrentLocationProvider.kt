@@ -3,7 +3,10 @@ package com.team.yeogibeoryeo.presentation.map.location
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.LocationManager
+import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -28,7 +31,21 @@ class AndroidCurrentLocationProvider @Inject constructor(
 
         return try {
             suspendCancellableCoroutine { continuation ->
-                fusedLocationProviderClient.lastLocation
+                val cancellationTokenSource = CancellationTokenSource()
+                val request = CurrentLocationRequest.Builder()
+                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                    .setMaxUpdateAgeMillis(CURRENT_LOCATION_MAX_UPDATE_AGE_MILLIS)
+                    .setDurationMillis(CURRENT_LOCATION_REQUEST_TIMEOUT_MILLIS)
+                    .build()
+
+                continuation.invokeOnCancellation {
+                    cancellationTokenSource.cancel()
+                }
+
+                fusedLocationProviderClient.getCurrentLocation(
+                    request,
+                    cancellationTokenSource.token,
+                )
                     .addOnSuccessListener { location ->
                         val result = location?.let {
                             CurrentLocationResult.Found(
@@ -66,5 +83,10 @@ class AndroidCurrentLocationProvider @Inject constructor(
             locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
         }.getOrDefault(true)
+    }
+
+    private companion object {
+        const val CURRENT_LOCATION_MAX_UPDATE_AGE_MILLIS = 30 * 1_000L
+        const val CURRENT_LOCATION_REQUEST_TIMEOUT_MILLIS = 8 * 1_000L
     }
 }

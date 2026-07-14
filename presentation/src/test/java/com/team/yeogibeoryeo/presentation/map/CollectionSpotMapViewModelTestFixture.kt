@@ -131,9 +131,11 @@ internal fun createViewModel(
 
 internal fun freshCacheEntry(
     spots: List<CollectionSpot>,
+    searchCoordinate: Coordinate = DEFAULT_CURRENT_COORDINATE,
 ): RecentCurrentLocationSpotCacheEntry {
     return RecentCurrentLocationSpotCacheEntry(
         spots = spots,
+        searchCoordinate = searchCoordinate,
         savedAtMillis = TEST_NOW_MILLIS,
     )
 }
@@ -437,3 +439,4 @@ internal class FakeCollectionSpotFavoriteRepository(
 }
 
 internal const val TEST_NOW_MILLIS = 20 * 60 * 1_000L
+internal val DEFAULT_CURRENT_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)

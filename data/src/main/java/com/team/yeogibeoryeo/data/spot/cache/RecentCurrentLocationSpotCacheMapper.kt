@@ -8,6 +8,7 @@ import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEnt
 internal fun RecentCurrentLocationSpotCacheEntry.toDto(): RecentCurrentLocationSpotCacheDto {
     return RecentCurrentLocationSpotCacheDto(
         spots = spots.map(CollectionSpot::toDto),
+        searchCoordinate = searchCoordinate.toDto(),
         savedAtMillis = savedAtMillis,
     )
 }
@@ -15,6 +16,9 @@ internal fun RecentCurrentLocationSpotCacheEntry.toDto(): RecentCurrentLocationS
 internal fun RecentCurrentLocationSpotCacheDto.toDomain(): RecentCurrentLocationSpotCacheEntry {
     return RecentCurrentLocationSpotCacheEntry(
         spots = spots.map(CollectionSpotCacheDto::toDomain),
+        searchCoordinate = requireNotNull(searchCoordinate) {
+            "Recent current location cache is missing searchCoordinate"
+        }.toDomain(),
         savedAtMillis = savedAtMillis,
     )
 }

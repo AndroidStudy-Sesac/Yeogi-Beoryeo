@@ -68,7 +68,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
         }
 
     @Test
-    fun `캐시 표시 후 권한 거부 결과를 받으면 캐시와 현재 위치 결과를 정리한다`() =
+    fun `권한 거부 결과를 받으면 캐시 조회 없이 캐시와 현재 위치 결과를 정리한다`() =
         runTest {
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val cache = FakeRecentCurrentLocationSpotCacheRepository(
@@ -85,7 +85,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             viewModel.searchByCurrentLocation()
             advanceUntilIdle()
 
-            assertEquals(1, cache.getCallCount)
+            assertEquals(0, cache.getCallCount)
             assertEquals(1, cache.clearCallCount)
             assertNull(cache.entry)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
