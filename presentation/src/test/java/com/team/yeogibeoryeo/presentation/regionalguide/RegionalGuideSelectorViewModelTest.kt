@@ -6,6 +6,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -366,6 +367,86 @@ class RegionalGuideSelectorViewModelTest {
 
         assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
         assertEquals("중", viewModel.searchKeyword.value)
+        assertEquals(
+            RegionSelectorDropdown.SIDO,
+            viewModel.regionSelectorUiState.value.expandedDropdown
+        )
+    }
+
+    @Test
+    fun `지역 선택 시작은 성공 상태의 예약된 검색 후보 조회를 취소한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("수원시")
+                ),
+                keywordRegions = listOf(
+                    Region(sido = "대전광역시", sigungu = "중구"),
+                    Region(sido = "서울특별시", sigungu = "중구"),
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "경기도",
+                        sigungu = "수원시",
+                        targetRegionName = "수원시 전체"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("경기도")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("수원시")
+        advanceUntilIdle()
+        viewModel.onRegionSelectionSearchClick()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+
+        viewModel.onSearchKeywordChanged("중")
+        advanceTimeBy(399)
+
+        viewModel.onRegionSelectionStarted()
+        advanceTimeBy(1)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+        assertEquals("중", viewModel.searchKeyword.value)
+    }
+
+    @Test
+    fun `지역 선택 시작은 진행 중인 조회를 취소하고 지연된 결과를 반영하지 않는다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sido = "경기도", sigungu = "수원시")
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "경기도",
+                        sigungu = "수원시",
+                        targetRegionName = "수원시 전체"
+                    )
+                ),
+                delayMillis = 1_000L,
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("수원시")
+        viewModel.searchCurrentKeyword()
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Loading)
+
+        viewModel.onRegionSelectorDropdownExpanded(RegionSelectorDropdown.SIDO)
+        advanceTimeBy(1_000L)
+        advanceUntilIdle()
+
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
         assertEquals(
             RegionSelectorDropdown.SIDO,
             viewModel.regionSelectorUiState.value.expandedDropdown
