@@ -147,10 +147,18 @@ class RegionalGuideMapperTest {
     @Test
     fun `시간파싱_유효하지 않은 입력은 null 반환한다`() {
         assertNull(RegionalWasteScheduleMapper.parseTime("00:00"))
+        assertNull(RegionalWasteScheduleMapper.parseTime("0000"))
         assertNull(RegionalWasteScheduleMapper.parseTime("   "))
         assertNull(RegionalWasteScheduleMapper.parseTime(null))
 
         assertEquals("18:00", RegionalWasteScheduleMapper.parseTime(" 18:00 "))
+    }
+
+    @Test
+    fun `콜론 없는 시간은 시와 분을 구분해 표시한다`() {
+        assertEquals("18:30", RegionalWasteScheduleMapper.parseTime("1830"))
+        assertEquals("24:00", RegionalWasteScheduleMapper.parseTime("2400"))
+        assertEquals("2460", RegionalWasteScheduleMapper.parseTime("2460"))
     }
 
     @Test
