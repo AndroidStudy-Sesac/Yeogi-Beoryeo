@@ -6,14 +6,49 @@ import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DisposalItemGuideRepositoryImplTest {
+    @Test
+    fun `searchItemGuides는 local 조회를 지정된 dispatcher에서 실행한다`() =
+        runBlocking {
+            val callingThread = Thread.currentThread()
+            var sourceThread: Thread? = null
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val repository =
+                    DisposalItemGuideRepositoryImpl(
+                        localDataSource =
+                            FakeLocalSource(
+                                wasteDictionaryItems =
+                                    listOf(
+                                        sampleDictionaryItem(
+                                            name = "종이",
+                                            categoryPaths = listOf(listOf("재활용폐기물", "종이류")),
+                                            dischargeMethods = listOf("종이류로 배출합니다."),
+                                        ),
+                                    ),
+                                onGetWasteDictionaryItems = { sourceThread = Thread.currentThread() },
+                            ),
+                        ioDispatcher = dispatcher,
+                    )
+
+                repository.searchItemGuides("종이")
+            }
+
+            assertNotNull(sourceThread)
+            assertNotSame(callingThread, sourceThread)
+        }
+
     @Test
     fun `searchItemGuides는 원문 검색 결과가 없을 때 동의어로 다시 검색한다`() =
         runBlocking {
@@ -652,11 +687,15 @@ class DisposalItemGuideRepositoryImplTest {
         private val synonyms: Map<String, String> = emptyMap(),
         private val guideDetails: Map<String, ItemGuideDetail> = emptyMap(),
         private val wasteDictionaryItems: List<WasteDictionaryItem> = emptyList(),
+        private val onGetWasteDictionaryItems: () -> Unit = {},
     ) : ItemCategoryLocalSource {
         override fun getSynonyms() = synonyms
 
         override fun getGuideDetails() = guideDetails
 
-        override fun getWasteDictionaryItems() = wasteDictionaryItems
+        override fun getWasteDictionaryItems(): List<WasteDictionaryItem> {
+            onGetWasteDictionaryItems()
+            return wasteDictionaryItems
+        }
     }
 }
