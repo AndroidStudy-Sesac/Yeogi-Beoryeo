@@ -2,7 +2,10 @@ package com.team.yeogibeoryeo.presentation.regionalguide.mapper
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RegionalGuideUiMapperTest {
@@ -54,5 +57,40 @@ class RegionalGuideUiMapperTest {
 
         assertEquals("노은2동", uiModel.managementZoneName)
         assertEquals("반석동 일부지역", uiModel.targetRegionName)
+    }
+
+    @Test
+    fun `대형폐기물 요일이 없으면 UI 일정 요일을 비워 행을 숨길 수 있게 한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(sido = "서울특별시", sigungu = "중구"),
+            schedules = listOf(
+                RegionalWasteSchedule(
+                    wasteType = RegionalWasteType.LARGE_ITEM,
+                    disposalPlace = "대형폐기물 지정 장소",
+                )
+            )
+        )
+
+        val schedule = guide.toUiModel().schedules.single()
+
+        assertEquals("대형폐기물", schedule.wasteTypeName)
+        assertNull(schedule.disposalDays)
+        assertNull(schedule.disposalTime)
+        assertNull(schedule.disposalMethod)
+        assertEquals("대형폐기물 지정 장소", schedule.disposalPlace)
+    }
+
+    @Test
+    fun `관리 부서와 연락처는 UI 문의 정보로 합쳐 표시한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(sido = "서울특별시", sigungu = "중구"),
+            schedules = emptyList(),
+            departmentName = "청소행정과",
+            departmentPhoneNumber = "02-1234-5678",
+        )
+
+        val uiModel = guide.toUiModel()
+
+        assertEquals("청소행정과 02-1234-5678", uiModel.departmentInfo)
     }
 }

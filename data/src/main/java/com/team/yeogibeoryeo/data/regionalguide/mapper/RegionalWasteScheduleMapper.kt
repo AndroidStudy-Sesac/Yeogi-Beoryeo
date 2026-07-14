@@ -14,7 +14,16 @@ object RegionalWasteScheduleMapper {
             createSchedule(RegionalWasteType.GENERAL, dto.generalDisposalDays, dto.generalStartTime, dto.generalEndTime, dto.generalMethod),
             createSchedule(RegionalWasteType.FOOD, dto.foodDisposalDays, dto.foodStartTime, dto.foodEndTime, dto.foodMethod),
             createSchedule(RegionalWasteType.RECYCLABLE, dto.recycleDisposalDays, dto.recycleStartTime, dto.recycleEndTime, dto.recycleMethod),
-            createSchedule(RegionalWasteType.LARGE_ITEM, dto.largeItemDisposalDays, dto.largeItemStartTime, dto.largeItemEndTime, dto.largeItemMethod)
+            createSchedule(
+                type = RegionalWasteType.LARGE_ITEM,
+                days = dto.largeItemDisposalDays,
+                start = dto.largeItemStartTime,
+                end = dto.largeItemEndTime,
+                method = dto.largeItemMethod,
+                place = dto.largeItemDisposalPlace,
+                useDefaultDayWhenBlank = false,
+                useDefaultMethodWhenBlank = false,
+            )
         )
     }
 
@@ -23,17 +32,21 @@ object RegionalWasteScheduleMapper {
         days: String?,
         start: String?,
         end: String?,
-        method: String?
+        method: String?,
+        place: String? = null,
+        useDefaultDayWhenBlank: Boolean = true,
+        useDefaultMethodWhenBlank: Boolean = true,
     ): RegionalWasteSchedule? {
         if (days.isNullOrBlank() && start.isNullOrBlank() &&
-            end.isNullOrBlank() && method.isNullOrBlank()) return null
+            end.isNullOrBlank() && method.isNullOrBlank() && place.isNullOrBlank()) return null
 
         return RegionalWasteSchedule(
             wasteType = type,
-            disposalDays = parseDays(days),
+            disposalDays = if (useDefaultDayWhenBlank) parseDays(days) else parseDaysOrNull(days),
             disposalStartTime = parseTime(start),
             disposalEndTime = parseTime(end),
-            disposalMethod = parseMethod(method)
+            disposalMethod = if (useDefaultMethodWhenBlank) parseMethod(method) else parseMethodOrNull(method),
+            disposalPlace = place?.trim()?.takeIf { value -> value.isNotBlank() },
         )
     }
 
@@ -75,6 +88,16 @@ object RegionalWasteScheduleMapper {
         if (method.isNullOrBlank()) return "지정된 배출 방법이 없습니다."
         return method.replace(Regex("\\s+"), " ").trim()
     }
+
+    private fun parseDaysOrNull(days: String?): String? =
+        days
+            ?.takeIf { value -> value.isNotBlank() }
+            ?.let(::parseDays)
+
+    private fun parseMethodOrNull(method: String?): String? =
+        method
+            ?.takeIf { value -> value.isNotBlank() }
+            ?.let(::parseMethod)
 
     private val COMPACT_TIME_REGEX = Regex("^(\\d{2})(\\d{2})$")
     private val EMPTY_TIME_VALUES = setOf("00:00", "00:00:00")

@@ -27,7 +27,6 @@ object RegionalGuideMapper {
             managementZoneName = dto.managementZoneName?.trim(),
             targetRegionName = targetRegionName,
             disposalPlaceType = dto.disposalPlaceType?.trim(),
-            disposalPlaceDescription = dto.placeDescription?.trim(),
             schedules = RegionalWasteScheduleMapper.mapToSchedules(dto),
             uncollectedDays = RegionalWasteScheduleMapper.parseDays(dto.uncollectedDay),
             departmentName = dto.departmentName?.trim(),

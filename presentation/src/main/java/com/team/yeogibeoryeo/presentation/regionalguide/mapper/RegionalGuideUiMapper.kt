@@ -36,9 +36,10 @@ fun RegionalDisposalGuide.toUiModel(): RegionalGuideUiModel {
 private fun RegionalWasteSchedule.toUiModel(): RegionalWasteScheduleUiModel {
     return RegionalWasteScheduleUiModel(
         wasteTypeName = wasteType.description,
-        disposalDays = disposalDays.orInfoEmpty(),
+        disposalDays = disposalDays.takeIfNotBlank(),
         disposalTime = displayTime(),
-        disposalMethod = disposalMethod.orInfoEmpty()
+        disposalMethod = disposalMethod.takeIfNotBlank(),
+        disposalPlace = disposalPlace.takeIfNotBlank(),
     )
 }
 
@@ -57,7 +58,7 @@ private fun RegionalDisposalGuide.displayRegionName(): String {
     }
 }
 
-private fun RegionalWasteSchedule.displayTime(): String {
+private fun RegionalWasteSchedule.displayTime(): String? {
     val startTime = disposalStartTime
     val endTime = disposalEndTime
 
@@ -65,12 +66,9 @@ private fun RegionalWasteSchedule.displayTime(): String {
         !startTime.isNullOrBlank() && !endTime.isNullOrBlank() -> "$startTime ~ $endTime"
         !startTime.isNullOrBlank() -> "$startTime 이후"
         !endTime.isNullOrBlank() -> "$endTime 이전"
-        else -> "시간 정보 없음"
+        else -> null
     }
 }
 
-private fun String?.orInfoEmpty(): String =
-    if (isNullOrBlank()) "정보 없음" else this
-
 private fun String?.takeIfNotBlank(): String? =
-    this?.takeIf { it.isNotBlank() }
+    this?.trim()?.takeIf { it.isNotBlank() }

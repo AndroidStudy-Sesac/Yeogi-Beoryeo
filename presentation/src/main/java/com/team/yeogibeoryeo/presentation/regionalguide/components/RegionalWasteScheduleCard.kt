@@ -42,20 +42,33 @@ fun RegionalWasteScheduleCard(
                 fontWeight = FontWeight.Bold
             )
 
-            RegionalGuideInfoRow(
-                title = "요일",
-                value = schedule.disposalDays
-            )
+            schedule.disposalDays?.let { disposalDays ->
+                RegionalGuideInfoRow(
+                    title = "요일",
+                    value = disposalDays
+                )
+            }
 
-            RegionalGuideInfoRow(
-                title = "시간",
-                value = schedule.disposalTime
-            )
+            schedule.disposalTime?.let { disposalTime ->
+                RegionalGuideInfoRow(
+                    title = "시간",
+                    value = disposalTime
+                )
+            }
 
-            RegionalGuideInfoRow(
-                title = "방법",
-                value = schedule.disposalMethod
-            )
+            schedule.disposalMethod?.let { disposalMethod ->
+                RegionalGuideInfoRow(
+                    title = "방법",
+                    value = disposalMethod
+                )
+            }
+
+            schedule.disposalPlace?.let { disposalPlace ->
+                RegionalGuideInfoRow(
+                    title = "장소",
+                    value = disposalPlace
+                )
+            }
         }
     }
 }
