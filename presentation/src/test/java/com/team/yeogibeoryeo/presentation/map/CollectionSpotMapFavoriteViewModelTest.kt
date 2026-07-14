@@ -160,7 +160,7 @@ class CollectionSpotMapFavoriteViewModelTest : CollectionSpotMapViewModelTestFix
         }
 
     @Test
-    fun `같은 장소를 빠르게 두 번 누르면 즐겨찾기 변경을 순서대로 처리한다`() =
+    fun `같은 장소를 빠르게 두 번 누르면 처리 중 중복 요청을 무시한다`() =
         runTest {
             val spot = sampleSpot("spot", CollectionSpotType.BATTERY_BIN)
             val favoriteRepository = FakeFavoriteRepository()
@@ -193,9 +193,9 @@ class CollectionSpotMapFavoriteViewModelTest : CollectionSpotMapViewModelTestFix
             continueFirstToggle.complete(Unit)
             advanceUntilIdle()
 
-            assertEquals(2, favoriteToggleRepository.toggleCallCount)
-            assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, spot.id))
-            assertEquals(false, viewModel.uiState.value.spots.single().isBookmarked)
+            assertEquals(1, favoriteToggleRepository.toggleCallCount)
+            assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.COLLECTION_SPOT, spot.id))
+            assertEquals(true, viewModel.uiState.value.spots.single().isBookmarked)
         }
 
     @Test

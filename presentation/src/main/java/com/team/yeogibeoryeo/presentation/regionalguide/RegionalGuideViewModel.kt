@@ -80,7 +80,6 @@ class RegionalGuideViewModel @Inject constructor(
     private var currentRegionalGuideFavoriteSnapshot: RegionalGuideFavoriteSnapshot? = null
     private val guideCandidateBackStackEntries = mutableListOf<RegionalGuideCandidateBackStackEntry>()
     private val favoriteToggleJobs = mutableMapOf<String, Job>()
-    private val pendingFavoriteToggleCounts = mutableMapOf<String, Int>()
 
     init {
         loadSidoOptions()
@@ -300,24 +299,16 @@ class RegionalGuideViewModel @Inject constructor(
 
     fun onFavoriteClick() {
         val snapshot = currentRegionalGuideFavoriteSnapshot ?: return
-        pendingFavoriteToggleCounts[snapshot.targetId] =
-            pendingFavoriteToggleCounts.getOrDefault(snapshot.targetId, 0) + 1
         if (favoriteToggleJobs[snapshot.targetId]?.isActive == true) return
 
         favoriteToggleJobs[snapshot.targetId] = viewModelScope.launch {
             try {
-                while (pendingFavoriteToggleCounts.getOrDefault(snapshot.targetId, 0) > 0) {
-                    pendingFavoriteToggleCounts[snapshot.targetId] =
-                        pendingFavoriteToggleCounts.getValue(snapshot.targetId) - 1
-                    toggleRegionalGuideFavoriteUseCase(snapshot)
-                }
+                toggleRegionalGuideFavoriteUseCase(snapshot)
             } catch (exception: CancellationException) {
                 throw exception
             } catch (_: Throwable) {
-                pendingFavoriteToggleCounts.remove(snapshot.targetId)
                 _events.emit(RegionalGuideEvent.FavoriteUpdateFailed)
             } finally {
-                pendingFavoriteToggleCounts.remove(snapshot.targetId)
                 favoriteToggleJobs.remove(snapshot.targetId)
             }
         }

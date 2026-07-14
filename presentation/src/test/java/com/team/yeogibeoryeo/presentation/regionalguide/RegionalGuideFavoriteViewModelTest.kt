@@ -94,7 +94,7 @@ class RegionalGuideFavoriteViewModelTest {
     }
 
     @Test
-    fun `지역 가이드 즐겨찾기를 빠르게 두 번 누르면 변경을 순서대로 처리한다`() = runTest {
+    fun `지역 가이드 즐겨찾기를 빠르게 두 번 누르면 처리 중 중복 요청을 무시한다`() = runTest {
         val guide = sampleGuide(sido = "서울특별시", sigungu = "중구", targetRegionName = "금호2.3가동")
         val favoriteRepository = FakeFavoriteRepository()
         val snapshot = guide.toFavoriteSnapshot()
@@ -126,9 +126,9 @@ class RegionalGuideFavoriteViewModelTest {
         continueFirstToggle.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(2, favoriteToggleRepository.toggleCallCount)
-        assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
-        assertEquals(false, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
+        assertEquals(1, favoriteToggleRepository.toggleCallCount)
+        assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
+        assertEquals(true, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
     }
 
     @Test

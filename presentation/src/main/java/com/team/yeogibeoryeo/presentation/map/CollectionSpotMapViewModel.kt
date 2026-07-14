@@ -72,7 +72,6 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var favoriteSpotIds: Set<String> = emptySet()
     private val consumedFavoriteSpotMoveRequestIds = mutableSetOf<String>()
     private val favoriteToggleJobs = mutableMapOf<String, Job>()
-    private val pendingFavoriteToggleCounts = mutableMapOf<String, Int>()
 
     init {
         observeCollectionSpotFavorites()
@@ -560,24 +559,16 @@ class CollectionSpotMapViewModel @Inject constructor(
     }
 
     fun onSpotFavoriteClick(spot: CollectionSpot) {
-        pendingFavoriteToggleCounts[spot.id] =
-            pendingFavoriteToggleCounts.getOrDefault(spot.id, 0) + 1
         if (favoriteToggleJobs[spot.id]?.isActive == true) return
 
         favoriteToggleJobs[spot.id] = viewModelScope.launch {
             try {
-                while (pendingFavoriteToggleCounts.getOrDefault(spot.id, 0) > 0) {
-                    pendingFavoriteToggleCounts[spot.id] =
-                        pendingFavoriteToggleCounts.getValue(spot.id) - 1
-                    toggleCollectionSpotFavoriteUseCase(spot)
-                }
+                toggleCollectionSpotFavoriteUseCase(spot)
             } catch (exception: CancellationException) {
                 throw exception
             } catch (_: Throwable) {
-                pendingFavoriteToggleCounts.remove(spot.id)
                 _events.emit(CollectionSpotMapEvent.FavoriteUpdateFailed)
             } finally {
-                pendingFavoriteToggleCounts.remove(spot.id)
                 favoriteToggleJobs.remove(spot.id)
             }
         }
