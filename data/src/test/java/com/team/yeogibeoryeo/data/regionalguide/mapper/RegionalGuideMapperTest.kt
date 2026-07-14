@@ -162,26 +162,6 @@ class RegionalGuideMapperTest {
     }
 
     @Test
-    fun `대형폐기물 배출장소는 요일과 분리해 일정에 보존한다`() {
-        val result = RegionalGuideMapper.mapToDomain(
-            baseRegion = Region(sido = "서울특별시", sigungu = "성동구"),
-            dto = RegionalGuideItemDto(
-                largeItemStartTime = "0900",
-                largeItemEndTime = "1800",
-                largeItemMethod = "신고 후 배출",
-                largeItemDisposalPlace = "신고 후 집 앞",
-            ),
-        )
-
-        val largeItemSchedule = result.schedules.single()
-
-        assertNull(largeItemSchedule.disposalDays)
-        assertEquals("09:00", largeItemSchedule.disposalStartTime)
-        assertEquals("18:00", largeItemSchedule.disposalEndTime)
-        assertEquals("신고 후 집 앞", largeItemSchedule.disposalPlace)
-    }
-
-    @Test
     fun `요일 파싱_불필요한 요일 단어와 기호를 제거하여 정제한다`() {
         assertEquals("월, 화, 수", RegionalWasteScheduleMapper.parseDays("월요일/화요일+수요일,월요일"))
         assertEquals("명절, 공휴일", RegionalWasteScheduleMapper.parseDays("명절+공휴일"))

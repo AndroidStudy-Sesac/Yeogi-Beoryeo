@@ -14,14 +14,7 @@ object RegionalWasteScheduleMapper {
             createSchedule(RegionalWasteType.GENERAL, dto.generalDisposalDays, dto.generalStartTime, dto.generalEndTime, dto.generalMethod),
             createSchedule(RegionalWasteType.FOOD, dto.foodDisposalDays, dto.foodStartTime, dto.foodEndTime, dto.foodMethod),
             createSchedule(RegionalWasteType.RECYCLABLE, dto.recycleDisposalDays, dto.recycleStartTime, dto.recycleEndTime, dto.recycleMethod),
-            createSchedule(
-                type = RegionalWasteType.LARGE_ITEM,
-                days = null,
-                start = dto.largeItemStartTime,
-                end = dto.largeItemEndTime,
-                method = dto.largeItemMethod,
-                place = dto.largeItemDisposalPlace,
-            )
+            createSchedule(RegionalWasteType.LARGE_ITEM, dto.largeItemDisposalDays, dto.largeItemStartTime, dto.largeItemEndTime, dto.largeItemMethod)
         )
     }
 
@@ -30,20 +23,17 @@ object RegionalWasteScheduleMapper {
         days: String?,
         start: String?,
         end: String?,
-        method: String?,
-        place: String? = null,
+        method: String?
     ): RegionalWasteSchedule? {
         if (days.isNullOrBlank() && start.isNullOrBlank() &&
-            end.isNullOrBlank() && method.isNullOrBlank() && place.isNullOrBlank()
-        ) return null
+            end.isNullOrBlank() && method.isNullOrBlank()) return null
 
         return RegionalWasteSchedule(
             wasteType = type,
-            disposalDays = days?.let(::parseDays),
+            disposalDays = parseDays(days),
             disposalStartTime = parseTime(start),
             disposalEndTime = parseTime(end),
-            disposalMethod = parseMethod(method),
-            disposalPlace = place?.trim()?.takeIf { it.isNotBlank() },
+            disposalMethod = parseMethod(method)
         )
     }
 

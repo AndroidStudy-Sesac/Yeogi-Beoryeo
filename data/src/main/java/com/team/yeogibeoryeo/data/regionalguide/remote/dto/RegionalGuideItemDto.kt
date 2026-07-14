@@ -18,7 +18,7 @@ data class RegionalGuideItemDto(
     @SerialName("MNG_ZONE_TRGT_RGN_NM") val dongName: String? = null,
 
     @SerialName("EMSN_PLC_TYPE") val disposalPlaceType: String? = null,
-    @SerialName("EMSN_PLC") val placeDescription: String? = null,
+    @SerialName("EMSN_PLC_EXPLN") val placeDescription: String? = null,
     @SerialName("UNCLLT_DAY") val uncollectedDay: String? = null,
 
     // 일반 쓰레기
@@ -40,12 +40,12 @@ data class RegionalGuideItemDto(
     @SerialName("RCYCL_EMSN_MTHD") val recycleMethod: String? = null,
 
     // 대형 폐기물
-    @SerialName("TMPRY_BULK_WASTE_EMSN_PLC") val largeItemDisposalPlace: String? = null,
+    @SerialName("TMPRY_BULK_WASTE_EMSN_DOW") val largeItemDisposalDays: String? = null,
     @SerialName("TMPRY_BULK_WASTE_EMSN_BGNG_TM") val largeItemStartTime: String? = null,
     @SerialName("TMPRY_BULK_WASTE_EMSN_END_TM") val largeItemEndTime: String? = null,
     @SerialName("TMPRY_BULK_WASTE_EMSN_MTHD") val largeItemMethod: String? = null,
 
     // 관리 부서 정보
-    @SerialName("MNG_DEPT_NM") val departmentName: String? = null,
-    @SerialName("MNG_DEPT_TELNO") val departmentPhoneNumber: String? = null
+    @SerialName("CHRG_DEPT_NM") val departmentName: String? = null,
+    @SerialName("CHRG_DEPT_TELNO") val departmentPhoneNumber: String? = null
 )

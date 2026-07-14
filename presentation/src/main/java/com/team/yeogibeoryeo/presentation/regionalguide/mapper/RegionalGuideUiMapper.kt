@@ -36,10 +36,9 @@ fun RegionalDisposalGuide.toUiModel(): RegionalGuideUiModel {
 private fun RegionalWasteSchedule.toUiModel(): RegionalWasteScheduleUiModel {
     return RegionalWasteScheduleUiModel(
         wasteTypeName = wasteType.description,
-        disposalDays = disposalDays.takeIfNotBlank(),
+        disposalDays = disposalDays.orInfoEmpty(),
         disposalTime = displayTime(),
-        disposalMethod = disposalMethod.orInfoEmpty(),
-        disposalPlace = disposalPlace.takeIfNotBlank(),
+        disposalMethod = disposalMethod.orInfoEmpty()
     )
 }
 
