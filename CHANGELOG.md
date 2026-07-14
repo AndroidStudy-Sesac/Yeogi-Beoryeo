@@ -18,6 +18,10 @@
 - 앱 출처와 개인정보처리방침 확인
 - Firebase Crashlytics를 이용한 비정상 종료 및 오류 진단
 
+### Changed
+
+- Google Play 배포 빌드에 R8 코드 최적화, 난독화, 미사용 리소스 축소 적용
+
 ### Security
 
 - 저장소 밖의 업로드 키로 서명된 Google Play 배포용 AAB 생성 절차
