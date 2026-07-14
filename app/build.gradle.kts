@@ -1,8 +1,19 @@
 import java.util.Properties
 
-val releaseBuildRequested = gradle.startParameter.taskNames.any {
-    it.contains("Release", ignoreCase = true)
+val releaseLifecycleTaskNames = setOf("assemble", "build", "bundle")
+val releaseBuildRequested = gradle.startParameter.taskNames.any { requestedTask ->
+    val taskName = requestedTask.substringAfterLast(':')
+    val targetsApp = !requestedTask.startsWith(':') || requestedTask.startsWith("${project.path}:")
+
+    targetsApp && (
+        taskName.lowercase() in releaseLifecycleTaskNames ||
+            taskName.contains("Release", ignoreCase = true)
+    )
 }
+val releaseArtifactTaskName = Regex(
+    pattern = "^(assemble|bundle|package).*Release.*$",
+    option = RegexOption.IGNORE_CASE,
+)
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.isFile) {
@@ -98,6 +109,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    if (!keystorePropertiesFile.isFile) {
+        val verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
+            doLast {
+                throw GradleException("release 빌드에는 프로젝트 루트의 keystore.properties가 필요합니다.")
+            }
+        }
+
+        tasks.matching { releaseArtifactTaskName.matches(it.name) }.configureEach {
+            dependsOn(verifyReleaseSigning)
         }
     }
 
