@@ -79,7 +79,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationRefreshJob?.cancel()
 
         val shouldCancelSpotSearch =
-            (uiState.value.isLoading || currentLocationLoadingJob != null) &&
+            (uiState.value.isLoading || currentLocationLoadingJob?.isActive == true) &&
                 uiState.value.searchMode in setOf(
                     MapSearchMode.KEYWORD,
                     MapSearchMode.CURRENT_LOCATION,

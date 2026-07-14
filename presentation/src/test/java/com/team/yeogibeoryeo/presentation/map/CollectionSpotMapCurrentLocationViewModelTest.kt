@@ -222,6 +222,28 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
         }
 
     @Test
+    fun `현재 위치 검색 완료 후 검색어를 입력해도 기존 현재 위치 결과를 유지한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val expectedSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(expectedSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+            )
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            viewModel.onSearchKeywordChanged("문래동")
+
+            assertEquals(listOf(expectedSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
     fun `현재 위치 주변 수거 장소 검색 실패 시 errorMessage를 표시하고 notice는 설정하지 않는다`() =
         runTest {
             val repository = FakeCollectionSpotRepository(
