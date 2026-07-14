@@ -1210,6 +1210,84 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     }
 
     @Test
+    fun `시군구명이 붙은 동지역 관리구역도 동으로 끝나는 행정동과 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "원주시",
+                    managementZoneName = "원주시",
+                    targetRegionName = "원주시 동지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "강원특별자치도",
+                    sigungu = "원주시",
+                    eupmyeondong = "중앙동"
+                ),
+                sigunguQuery = "원주시"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("중앙동", guide.region.eupmyeondong)
+        assertEquals("원주시 동지역", guide.targetRegionName)
+    }
+
+    @Test
+    fun `세종특별자치시가 붙은 동지역 관리구역도 동으로 끝나는 행정동과 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "세종특별자치시",
+                    sigungu = null,
+                    managementZoneName = "세종특별자치시",
+                    targetRegionName = "세종특별자치시 동지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "세종특별자치시",
+                    sigungu = null,
+                    eupmyeondong = "나성동"
+                ),
+                sigunguQuery = "없음"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("나성동", guide.region.eupmyeondong)
+        assertEquals("세종특별자치시 동지역", guide.targetRegionName)
+    }
+
+    @Test
+    fun `단어 일부가 동지역인 관리구역은 동지역으로 매칭하지 않는다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "테스트도",
+                    sigungu = "테스트시",
+                    managementZoneName = "테스트시",
+                    targetRegionName = "중동지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "테스트도",
+                    sigungu = "테스트시",
+                    eupmyeondong = "중앙동"
+                ),
+                sigunguQuery = "테스트시"
+            )
+        )
+
+        assertEquals(RegionalGuideLookupResult.CandidateNotFound, result)
+    }
+
+    @Test
     fun `동지역 관리구역은 읍면 선택과 매칭하지 않는다`() {
         val eupResult = useCase(
             candidates = listOf(

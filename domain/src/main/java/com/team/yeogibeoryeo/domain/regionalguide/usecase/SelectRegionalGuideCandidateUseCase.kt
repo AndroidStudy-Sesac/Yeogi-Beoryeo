@@ -390,7 +390,16 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         val requestedEupmyeondong = eupmyeondong.trim()
 
         return requestedEupmyeondong.endsWith(DONG) &&
-            replace(WHITESPACE_REGEX, "") == DONG_AREA
+            isDongAreaExpression()
+    }
+
+    private fun String.isDongAreaExpression(): Boolean {
+        val value = trim()
+        if (value == DONG_AREA) return true
+
+        return value
+            .split(WHITESPACE_REGEX)
+            .lastOrNull() == DONG_AREA
     }
 
     private fun String?.isExactRegionName(
