@@ -131,6 +131,13 @@
     <string name="regional_guide_candidate_distinguishing_uncollected_days">미수거일</string>
     <string name="regional_guide_candidate_distinguishing_schedule">배출 기준</string>
     <string name="regional_guide_candidate_distinguishing_department">담당부서</string>
+    <string name="regional_waste_schedule_days_label">요일</string>
+    <string name="regional_waste_schedule_time_label">시간</string>
+    <string name="regional_waste_schedule_method_label">방법</string>
+    <string name="regional_waste_schedule_place_label">장소</string>
+    <string name="regional_waste_schedule_place_count_format">%1$d곳</string>
+    <string name="regional_waste_schedule_place_expand_action">자세히 보기</string>
+    <string name="regional_waste_schedule_place_collapse_action">접기</string>
     <string name="regional_guide_public_notice_cta">공공 안내에서 지자체 안내 링크 보기</string>
     <string name="item_guide_detail_not_found_title">품목 가이드를 찾을 수 없습니다</string>
     <string name="item_guide_detail_select_again_message">다시 검색해서 품목을 선택해주세요.</string>

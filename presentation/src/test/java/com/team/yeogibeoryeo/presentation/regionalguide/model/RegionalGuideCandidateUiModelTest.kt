@@ -443,6 +443,33 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
+    fun `안정 키는 배출장소만 다른 일정 후보도 구분한다`() {
+        val firstCandidate = candidate(
+            managementZoneName = "1권역",
+            targetRegionName = "신당동",
+            schedules = listOf(
+                RegionalWasteScheduleUiModel(
+                    wasteTypeName = "대형폐기물",
+                    disposalPlace = "1번 지정 장소",
+                )
+            )
+        )
+        val secondCandidate = candidate(
+            managementZoneName = "1권역",
+            targetRegionName = "신당동",
+            schedules = listOf(
+                RegionalWasteScheduleUiModel(
+                    wasteTypeName = "대형폐기물",
+                    disposalPlace = "2번 지정 장소",
+                )
+            )
+        )
+
+        assertEquals(firstCandidate.displayText, secondCandidate.displayText)
+        assertNotEquals(firstCandidate.stableKey, secondCandidate.stableKey)
+    }
+
+    @Test
     fun `문전수거와 거점수거 원본 유형은 후보 보조 설명 힌트로 구분한다`() {
         val doorToDoorCandidate = candidate(
             managementZoneName = "문전수거 지역",

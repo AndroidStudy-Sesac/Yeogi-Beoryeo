@@ -130,6 +130,7 @@ data class RegionalGuideCandidateUiModel(
             disposalDays.takeIfRegionalGuideDisplayValue()
                 ?: disposalTime.takeIfRegionalGuideDisplayValue()
                 ?: disposalMethod.takeIfRegionalGuideDisplayValue()
+                ?: disposalPlace.takeIfRegionalGuideDisplayValue()
 
         return listOfNotNull(
             wasteTypeName.takeIfRegionalGuideDisplayValue(),
@@ -172,6 +173,7 @@ private val RegionalWasteScheduleUiModel.stableKey: String
         disposalDays.toStableKeyPart(),
         disposalTime.toStableKeyPart(),
         disposalMethod.toStableKeyPart(),
+        disposalPlace.toStableKeyPart(),
     ).joinToString("/")
 
 private fun String?.toStableKeyPart(): String =
