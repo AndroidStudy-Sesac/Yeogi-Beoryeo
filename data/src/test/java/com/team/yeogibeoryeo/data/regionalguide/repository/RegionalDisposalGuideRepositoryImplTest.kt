@@ -13,9 +13,11 @@ import org.junit.Test
 class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     var mockResult: Result<List<RegionalGuideItemDto>> = Result.success(emptyList())
     var calledSigunguName: String? = null
+    val calledSigunguNames = mutableListOf<String>()
 
     override suspend fun fetchRegionalGuides(sigunguName: String): Result<List<RegionalGuideItemDto>> {
         calledSigunguName = sigunguName
+        calledSigunguNames += sigunguName
         return mockResult
     }
 }
@@ -32,7 +34,7 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
-    fun `조회 key로 원격 데이터를 호출하고 후보 목록을 반환한다`() = runBlocking {
+    fun `조회 키로 원격 데이터를 호출하고 후보 목록을 반환한다`() = runBlocking {
         fakeDataSource.mockResult = Result.success(
             listOf(
                 RegionalGuideItemDto(
@@ -64,7 +66,7 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
-    fun `repository는 후보를 선택하지 않고 전체 후보를 domain으로 변환한다`() = runBlocking {
+    fun `저장소는 후보를 선택하지 않고 전체 후보를 도메인으로 변환한다`() = runBlocking {
         fakeDataSource.mockResult = Result.success(
             listOf(
                 RegionalGuideItemDto(
@@ -100,7 +102,7 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
-    fun `repository는 API 시도명 원본값을 정규화하지 않는다`() = runBlocking {
+    fun `저장소는 에이피아이 시도명 원본값을 정규화하지 않는다`() = runBlocking {
         fakeDataSource.mockResult = Result.success(
             listOf(
                 RegionalGuideItemDto(
@@ -126,7 +128,7 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
-    fun `원격 데이터 소스 실패는 Result failure로 유지한다`() = runBlocking {
+    fun `원격 데이터 소스 실패는 실패 결과로 유지한다`() = runBlocking {
         fakeDataSource.mockResult = Result.failure(IllegalStateException("network error"))
 
         val result = repository.getRegionalDisposalGuideCandidates(
@@ -137,5 +139,29 @@ class RegionalDisposalGuideRepositoryImplTest {
         )
 
         assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun `같은 조회 키 후보 목록은 원격 데이터를 다시 호출하지 않고 캐시를 사용한다`() = runBlocking {
+        fakeDataSource.mockResult = Result.success(
+            listOf(
+                RegionalGuideItemDto(
+                    sidoName = "경상북도",
+                    sigunguName = "김천시",
+                    dongName = "동지역"
+                )
+            )
+        )
+        val query = RegionalGuideQuery(
+            displayRegion = Region(sido = "경상북도", sigungu = "김천시"),
+            sigunguQuery = "김천시"
+        )
+
+        val firstResult = repository.getRegionalDisposalGuideCandidates(query)
+        val secondResult = repository.getRegionalDisposalGuideCandidates(query)
+
+        assertTrue(firstResult.isSuccess)
+        assertTrue(secondResult.isSuccess)
+        assertEquals(listOf("김천시"), fakeDataSource.calledSigunguNames)
     }
 }

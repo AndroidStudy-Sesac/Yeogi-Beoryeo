@@ -111,6 +111,42 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
+    fun `시군구 선택은 지역 가이드 권역 후보에 맞는 읍면동 옵션만 반영한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경상북도" to listOf("김천시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경상북도" to mapOf(
+                        "김천시" to listOf("아포읍", "봉산면", "율곡동", "평화남산동")
+                    )
+                )
+            ),
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "경상북도",
+                        sigungu = "김천시",
+                        targetRegionName = "동지역"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("경상북도")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("김천시")
+        advanceUntilIdle()
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("김천시", selectedSigungu)
+            assertEquals(listOf("율곡동", "평화남산동"), eupmyeondongOptions)
+        }
+    }
+
+    @Test
     fun `선택 지역 검색은 성공 상태를 매핑하고 시군구 조회값을 정규화한다`() = runTest {
         val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
             candidates = listOf(
