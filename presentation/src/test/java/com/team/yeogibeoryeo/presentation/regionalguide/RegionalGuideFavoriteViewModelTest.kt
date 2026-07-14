@@ -4,11 +4,17 @@ import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.repository.RegionalGuideFavoriteRepository
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.presentation.R
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -61,6 +67,68 @@ class RegionalGuideFavoriteViewModelTest {
         assertEquals(true, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
         assertEquals(true, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
         assertEquals(snapshot, snapshotRepository.getSnapshot(snapshot.targetId))
+    }
+
+    @Test
+    fun `지역 가이드 즐겨찾기 변경 실패 시 상태를 유지하고 실패 이벤트를 보낸다`() = runTest {
+        val guide = sampleGuide(sido = "서울특별시", sigungu = "중구", targetRegionName = "금호2.3가동")
+        val snapshot = guide.toFavoriteSnapshot()
+        val viewModel = createViewModel(
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide)),
+            regionalGuideSnapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            regionalGuideFavoriteRepository = FailingRegionalGuideFavoriteRepository(),
+        )
+        advanceUntilIdle()
+        viewModel.loadByFavoriteTargetId(snapshot.targetId)
+        advanceUntilIdle()
+        val event = async(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.first()
+        }
+
+        viewModel.onFavoriteClick()
+        advanceUntilIdle()
+
+        assertEquals(RegionalGuideEvent.FavoriteUpdateFailed, event.await())
+        assertEquals(false, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
+    }
+
+    @Test
+    fun `지역 가이드 즐겨찾기를 빠르게 두 번 누르면 변경을 순서대로 처리한다`() = runTest {
+        val guide = sampleGuide(sido = "서울특별시", sigungu = "중구", targetRegionName = "금호2.3가동")
+        val favoriteRepository = FakeFavoriteRepository()
+        val snapshot = guide.toFavoriteSnapshot()
+        val snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot))
+        val firstToggleStarted = CompletableDeferred<Unit>()
+        val continueFirstToggle = CompletableDeferred<Unit>()
+        val favoriteToggleRepository = PausingRegionalGuideFavoriteRepository(
+            delegate = FakeRegionalGuideFavoriteRepository(
+                favoriteRepository = favoriteRepository,
+                snapshotRepository = snapshotRepository,
+            ),
+            firstToggleStarted = firstToggleStarted,
+            continueFirstToggle = continueFirstToggle,
+        )
+        val viewModel = createViewModel(
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide)),
+            favoriteRepository = favoriteRepository,
+            regionalGuideSnapshotRepository = snapshotRepository,
+            regionalGuideFavoriteRepository = favoriteToggleRepository,
+        )
+        advanceUntilIdle()
+        viewModel.loadByFavoriteTargetId(snapshot.targetId)
+        advanceUntilIdle()
+
+        viewModel.onFavoriteClick()
+        runCurrent()
+        firstToggleStarted.await()
+        viewModel.onFavoriteClick()
+        continueFirstToggle.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(2, favoriteToggleRepository.toggleCallCount)
+        assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
+        assertEquals(false, (viewModel.uiState.value as RegionalGuideUiState.Success).isFavorite)
     }
 
     @Test
@@ -504,4 +572,32 @@ private fun RegionalDisposalGuide.toFavoriteSnapshot(): RegionalGuideFavoriteSna
     )
 }
 
+private class FailingRegionalGuideFavoriteRepository : RegionalGuideFavoriteRepository {
+    override suspend fun toggleFavorite(snapshot: RegionalGuideFavoriteSnapshot): Boolean {
+        throw IllegalStateException("저장 실패")
+    }
 
+    override suspend fun removeFavorite(targetId: String) = Unit
+}
+
+private class PausingRegionalGuideFavoriteRepository(
+    private val delegate: RegionalGuideFavoriteRepository,
+    private val firstToggleStarted: CompletableDeferred<Unit>,
+    private val continueFirstToggle: CompletableDeferred<Unit>,
+) : RegionalGuideFavoriteRepository {
+    var toggleCallCount = 0
+        private set
+
+    override suspend fun toggleFavorite(snapshot: RegionalGuideFavoriteSnapshot): Boolean {
+        toggleCallCount += 1
+        if (toggleCallCount == 1) {
+            firstToggleStarted.complete(Unit)
+            continueFirstToggle.await()
+        }
+        return delegate.toggleFavorite(snapshot)
+    }
+
+    override suspend fun removeFavorite(targetId: String) {
+        delegate.removeFavorite(targetId)
+    }
+}

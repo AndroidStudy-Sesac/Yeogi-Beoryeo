@@ -16,8 +16,13 @@ import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteRegionalGuide
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -37,6 +42,9 @@ class FavoritesViewModel
         private val collectionSpotUiMapper: FavoriteCollectionSpotUiMapper,
         private val regionalGuideUiMapper: FavoriteRegionalGuideUiMapper,
     ) : ViewModel() {
+        private val _events = MutableSharedFlow<FavoritesEvent>()
+        val events: SharedFlow<FavoritesEvent> = _events.asSharedFlow()
+        private val favoriteRemovalJobs = mutableMapOf<Pair<FavoriteTargetType, String>, Job>()
         private val selectedTab =
             savedStateHandle.getStateFlow(SELECTED_TAB_KEY, FavoriteTab.ITEM_GUIDE)
 
@@ -81,20 +89,41 @@ class FavoritesViewModel
         }
 
         fun removeItemGuideFavorite(targetId: String) {
-            viewModelScope.launch {
+            removeFavorite(FavoriteTargetType.ITEM_GUIDE, targetId) {
                 removeFavoriteUseCase(FavoriteTargetType.ITEM_GUIDE, targetId)
             }
         }
 
         fun removeCollectionSpotFavorite(targetId: String) {
-            viewModelScope.launch {
+            removeFavorite(FavoriteTargetType.COLLECTION_SPOT, targetId) {
                 removeCollectionSpotFavoriteUseCase(targetId)
             }
         }
 
         fun removeRegionalGuideFavorite(targetId: String) {
-            viewModelScope.launch {
+            removeFavorite(FavoriteTargetType.REGIONAL_GUIDE, targetId) {
                 removeRegionalGuideFavoriteUseCase(targetId)
+            }
+        }
+
+        private fun removeFavorite(
+            type: FavoriteTargetType,
+            targetId: String,
+            remove: suspend () -> Unit,
+        ) {
+            val key = type to targetId
+            if (favoriteRemovalJobs[key]?.isActive == true) return
+
+            favoriteRemovalJobs[key] = viewModelScope.launch {
+                try {
+                    remove()
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (_: Throwable) {
+                    _events.emit(FavoritesEvent.FavoriteUpdateFailed)
+                } finally {
+                    favoriteRemovalJobs.remove(key)
+                }
             }
         }
 
@@ -102,3 +131,7 @@ class FavoritesViewModel
             const val SELECTED_TAB_KEY = "selected_tab"
         }
     }
+
+sealed interface FavoritesEvent {
+    data object FavoriteUpdateFailed : FavoritesEvent
+}

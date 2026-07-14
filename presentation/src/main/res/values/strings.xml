@@ -279,4 +279,5 @@ SOFTWARE.]]></string>
     <string name="map_regional_guide_action">이 지역 배출 정보 보기</string>
     <string name="map_nearby_list_loading">주변 목록 준비 중</string>
     <string name="map_spot_detail_back_to_list">목록으로</string>
+    <string name="favorite_update_failed_message">즐겨찾기를 변경하지 못했어요. 다시 시도해 주세요.</string>
 </resources>

@@ -33,8 +33,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -58,6 +61,8 @@ class RegionalGuideViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<RegionalGuideUiState>(RegionalGuideUiState.Idle)
     val uiState: StateFlow<RegionalGuideUiState> = _uiState.asStateFlow()
+    private val _events = MutableSharedFlow<RegionalGuideEvent>()
+    val events: SharedFlow<RegionalGuideEvent> = _events.asSharedFlow()
 
     private val _searchKeyword = MutableStateFlow("")
     val searchKeyword: StateFlow<String> = _searchKeyword.asStateFlow()
@@ -74,6 +79,8 @@ class RegionalGuideViewModel @Inject constructor(
     private var lastRequest: RegionalGuideRequest? = null
     private var currentRegionalGuideFavoriteSnapshot: RegionalGuideFavoriteSnapshot? = null
     private val guideCandidateBackStackEntries = mutableListOf<RegionalGuideCandidateBackStackEntry>()
+    private val favoriteToggleJobs = mutableMapOf<String, Job>()
+    private val pendingFavoriteToggleCounts = mutableMapOf<String, Int>()
 
     init {
         loadSidoOptions()
@@ -293,16 +300,25 @@ class RegionalGuideViewModel @Inject constructor(
 
     fun onFavoriteClick() {
         val snapshot = currentRegionalGuideFavoriteSnapshot ?: return
+        pendingFavoriteToggleCounts[snapshot.targetId] =
+            pendingFavoriteToggleCounts.getOrDefault(snapshot.targetId, 0) + 1
+        if (favoriteToggleJobs[snapshot.targetId]?.isActive == true) return
 
-        viewModelScope.launch {
-            val isFavorite = toggleRegionalGuideFavoriteUseCase(snapshot)
-
-            _uiState.update { state ->
-                if (state is RegionalGuideUiState.Success) {
-                    state.copy(isFavorite = isFavorite)
-                } else {
-                    state
+        favoriteToggleJobs[snapshot.targetId] = viewModelScope.launch {
+            try {
+                while (pendingFavoriteToggleCounts.getOrDefault(snapshot.targetId, 0) > 0) {
+                    pendingFavoriteToggleCounts[snapshot.targetId] =
+                        pendingFavoriteToggleCounts.getValue(snapshot.targetId) - 1
+                    toggleRegionalGuideFavoriteUseCase(snapshot)
                 }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Throwable) {
+                pendingFavoriteToggleCounts.remove(snapshot.targetId)
+                _events.emit(RegionalGuideEvent.FavoriteUpdateFailed)
+            } finally {
+                pendingFavoriteToggleCounts.remove(snapshot.targetId)
+                favoriteToggleJobs.remove(snapshot.targetId)
             }
         }
     }
@@ -984,4 +1000,8 @@ class RegionalGuideViewModel @Inject constructor(
         const val KEYWORD_SUGGESTION_DEBOUNCE_MILLIS = 400L
         const val AMBIGUOUS_REGION_MESSAGE = "여러 지역이 검색됩니다. 원하는 지역을 선택해주세요."
     }
+}
+
+sealed interface RegionalGuideEvent {
+    data object FavoriteUpdateFailed : RegionalGuideEvent
 }
