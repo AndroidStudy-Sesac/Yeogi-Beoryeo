@@ -623,15 +623,18 @@ class RegionalGuideKeywordSearchViewModelTest {
         viewModel.searchCurrentKeyword()
         advanceUntilIdle()
 
-        val searchCandidate = (viewModel.uiState.value as RegionalGuideUiState.Ambiguous)
-            .candidates
+        val searchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
+        val searchCandidate = searchCandidatesState.candidates
             .first { candidate -> candidate.sido == "대전광역시" }
         val searchCandidateScrollPosition = RegionalGuideCandidateListScrollPosition(
             firstVisibleItemIndex = 1,
             firstVisibleItemScrollOffset = 18,
         )
 
-        viewModel.onCandidateListScrollPositionChanged(searchCandidateScrollPosition)
+        viewModel.onCandidateListScrollPositionChanged(
+            candidateListScrollKey = searchCandidatesState.candidateListScrollKey(),
+            position = searchCandidateScrollPosition,
+        )
 
         viewModel.onRegionCandidateSelected(searchCandidate)
         advanceUntilIdle()
@@ -643,7 +646,10 @@ class RegionalGuideKeywordSearchViewModelTest {
             firstVisibleItemScrollOffset = 28,
         )
 
-        viewModel.onCandidateListScrollPositionChanged(guideCandidateScrollPosition)
+        viewModel.onCandidateListScrollPositionChanged(
+            candidateListScrollKey = guideCandidatesState.candidateListScrollKey(),
+            position = guideCandidateScrollPosition,
+        )
 
         viewModel.onRegionalGuideCandidateSelected(guideCandidatesState.candidates.first())
 

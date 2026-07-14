@@ -295,6 +295,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onCandidateListScrollPositionChanged(
+        candidateListScrollKey: String,
         position: RegionalGuideCandidateListScrollPosition
     ) {
         val normalizedPosition = position.coerceAtLeastInitial()
@@ -302,10 +303,18 @@ class RegionalGuideViewModel @Inject constructor(
         _uiState.update { state ->
             when (state) {
                 is RegionalGuideUiState.Ambiguous ->
-                    state.copy(candidateListScrollPosition = normalizedPosition)
+                    if (state.candidateListScrollKey() == candidateListScrollKey) {
+                        state.copy(candidateListScrollPosition = normalizedPosition)
+                    } else {
+                        state
+                    }
 
                 is RegionalGuideUiState.GuideCandidates ->
-                    state.copy(candidateListScrollPosition = normalizedPosition)
+                    if (state.candidateListScrollKey() == candidateListScrollKey) {
+                        state.copy(candidateListScrollPosition = normalizedPosition)
+                    } else {
+                        state
+                    }
 
                 else -> state
             }

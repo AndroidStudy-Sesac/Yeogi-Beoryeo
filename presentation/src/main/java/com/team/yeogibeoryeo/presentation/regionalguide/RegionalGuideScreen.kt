@@ -155,8 +155,8 @@ fun RegionalGuideScreen(
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
-    onCandidateListScrollPositionChange: (RegionalGuideCandidateListScrollPosition) -> Unit = {},
     modifier: Modifier = Modifier,
+    onCandidateListScrollPositionChange: (String, RegionalGuideCandidateListScrollPosition) -> Unit = { _, _ -> },
     onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
     onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRestoreCandidates: () -> Boolean = { false },
@@ -313,12 +313,19 @@ fun RegionalGuideScreen(
                     candidateContent = if (hasSearchCandidates) {
                         {
                             if (ambiguousState != null) {
+                                val candidateListScrollKey = ambiguousState.candidateListScrollKey()
+
                                 RegionalGuideAmbiguousResult(
                                     candidates = ambiguousState.candidates,
+                                    scrollStateKey = candidateListScrollKey,
                                     initialScrollPosition =
                                         ambiguousState.candidateListScrollPosition,
-                                    onScrollPositionChange =
-                                        onCandidateListScrollPositionChange,
+                                    onScrollPositionChange = { position ->
+                                        onCandidateListScrollPositionChange(
+                                            candidateListScrollKey,
+                                            position,
+                                        )
+                                    },
                                     onCandidateClick = { candidate ->
                                         clearSearchFocus()
                                         collapseRegionSelector()
@@ -329,12 +336,19 @@ fun RegionalGuideScreen(
                             }
 
                             if (listGuideCandidatesState != null) {
+                                val candidateListScrollKey = listGuideCandidatesState.candidateListScrollKey()
+
                                 RegionalGuideCandidateResult(
                                     candidates = listGuideCandidatesState.candidates,
+                                    scrollStateKey = candidateListScrollKey,
                                     initialScrollPosition =
                                         listGuideCandidatesState.candidateListScrollPosition,
-                                    onScrollPositionChange =
-                                        onCandidateListScrollPositionChange,
+                                    onScrollPositionChange = { position ->
+                                        onCandidateListScrollPositionChange(
+                                            candidateListScrollKey,
+                                            position,
+                                        )
+                                    },
                                     onCandidateClick = { candidate ->
                                         clearSearchFocus()
                                         collapseRegionSelector()

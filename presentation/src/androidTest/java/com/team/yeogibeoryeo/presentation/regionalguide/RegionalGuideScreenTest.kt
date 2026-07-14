@@ -1,15 +1,20 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -19,16 +24,16 @@ class RegionalGuideScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun 같은_폐기물_유형의_다른_장소_일정을_하나로_묶고_상세에서_표시한다() {
+    fun 같은_폐기물_유형의_다른_장소_일정은_하나로_묶고_상세에서_표시한다() {
         composeTestRule.setContent {
             MaterialTheme {
                 RegionalGuideScreen(
                     uiState = RegionalGuideUiState.Success(
-                        query = "장암면",
+                        query = "은하면",
                         guide = RegionalGuideUiModel(
-                            regionName = "충청남도 부여군 장암면",
-                            managementZoneName = "부여군",
-                            targetRegionName = "장암면",
+                            regionName = "충청남도 홍성군 은하면",
+                            managementZoneName = "홍성군",
+                            targetRegionName = "은하면",
                             disposalPlaceType = "문전수거",
                             disposalPlaceDescription = null,
                             schedules = listOf(
@@ -45,14 +50,14 @@ class RegionalGuideScreenTest {
                             departmentInfo = null,
                         ),
                     ),
-                    searchKeyword = "장암면",
+                    searchKeyword = "은하면",
                     regionSelectorUiState = RegionSelectorUiState(
                         sidoOptions = listOf("충청남도"),
-                        sigunguOptions = listOf("부여군"),
-                        eupmyeondongOptions = listOf("장암면"),
+                        sigunguOptions = listOf("홍성군"),
+                        eupmyeondongOptions = listOf("은하면"),
                         selectedSido = "충청남도",
-                        selectedSigungu = "부여군",
-                        selectedEupmyeondong = "장암면",
+                        selectedSigungu = "홍성군",
+                        selectedEupmyeondong = "은하면",
                     ),
                     onSearchKeywordChange = {},
                     onSearchClick = {},
@@ -78,6 +83,7 @@ class RegionalGuideScreenTest {
         composeTestRule.onNodeWithText("- 장소 A").assertIsDisplayed()
         composeTestRule.onNodeWithText("- 장소 B").assertIsDisplayed()
     }
+
     @Test
     fun 후보_목록은_저장된_스크롤_위치에서_시작한다() {
         composeTestRule.setContent {
@@ -114,6 +120,76 @@ class RegionalGuideScreenTest {
 
         composeTestRule.onNodeWithText("zone-0").assertDoesNotExist()
         composeTestRule.onNodeWithText("zone-8").assertIsDisplayed()
+    }
+
+    @Test
+    fun 후보_목록은_클릭_직전_스크롤_위치를_저장하고_복원한다() {
+        val candidates = (0 until 20).map { index ->
+            candidate(label = "zone-$index")
+        }
+        val candidateState = RegionalGuideUiState.GuideCandidates(
+            query = "candidate-query",
+            reason = RegionalGuideCandidateReason.MULTIPLE_CANDIDATES,
+            candidates = candidates,
+        )
+        var uiState by mutableStateOf<RegionalGuideUiState>(candidateState)
+        var savedScrollPosition = RegionalGuideCandidateListScrollPosition.Initial
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalGuideScreen(
+                    uiState = uiState,
+                    searchKeyword = "candidate-query",
+                    regionSelectorUiState = RegionSelectorUiState(),
+                    onSearchKeywordChange = {},
+                    onSearchClick = {},
+                    onRetryClick = {},
+                    onEmptySearchActionClick = {},
+                    onSidoSelected = {},
+                    onSigunguSelected = {},
+                    onEupmyeondongSelected = {},
+                    onRegionSelectionSearchClick = {},
+                    onCandidateClick = {},
+                    onGuideCandidateClick = { candidate ->
+                        uiState = RegionalGuideUiState.Success(
+                            query = "candidate-query",
+                            guide = candidate.guide,
+                            canRestoreCandidates = true,
+                        )
+                    },
+                    onCandidateListScrollPositionChange = { candidateListScrollKey, position ->
+                        val currentState = uiState
+
+                        if (
+                            currentState is RegionalGuideUiState.GuideCandidates &&
+                            currentState.candidateListScrollKey() == candidateListScrollKey
+                        ) {
+                            savedScrollPosition = position
+                            uiState = currentState.copy(candidateListScrollPosition = position)
+                        }
+                    },
+                    onRestoreCandidates = {
+                        uiState = candidateState.copy(
+                            candidateListScrollPosition = savedScrollPosition,
+                        )
+                        true
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("zone-12")
+            .performScrollTo()
+            .performClick()
+
+        composeTestRule.runOnIdle {
+            assertTrue(savedScrollPosition.firstVisibleItemIndex > 0)
+            uiState = candidateState.copy(
+                candidateListScrollPosition = savedScrollPosition,
+            )
+        }
+
+        composeTestRule.onNodeWithText("zone-12").assertIsDisplayed()
     }
 }
 

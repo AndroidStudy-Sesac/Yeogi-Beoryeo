@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlin.math.roundToInt
 
 @Composable
@@ -54,10 +56,12 @@ internal fun <T> RegionalGuideCandidateList(
     val currentOnScrollPositionChange by rememberUpdatedState(onScrollPositionChange)
 
     LaunchedEffect(listState) {
-        snapshotFlow { listState.toScrollPosition() }
+        snapshotFlow { listState.isScrollInProgress }
             .distinctUntilChanged()
-            .collect { position ->
-                currentOnScrollPositionChange(position)
+            .drop(1)
+            .filter { isScrollInProgress -> !isScrollInProgress }
+            .collect {
+                currentOnScrollPositionChange(listState.toScrollPosition())
             }
     }
 

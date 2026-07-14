@@ -252,15 +252,17 @@ class RegionalGuideCandidateSelectionViewModelTest {
         viewModel.searchCurrentKeyword()
         advanceUntilIdle()
 
-        val candidate = (viewModel.uiState.value as RegionalGuideUiState.GuideCandidates)
-            .candidates
-            .first()
+        val guideCandidatesState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+        val candidate = guideCandidatesState.candidates.first()
         val scrollPosition = RegionalGuideCandidateListScrollPosition(
             firstVisibleItemIndex = 1,
             firstVisibleItemScrollOffset = 24,
         )
 
-        viewModel.onCandidateListScrollPositionChanged(scrollPosition)
+        viewModel.onCandidateListScrollPositionChanged(
+            candidateListScrollKey = guideCandidatesState.candidateListScrollKey(),
+            position = scrollPosition,
+        )
 
         viewModel.onRegionalGuideCandidateSelected(candidate)
 
@@ -313,15 +315,60 @@ class RegionalGuideCandidateSelectionViewModelTest {
         viewModel.searchCurrentKeyword()
         advanceUntilIdle()
 
+        val guideCandidatesState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+
         viewModel.onCandidateListScrollPositionChanged(
-            RegionalGuideCandidateListScrollPosition(
+            candidateListScrollKey = guideCandidatesState.candidateListScrollKey(),
+            position = RegionalGuideCandidateListScrollPosition(
                 firstVisibleItemIndex = 1,
                 firstVisibleItemScrollOffset = 32,
-            )
+            ),
         )
 
         viewModel.searchByKeyword("울주군")
         advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+        assertEquals(
+            RegionalGuideCandidateListScrollPosition.Initial,
+            state.candidateListScrollPosition
+        )
+    }
+
+    @Test
+    fun `현재 후보 목록과 다른 키의 스크롤 위치는 반영하지 않는다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sigungu = "울주군")
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "범서, 온양, 웅촌"
+                    ),
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "두동, 두서, 삼동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("울주군")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        viewModel.onCandidateListScrollPositionChanged(
+            candidateListScrollKey = "stale-list-key",
+            position = RegionalGuideCandidateListScrollPosition(
+                firstVisibleItemIndex = 1,
+                firstVisibleItemScrollOffset = 32,
+            ),
+        )
 
         val state = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
         assertEquals(
