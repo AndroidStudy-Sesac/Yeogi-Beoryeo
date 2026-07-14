@@ -26,6 +26,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 kotlin {
