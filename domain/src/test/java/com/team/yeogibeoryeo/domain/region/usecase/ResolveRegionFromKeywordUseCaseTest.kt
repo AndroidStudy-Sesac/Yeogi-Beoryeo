@@ -164,7 +164,7 @@ class ResolveRegionFromKeywordUseCaseTest {
     }
 
     @Test
-    fun `검색어로 해석할 지역이 없으면 NotFound를 반환한다`() = runBlocking {
+    fun `검색어로 해석할 지역이 없으면 찾지 못함을 반환한다`() = runBlocking {
         val useCase = ResolveRegionFromKeywordUseCase(
             repository = FakeRegionRepository(
                 resolvedRegion = null
@@ -237,7 +237,7 @@ class ResolveRegionFromKeywordUseCaseTest {
     }
 
     @Test
-    fun `행정구 단독 검색어가 행정구역 후보에 없으면 NotFound를 반환한다`() = runBlocking {
+    fun `행정구 단독 검색어가 행정구역 후보에 없으면 찾지 못함을 반환한다`() = runBlocking {
         val useCase = ResolveRegionFromKeywordUseCase(
             repository = FakeRegionRepository(
                 resolvedRegion = Region(sigungu = "중안구")
@@ -287,7 +287,7 @@ class ResolveRegionFromKeywordUseCaseTest {
     }
 
     @Test
-    fun `시도 없는 동일 시군구 후보가 여러 개면 임의로 보완하지 않는다`() = runBlocking {
+    fun `시도 없는 구명 검색은 기존 동일 구명 후보를 안내한다`() = runBlocking {
         val useCase = ResolveRegionFromKeywordUseCase(
             repository = FakeRegionRepository(
                 resolvedRegion = Region(sigungu = "중구")
@@ -308,8 +308,15 @@ class ResolveRegionFromKeywordUseCaseTest {
 
         val result = useCase("중구")
 
-        assertTrue(result is ResolveRegionFromKeywordResult.Ambiguous)
-        assertEquals(2, (result as ResolveRegionFromKeywordResult.Ambiguous).candidates.size)
+        val candidates = (result as ResolveRegionFromKeywordResult.Ambiguous).candidates
+
+        assertEquals(
+            listOf(
+                Region(sido = "대구광역시", sigungu = "중구"),
+                Region(sido = "서울특별시", sigungu = "중구")
+            ),
+            candidates
+        )
     }
 
     @Test

@@ -1,11 +1,14 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFavoriteCompatibilityPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
-import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
 import javax.inject.Inject
 
 class SelectRegionalGuideCandidateUseCase @Inject constructor() {
@@ -15,17 +18,28 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         query: RegionalGuideQuery,
         preferredTargetRegionName: String? = null,
         preferredManagementZoneName: String? = null,
+        favoriteKey: RegionalGuideFavoriteKey? = null,
         mappedAdminDongCandidates: List<Region> = emptyList(),
     ): RegionalGuideLookupResult {
         if (candidates.isEmpty()) return RegionalGuideLookupResult.NotFound
 
         val filteredCandidates = candidates
             .filterBySido(query.displayRegion)
-            .filterBySigungu(query.sigunguQuery)
+            .filterBySigungu(query)
             .mergeDuplicateCandidateRows()
 
         if (filteredCandidates.isEmpty()) {
             return RegionalGuideLookupResult.CandidateNotFound
+        }
+
+        if (favoriteKey != null) {
+            return filteredCandidates
+                .filterByFavoriteKey(favoriteKey)
+                .toSingleSuccessOrCandidates(
+                    displayRegion = query.displayRegion,
+                    candidateReason = RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES
+                )
+                ?: RegionalGuideLookupResult.CandidateNotFound
         }
 
         if (!preferredTargetRegionName.isNullOrBlank() || !preferredManagementZoneName.isNullOrBlank()) {
@@ -82,11 +96,24 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     }
 
     private fun List<RegionalDisposalGuide>.filterBySigungu(
-        sigunguQuery: String
+        query: RegionalGuideQuery
     ): List<RegionalDisposalGuide> {
+        val sigunguQuery = query.sigunguQuery
         if (sigunguQuery == SEJONG_SIGUNGU_QUERY) return this
 
-        return filter { guide -> guide.region.sigungu == sigunguQuery }
+        return filter { guide ->
+            guide.region.sigungu == sigunguQuery ||
+                guide.matchesDisplayRegionSigungu(query)
+        }
+    }
+
+    private fun RegionalDisposalGuide.matchesDisplayRegionSigungu(
+        query: RegionalGuideQuery
+    ): Boolean {
+        if (query.displayRegion.eupmyeondong.isNullOrBlank()) return false
+
+        return region.sigungu == query.displayRegion.sigungu &&
+            region.sigungu?.let(RegionalGuideRegionKeyNormalizer::normalizeSigungu) == query.sigunguQuery
     }
 
     private fun selectByTargetRegion(
@@ -271,6 +298,16 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             targetMatches && managementMatches
         }
     }
+
+    private fun List<RegionalDisposalGuide>.filterByFavoriteKey(
+        favoriteKey: RegionalGuideFavoriteKey
+    ): List<RegionalDisposalGuide> =
+        filter { guide ->
+            RegionalGuideFavoriteCompatibilityPolicy.isSameFavoriteTarget(
+                favoriteKey = favoriteKey,
+                candidate = guide,
+            )
+        }
 
     private fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRows(): List<RegionalDisposalGuide> =
         groupBy { guide -> guide.toCandidateKey() }

@@ -129,7 +129,7 @@ class RegionalGuideKeywordSearchViewModelTest {
     }
 
     @Test
-    fun `IME로 현재 입력값이 보정되어도 검색 실행 키워드를 복원한다`() = runTest {
+    fun `입력기로 현재 입력값이 보정되어도 검색 실행 키워드를 복원한다`() = runTest {
         val viewModel = createViewModel(
             regionRepository = FakeRegionRepository(
                 resolvedRegion = Region(sigungu = "중안구")
@@ -403,7 +403,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
         assertEquals("중구", viewModel.searchKeyword.value)
 
         assertTrue(viewModel.restoreCandidatesFromDetail())
@@ -461,7 +461,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
     }
 
     @Test
@@ -501,7 +501,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
     }
 
     @Test
@@ -541,7 +541,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val restoredSearchCandidatesState = viewModel.uiState.value as RegionalGuideUiState.Ambiguous
         assertEquals("중구", restoredSearchCandidatesState.query)
-        assertEquals(2, restoredSearchCandidatesState.candidates.size)
+        assertEquals(4, restoredSearchCandidatesState.candidates.size)
     }
 
     @Test
@@ -764,6 +764,60 @@ class RegionalGuideKeywordSearchViewModelTest {
             assertEquals("경기도", selectedSido)
             assertEquals("수원시", selectedSigungu)
             assertEquals("파장동", selectedEupmyeondong)
+        }
+    }
+
+    @Test
+    fun `과거 안양8동 키워드 검색은 표시 지역의 만안구를 유지하고 조회 키만 안양시로 축약한다`() = runTest {
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = listOf(
+                RegionalDisposalGuide(
+                    region = Region(
+                        sido = "경기도",
+                        sigungu = "안양시 만안구",
+                        eupmyeondong = "명학동"
+                    ),
+                    targetRegionName = "명학동",
+                    managementZoneName = "명학동",
+                    schedules = emptyList()
+                )
+            )
+        )
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(
+                    sido = "경기도",
+                    sigungu = "안양시 만안구",
+                    eupmyeondong = "안양8동"
+                )
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("안양시 만안구")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경기도" to mapOf(
+                        "안양시 만안구" to listOf("명학동")
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("경기도 안양시 만안구 안양8동")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertEquals("안양시", regionalGuideRepository.queries.single().sigunguQuery)
+        assertEquals("경기도 안양시 만안구 명학동", state.guide.regionName)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("경기도", selectedSido)
+            assertEquals("안양시 만안구", selectedSigungu)
+            assertEquals("명학동", selectedEupmyeondong)
         }
     }
 

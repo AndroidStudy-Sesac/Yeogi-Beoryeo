@@ -65,6 +65,7 @@ class ObserveHomeRegionalGuideSummaryUseCase
                         region = snapshot.region,
                         preferredTargetRegionName = snapshot.targetRegionName,
                         preferredManagementZoneName = snapshot.managementZoneName,
+                        favoriteKey = snapshot.key,
                     )
             ) {
                 is RegionalGuideLookupResult.Success -> {

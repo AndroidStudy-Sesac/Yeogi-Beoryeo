@@ -158,6 +158,67 @@ class RegionalGuideFavoriteViewModelTest {
     }
 
     @Test
+    fun `즐겨찾기 재진입은 저장된 통합 시도명 키와 현재 시도명 후보를 호환되게 복원한다`() = runTest {
+        val snapshotRegion = Region(
+            sido = "전남광주통합특별시",
+            sigungu = "나주시",
+            eupmyeondong = "노안면",
+        )
+        val currentGuide =
+            RegionalDisposalGuide(
+                region = Region(
+                    sido = "전라남도",
+                    sigungu = "나주시",
+                    eupmyeondong = "노안면",
+                ),
+                targetRegionName = "노안면",
+                managementZoneName = "노안면",
+                schedules = emptyList(),
+            )
+        val targetId = RegionalGuideFavoriteKey(
+            sido = snapshotRegion.sido,
+            sigungu = snapshotRegion.sigungu,
+            eupmyeondong = snapshotRegion.eupmyeondong,
+            targetRegionName = "노안면",
+            managementZoneName = "노안면",
+        ).encode()
+        val snapshot = RegionalGuideFavoriteSnapshot(
+            targetId = targetId,
+            region = snapshotRegion,
+            targetRegionName = "노안면",
+            managementZoneName = "노안면",
+        )
+        val favoriteRepository =
+            FakeFavoriteRepository(
+                initialFavorites =
+                    listOf(
+                        Favorite(
+                            type = FavoriteTargetType.REGIONAL_GUIDE,
+                            targetId = targetId,
+                            savedAtMillis = 1L,
+                        ),
+                    ),
+            )
+        val viewModel =
+            createViewModel(
+                regionalGuideRepository =
+                    FakeRegionalDisposalGuideRepository(candidates = listOf(currentGuide)),
+                favoriteRepository = favoriteRepository,
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(targetId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+        assertEquals("전남광주통합특별시 나주시 노안면", state.guide.regionName)
+        assertEquals("노안면", state.guide.targetRegionName)
+        assertEquals(true, state.isFavorite)
+    }
+
+    @Test
     fun `저장 후보 스냅샷이 없으면 복원 실패와 지역 다시 선택 동작을 보여준다`() = runTest {
         val viewModel = createViewModel(
             regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository()

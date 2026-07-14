@@ -1,5 +1,6 @@
 ﻿package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
+import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
@@ -17,7 +18,7 @@ import org.junit.Test
 class GetRegionalDisposalGuideUseCaseTest {
 
     @Test
-    fun `repository network failure returns network failure`() = runBlocking {
+    fun `저장소 네트워크 실패는 네트워크 실패로 반환한다`() = runBlocking {
         val useCase = createUseCase(
             repositoryResult = Result.failure(
                 RegionalGuideLookupException(
@@ -40,7 +41,7 @@ class GetRegionalDisposalGuideUseCaseTest {
     }
 
     @Test
-    fun `repository api failure returns api failure`() = runBlocking {
+    fun `저장소 에이피아이 실패는 에이피아이 실패로 반환한다`() = runBlocking {
         val useCase = createUseCase(
             repositoryResult = Result.failure(
                 RegionalGuideLookupException(
@@ -63,7 +64,7 @@ class GetRegionalDisposalGuideUseCaseTest {
     }
 
     @Test
-    fun `unknown repository failure returns unknown failure`() = runBlocking {
+    fun `알 수 없는 저장소 실패는 알 수 없는 실패로 반환한다`() = runBlocking {
         val useCase = createUseCase(
             repositoryResult = Result.failure(IllegalStateException())
         )
@@ -82,7 +83,7 @@ class GetRegionalDisposalGuideUseCaseTest {
     }
 
     @Test
-    fun `candidate list success returns selected guide`() = runBlocking {
+    fun `후보 목록 조회 성공 시 선택된 가이드를 반환한다`() = runBlocking {
         val useCase = createUseCase(
             repositoryResult = Result.success(
                 listOf(
@@ -109,7 +110,7 @@ class GetRegionalDisposalGuideUseCaseTest {
     }
 
     @Test
-    fun `legal admin mapped candidates are used when selecting regional guide candidate`() = runBlocking {
+    fun `지역 가이드 후보 선택 시 법정동 행정동 매핑 후보를 사용한다`() = runBlocking {
         val useCase = createUseCase(
             repositoryResult = Result.success(
                 listOf(
@@ -154,12 +155,151 @@ class GetRegionalDisposalGuideUseCaseTest {
         assertEquals("하계2동", candidates[1].managementZoneName)
     }
 
+    @Test
+    fun `과거 인천 중구 즐겨찾기 키는 최신 복수 구 후보를 임의 선택하지 않는다`() = runBlocking {
+        val useCase = createUseCase(
+            repositoryResult = Result.success(emptyList()),
+            repositoryResultsBySigungu = mapOf(
+                "영종구" to Result.success(
+                    listOf(
+                        RegionalDisposalGuide(
+                            region = Region(sido = "인천광역시", sigungu = "영종구"),
+                            targetRegionName = "영종구 전체",
+                            schedules = emptyList()
+                        )
+                    )
+                ),
+                "제물포구" to Result.success(
+                    listOf(
+                        RegionalDisposalGuide(
+                            region = Region(sido = "인천광역시", sigungu = "제물포구"),
+                            targetRegionName = "제물포구 전체",
+                            schedules = emptyList()
+                        )
+                    )
+                )
+            )
+        )
+
+        val result = useCase(
+            region = Region(sido = "인천광역시", sigungu = "중구"),
+            favoriteKey = RegionalGuideFavoriteKey(
+                sido = "인천광역시",
+                sigungu = "중구",
+                eupmyeondong = null,
+                targetRegionName = "중구 전체",
+                managementZoneName = null,
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals("영종구", candidates[0].region.sigungu)
+        assertEquals("제물포구", candidates[1].region.sigungu)
+    }
+
+    @Test
+    fun `과거 인천 서구 즐겨찾기 키는 최신 후보가 하나만 조회돼도 상세로 확정하지 않는다`() = runBlocking {
+        val useCase = createUseCase(
+            repositoryResult = Result.success(emptyList()),
+            repositoryResultsBySigungu = mapOf(
+                "서해구" to Result.success(
+                    listOf(
+                        RegionalDisposalGuide(
+                            region = Region(sido = "인천광역시", sigungu = "서해구"),
+                            targetRegionName = "서해구 전체",
+                            schedules = emptyList()
+                        )
+                    )
+                ),
+                "검단구" to Result.success(emptyList())
+            )
+        )
+
+        val result = useCase(
+            region = Region(sido = "인천광역시", sigungu = "서구"),
+            favoriteKey = RegionalGuideFavoriteKey(
+                sido = "인천광역시",
+                sigungu = "서구",
+                eupmyeondong = null,
+                targetRegionName = "서구 전체",
+                managementZoneName = null,
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(1, candidates.size)
+        assertEquals("서해구", candidates.single().region.sigungu)
+    }
+
+    @Test
+    fun `과거 안양8동 즐겨찾기 키는 최신 명학동 후보로 복원한다`() = runBlocking {
+        val repository = FakeRegionalDisposalGuideRepository(
+            result = Result.success(emptyList()),
+            resultsBySigungu = mapOf(
+                "안양시" to Result.success(
+                    listOf(
+                        RegionalDisposalGuide(
+                            region = Region(
+                                sido = "경기도",
+                                sigungu = "안양시 만안구",
+                                eupmyeondong = "명학동"
+                            ),
+                            targetRegionName = "명학동",
+                            managementZoneName = "명학동",
+                            schedules = emptyList()
+                        )
+                    )
+                )
+            )
+        )
+        val useCase = createUseCase(repository = repository)
+
+        val result = useCase(
+            region = Region(
+                sido = "경기도",
+                sigungu = "안양시 만안구",
+                eupmyeondong = "안양8동"
+            ),
+            favoriteKey = RegionalGuideFavoriteKey(
+                sido = "경기도",
+                sigungu = "안양시 만안구",
+                eupmyeondong = "안양8동",
+                targetRegionName = "안양8동",
+                managementZoneName = "안양8동",
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("안양시", repository.requestedSigungu.single())
+        assertEquals("안양시 만안구", guide.region.sigungu)
+        assertEquals("명학동", guide.region.eupmyeondong)
+        assertEquals("명학동", guide.targetRegionName)
+    }
+
     private fun createUseCase(
         repositoryResult: Result<List<RegionalDisposalGuide>>,
+        repositoryResultsBySigungu: Map<String, Result<List<RegionalDisposalGuide>>> = emptyMap(),
+        adminDongCandidates: List<Region> = emptyList()
+    ): GetRegionalDisposalGuideUseCase {
+        return createUseCase(
+            repository = FakeRegionalDisposalGuideRepository(
+                result = repositoryResult,
+                resultsBySigungu = repositoryResultsBySigungu,
+            ),
+            adminDongCandidates = adminDongCandidates,
+        )
+    }
+
+    private fun createUseCase(
+        repository: FakeRegionalDisposalGuideRepository,
         adminDongCandidates: List<Region> = emptyList()
     ): GetRegionalDisposalGuideUseCase {
         return GetRegionalDisposalGuideUseCase(
-            repository = FakeRegionalDisposalGuideRepository(repositoryResult),
+            repository = repository,
             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
             selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(),
             findAdminDongCandidatesForLegalDongUseCase = FindAdminDongCandidatesForLegalDongUseCase(
@@ -169,12 +309,17 @@ class GetRegionalDisposalGuideUseCaseTest {
     }
 
     private class FakeRegionalDisposalGuideRepository(
-        private val result: Result<List<RegionalDisposalGuide>>
+        private val result: Result<List<RegionalDisposalGuide>>,
+        private val resultsBySigungu: Map<String, Result<List<RegionalDisposalGuide>>> = emptyMap(),
     ) : RegionalDisposalGuideRepository {
+        val requestedSigungu = mutableListOf<String?>()
 
         override suspend fun getRegionalDisposalGuideCandidates(
             query: RegionalGuideQuery
-        ): Result<List<RegionalDisposalGuide>> = result
+        ): Result<List<RegionalDisposalGuide>> {
+            requestedSigungu += query.sigunguQuery
+            return resultsBySigungu[query.sigunguQuery] ?: result
+        }
     }
 
     private class FakeRegionOptionsRepository(
