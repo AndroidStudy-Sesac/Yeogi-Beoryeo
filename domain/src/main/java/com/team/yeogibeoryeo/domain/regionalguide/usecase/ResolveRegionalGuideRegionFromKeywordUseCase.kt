@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.usecase
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLegacyRegionCompatibilityPolicy
 import javax.inject.Inject
 
@@ -21,7 +22,7 @@ class ResolveRegionalGuideRegionFromKeywordUseCase @Inject constructor(
                 RegionalGuideLegacyRegionCompatibilityPolicy
                     .keywordReplacementRegions(keyword)
                     .toResolveResult()
-        }
+        }.toRegionalGuideDisplayResult()
     }
 
     private fun ResolveRegionFromKeywordResult.Resolved.resolveWithRegionalGuideLegacyCompatibility(
@@ -68,6 +69,28 @@ class ResolveRegionalGuideRegionFromKeywordUseCase @Inject constructor(
                 region.eupmyeondong.orEmpty()
             )
         }
+
+    private fun ResolveRegionFromKeywordResult.toRegionalGuideDisplayResult(): ResolveRegionFromKeywordResult =
+        when (this) {
+            is ResolveRegionFromKeywordResult.Resolved ->
+                ResolveRegionFromKeywordResult.Resolved(region.toRegionalGuideDisplayRegion())
+
+            is ResolveRegionFromKeywordResult.Ambiguous ->
+                ResolveRegionFromKeywordResult.Ambiguous(
+                    candidates = candidates
+                        .map { region -> region.toRegionalGuideDisplayRegion() }
+                        .distinctRegions()
+                        .sortedWith(REGION_CANDIDATE_COMPARATOR)
+                )
+
+            ResolveRegionFromKeywordResult.NotFound -> ResolveRegionFromKeywordResult.NotFound
+        }
+
+    private fun Region.toRegionalGuideDisplayRegion(): Region =
+        copy(
+            eupmyeondong = RegionalGuideEupmyeondongNamePolicy
+                .toApiCompatibleDisplayName(eupmyeondong)
+        )
 
     private companion object {
         val REGION_CANDIDATE_COMPARATOR = compareBy<Region>(

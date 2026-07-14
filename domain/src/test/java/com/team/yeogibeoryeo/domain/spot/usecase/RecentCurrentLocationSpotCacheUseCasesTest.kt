@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.domain.spot.usecase
 
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheClearResult
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import com.team.yeogibeoryeo.domain.spot.repository.RecentCurrentLocationSpotCacheRepository
@@ -20,6 +21,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = cachedSpots,
+                    searchCoordinate = TEST_COORDINATE,
                     savedAtMillis = TEST_NOW_MILLIS - FIVE_MINUTES_MILLIS,
                 ),
             )
@@ -39,6 +41,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = listOf(sampleSpot("expired")),
+                    searchCoordinate = TEST_COORDINATE,
                     savedAtMillis = TEST_NOW_MILLIS - ELEVEN_MINUTES_MILLIS,
                 ),
             )
@@ -60,6 +63,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = listOf(sampleSpot("future")),
+                    searchCoordinate = TEST_COORDINATE,
                     savedAtMillis = TEST_NOW_MILLIS + 1L,
                 ),
             )
@@ -85,9 +89,13 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
                 timeProvider = FakeTimeProvider(TEST_NOW_MILLIS),
             )
 
-            useCase(spots)
+            useCase(
+                spots = spots,
+                searchCoordinate = TEST_COORDINATE,
+            )
 
             assertEquals(spots, repository.entry?.spots)
+            assertEquals(TEST_COORDINATE, repository.entry?.searchCoordinate)
             assertEquals(TEST_NOW_MILLIS, repository.entry?.savedAtMillis)
         }
 
@@ -97,6 +105,7 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
             val repository = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = listOf(sampleSpot("cached")),
+                    searchCoordinate = TEST_COORDINATE,
                     savedAtMillis = TEST_NOW_MILLIS,
                 ),
             )
@@ -189,5 +198,6 @@ class RecentCurrentLocationSpotCacheUseCasesTest {
         const val TEST_NOW_MILLIS = 20 * 60 * 1_000L
         const val FIVE_MINUTES_MILLIS = 5 * 60 * 1_000L
         const val ELEVEN_MINUTES_MILLIS = 11 * 60 * 1_000L
+        val TEST_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
     }
 }

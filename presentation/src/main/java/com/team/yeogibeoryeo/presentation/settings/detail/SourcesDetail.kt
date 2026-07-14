@@ -43,5 +43,19 @@ internal fun SourcesDetail() {
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        SettingsSection(
+            title = stringResource(R.string.settings_pretendard_title),
+            description = stringResource(R.string.settings_pretendard_usage_description),
+        )
+        SettingsInfoRow(
+            label = stringResource(R.string.settings_pretendard_title),
+            value = stringResource(R.string.settings_pretendard_license_title),
+        )
+        Text(
+            text = stringResource(R.string.settings_pretendard_license_text),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

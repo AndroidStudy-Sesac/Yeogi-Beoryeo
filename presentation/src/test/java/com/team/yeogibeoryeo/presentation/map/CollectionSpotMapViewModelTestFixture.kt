@@ -56,6 +56,7 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    collectionSpotFavoriteRepository: CollectionSpotFavoriteRepository? = null,
     recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
         RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
@@ -68,6 +69,7 @@ internal fun createViewModel(
         favoriteRepository = favoriteRepository,
         regionOptionsRepository = regionOptionsRepository,
         snapshotRepository = snapshotRepository,
+        collectionSpotFavoriteRepository = collectionSpotFavoriteRepository,
         recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
     )
 }
@@ -83,6 +85,7 @@ internal fun createViewModel(
     regionOptionsRepository: FakeMapRegionOptionsRepository = FakeMapRegionOptionsRepository(),
     snapshotRepository: FakeCollectionSpotFavoriteSnapshotRepository =
         FakeCollectionSpotFavoriteSnapshotRepository(),
+    collectionSpotFavoriteRepository: CollectionSpotFavoriteRepository? = null,
     recentCurrentLocationCacheClearNotifier: RecentCurrentLocationCacheClearNotifier =
         RecentCurrentLocationCacheClearNotifier(),
 ): CollectionSpotMapViewModel {
@@ -119,10 +122,11 @@ internal fun createViewModel(
         observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
         toggleCollectionSpotFavoriteUseCase = ToggleCollectionSpotFavoriteUseCase(
             collectionSpotFavoriteRepository =
-                FakeCollectionSpotFavoriteRepository(
-                    favoriteRepository = favoriteRepository,
-                    snapshotRepository = snapshotRepository,
-                ),
+                collectionSpotFavoriteRepository
+                    ?: FakeCollectionSpotFavoriteRepository(
+                        favoriteRepository = favoriteRepository,
+                        snapshotRepository = snapshotRepository,
+                    ),
         ),
         calculateDistanceMeterUseCase = CalculateDistanceMeterUseCase(),
         recentCurrentLocationCacheClearNotifier = recentCurrentLocationCacheClearNotifier,
@@ -131,9 +135,11 @@ internal fun createViewModel(
 
 internal fun freshCacheEntry(
     spots: List<CollectionSpot>,
+    searchCoordinate: Coordinate = DEFAULT_CURRENT_COORDINATE,
 ): RecentCurrentLocationSpotCacheEntry {
     return RecentCurrentLocationSpotCacheEntry(
         spots = spots,
+        searchCoordinate = searchCoordinate,
         savedAtMillis = TEST_NOW_MILLIS,
     )
 }
@@ -437,3 +443,4 @@ internal class FakeCollectionSpotFavoriteRepository(
 }
 
 internal const val TEST_NOW_MILLIS = 20 * 60 * 1_000L
+internal val DEFAULT_CURRENT_COORDINATE = Coordinate(latitude = 37.5666102, longitude = 126.9783881)

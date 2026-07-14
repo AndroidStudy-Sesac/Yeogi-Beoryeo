@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
 
 internal object RegionOptionsMapper {
@@ -84,7 +85,12 @@ internal object RegionOptionsMapper {
         if (targetKeyword.isBlank()) return emptyList()
 
         val administrativeMatches = administrativeRegions
-            .filter { region -> region.eupmyeondongName.matchesEupmyeondongKeyword(targetKeyword) }
+            .filter { region ->
+                RegionalGuideEupmyeondongNamePolicy.matchesKeyword(
+                    eupmyeondongName = region.eupmyeondongName,
+                    keyword = targetKeyword,
+                )
+            }
             .map { region ->
                 RegionNormalizer.normalize(
                     Region(

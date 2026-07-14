@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.mapper
 
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
@@ -47,7 +48,7 @@ private fun RegionalDisposalGuide.displayRegionName(): String {
     val regionName = listOfNotNull(
         region.sido,
         region.sigungu,
-        region.eupmyeondong
+        displayEupmyeondongName()
     ).filter { it.isNotBlank() }
         .joinToString(" ")
 
@@ -56,6 +57,29 @@ private fun RegionalDisposalGuide.displayRegionName(): String {
             ?: managementZoneName.takeIfRegionalGuideDisplayValue()
             ?: "지역 정보"
     }
+}
+
+private fun RegionalDisposalGuide.displayEupmyeondongName(): String? {
+    val eupmyeondong = region.eupmyeondong?.trim()?.takeIf { it.isNotBlank() }
+        ?: return null
+    val apiCompatibleName = RegionalGuideEupmyeondongNamePolicy
+        .toApiCompatibleDisplayName(eupmyeondong)
+        ?: return eupmyeondong
+    if (apiCompatibleName == eupmyeondong) return eupmyeondong
+
+    return listOf(targetRegionName, managementZoneName)
+        .firstNotNullOfOrNull { value ->
+            value
+                ?.split(REGION_NAME_DELIMITER)
+                ?.map { token -> token.trim() }
+                ?.firstOrNull { token ->
+                    RegionalGuideEupmyeondongNamePolicy.isSameName(
+                        first = token,
+                        second = apiCompatibleName,
+                    )
+                }
+        }
+        ?: eupmyeondong
 }
 
 private fun RegionalWasteSchedule.displayTime(): String? {
@@ -72,3 +96,5 @@ private fun RegionalWasteSchedule.displayTime(): String? {
 
 private fun String?.takeIfNotBlank(): String? =
     this?.trim()?.takeIf { it.isNotBlank() }
+
+private val REGION_NAME_DELIMITER = Regex("[,+/]+")

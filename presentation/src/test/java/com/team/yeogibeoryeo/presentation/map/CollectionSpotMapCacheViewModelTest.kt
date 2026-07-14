@@ -8,12 +8,14 @@ import com.team.yeogibeoryeo.presentation.cache.RecentCurrentLocationCacheClearN
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -23,10 +25,13 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
         runTest {
             val notifier = RecentCurrentLocationCacheClearNotifier()
             val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val refreshResult = CompletableDeferred<List<CollectionSpot>>()
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val viewModel = createViewModel(
                 repository = FakeCollectionSpotRepository(
-                    locationSpots = listOf(sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)),
+                    locationSearchResultProvider = {
+                        refreshResult.await()
+                    },
                 ),
                 currentLocationProvider = FakeCurrentLocationProvider {
                     locationResult.await()
@@ -39,8 +44,9 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             )
 
             viewModel.searchByCurrentLocation()
-            advanceUntilIdle()
-            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            locationResult.complete(CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE))
+            runCurrent()
+            assertEquals(listOf(cachedSpot).withDistanceFrom(DEFAULT_CURRENT_COORDINATE), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
 
             notifier.notifyCleared()
@@ -82,9 +88,14 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
         runTest {
             val notifier = RecentCurrentLocationCacheClearNotifier()
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+            val refreshResult = CompletableDeferred<List<CollectionSpot>>()
             val viewModel = createViewModel(
-                repository = FakeCollectionSpotRepository(),
-                currentLocationResult = CurrentLocationResult.NotFound,
+                repository = FakeCollectionSpotRepository(
+                    locationSearchResultProvider = {
+                        refreshResult.await()
+                    },
+                ),
+                currentLocationResult = CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE),
                 recentCurrentLocationSpotCacheRepository =
                     FakeRecentCurrentLocationSpotCacheRepository(
                         entry = freshCacheEntry(listOf(cachedSpot)),
@@ -94,13 +105,13 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
 
             viewModel.searchByCurrentLocation()
             advanceUntilIdle()
-            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            assertEquals(listOf(cachedSpot).withDistanceFrom(DEFAULT_CURRENT_COORDINATE), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
 
             notifier.notifyClearRequested()
             advanceUntilIdle()
 
-            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            assertEquals(listOf(cachedSpot).withDistanceFrom(DEFAULT_CURRENT_COORDINATE), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
         }
 
@@ -152,7 +163,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             )
             val viewModel = createViewModel(
                 repository = FakeCollectionSpotRepository(),
-                currentLocationResult = CurrentLocationResult.NotFound,
+                currentLocationResult = CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE),
                 recentCurrentLocationSpotCacheRepository = cache,
                 recentCurrentLocationCacheClearNotifier = notifier,
             )
@@ -166,8 +177,9 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             advanceUntilIdle()
 
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
-            assertFalse(viewModel.uiState.value.hasSearched)
-            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertEquals(true, viewModel.uiState.value.hasSearched)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
         }
 
     @Test
@@ -182,7 +194,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             )
             val viewModel = createViewModel(
                 repository = FakeCollectionSpotRepository(),
-                currentLocationResult = CurrentLocationResult.NotFound,
+                currentLocationResult = CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE),
                 hasFineLocationPermission = true,
                 recentCurrentLocationSpotCacheRepository = cache,
                 recentCurrentLocationCacheClearNotifier = notifier,
@@ -197,19 +209,25 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             advanceUntilIdle()
 
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
-            assertFalse(viewModel.uiState.value.hasSearched)
-            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
+            assertEquals(true, viewModel.uiState.value.hasSearched)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
         }
 
     @Test
     fun `현재 위치 검색은 신선한 캐시가 있으면 캐시를 먼저 표시하고 조용히 갱신한다`() =
         runTest {
-            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val cachedSearchCoordinate = DEFAULT_CURRENT_COORDINATE
+            val currentCoordinate = Coordinate(latitude = 37.5670102, longitude = 126.9783881)
             val currentLocationResult = CompletableDeferred<CurrentLocationResult>()
+            val refreshResult = CompletableDeferred<List<CollectionSpot>>()
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(distanceMeter = 0)
             val refreshedSpot = sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)
             val repository = FakeCollectionSpotRepository(
-                locationSpots = listOf(refreshedSpot),
+                locationSearchResultProvider = {
+                    refreshResult.await()
+                },
             )
             val viewModel = createViewModel(
                 repository = repository,
@@ -218,14 +236,16 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
                 },
                 recentCurrentLocationSpotCacheRepository =
                     FakeRecentCurrentLocationSpotCacheRepository(
-                        entry = freshCacheEntry(listOf(cachedSpot)),
+                        entry = freshCacheEntry(
+                            spots = listOf(cachedSpot),
+                            searchCoordinate = cachedSearchCoordinate,
+                        ),
                     ),
             )
 
             viewModel.searchByCurrentLocation()
-            advanceUntilIdle()
 
-            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(0, repository.locationSearchCallCount)
@@ -235,22 +255,53 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
                     currentCoordinate,
                 ),
             )
+            runCurrent()
+
+            assertEquals(listOf(cachedSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(1, repository.locationSearchCallCount)
+
+            refreshResult.complete(listOf(refreshedSpot))
             advanceUntilIdle()
 
             assertEquals(listOf(refreshedSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
-            assertEquals(1, repository.locationSearchCallCount)
         }
 
     @Test
-    fun `유효한 캐시와 위치 권한이 있으면 지도 진입 시 캐시 결과를 즉시 표시한다`() =
+    fun `현재 위치 요청이 지연되면 잠시 후 loading을 표시한다`() =
         runTest {
             val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val viewModel = createViewModel(
+                repository = FakeCollectionSpotRepository(),
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    locationResult.await()
+                },
+            )
+
+            viewModel.searchByCurrentLocation()
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+
+            advanceTimeBy(300L)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
+    fun `유효한 캐시와 위치 권한이 있으면 지도 진입 시 현재 위치 확인 후 캐시 결과를 표시한다`() =
+        runTest {
+            val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val refreshResult = CompletableDeferred<List<CollectionSpot>>()
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = freshCacheEntry(listOf(cachedSpot)),
             )
             val repository = FakeCollectionSpotRepository(
-                locationSpots = listOf(sampleSpot("refresh", CollectionSpotType.RECYCLING_CENTER)),
+                locationSearchResultProvider = {
+                    refreshResult.await()
+                },
             )
             val viewModel = createViewModel(
                 repository = repository,
@@ -263,16 +314,24 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
 
-            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)
-            assertEquals(0, repository.locationSearchCallCount)
+
+            locationResult.complete(CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE))
+            runCurrent()
+
+            assertEquals(listOf(cachedSpot).withDistanceFrom(DEFAULT_CURRENT_COORDINATE), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(1, repository.locationSearchCallCount)
         }
 
     @Test
     fun `캐시 결과에서도 필터칩 선택 시 정상 필터링된다`() =
         runTest {
             val locationResult = CompletableDeferred<CurrentLocationResult>()
+            val refreshResult = CompletableDeferred<List<CollectionSpot>>()
             val standardBagSpot = sampleSpot("cache-standard", CollectionSpotType.STANDARD_BAG_STORE)
             val recyclingCenterSpot = sampleSpot("cache-recycling", CollectionSpotType.RECYCLING_CENTER)
             val cache = FakeRecentCurrentLocationSpotCacheRepository(
@@ -281,7 +340,9 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
                 ),
             )
             val repository = FakeCollectionSpotRepository(
-                locationSpots = listOf(sampleSpot("refresh", CollectionSpotType.OTHER)),
+                locationSearchResultProvider = {
+                    refreshResult.await()
+                },
             )
             val viewModel = createViewModel(
                 repository = repository,
@@ -293,11 +354,16 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             )
 
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            locationResult.complete(CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE))
+            runCurrent()
             viewModel.onSpotTypeClick(CollectionSpotType.RECYCLING_CENTER)
 
             assertEquals(setOf(CollectionSpotType.RECYCLING_CENTER), viewModel.uiState.value.selectedTypes)
-            assertEquals(listOf(recyclingCenterSpot), viewModel.uiState.value.spots)
-            assertEquals(0, repository.locationSearchCallCount)
+            assertEquals(
+                listOf(recyclingCenterSpot).withDistanceFrom(DEFAULT_CURRENT_COORDINATE),
+                viewModel.uiState.value.spots,
+            )
+            assertEquals(1, repository.locationSearchCallCount)
         }
 
     @Test
@@ -329,7 +395,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
         }
 
     @Test
-    fun `유효한 캐시 표시 후 refresh 실패 시 기존 캐시 결과를 유지한다`() =
+    fun `현재 위치 조회 실패 시 유효한 캐시가 있어도 표시하지 않는다`() =
         runTest {
             val cachedSpot = sampleSpot("cache", CollectionSpotType.STANDARD_BAG_STORE)
             val cache = FakeRecentCurrentLocationSpotCacheRepository(
@@ -346,13 +412,47 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
             advanceUntilIdle()
 
-            assertEquals(listOf(cachedSpot), viewModel.uiState.value.spots)
-            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
             assertFalse(viewModel.uiState.value.isLoading)
-            assertNull(viewModel.uiState.value.locationNotice)
+            assertEquals(
+                MapLocationNotices.CurrentLocationUnavailable.titleResId,
+                viewModel.uiState.value.locationNotice?.titleResId,
+            )
             assertNull(viewModel.uiState.value.errorMessageResId)
             assertEquals(0, repository.locationSearchCallCount)
             assertEquals(0, cache.saveCallCount)
+        }
+
+    @Test
+    fun `지도 진입 시 캐시가 fresh해도 현재 위치와 멀면 캐시를 표시하지 않고 새 위치로 검색한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val cachedSpot = sampleSpot("cache", CollectionSpotType.OTHER)
+            val expectedSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val cache = FakeRecentCurrentLocationSpotCacheRepository(
+                entry = freshCacheEntry(
+                    spots = listOf(cachedSpot),
+                    searchCoordinate = Coordinate(latitude = 37.0, longitude = 126.0),
+                ),
+            )
+            val repository = FakeCollectionSpotRepository(locationSpots = listOf(expectedSpot))
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+                recentCurrentLocationSpotCacheRepository = cache,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            advanceUntilIdle()
+
+            assertEquals(1, cache.clearCallCount)
+            assertEquals(1, repository.locationSearchCallCount)
+            assertEquals(currentCoordinate, repository.lastLocationCoordinate)
+            assertEquals(listOf(expectedSpot).withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(listOf(expectedSpot).withDistanceFrom(currentCoordinate), cache.entry?.spots)
+            assertEquals(currentCoordinate, cache.entry?.searchCoordinate)
         }
 
     @Test
@@ -386,6 +486,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             val cache = FakeRecentCurrentLocationSpotCacheRepository(
                 entry = RecentCurrentLocationSpotCacheEntry(
                     spots = listOf(expiredSpot),
+                    searchCoordinate = DEFAULT_CURRENT_COORDINATE,
                     savedAtMillis = 0L,
                 ),
             )
@@ -500,6 +601,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
                 listOf(expectedSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
                 cache.entry?.spots,
             )
+            assertEquals(Coordinate(latitude = 37.5666102, longitude = 126.9783881), cache.entry?.searchCoordinate)
         }
 
     @Test

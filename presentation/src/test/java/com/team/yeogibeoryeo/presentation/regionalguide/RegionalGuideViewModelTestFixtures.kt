@@ -25,6 +25,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideDisplayRegionUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
@@ -48,6 +49,7 @@ internal fun createViewModel(
     regionRepository: RegionRepository = FakeRegionRepository(),
     regionOptionsRepository: RegionOptionsRepository = FakeRegionOptionsRepository(),
     regionalGuideRepository: RegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
+    regionalGuideOptionRepository: RegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
     favoriteRepository: FavoriteRepository = FakeFavoriteRepository(),
     regionalGuideSnapshotRepository: RegionalGuideFavoriteSnapshotRepository =
         FakeRegionalGuideFavoriteSnapshotRepository(),
@@ -76,7 +78,11 @@ internal fun createViewModel(
         ),
         getSidoOptionsUseCase = GetSidoOptionsUseCase(regionOptionsRepository),
         getSigunguOptionsUseCase = GetSigunguOptionsUseCase(regionOptionsRepository),
-        getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
+        getRegionalGuideEupmyeondongOptionsUseCase = GetRegionalGuideEupmyeondongOptionsUseCase(
+            getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
+            normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
+            repository = regionalGuideOptionRepository,
+        ),
         normalizeRegionalGuideDisplayRegionUseCase = NormalizeRegionalGuideDisplayRegionUseCase(
             NormalizeRegionForRegionalGuideUseCase(regionOptionsRepository)
         ),

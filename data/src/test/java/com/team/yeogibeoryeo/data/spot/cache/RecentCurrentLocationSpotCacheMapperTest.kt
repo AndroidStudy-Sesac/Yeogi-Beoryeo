@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.RecentCurrentLocationSpotCacheEntry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Test
 
 class RecentCurrentLocationSpotCacheMapperTest {
@@ -18,12 +19,15 @@ class RecentCurrentLocationSpotCacheMapperTest {
         )
         val entry = RecentCurrentLocationSpotCacheEntry(
             spots = listOf(spot),
+            searchCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
             savedAtMillis = 1_200_000L,
         )
 
         val dto = entry.toDto()
 
         assertEquals(1_200_000L, dto.savedAtMillis)
+        assertEquals(37.5666102, dto.searchCoordinate?.latitude)
+        assertEquals(126.9783881, dto.searchCoordinate?.longitude)
         assertEquals(1, dto.spots.size)
         assertEquals("spot-1", dto.spots.first().id)
         assertEquals(CollectionSpotType.STANDARD_BAG_STORE.name, dto.spots.first().type)
@@ -46,12 +50,14 @@ class RecentCurrentLocationSpotCacheMapperTest {
                     isBookmarked = true,
                 ),
             ),
+            searchCoordinate = CoordinateCacheDto(latitude = 37.5, longitude = 126.9),
             savedAtMillis = 1_200_000L,
         )
 
         val entry = dto.toDomain()
 
         assertEquals(1_200_000L, entry.savedAtMillis)
+        assertEquals(Coordinate(latitude = 37.5, longitude = 126.9), entry.searchCoordinate)
         assertEquals(CollectionSpotType.RECYCLING_CENTER, entry.spots.first().type)
         assertEquals(Coordinate(latitude = 37.1, longitude = 127.1), entry.spots.first().coordinate)
         assertEquals("1층 입구", entry.spots.first().detailLocation)
@@ -63,6 +69,7 @@ class RecentCurrentLocationSpotCacheMapperTest {
     fun `coordinate가 없는 장소도 cache dto로 변환할 수 있다`() {
         val entry = RecentCurrentLocationSpotCacheEntry(
             spots = listOf(sampleSpot(id = "spot-without-coordinate", coordinate = null)),
+            searchCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881),
             savedAtMillis = 1_200_000L,
         )
 
@@ -71,6 +78,22 @@ class RecentCurrentLocationSpotCacheMapperTest {
 
         assertNull(dto.spots.first().coordinate)
         assertNull(restoredEntry.spots.first().coordinate)
+    }
+
+    @Test
+    fun `기준 좌표가 없는 dto는 domain cache entry로 복원하지 않는다`() {
+        val dto = RecentCurrentLocationSpotCacheDto(
+            spots = emptyList(),
+            searchCoordinate = null,
+            savedAtMillis = 1_200_000L,
+        )
+
+        try {
+            dto.toDomain()
+            fail("기준 좌표가 없으면 예외가 발생해야 한다")
+        } catch (exception: IllegalArgumentException) {
+            assertEquals("최근 현재 위치 캐시에 검색 기준 좌표가 없습니다", exception.message)
+        }
     }
 
     private fun sampleSpot(

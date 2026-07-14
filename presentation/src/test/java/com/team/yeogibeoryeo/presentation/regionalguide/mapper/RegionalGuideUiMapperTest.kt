@@ -93,4 +93,42 @@ class RegionalGuideUiMapperTest {
 
         assertEquals("청소행정과 02-1234-5678", uiModel.departmentInfo)
     }
+
+    @Test
+    fun `문자 점 묶음 행정동은 붙여쓴 대상지역명으로 지역명을 표시한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(
+                sido = "대구광역시",
+                sigungu = "동구",
+                eupmyeondong = "불로.봉무동"
+            ),
+            managementZoneName = "2권역",
+            targetRegionName = "불로봉무동",
+            schedules = emptyList()
+        )
+
+        val uiModel = guide.toUiModel()
+
+        assertEquals("대구광역시 동구 불로봉무동", uiModel.regionName)
+        assertEquals("불로봉무동", uiModel.targetRegionName)
+    }
+
+    @Test
+    fun `문자 점 묶음 행정동이 묶음 대상지역에 포함되면 매칭된 토큰으로 지역명을 표시한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(
+                sido = "충청북도",
+                sigungu = "충주시",
+                eupmyeondong = "성내.충인동"
+            ),
+            managementZoneName = "3권역",
+            targetRegionName = "성내충인동+교현안림동+교현2동",
+            schedules = emptyList()
+        )
+
+        val uiModel = guide.toUiModel()
+
+        assertEquals("충청북도 충주시 성내충인동", uiModel.regionName)
+        assertEquals("성내충인동+교현안림동+교현2동", uiModel.targetRegionName)
+    }
 }

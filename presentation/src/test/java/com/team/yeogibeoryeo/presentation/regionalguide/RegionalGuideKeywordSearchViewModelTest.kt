@@ -281,6 +281,252 @@ class RegionalGuideKeywordSearchViewModelTest {
     }
 
     @Test
+    fun `붙여쓴 복합 행정동 검색 후보는 원본 선택지와 호환되어 상세를 조회한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대구광역시" to listOf("동구")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "대구광역시" to mapOf(
+                        "동구" to listOf("불로.봉무동")
+                    )
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "대구광역시",
+                        sigungu = "동구",
+                        targetRegionName = "불로봉무동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onRegionCandidateSelected(
+            RegionSearchCandidateUiModel(
+                sido = "대구광역시",
+                sigungu = "동구",
+                eupmyeondong = "불로봉무동"
+            )
+        )
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+        assertEquals(
+            "불로봉무동",
+            viewModel.regionSelectorUiState.value.selectedEupmyeondong
+        )
+    }
+
+    @Test
+    fun `붙여쓴 복합 행정동이 대상지역명 묶음에 포함되면 상세를 조회한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "충청북도" to listOf("충주시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "충청북도" to mapOf(
+                        "충주시" to listOf("성내.충인동")
+                    )
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "충청북도",
+                        sigungu = "충주시",
+                        targetRegionName = "성내충인동+교현안림동+교현2동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onRegionCandidateSelected(
+            RegionSearchCandidateUiModel(
+                sido = "충청북도",
+                sigungu = "충주시",
+                eupmyeondong = "성내충인동"
+            )
+        )
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+        assertEquals(
+            "성내충인동",
+            viewModel.regionSelectorUiState.value.selectedEupmyeondong
+        )
+    }
+
+    @Test
+    fun `키워드로 찾은 읍면동이 지역 가이드 선택지에 없으면 선택 상태에 넣지 않는다`() = runTest {
+        val guideCandidates = listOf(
+            sampleGuide(
+                sido = "경상북도",
+                sigungu = "김천시",
+                targetRegionName = "동지역"
+            )
+        )
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = guideCandidates
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경상북도" to listOf("김천시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경상북도" to mapOf(
+                        "김천시" to listOf("아포읍", "봉산면", "율곡동", "평화남산동")
+                    )
+                ),
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경상북도",
+                        sigungu = "김천시",
+                        eupmyeondong = "아포읍"
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository,
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = guideCandidates
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("아포읍")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
+        assertTrue(regionalGuideRepository.queries.isEmpty())
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("경상북도", selectedSido)
+            assertEquals("김천시", selectedSigungu)
+            assertEquals(null, selectedEupmyeondong)
+            assertEquals(listOf("율곡동", "평화남산동"), eupmyeondongOptions)
+        }
+    }
+
+    @Test
+    fun `읍면지역만 제공하면 읍 검색은 읍면지역 가이드를 보여준다`() = runTest {
+        val guideCandidates = listOf(
+            sampleGuide(
+                sido = "경상북도",
+                sigungu = "김천시",
+                targetRegionName = "읍면지역"
+            )
+        )
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = guideCandidates
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경상북도" to listOf("김천시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경상북도" to mapOf(
+                        "김천시" to listOf("아포읍", "봉산면", "율곡동", "평화남산동")
+                    )
+                ),
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경상북도",
+                        sigungu = "김천시",
+                        eupmyeondong = "아포읍"
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository,
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = guideCandidates
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("아포읍")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertEquals("읍면지역", state.guide.targetRegionName)
+        assertEquals("김천시", regionalGuideRepository.queries.single().sigunguQuery)
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("경상북도", selectedSido)
+            assertEquals("김천시", selectedSigungu)
+            assertEquals("아포읍", selectedEupmyeondong)
+            assertEquals(listOf("아포읍", "봉산면"), eupmyeondongOptions)
+        }
+    }
+
+    @Test
+    fun `읍면지역만 제공하면 동 검색은 안내 상태로 보낸다`() = runTest {
+        val guideCandidates = listOf(
+            sampleGuide(
+                sido = "경상북도",
+                sigungu = "김천시",
+                targetRegionName = "읍면지역"
+            )
+        )
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = guideCandidates
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경상북도" to listOf("김천시")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "경상북도" to mapOf(
+                        "김천시" to listOf("아포읍", "봉산면", "율곡동", "평화남산동")
+                    )
+                ),
+                keywordRegions = listOf(
+                    Region(
+                        sido = "경상북도",
+                        sigungu = "김천시",
+                        eupmyeondong = "율곡동"
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository,
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = guideCandidates
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("율곡동")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Empty
+
+        assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
+        assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
+        assertTrue(regionalGuideRepository.queries.isEmpty())
+
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("경상북도", selectedSido)
+            assertEquals("김천시", selectedSigungu)
+            assertEquals(null, selectedEupmyeondong)
+            assertEquals(listOf("아포읍", "봉산면"), eupmyeondongOptions)
+        }
+    }
+
+    @Test
     fun `지역 후보 상세에서 뒤로가기를 요청하면 이전 지역 후보 목록을 복원한다`() = runTest {
         val viewModel = createViewModel(
             regionOptionsRepository = FakeRegionOptionsRepository(
