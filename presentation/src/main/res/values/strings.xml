@@ -102,7 +102,7 @@
     <string name="regional_guide_empty_favorite_restore_failed_title">저장된 지역 정보를 다시 불러오지 못했어요.</string>
     <string name="regional_guide_empty_favorite_restore_failed_message">지역을 다시 선택해 주세요.</string>
     <string name="regional_guide_empty_info_not_found_title">해당 지역의 배출 가이드를 찾지 못했어요.</string>
-    <string name="regional_guide_empty_info_not_found_message">다른 지역을 선택해 주세요.</string>
+    <string name="regional_guide_empty_info_not_found_message">공공데이터에 해당 지역 안내가 없거나 지자체 기준이 변경되었을 수 있어요.\n다른 지역을 선택해 다시 확인해 주세요.</string>
     <string name="regional_guide_empty_candidate_not_found_title">선택한 읍면동 기준의 배출 가이드를 찾지 못했어요.</string>
     <string name="regional_guide_empty_candidate_not_found_message">지역을 다시 선택해 주세요.</string>
     <string name="regional_guide_empty_action_search_again">다시 검색하기</string>
