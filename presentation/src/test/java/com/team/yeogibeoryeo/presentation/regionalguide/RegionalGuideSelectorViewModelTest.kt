@@ -1,8 +1,10 @@
 ﻿package com.team.yeogibeoryeo.presentation.regionalguide
 
+import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -313,6 +315,108 @@ class RegionalGuideSelectorViewModelTest {
         advanceUntilIdle()
 
         assertNull(viewModel.regionSelectorUiState.value.expandedDropdown)
+    }
+
+    @Test
+    fun `지역 선택 드롭다운 확장은 검색 후보 목록을 닫고 검색어를 유지한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(sido = "대전광역시", sigungu = "중구"),
+                    Region(sido = "서울특별시", sigungu = "중구"),
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중구")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Ambiguous)
+
+        viewModel.onRegionSelectorDropdownExpanded(RegionSelectorDropdown.SIDO)
+
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+        assertEquals("중구", viewModel.searchKeyword.value)
+        assertEquals(
+            RegionSelectorDropdown.SIDO,
+            viewModel.regionSelectorUiState.value.expandedDropdown
+        )
+    }
+
+    @Test
+    fun `지역 선택 드롭다운 확장은 예약된 검색 후보 조회를 취소한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                keywordRegions = listOf(
+                    Region(sido = "대전광역시", sigungu = "중구"),
+                    Region(sido = "서울특별시", sigungu = "중구"),
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("중")
+        advanceTimeBy(399)
+
+        viewModel.onRegionSelectorDropdownExpanded(RegionSelectorDropdown.SIDO)
+        advanceTimeBy(1)
+        advanceUntilIdle()
+
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+        assertEquals("중", viewModel.searchKeyword.value)
+        assertEquals(
+            RegionSelectorDropdown.SIDO,
+            viewModel.regionSelectorUiState.value.expandedDropdown
+        )
+    }
+
+    @Test
+    fun `시도 선택은 지역 가이드 후보 목록을 닫고 선택 상태만 갱신한다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolvedRegion = Region(sido = "울산광역시", sigungu = "울주군")
+            ),
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "서울특별시" to listOf("중구")
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "범서읍"
+                    ),
+                    sampleGuide(
+                        sido = "울산광역시",
+                        sigungu = "울주군",
+                        targetRegionName = "두동면"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("울주군")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.GuideCandidates)
+
+        viewModel.onSidoSelected("서울특별시")
+        advanceUntilIdle()
+
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+        assertEquals("울주군", viewModel.searchKeyword.value)
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("서울특별시", selectedSido)
+            assertNull(selectedSigungu)
+            assertNull(selectedEupmyeondong)
+            assertEquals(listOf("중구"), sigunguOptions)
+        }
     }
 
     @Test

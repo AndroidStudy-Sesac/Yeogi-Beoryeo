@@ -31,7 +31,6 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandi
 import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
 import com.team.yeogibeoryeo.presentation.regionalguide.model.withDuplicateDisplayDisambiguation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -44,6 +43,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class RegionalGuideViewModel @Inject constructor(
@@ -95,6 +95,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onSidoSelected(sido: String) {
+        dismissSearchCandidateState()
         clearGuideCandidateBackStack()
         sigunguOptionsJob?.cancel()
         eupmyeondongOptionsJob?.cancel()
@@ -126,6 +127,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onSigunguSelected(sigungu: String) {
+        dismissSearchCandidateState()
         clearGuideCandidateBackStack()
         eupmyeondongOptionsJob?.cancel()
 
@@ -169,6 +171,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onEupmyeondongSelected(eupmyeondong: String) {
+        dismissSearchCandidateState()
         clearGuideCandidateBackStack()
         _regionSelectorUiState.update { state ->
             state.copy(
@@ -179,6 +182,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onRegionSelectorDropdownExpanded(dropdown: RegionSelectorDropdown) {
+        dismissSearchCandidateState()
         _regionSelectorUiState.update { state ->
             if (dropdown == RegionSelectorDropdown.EUPMYEONDONG &&
                 !state.isEupmyeondongSelectionEnabled
@@ -195,6 +199,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onRegionSelectionSearchClick() {
+        dismissSearchCandidateState()
         collapseRegionSelectorDropdowns()
 
         val state = regionSelectorUiState.value
@@ -1030,6 +1035,22 @@ class RegionalGuideViewModel @Inject constructor(
             } else {
                 state.copy(expandedDropdown = null)
             }
+        }
+    }
+
+    private fun dismissSearchCandidateState() {
+        keywordSuggestionJob?.cancel()
+
+        val shouldDismissCandidates = when (uiState.value) {
+            is RegionalGuideUiState.Ambiguous,
+            is RegionalGuideUiState.GuideCandidates -> true
+
+            else -> false
+        }
+
+        if (shouldDismissCandidates) {
+            clearGuideCandidateBackStack()
+            _uiState.value = RegionalGuideUiState.Idle
         }
     }
 
