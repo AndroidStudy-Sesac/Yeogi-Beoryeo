@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.usecase
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import javax.inject.Inject
 
@@ -37,7 +38,12 @@ class GetRegionalGuideEupmyeondongOptionsUseCase @Inject constructor(
 
         val candidateRegionNames = candidates.toRegionNames()
         val filteredOptions = options.filter { option ->
-            candidateRegionNames.contains(option.trim()) ||
+            candidateRegionNames.any { name ->
+                RegionalGuideEupmyeondongNamePolicy.containsSameName(
+                    regionName = name,
+                    eupmyeondong = option,
+                )
+            } ||
                 coverage.any { areaCoverage -> areaCoverage.matches(option) }
         }
 

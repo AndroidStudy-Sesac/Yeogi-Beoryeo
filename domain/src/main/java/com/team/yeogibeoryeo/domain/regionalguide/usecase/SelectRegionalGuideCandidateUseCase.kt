@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFavoriteCompatibilityPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
@@ -384,6 +385,15 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         if (targetRegionName.isBlank()) return false
 
         if (targetRegionName == eupmyeondong || targetRegionName.contains(eupmyeondong)) {
+            return true
+        }
+
+        if (
+            RegionalGuideEupmyeondongNamePolicy.containsSameName(
+                regionName = targetRegionName,
+                eupmyeondong = eupmyeondong,
+            )
+        ) {
             return true
         }
 

@@ -17,6 +17,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
@@ -627,7 +628,12 @@ class RegionalGuideViewModel @Inject constructor(
             if (
                 selectedEupmyeondong != null &&
                 !eupmyeondongOptions.isNullOrEmpty() &&
-                selectedEupmyeondong !in eupmyeondongOptions
+                eupmyeondongOptions.none { option ->
+                    RegionalGuideEupmyeondongNamePolicy.isSameName(
+                        first = selectedEupmyeondong,
+                        second = option,
+                    )
+                }
             ) {
                 regionalGuideRegion.copy(eupmyeondong = null)
             } else {

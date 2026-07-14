@@ -708,6 +708,94 @@ class RegionOptionsMapperTest {
         assertEquals(listOf("명동1가", "명동2가"), keywords)
     }
 
+    @Test
+    fun `문자 점 묶음 행정동 부분 검색은 붙여쓴 지역명 후보로 반환한다`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "대구광역시",
+                    sigunguName = "동구",
+                    eupmyeondongName = "불로.봉무동"
+                )
+            ),
+            legalAdminDongMappings = emptyList(),
+            keyword = "불로"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "대구광역시", sigungu = "동구", eupmyeondong = "불로봉무동")
+            ),
+            regions
+        )
+    }
+
+    @Test
+    fun `문자 점 묶음 행정동 붙여쓴 검색어는 붙여쓴 지역명 후보로 반환한다`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "충청북도",
+                    sigunguName = "충주시",
+                    eupmyeondongName = "성내.충인동"
+                )
+            ),
+            legalAdminDongMappings = emptyList(),
+            keyword = "성내충인동"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "충청북도", sigungu = "충주시", eupmyeondong = "성내충인동")
+            ),
+            regions
+        )
+    }
+
+    @Test
+    fun `문자 점 묶음 행정동 원본 검색어도 붙여쓴 지역명 후보로 반환한다`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "대구광역시",
+                    sigunguName = "동구",
+                    eupmyeondongName = "불로.봉무동"
+                )
+            ),
+            legalAdminDongMappings = emptyList(),
+            keyword = "불로.봉무동"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "대구광역시", sigungu = "동구", eupmyeondong = "불로봉무동")
+            ),
+            regions
+        )
+    }
+
+    @Test
+    fun `숫자 점 묶음 행정동 검색 후보는 기존 행정동 표기를 유지한다`() {
+        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+            administrativeRegions = listOf(
+                administrativeRegion(
+                    sidoName = "서울특별시",
+                    sigunguName = "성동구",
+                    eupmyeondongName = "금호2.3가동"
+                )
+            ),
+            legalAdminDongMappings = emptyList(),
+            keyword = "금호"
+        )
+
+        assertEquals(
+            listOf(
+                Region(sido = "서울특별시", sigungu = "성동구", eupmyeondong = "금호2.3가동")
+            ),
+            regions
+        )
+    }
+
     private fun administrativeRegion(
         sidoName: String,
         sigunguName: String,
