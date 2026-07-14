@@ -11,6 +11,7 @@ enum class SettingsDetailType(
     AppInfo(R.string.settings_app_info_title),
     LocationPermission(R.string.settings_location_permission_title),
     Terms(R.string.settings_terms_title),
+    PrivacyPolicy(R.string.settings_privacy_policy_title),
     Sources(R.string.settings_sources_title),
     Cache(R.string.settings_cache_title),
 }

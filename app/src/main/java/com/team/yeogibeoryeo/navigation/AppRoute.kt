@@ -80,6 +80,7 @@ enum class SettingsDetailRouteType {
     AppInfo,
     LocationPermission,
     Terms,
+    PrivacyPolicy,
     Sources,
     Cache,
 }
