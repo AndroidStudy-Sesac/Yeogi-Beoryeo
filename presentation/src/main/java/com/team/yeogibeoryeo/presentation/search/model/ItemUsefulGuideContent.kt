@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.presentation.search.model
 
 import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.DISPOSAL_PORTAL_URL
 import com.team.yeogibeoryeo.presentation.common.REGIONAL_GUIDE_LINKS_URL
 
 data class ItemUsefulGuideContent(
@@ -33,7 +34,7 @@ val itemUsefulGuideContents: List<ItemUsefulGuideContent> =
             relatedSites = listOf(
                 ItemUsefulGuideSite(
                     labelResId = R.string.item_useful_guide_site_disposal_home,
-                    url = DisposalHomeUrl,
+                    url = DISPOSAL_PORTAL_URL,
                 ),
                 ItemUsefulGuideSite(
                     labelResId = R.string.item_useful_guide_site_pickup_locations,
@@ -103,7 +104,6 @@ val itemUsefulGuideContents: List<ItemUsefulGuideContent> =
 fun ItemUsefulGuideType.toUsefulGuideContent(): ItemUsefulGuideContent =
     itemUsefulGuideContents.first { it.type == this }
 
-private const val DisposalHomeUrl = "https://xn--oy2b29bd3a601b.kr/"
 private const val DictionaryUrl = "https://xn--oy2b29bd3a601b.kr/front/dischargeMethod/dictionary.do"
 private const val DisposalMethodsUrl =
     "https://xn--oy2b29bd3a601b.kr/front/dischargeMethod/typeItem.do?searchCnd=11"
