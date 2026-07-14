@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFavoriteCompatibilityPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
@@ -349,6 +350,15 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return true
         }
 
+        if (
+            RegionalGuideEupmyeondongNamePolicy.containsSameName(
+                regionName = targetRegionName,
+                eupmyeondong = eupmyeondong,
+            )
+        ) {
+            return true
+        }
+
         val requestedDongNames = eupmyeondong.toComparableAdminDongNames()
         val targetDongNames = targetRegionName.toComparableAdminDongNames()
         if (
@@ -466,6 +476,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return names
         }
 
+        value.expandCompositeAdminDongName()?.let { names ->
+            return names
+        }
+
         val condensedMatches = ADMIN_DONG_CONDENSED_REGEXES
             .flatMap { regex -> regex.findAll(value).toList() }
             .sortedBy { match -> match.range.first }
@@ -535,6 +549,12 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return null
+    }
+
+    private fun String.expandCompositeAdminDongName(): Set<String>? {
+        val comparableNames = RegionalGuideEupmyeondongNamePolicy.comparableNames(this)
+
+        return comparableNames.takeIf { names -> names.size > 1 }
     }
 
     private fun String.removeCondensedAdminDongExpressions(
@@ -709,7 +729,6 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         )
         const val GROUPED_NUMBER_DELIMITER = ","
         val TARGET_REGION_GROUP_DELIMITER = Regex("[,+/]+")
-
         val SEJONG_DONG_AREA_NAMES = setOf(
             "한솔동",
             "새롬동",

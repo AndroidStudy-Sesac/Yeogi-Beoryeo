@@ -120,6 +120,30 @@ class ResolveRegionalGuideRegionFromKeywordUseCaseTest {
         )
     }
 
+    @Test
+    fun `문자 점 묶음 행정동 검색 결과는 지역 가이드용 붙여쓴 표시명으로 변환한다`() = runBlocking {
+        val useCase = createUseCase(
+            resolvedRegion = Region(
+                sido = "대구광역시",
+                sigungu = "동구",
+                eupmyeondong = "불로.봉무동",
+            )
+        )
+
+        val result = useCase("불로봉무동")
+
+        assertEquals(
+            ResolveRegionFromKeywordResult.Resolved(
+                Region(
+                    sido = "대구광역시",
+                    sigungu = "동구",
+                    eupmyeondong = "불로봉무동",
+                )
+            ),
+            result
+        )
+    }
+
     private fun createUseCase(
         resolvedRegion: Region?,
         keywordRegions: List<Region> = emptyList(),

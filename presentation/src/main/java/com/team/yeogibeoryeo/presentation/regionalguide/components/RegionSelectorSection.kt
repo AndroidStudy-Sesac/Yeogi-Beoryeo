@@ -23,13 +23,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorDropdown
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorDropdown
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorUiState
 
 @Composable
@@ -96,7 +96,7 @@ fun RegionSelectorSection(
             }
 
             RegionDropdownChip(
-                label = uiState.selectedEupmyeondong ?: "읍면동 선택",
+                label = uiState.eupmyeondongSelectionLabel,
                 options = uiState.eupmyeondongOptions,
                 enabled = uiState.isEupmyeondongSelectionEnabled,
                 expanded = uiState.expandedDropdown == RegionSelectorDropdown.EUPMYEONDONG,
