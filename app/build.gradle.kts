@@ -1,5 +1,19 @@
 import java.util.Properties
 
+val releaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("Release", ignoreCase = true)
+}
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.isFile) {
+        keystorePropertiesFile.inputStream().use(::load)
+    }
+}
+
+fun requiredSigningProperty(name: String): String =
+    keystoreProperties.getProperty(name)?.trim()?.takeIf(String::isNotEmpty)
+        ?: throw GradleException("keystore.properties에 $name 값을 추가해야 합니다.")
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -22,7 +36,7 @@ android {
     val localProperties = Properties().apply {
         val file = rootProject.file("local.properties")
         if (file.exists()) {
-            load(file.inputStream())
+            file.inputStream().use(::load)
         }
     }
 
@@ -37,7 +51,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -56,8 +70,28 @@ android {
         )
     }
 
+    val releaseSigningConfig = if (keystorePropertiesFile.isFile) {
+        signingConfigs.create("release") {
+            val configuredStoreFile = rootProject.file(requiredSigningProperty("storeFile"))
+            if (!configuredStoreFile.isFile) {
+                throw GradleException("출시용 키 저장소 파일을 찾을 수 없습니다: $configuredStoreFile")
+            }
+
+            storeFile = configuredStoreFile
+            storePassword = requiredSigningProperty("storePassword")
+            keyAlias = requiredSigningProperty("keyAlias")
+            keyPassword = requiredSigningProperty("keyPassword")
+        }
+    } else {
+        if (releaseBuildRequested) {
+            throw GradleException("release 빌드에는 프로젝트 루트의 keystore.properties가 필요합니다.")
+        }
+        null
+    }
+
     buildTypes {
         release {
+            signingConfig = releaseSigningConfig
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
