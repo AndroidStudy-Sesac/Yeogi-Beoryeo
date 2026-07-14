@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.domain.spot.model
 
 data class RecentCurrentLocationSpotCacheEntry(
     val spots: List<CollectionSpot>,
+    val searchCoordinate: Coordinate,
     val savedAtMillis: Long,
 ) {
     fun isFresh(
