@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.mapper
 
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
@@ -60,31 +61,24 @@ private fun RegionalDisposalGuide.displayRegionName(): String {
 private fun RegionalDisposalGuide.displayEupmyeondongName(): String? {
     val eupmyeondong = region.eupmyeondong?.trim()?.takeIf { it.isNotBlank() }
         ?: return null
-    val joinedCompositeDongName = eupmyeondong.toJoinedCompositeDongNameOrNull()
+    val apiCompatibleName = RegionalGuideEupmyeondongNamePolicy
+        .toApiCompatibleDisplayName(eupmyeondong)
         ?: return eupmyeondong
+    if (apiCompatibleName == eupmyeondong) return eupmyeondong
 
     return listOf(targetRegionName, managementZoneName)
         .firstNotNullOfOrNull { value ->
             value
                 ?.split(REGION_NAME_DELIMITER)
                 ?.map { token -> token.trim() }
-                ?.firstOrNull { token -> token == joinedCompositeDongName }
+                ?.firstOrNull { token ->
+                    RegionalGuideEupmyeondongNamePolicy.isSameName(
+                        first = token,
+                        second = apiCompatibleName,
+                    )
+                }
         }
         ?: eupmyeondong
-}
-
-private fun String.toJoinedCompositeDongNameOrNull(): String? {
-    val value = replace(WHITESPACE_REGEX, "")
-    if (value.none { character -> character in COMPOSITE_DONG_DELIMITERS }) return null
-    if (value.any { character -> character.isDigit() }) return null
-    if (!value.endsWith(DONG)) return null
-
-    val parts = value
-        .split(COMPOSITE_DONG_DELIMITER_REGEX)
-        .filter { part -> part.isNotBlank() }
-    if (parts.size <= 1) return null
-
-    return parts.joinToString(separator = "")
 }
 
 private fun RegionalWasteSchedule.displayTime(): String {
@@ -105,8 +99,4 @@ private fun String?.orInfoEmpty(): String =
 private fun String?.takeIfNotBlank(): String? =
     this?.takeIf { it.isNotBlank() }
 
-private const val DONG = "동"
 private val REGION_NAME_DELIMITER = Regex("[,+/]+")
-private val WHITESPACE_REGEX = Regex("\\s+")
-private val COMPOSITE_DONG_DELIMITERS = setOf('.', '·', 'ㆍ')
-private val COMPOSITE_DONG_DELIMITER_REGEX = Regex("[.·ㆍ]+")

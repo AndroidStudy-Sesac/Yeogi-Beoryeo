@@ -47,7 +47,7 @@ class GetRegionalGuideEupmyeondongOptionsUseCase @Inject constructor(
                 coverage.any { areaCoverage -> areaCoverage.matches(option) }
         }
 
-        return filteredOptions.ifEmpty { options }
+        return filteredOptions
     }
 
     private fun List<RegionalDisposalGuide>.toRegionNames(): Set<String> {

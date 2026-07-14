@@ -179,9 +179,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         if (exactMatches.isNotEmpty()) {
-            return exactMatches
-                .mergeDuplicateCandidateRows()
-                .mergeApplicableRowsForSelectedRegion()
+            return exactMatches.mergeDuplicateCandidateRows()
         }
 
         val targetRegionMatches = filter { guide ->
@@ -193,7 +191,6 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         return (targetRegionMatches + managementZoneMatches)
             .mergeDuplicateCandidateRows()
-            .mergeApplicableRowsForSelectedRegion()
     }
 
     private fun List<RegionalDisposalGuide>.filterByMappedAdminDongs(
@@ -329,41 +326,6 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                         .distinct()
                 )
             }
-
-    private fun List<RegionalDisposalGuide>.mergeApplicableRowsForSelectedRegion(): List<RegionalDisposalGuide> {
-        if (size <= 1) return this
-
-        val schedules = flatMap { guide -> guide.schedules }
-        if (schedules.isEmpty()) return this
-        if (any { guide -> guide.schedules.isEmpty() }) return this
-
-        val scheduleWasteTypes = schedules.map { schedule -> schedule.wasteType }
-        if (scheduleWasteTypes.distinct().size != scheduleWasteTypes.size) return this
-
-        val firstGuide = first()
-
-        return listOf(
-            firstGuide.copy(
-                managementZoneName = commonValueOrNull { guide -> guide.managementZoneName },
-                targetRegionName = commonValueOrNull { guide -> guide.targetRegionName },
-                disposalPlaceType = commonValueOrNull { guide -> guide.disposalPlaceType },
-                disposalPlaceDescription = commonValueOrNull { guide -> guide.disposalPlaceDescription },
-                uncollectedDays = commonValueOrNull { guide -> guide.uncollectedDays },
-                departmentName = commonValueOrNull { guide -> guide.departmentName },
-                departmentPhoneNumber = commonValueOrNull { guide -> guide.departmentPhoneNumber },
-                schedules = schedules.distinct()
-            )
-        )
-    }
-
-    private fun List<RegionalDisposalGuide>.commonValueOrNull(
-        selector: (RegionalDisposalGuide) -> String?
-    ): String? {
-        val values = mapNotNull { guide -> selector(guide).normalizeRegionName() }
-            .distinct()
-
-        return values.singleOrNull()
-    }
 
     private fun RegionalDisposalGuide.toCandidateKey(): CandidateKey =
         CandidateKey(
@@ -590,33 +552,9 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     }
 
     private fun String.expandCompositeAdminDongName(): Set<String>? {
-        NUMERIC_DOT_COMPOSITE_DONG_REGEX.matchEntire(this)?.let { match ->
-            val prefix = match.groupValues[1]
-            val firstNumber = match.groupValues[2].toIntOrNull() ?: return setOf(this)
-            val secondNumber = match.groupValues[3].toIntOrNull() ?: return setOf(this)
-            val suffix = match.groupValues[4]
+        val comparableNames = RegionalGuideEupmyeondongNamePolicy.comparableNames(this)
 
-            return setOf(
-                "$prefix$firstNumber$suffix",
-                "$prefix$secondNumber$suffix"
-            )
-        }
-
-        val joinedCompositeName = toJoinedCompositeDongNameOrNull() ?: return null
-
-        return setOf(joinedCompositeName)
-    }
-
-    private fun String.toJoinedCompositeDongNameOrNull(): String? {
-        if (none { character -> character in COMPOSITE_DONG_DELIMITERS }) return null
-        if (any { character -> character.isDigit() }) return null
-        if (!endsWith(DONG)) return null
-
-        val parts = split(COMPOSITE_DONG_DELIMITER_REGEX)
-            .filter { part -> part.isNotBlank() }
-        if (parts.size <= 1) return null
-
-        return parts.joinToString(separator = "")
+        return comparableNames.takeIf { names -> names.size > 1 }
     }
 
     private fun String.removeCondensedAdminDongExpressions(
@@ -782,7 +720,6 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         val ADMIN_DONG_RANGE_REGEX = Regex("^([^\\d,+/~～-]+?)(\\d+)\\s*[~～-]\\s*(\\d+)([읍면동])$")
         val ADMIN_DONG_GROUP_REGEX = Regex("^([^\\d,+/~～-]+?)(\\d+(?:,\\d+)+)([읍면동])$")
         val ADMIN_DONG_SUBDIVISION_REGEX = Regex("^([^\\d,+/~～.·ㆍ-]+?)\\d+(?:[.·ㆍ]\\d+)?동$")
-        val NUMERIC_DOT_COMPOSITE_DONG_REGEX = Regex("^([^\\d,+/~～.·ㆍ-]+?)(\\d+)[.·ㆍ](\\d+)([^\\d,+/~～.·ㆍ-]*동)$")
         val ADMIN_DONG_RANGE_EXPRESSION_REGEX = Regex("([^\\d,+/~～-]+?)(\\d+)\\s*[~～-]\\s*(\\d+)([읍면동])")
         val ADMIN_DONG_GROUP_EXPRESSION_REGEX = Regex("([^\\d,+/~～-]+?)(\\d+(?:,\\d+)+)([읍면동])")
         val PARENTHESIZED_DESCRIPTION_REGEX = Regex("\\([^)]*\\)|（[^）]*）")
@@ -792,9 +729,6 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         )
         const val GROUPED_NUMBER_DELIMITER = ","
         val TARGET_REGION_GROUP_DELIMITER = Regex("[,+/]+")
-        val COMPOSITE_DONG_DELIMITERS = setOf('.', '·', 'ㆍ')
-        val COMPOSITE_DONG_DELIMITER_REGEX = Regex("[.·ㆍ]+")
-
         val SEJONG_DONG_AREA_NAMES = setOf(
             "한솔동",
             "새롬동",

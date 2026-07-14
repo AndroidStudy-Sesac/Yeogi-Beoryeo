@@ -4,6 +4,9 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideDataSource
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -12,12 +15,14 @@ import org.junit.Test
 
 class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     var mockResult: Result<List<RegionalGuideItemDto>> = Result.success(emptyList())
+    var delayMillis: Long = 0L
     var calledSigunguName: String? = null
     val calledSigunguNames = mutableListOf<String>()
 
     override suspend fun fetchRegionalGuides(sigunguName: String): Result<List<RegionalGuideItemDto>> {
         calledSigunguName = sigunguName
         calledSigunguNames += sigunguName
+        if (delayMillis > 0) delay(delayMillis)
         return mockResult
     }
 }
@@ -164,4 +169,41 @@ class RegionalDisposalGuideRepositoryImplTest {
         assertTrue(secondResult.isSuccess)
         assertEquals(listOf("김천시"), fakeDataSource.calledSigunguNames)
     }
+
+    @Test
+    fun `동시에 같은 조회 키를 요청해도 원격 데이터는 한 번만 호출한다`() = runBlocking {
+        fakeDataSource.delayMillis = 50
+        fakeDataSource.mockResult = Result.success(emptyList())
+        val query = regionalGuideQuery(sigunguQuery = "김천시")
+
+        val results = coroutineScope {
+            listOf(
+                async { repository.getRegionalDisposalGuideCandidates(query) },
+                async { repository.getRegionalDisposalGuideCandidates(query) },
+            ).map { deferred -> deferred.await() }
+        }
+
+        assertTrue(results.all { result -> result.isSuccess })
+        assertEquals(listOf("김천시"), fakeDataSource.calledSigunguNames)
+    }
+
+    @Test
+    fun `다른 조회 키를 요청하면 최근 캐시를 교체한다`() = runBlocking {
+        fakeDataSource.mockResult = Result.success(emptyList())
+
+        repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery = "김천시"))
+        repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery = "구미시"))
+        repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery = "김천시"))
+
+        assertEquals(
+            listOf("김천시", "구미시", "김천시"),
+            fakeDataSource.calledSigunguNames
+        )
+    }
+
+    private fun regionalGuideQuery(sigunguQuery: String): RegionalGuideQuery =
+        RegionalGuideQuery(
+            displayRegion = Region(sido = "경상북도", sigungu = sigunguQuery),
+            sigunguQuery = sigunguQuery,
+        )
 }

@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
 
 internal object RegionOptionsMapper {
@@ -84,16 +85,18 @@ internal object RegionOptionsMapper {
         if (targetKeyword.isBlank()) return emptyList()
 
         val administrativeMatches = administrativeRegions
-            .mapNotNull { region ->
-                val eupmyeondongName = region.eupmyeondongName
-                    .matchedRegionalGuideEupmyeondongNameForKeyword(targetKeyword)
-                    ?: return@mapNotNull null
-
+            .filter { region ->
+                RegionalGuideEupmyeondongNamePolicy.matchesKeyword(
+                    eupmyeondongName = region.eupmyeondongName,
+                    keyword = targetKeyword,
+                )
+            }
+            .map { region ->
                 RegionNormalizer.normalize(
                     Region(
                         sido = region.sidoName,
                         sigungu = region.sigunguName.ifBlank { null },
-                        eupmyeondong = eupmyeondongName
+                        eupmyeondong = region.eupmyeondongName
                     )
                 )
             }
@@ -338,34 +341,6 @@ internal object RegionOptionsMapper {
             last() in EUPMYEONDONG_SUFFIXES
     }
 
-    private fun String.matchedRegionalGuideEupmyeondongNameForKeyword(
-        targetKeyword: String
-    ): String? {
-        val joinedCompositeName = toJoinedNonNumericCompositeDongNameOrNull()
-        val comparableKeyword = targetKeyword.toJoinedNonNumericCompositeDongNameOrNull()
-            ?: targetKeyword
-
-        if (joinedCompositeName?.matchesEupmyeondongKeyword(comparableKeyword) == true) {
-            return joinedCompositeName
-        }
-
-        return takeIf { eupmyeondongName -> eupmyeondongName.matchesEupmyeondongKeyword(targetKeyword) }
-    }
-
-    private fun String.toJoinedNonNumericCompositeDongNameOrNull(): String? {
-        val value = trim()
-        if (!NON_NUMERIC_COMPOSITE_DONG_DELIMITER_REGEX.containsMatchIn(value)) return null
-        if (value.any { character -> character.isDigit() }) return null
-        if (value.lastOrNull() !in EUPMYEONDONG_SUFFIXES) return null
-
-        val parts = value
-            .split(NON_NUMERIC_COMPOSITE_DONG_DELIMITER_REGEX)
-            .filter { part -> part.isNotBlank() }
-        if (parts.size <= 1) return null
-
-        return parts.joinToString(separator = "")
-    }
-
     private fun LegalAdminDongMappingDto.hasSameSigunguCode(): Boolean {
         val legalSigunguCode = legalCode.trim().sigunguCodePrefixOrNull() ?: return true
         val adminSigunguCode = adminCode.trim().sigunguCodePrefixOrNull() ?: return true
@@ -459,5 +434,4 @@ internal object RegionOptionsMapper {
     private const val SIGUNGU_CODE_PREFIX_LENGTH = 5
     private val EUPMYEONDONG_SUFFIXES = setOf('읍', '면', '동')
     private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()
-    private val NON_NUMERIC_COMPOSITE_DONG_DELIMITER_REGEX = Regex("[.·ㆍ]+")
 }

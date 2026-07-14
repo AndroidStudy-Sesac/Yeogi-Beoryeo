@@ -6,10 +6,40 @@ object RegionalGuideEupmyeondongNamePolicy {
         first: String?,
         second: String?,
     ): Boolean {
-        val firstNames = first.toComparableNames()
-        val secondNames = second.toComparableNames()
+        val firstNames = comparableNames(first)
+        val secondNames = comparableNames(second)
 
         return firstNames.isNotEmpty() && secondNames.any { name -> name in firstNames }
+    }
+
+    fun matchesKeyword(
+        eupmyeondongName: String?,
+        keyword: String,
+    ): Boolean {
+        val normalizedKeyword = keyword.normalizeName() ?: return false
+
+        return comparableNames(eupmyeondongName).any { name ->
+            name == normalizedKeyword ||
+                name.startsWith(normalizedKeyword) &&
+                name.lastOrNull() in EUPMYEONDONG_SUFFIXES
+        }
+    }
+
+    fun toApiCompatibleDisplayName(name: String?): String? {
+        val originalName = name?.trim()?.takeIf { value -> value.isNotBlank() } ?: return null
+        val normalizedName = originalName.normalizeName() ?: return originalName
+
+        return normalizedName.toJoinedNonNumericCompositeDongNameOrNull() ?: originalName
+    }
+
+    fun comparableNames(name: String?): Set<String> {
+        val value = name.normalizeName() ?: return emptySet()
+        val names = mutableSetOf(value)
+
+        value.expandNumericCompositeDongNames()?.let(names::addAll)
+        value.toJoinedNonNumericCompositeDongNameOrNull()?.let(names::add)
+
+        return names
     }
 
     fun containsSameName(
@@ -22,16 +52,6 @@ object RegionalGuideEupmyeondongNamePolicy {
             ?.split(REGION_NAME_DELIMITER)
             ?.any { name -> isSameName(name, requestedName) }
             ?: false
-    }
-
-    private fun String?.toComparableNames(): Set<String> {
-        val value = normalizeName() ?: return emptySet()
-        val names = mutableSetOf(value)
-
-        value.expandNumericCompositeDongNames()?.let(names::addAll)
-        value.toJoinedNonNumericCompositeDongNameOrNull()?.let(names::add)
-
-        return names
     }
 
     private fun String?.normalizeName(): String? =
@@ -75,4 +95,5 @@ object RegionalGuideEupmyeondongNamePolicy {
     private const val MIDDLE_DOT = '·'
     private const val HANGUL_MIDDLE_DOT = 'ㆍ'
     private const val DONG_SUFFIX = "동"
+    private val EUPMYEONDONG_SUFFIXES = setOf('읍', '면', '동')
 }

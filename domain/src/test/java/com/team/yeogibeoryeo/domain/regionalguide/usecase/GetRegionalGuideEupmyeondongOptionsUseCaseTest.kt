@@ -30,6 +30,23 @@ class GetRegionalGuideEupmyeondongOptionsUseCaseTest {
     }
 
     @Test
+    fun `동지역 후보만 있고 읍면 선택지만 있으면 빈 선택지를 반환한다`() = runBlocking {
+        val useCase = createUseCase(
+            options = listOf("아포읍", "봉산면"),
+            candidates = listOf(
+                regionalDisposalGuide(targetRegionName = "동지역")
+            )
+        )
+
+        val result = useCase(
+            sido = "경상북도",
+            sigungu = "김천시"
+        )
+
+        assertEquals(emptyList<String>(), result)
+    }
+
+    @Test
     fun `읍면지역 후보만 있으면 읍과 면 선택지만 반환한다`() = runBlocking {
         val useCase = createUseCase(
             options = listOf("아포읍", "봉산면", "율곡동", "평화남산동"),

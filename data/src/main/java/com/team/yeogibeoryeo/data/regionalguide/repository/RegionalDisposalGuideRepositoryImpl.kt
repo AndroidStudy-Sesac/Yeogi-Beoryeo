@@ -7,6 +7,8 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import javax.inject.Inject
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * [RegionalDisposalGuideRepository]의 Data 계층 구현체.
@@ -16,7 +18,8 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
     private val remoteDataSource: RegionalGuideDataSource
 ) : RegionalDisposalGuideRepository {
 
-    private val candidatesCache = mutableMapOf<String, List<RegionalGuideItemDto>>()
+    private val cacheMutex = Mutex()
+    private var recentCandidatesCache: CachedRegionalGuideItems? = null
 
     override suspend fun getRegionalDisposalGuideCandidates(
         query: RegionalGuideQuery
@@ -37,14 +40,22 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
 
     private suspend fun fetchRegionalGuideItems(
         sigunguQuery: String
-    ): Result<List<RegionalGuideItemDto>> {
-        candidatesCache[sigunguQuery]?.let { cachedItems ->
-            return Result.success(cachedItems)
-        }
+    ): Result<List<RegionalGuideItemDto>> = cacheMutex.withLock {
+        recentCandidatesCache
+            ?.takeIf { cache -> cache.sigunguQuery == sigunguQuery }
+            ?.let { cache -> return@withLock Result.success(cache.items) }
 
-        return remoteDataSource.fetchRegionalGuides(sigunguQuery)
+        remoteDataSource.fetchRegionalGuides(sigunguQuery)
             .onSuccess { items ->
-                candidatesCache[sigunguQuery] = items
+                recentCandidatesCache = CachedRegionalGuideItems(
+                    sigunguQuery = sigunguQuery,
+                    items = items,
+                )
             }
     }
+
+    private data class CachedRegionalGuideItems(
+        val sigunguQuery: String,
+        val items: List<RegionalGuideItemDto>,
+    )
 }

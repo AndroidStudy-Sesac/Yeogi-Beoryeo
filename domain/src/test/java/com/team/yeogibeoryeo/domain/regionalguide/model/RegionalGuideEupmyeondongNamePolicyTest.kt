@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.domain.regionalguide.model
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,6 +20,20 @@ class RegionalGuideEupmyeondongNamePolicyTest {
                 first = "성내.충인동",
                 second = "성내충인동",
             )
+        )
+    }
+
+    @Test
+    fun `문자 점 묶음 행정동은 지역 가이드용 붙여쓴 표시명으로 변환한다`() {
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.matchesKeyword(
+                eupmyeondongName = "성내.충인동",
+                keyword = "성내충인동",
+            )
+        )
+        assertEquals(
+            "성내충인동",
+            RegionalGuideEupmyeondongNamePolicy.toApiCompatibleDisplayName("성내.충인동")
         )
     }
 
