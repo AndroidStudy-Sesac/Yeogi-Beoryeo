@@ -12,9 +12,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 
 @Composable
@@ -42,20 +44,29 @@ fun RegionalWasteScheduleCard(
                 fontWeight = FontWeight.Bold
             )
 
-            RegionalGuideInfoRow(
-                title = "요일",
-                value = schedule.disposalDays
-            )
+            schedule.disposalDays?.let { disposalDays ->
+                RegionalGuideInfoRow(
+                    title = stringResource(R.string.regional_guide_schedule_days_label),
+                    value = disposalDays,
+                )
+            }
 
             RegionalGuideInfoRow(
-                title = "시간",
+                title = stringResource(R.string.regional_guide_schedule_time_label),
                 value = schedule.disposalTime
             )
 
             RegionalGuideInfoRow(
-                title = "방법",
+                title = stringResource(R.string.regional_guide_schedule_method_label),
                 value = schedule.disposalMethod
             )
+
+            schedule.disposalPlace?.let { disposalPlace ->
+                RegionalGuideInfoRow(
+                    title = stringResource(R.string.regional_guide_schedule_place_label),
+                    value = disposalPlace,
+                )
+            }
         }
     }
 }
@@ -70,6 +81,7 @@ private fun RegionalWasteScheduleCardPreview() {
                 disposalDays = "월, 수, 금",
                 disposalTime = "18:00 ~ 24:00",
                 disposalMethod = "종량제 봉투에 담아 배출",
+                disposalPlace = "신고 후 집 앞",
             ),
             modifier = Modifier.padding(16.dp),
         )

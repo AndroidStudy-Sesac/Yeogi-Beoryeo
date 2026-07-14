@@ -14,7 +14,14 @@ object RegionalWasteScheduleMapper {
             createSchedule(RegionalWasteType.GENERAL, dto.generalDisposalDays, dto.generalStartTime, dto.generalEndTime, dto.generalMethod),
             createSchedule(RegionalWasteType.FOOD, dto.foodDisposalDays, dto.foodStartTime, dto.foodEndTime, dto.foodMethod),
             createSchedule(RegionalWasteType.RECYCLABLE, dto.recycleDisposalDays, dto.recycleStartTime, dto.recycleEndTime, dto.recycleMethod),
-            createSchedule(RegionalWasteType.LARGE_ITEM, dto.largeItemDisposalDays, dto.largeItemStartTime, dto.largeItemEndTime, dto.largeItemMethod)
+            createSchedule(
+                type = RegionalWasteType.LARGE_ITEM,
+                days = null,
+                start = dto.largeItemStartTime,
+                end = dto.largeItemEndTime,
+                method = dto.largeItemMethod,
+                place = dto.largeItemDisposalPlace,
+            )
         )
     }
 
@@ -23,17 +30,20 @@ object RegionalWasteScheduleMapper {
         days: String?,
         start: String?,
         end: String?,
-        method: String?
+        method: String?,
+        place: String? = null,
     ): RegionalWasteSchedule? {
         if (days.isNullOrBlank() && start.isNullOrBlank() &&
-            end.isNullOrBlank() && method.isNullOrBlank()) return null
+            end.isNullOrBlank() && method.isNullOrBlank() && place.isNullOrBlank()
+        ) return null
 
         return RegionalWasteSchedule(
             wasteType = type,
-            disposalDays = parseDays(days),
+            disposalDays = days?.let(::parseDays),
             disposalStartTime = parseTime(start),
             disposalEndTime = parseTime(end),
-            disposalMethod = parseMethod(method)
+            disposalMethod = parseMethod(method),
+            disposalPlace = place?.trim()?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -52,7 +62,22 @@ object RegionalWasteScheduleMapper {
     // [로직] 시간 데이터 예외 처리
     internal fun parseTime(time: String?): String? {
         val trimmed = time?.trim()
-        return if (trimmed.isNullOrBlank() || trimmed == "00:00" || trimmed == "00:00:00") null else trimmed
+        if (trimmed.isNullOrBlank()) return null
+
+        val normalized = COMPACT_TIME_REGEX.matchEntire(trimmed)
+            ?.destructured
+            ?.let { (hourText, minuteText) ->
+                val hour = hourText.toInt()
+                val minute = minuteText.toInt()
+                if ((hour in 0..23 && minute in 0..59) || (hour == 24 && minute == 0)) {
+                    "$hourText:$minuteText"
+                } else {
+                    trimmed
+                }
+            }
+            ?: trimmed
+
+        return normalized.takeUnless { it in EMPTY_TIME_VALUES }
     }
 
     // [로직] 배출 방법 정제
@@ -60,4 +85,7 @@ object RegionalWasteScheduleMapper {
         if (method.isNullOrBlank()) return "지정된 배출 방법이 없습니다."
         return method.replace(Regex("\\s+"), " ").trim()
     }
+
+    private val COMPACT_TIME_REGEX = Regex("^(\\d{2})(\\d{2})$")
+    private val EMPTY_TIME_VALUES = setOf("00:00", "00:00:00")
 }

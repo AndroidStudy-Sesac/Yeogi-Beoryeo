@@ -2,6 +2,8 @@ package com.team.yeogibeoryeo.presentation.regionalguide.mapper
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -54,5 +56,22 @@ class RegionalGuideUiMapperTest {
 
         assertEquals("노은2동", uiModel.managementZoneName)
         assertEquals("반석동 일부지역", uiModel.targetRegionName)
+    }
+
+    @Test
+    fun `대형폐기물 배출장소는 UI 일정 모델에 유지한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(sido = "서울특별시", sigungu = "성동구"),
+            schedules = listOf(
+                RegionalWasteSchedule(
+                    wasteType = RegionalWasteType.LARGE_ITEM,
+                    disposalPlace = "신고 후 집 앞",
+                ),
+            ),
+        )
+
+        val uiModel = guide.toUiModel()
+
+        assertEquals("신고 후 집 앞", uiModel.schedules.single().disposalPlace)
     }
 }
