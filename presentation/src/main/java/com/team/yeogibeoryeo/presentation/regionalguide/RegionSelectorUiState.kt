@@ -4,6 +4,7 @@ data class RegionSelectorUiState(
     val sidoOptions: List<String> = emptyList(),
     val sigunguOptions: List<String> = emptyList(),
     val eupmyeondongOptions: List<String> = emptyList(),
+    val isEupmyeondongOptionsLoading: Boolean = false,
     val selectedSido: String? = null,
     val selectedSigungu: String? = null,
     val selectedEupmyeondong: String? = null,
@@ -18,7 +19,17 @@ data class RegionSelectorUiState(
         get() = !selectedSido.isNullOrBlank()
 
     val isEupmyeondongSelectionEnabled: Boolean
-        get() = !selectedSigungu.isNullOrBlank()
+        get() = !selectedSigungu.isNullOrBlank() &&
+                !isEupmyeondongOptionsLoading &&
+                eupmyeondongOptions.isNotEmpty()
+
+    val eupmyeondongSelectionLabel: String
+        get() = selectedEupmyeondong
+            ?: when {
+                isEupmyeondongOptionsLoading -> "읍면동 불러오는 중"
+                !selectedSigungu.isNullOrBlank() && eupmyeondongOptions.isEmpty() -> "제공되는 읍면동 없음"
+                else -> "읍면동 선택"
+            }
 
     val canSearchSelectedRegion: Boolean
         get() = !selectedSido.isNullOrBlank() &&

@@ -31,6 +31,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandi
 import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
 import com.team.yeogibeoryeo.presentation.regionalguide.model.withDuplicateDisplayDisambiguation
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -40,7 +41,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class RegionalGuideViewModel @Inject constructor(
@@ -71,6 +71,7 @@ class RegionalGuideViewModel @Inject constructor(
     private var keywordSuggestionJob: Job? = null
     private var sigunguOptionsJob: Job? = null
     private var eupmyeondongOptionsJob: Job? = null
+    private var eupmyeondongOptionsRequestId = 0L
     private var favoriteStateJob: Job? = null
     private var lastRequest: RegionalGuideRequest? = null
     private var currentRegionalGuideFavoriteSnapshot: RegionalGuideFavoriteSnapshot? = null
@@ -91,6 +92,7 @@ class RegionalGuideViewModel @Inject constructor(
         clearGuideCandidateBackStack()
         sigunguOptionsJob?.cancel()
         eupmyeondongOptionsJob?.cancel()
+        eupmyeondongOptionsRequestId += 1
 
         _regionSelectorUiState.update { state ->
             state.copy(
@@ -99,6 +101,7 @@ class RegionalGuideViewModel @Inject constructor(
                 selectedEupmyeondong = null,
                 sigunguOptions = emptyList(),
                 eupmyeondongOptions = emptyList(),
+                isEupmyeondongOptionsLoading = false,
                 expandedDropdown = null
             )
         }
@@ -121,27 +124,39 @@ class RegionalGuideViewModel @Inject constructor(
         eupmyeondongOptionsJob?.cancel()
 
         val selectedSido = regionSelectorUiState.value.selectedSido ?: return
+        val requestId = ++eupmyeondongOptionsRequestId
 
         _regionSelectorUiState.update { state ->
             state.copy(
                 selectedSigungu = sigungu,
                 selectedEupmyeondong = null,
                 eupmyeondongOptions = emptyList(),
+                isEupmyeondongOptionsLoading = true,
                 expandedDropdown = null
             )
         }
 
         eupmyeondongOptionsJob = viewModelScope.launch {
-            val eupmyeondongOptions = getRegionalGuideEupmyeondongOptionsUseCase(
-                sido = selectedSido,
-                sigungu = sigungu
-            )
+            try {
+                val eupmyeondongOptions = getRegionalGuideEupmyeondongOptionsUseCase(
+                    sido = selectedSido,
+                    sigungu = sigungu
+                )
 
-            _regionSelectorUiState.update { state ->
-                if (state.selectedSido == selectedSido && state.selectedSigungu == sigungu) {
-                    state.copy(eupmyeondongOptions = eupmyeondongOptions)
-                } else {
-                    state
+                _regionSelectorUiState.update { state ->
+                    if (eupmyeondongOptionsRequestId == requestId) {
+                        state.copy(eupmyeondongOptions = eupmyeondongOptions)
+                    } else {
+                        state
+                    }
+                }
+            } finally {
+                _regionSelectorUiState.update { state ->
+                    if (eupmyeondongOptionsRequestId == requestId) {
+                        state.copy(isEupmyeondongOptionsLoading = false)
+                    } else {
+                        state
+                    }
                 }
             }
         }
@@ -159,7 +174,13 @@ class RegionalGuideViewModel @Inject constructor(
 
     fun onRegionSelectorDropdownExpanded(dropdown: RegionSelectorDropdown) {
         _regionSelectorUiState.update { state ->
-            state.copy(expandedDropdown = dropdown)
+            if (dropdown == RegionSelectorDropdown.EUPMYEONDONG &&
+                !state.isEupmyeondongSelectionEnabled
+            ) {
+                state
+            } else {
+                state.copy(expandedDropdown = dropdown)
+            }
         }
     }
 
