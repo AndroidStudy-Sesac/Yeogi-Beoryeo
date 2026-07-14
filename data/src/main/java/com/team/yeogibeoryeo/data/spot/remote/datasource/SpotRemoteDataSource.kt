@@ -201,11 +201,13 @@ class SpotRemoteDataSource @Inject constructor(
     private fun SpotResponseDto.toSpotItemsOrEmpty(): List<SpotItemDto> {
         val resultCode = response.header.resultCode
 
-        if (resultCode == RESULT_CODE_NO_DATA) {
-            return emptyList()
+        return when (resultCode) {
+            RESULT_CODE_SUCCESS -> response.body.items?.item.orEmpty()
+            RESULT_CODE_NO_DATA -> emptyList()
+            else -> error(
+                "수거 장소 API 오류($resultCode): ${response.header.resultMsg}",
+            )
         }
-
-        return response.body.items?.item.orEmpty()
     }
 
     private fun SpotItemDto.toDedupKey(): List<String> {
@@ -230,6 +232,7 @@ class SpotRemoteDataSource @Inject constructor(
     )
 
     private companion object {
+        const val RESULT_CODE_SUCCESS = "00"
         const val RESULT_CODE_NO_DATA = "03"
         const val UNKNOWN_TOTAL_COUNT = "unknown"
         const val LOCATION_SEARCH_ADDR_QUERY = " "

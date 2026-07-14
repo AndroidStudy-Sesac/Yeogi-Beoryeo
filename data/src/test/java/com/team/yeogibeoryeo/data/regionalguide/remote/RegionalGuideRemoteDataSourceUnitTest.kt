@@ -209,6 +209,26 @@ class RegionalGuideRemoteDataSourceUnitTest {
     }
 
     @Test
+    fun `성공 응답에 본문이 없으면 API 실패로 반환한다`() = runBlocking {
+        val apiService = FakeRegionalGuideApiService(
+            response = Response.success(
+                RegionalGuideRootDto(
+                    response = RegionalGuideResponseDto(body = null),
+                ),
+            ),
+        )
+        val dataSource = RegionalGuideRemoteDataSource(
+            apiService = apiService,
+            keyProvider = FakePublicDataKeyProvider,
+        )
+
+        val result = dataSource.fetchRegionalGuides(SIGUNGU_NAME)
+        val exception = result.exceptionOrNull() as RegionalGuideLookupException
+
+        assertEquals(RegionalGuideFailureReason.API, exception.reason)
+    }
+
+    @Test
     fun `전체 건수가 없으면 첫 페이지만 반환한다`() = runBlocking {
         val apiService = FakeRegionalGuideApiService(
             response = regionalGuideResponse(
