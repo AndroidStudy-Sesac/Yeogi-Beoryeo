@@ -10,6 +10,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFavoriteCom
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 class SelectRegionalGuideCandidateUseCase @Inject constructor() {
@@ -316,7 +317,33 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
     private fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRows(): List<RegionalDisposalGuide> =
-        groupBy { guide -> guide.toCandidateKey() }
+        groupBy { guide -> guide.toLatestCandidateKey() }
+            .values
+            .flatMap { guides ->
+                guides.selectUniqueLatestGuide()
+                    ?.let(::listOf)
+                    ?: guides.mergeLegacyDuplicateCandidateRows()
+            }
+
+    private fun List<RegionalDisposalGuide>.selectUniqueLatestGuide(): RegionalDisposalGuide? =
+        selectUniqueLatestGuideBy { guide -> guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull() }
+            ?: selectUniqueLatestGuideBy { guide -> guide.sourceMetadata?.dataCriteriaDate.toComparableDatePointOrNull() }
+
+    private fun List<RegionalDisposalGuide>.selectUniqueLatestGuideBy(
+        datePointSelector: (RegionalDisposalGuide) -> Long?
+    ): RegionalDisposalGuide? {
+        val datePoints = map { guide -> guide to datePointSelector(guide) }
+        if (datePoints.any { (_, datePoint) -> datePoint == null }) return null
+
+        val latestDatePoint = datePoints.maxOf { (_, datePoint) -> checkNotNull(datePoint) }
+        return datePoints
+            .filter { (_, datePoint) -> datePoint == latestDatePoint }
+            .singleOrNull()
+            ?.first
+    }
+
+    private fun List<RegionalDisposalGuide>.mergeLegacyDuplicateCandidateRows(): List<RegionalDisposalGuide> =
+        groupBy { guide -> guide.toLegacyCandidateKey() }
             .values
             .map { guides ->
                 val firstGuide = guides.first()
@@ -327,8 +354,17 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 )
             }
 
-    private fun RegionalDisposalGuide.toCandidateKey(): CandidateKey =
-        CandidateKey(
+    private fun RegionalDisposalGuide.toLatestCandidateKey(): LatestCandidateKey =
+        LatestCandidateKey(
+            sido = region.sido.normalizeRegionName(),
+            sigungu = region.sigungu.normalizeRegionName(),
+            managementZoneName = managementZoneName.normalizeRegionName(),
+            targetRegionName = targetRegionName.normalizeRegionName(),
+            disposalPlaceType = disposalPlaceType.normalizeRegionName(),
+        )
+
+    private fun RegionalDisposalGuide.toLegacyCandidateKey(): LegacyCandidateKey =
+        LegacyCandidateKey(
             sido = region.sido.normalizeRegionName(),
             sigungu = region.sigungu.normalizeRegionName(),
             managementZoneName = managementZoneName.normalizeRegionName(),
@@ -339,6 +375,36 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             departmentName = departmentName.normalizeRegionName(),
             departmentPhoneNumber = departmentPhoneNumber.normalizeRegionName(),
         )
+
+    private fun String?.toComparableDatePointOrNull(): Long? {
+        val digits = normalizeRegionName()
+            ?.filter { char -> char.isDigit() }
+            ?: return null
+
+        val datePoint = when {
+            digits.length >= DATE_TIME_POINT_LENGTH -> digits.take(DATE_TIME_POINT_LENGTH)
+            digits.length >= DATE_POINT_LENGTH -> digits.take(DATE_POINT_LENGTH).padEnd(DATE_TIME_POINT_LENGTH, '0')
+            else -> return null
+        }
+
+        return datePoint.toValidDatePointOrNull()
+    }
+
+    private fun String.toValidDatePointOrNull(): Long? {
+        val year = substring(0, 4).toIntOrNull() ?: return null
+        val month = substring(4, 6).toIntOrNull() ?: return null
+        val day = substring(6, 8).toIntOrNull() ?: return null
+        val hour = substring(8, 10).toIntOrNull() ?: return null
+        val minute = substring(10, 12).toIntOrNull() ?: return null
+        val second = substring(12, 14).toIntOrNull() ?: return null
+
+        if (year <= 0) return null
+
+        return runCatching {
+            LocalDateTime.of(year, month, day, hour, minute, second)
+        }.getOrNull()
+            ?.let { toLongOrNull() }
+    }
 
     private fun String?.matchesEupmyeondong(
         eupmyeondong: String
@@ -688,7 +754,15 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     private fun String?.isSejongDongArea(): Boolean =
         this?.trim() == DONG_AREA
 
-    private data class CandidateKey(
+    private data class LatestCandidateKey(
+        val sido: String?,
+        val sigungu: String?,
+        val managementZoneName: String?,
+        val targetRegionName: String?,
+        val disposalPlaceType: String?,
+    )
+
+    private data class LegacyCandidateKey(
         val sido: String?,
         val sigungu: String?,
         val managementZoneName: String?,
@@ -728,6 +802,8 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             ADMIN_DONG_GROUP_EXPRESSION_REGEX,
         )
         const val GROUPED_NUMBER_DELIMITER = ","
+        const val DATE_POINT_LENGTH = 8
+        const val DATE_TIME_POINT_LENGTH = 14
         val TARGET_REGION_GROUP_DELIMITER = Regex("[,+/]+")
         val SEJONG_DONG_AREA_NAMES = setOf(
             "한솔동",

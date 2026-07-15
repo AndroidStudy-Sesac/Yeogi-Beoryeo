@@ -14,6 +14,7 @@ import kotlinx.serialization.Serializable
 data class RegionalGuideItemDto(
     @SerialName("CTPV_NM") val sidoName: String? = null,
     @SerialName("SGG_NM") val sigunguName: String? = null,
+    @SerialName("MNG_NO") val managementNumber: String? = null,
     @SerialName("MNG_ZONE_NM") val managementZoneName: String? = null,
     @SerialName("MNG_ZONE_TRGT_RGN_NM") val dongName: String? = null,
 
@@ -48,5 +49,10 @@ data class RegionalGuideItemDto(
 
     // 관리 부서 정보
     @SerialName("MNG_DEPT_NM") val departmentName: String? = null,
-    @SerialName("MNG_DEPT_TELNO") val departmentPhoneNumber: String? = null
+    @SerialName("MNG_DEPT_TELNO") val departmentPhoneNumber: String? = null,
+
+    @SerialName("LAST_MDFCN_PNT") val lastModifiedPoint: String? = null,
+    @SerialName("DAT_CRTR_YMD") val dataCriteriaDate: String? = null,
+    @SerialName("DAT_UPDT_PNT") val dataUpdatedPoint: String? = null,
+    @SerialName("DAT_UPDT_SE") val dataUpdateType: String? = null,
 )
