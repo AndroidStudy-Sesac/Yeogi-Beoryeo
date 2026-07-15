@@ -157,7 +157,7 @@ jobs:
             esac
           done <<< "$CHANGED_FILES"
 
-          tasks=(":app:assembleDebug")
+          tasks=(":app:testDebugUnitTest" ":app:assembleDebug")
 
           if [[ "$full_test" == "true" ]]; then
             tasks=(
@@ -165,6 +165,7 @@ jobs:
               ":data:testDebugUnitTest"
               ":presentation:testDebugUnitTest"
               ":domain:test"
+              ":app:testDebugUnitTest"
               ":app:assembleDebug"
             )
           else
