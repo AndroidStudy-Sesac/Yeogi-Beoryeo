@@ -62,6 +62,7 @@ fun FavoritesRoute(
             onItemGuideFavoriteRemoveClick = viewModel::removeItemGuideFavorite,
             onCollectionSpotFavoriteRemoveClick = viewModel::removeCollectionSpotFavorite,
             onRegionalGuideFavoriteRemoveClick = viewModel::removeRegionalGuideFavorite,
+            onRegionalGuideHomePrimaryClick = viewModel::toggleHomeRegionalGuidePrimaryFavorite,
             modifier = Modifier.fillMaxSize(),
         )
         SnackbarHost(

@@ -12,8 +12,11 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResul
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.runningFold
 import javax.inject.Inject
 
 class ObserveHomeRegionalGuideSummaryUseCase
@@ -23,15 +26,42 @@ class ObserveHomeRegionalGuideSummaryUseCase
         private val observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
         private val getRegionalDisposalGuideUseCase: GetRegionalDisposalGuideUseCase,
         private val buildHomeRegionalGuideSummaryUseCase: BuildHomeRegionalGuideSummaryUseCase,
+        private val selectHomeRegionalGuidePrimaryFavoriteUseCase:
+            SelectHomeRegionalGuidePrimaryFavoriteUseCase,
+        private val observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase:
+            ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase,
     ) {
         @OptIn(ExperimentalCoroutinesApi::class)
         operator fun invoke(): Flow<HomeRegionalGuideSummaryResult> =
             combine(
                 observeFavoritesUseCase(FavoriteTargetType.REGIONAL_GUIDE),
                 observeRegionalGuideFavoriteSnapshotsUseCase(),
-            ) { favorites, snapshots ->
-                favorites.latestRegionalGuideFavorite() to snapshots.associateBy { it.targetId }
+                observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(),
+            ) { favorites, snapshots, pinnedTargetId ->
+                HomeRegionalGuidePrimaryFavoriteInput(
+                    favorites = favorites,
+                    snapshots = snapshots,
+                    pinnedTargetId = pinnedTargetId,
+                )
             }
+                .runningFold(HomeRegionalGuidePrimaryFavoriteSelection()) { previous, input ->
+                    val primaryFavorite =
+                        selectHomeRegionalGuidePrimaryFavoriteUseCase(
+                            favorites = input.favorites,
+                            snapshots = input.snapshots,
+                            pinnedTargetId = input.pinnedTargetId,
+                            previousTargetId = previous.targetId,
+                        )
+
+                    HomeRegionalGuidePrimaryFavoriteSelection(
+                        favorite = primaryFavorite,
+                        snapshotsByTargetId = input.snapshots.associateBy { snapshot ->
+                            snapshot.targetId
+                        },
+                    )
+                }
+                .drop(1)
+                .distinctUntilChanged()
                 .flatMapLatest { (favorite, snapshotsByTargetId) ->
                     flow {
                         if (favorite == null) {
@@ -108,9 +138,6 @@ class ObserveHomeRegionalGuideSummaryUseCase
             }
         }
 
-        private fun List<Favorite>.latestRegionalGuideFavorite(): Favorite? =
-            maxByOrNull { favorite -> favorite.savedAtMillis }
-
         private fun Region.displayName(): String =
             listOfNotNull(
                 sido?.trimToNull(),
@@ -119,4 +146,18 @@ class ObserveHomeRegionalGuideSummaryUseCase
             ).joinToString(" > ")
 
         private fun String?.trimToNull(): String? = this?.trim()?.takeIf { it.isNotBlank() }
+
+        private data class HomeRegionalGuidePrimaryFavoriteInput(
+            val favorites: List<Favorite>,
+            val snapshots: List<RegionalGuideFavoriteSnapshot>,
+            val pinnedTargetId: String?,
+        )
+
+        private data class HomeRegionalGuidePrimaryFavoriteSelection(
+            val favorite: Favorite? = null,
+            val snapshotsByTargetId: Map<String, RegionalGuideFavoriteSnapshot> = emptyMap(),
+        ) {
+            val targetId: String?
+                get() = favorite?.targetId
+        }
     }

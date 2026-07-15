@@ -8,4 +8,5 @@ data class FavoriteUiModel(
     val title: String,
     val subtitle: String?,
     val collectionSpotMapMoveRequest: FavoriteCollectionSpotMapMoveRequest? = null,
+    val isHomeRegionalGuidePrimary: Boolean = false,
 )

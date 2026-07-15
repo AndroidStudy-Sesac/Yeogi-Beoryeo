@@ -19,6 +19,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
+import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -431,11 +432,62 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
             assertEquals("second", secondResult.summary.targetId)
         }
 
+    @Test
+    fun `대표 지역 즐겨찾기가 삭제되면 남은 즐겨찾기에서 새 대표 지역을 선택한다`() =
+        runBlocking {
+            val firstSnapshot = sampleSnapshot(targetId = "first", sigungu = "Junggu")
+            val secondSnapshot = sampleSnapshot(targetId = "second", sigungu = "Nowongu")
+            val favoriteRepository = FakeFavoriteRepository()
+            val snapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(
+                    initialSnapshots = listOf(firstSnapshot, secondSnapshot),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = snapshotRepository,
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            candidates =
+                                listOf(
+                                    sampleGuide(region = firstSnapshot.region),
+                                    sampleGuide(region = secondSnapshot.region),
+                                ),
+                        ),
+                )
+
+            favoriteRepository.addFavorite(
+                Favorite(
+                    type = FavoriteTargetType.REGIONAL_GUIDE,
+                    targetId = firstSnapshot.targetId,
+                    savedAtMillis = 1L,
+                ),
+            )
+            useCase().drop(1).first() as HomeRegionalGuideSummaryResult.Success
+
+            favoriteRepository.addFavorite(
+                Favorite(
+                    type = FavoriteTargetType.REGIONAL_GUIDE,
+                    targetId = secondSnapshot.targetId,
+                    savedAtMillis = 2L,
+                ),
+            )
+            favoriteRepository.removeFavorite(
+                type = FavoriteTargetType.REGIONAL_GUIDE,
+                targetId = firstSnapshot.targetId,
+            )
+            val result = useCase().drop(1).first() as HomeRegionalGuideSummaryResult.Success
+
+            assertEquals("second", result.summary.targetId)
+        }
+
     private fun createUseCase(
         favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
         snapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
             FakeRegionalGuideFavoriteSnapshotRepository(),
         regionalRepository: FakeRegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
+        primaryFavoriteRepository: FakeHomeRegionalGuidePrimaryFavoriteRepository =
+            FakeHomeRegionalGuidePrimaryFavoriteRepository(),
     ): ObserveHomeRegionalGuideSummaryUseCase =
         ObserveHomeRegionalGuideSummaryUseCase(
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
@@ -450,6 +502,10 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                         FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                 ),
             buildHomeRegionalGuideSummaryUseCase = BuildHomeRegionalGuideSummaryUseCase(),
+            selectHomeRegionalGuidePrimaryFavoriteUseCase =
+                SelectHomeRegionalGuidePrimaryFavoriteUseCase(),
+            observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase =
+                ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(primaryFavoriteRepository),
         )
 
     private fun sampleSnapshot(
@@ -570,6 +626,28 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         ): Result<List<RegionalDisposalGuide>> {
             requestedSigungu += query.sigunguQuery
             return result ?: Result.success(candidates.filter { it.region.sigungu == query.sigunguQuery })
+        }
+    }
+
+    private class FakeHomeRegionalGuidePrimaryFavoriteRepository(
+        initialTargetId: String? = null,
+    ) : HomeRegionalGuidePrimaryFavoriteRepository {
+        private val primaryTargetId = MutableStateFlow(initialTargetId)
+
+        override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
+
+        override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
+            primaryTargetId.value = targetId
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetId() {
+            primaryTargetId.value = null
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
+            if (primaryTargetId.value == targetId) {
+                primaryTargetId.value = null
+            }
         }
     }
 

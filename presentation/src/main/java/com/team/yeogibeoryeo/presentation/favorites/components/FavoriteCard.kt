@@ -36,6 +36,7 @@ fun FavoriteCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onRemoveClick: (() -> Unit)? = null,
+    onHomePrimaryClick: (() -> Unit)? = null,
 ) {
     Card(
         modifier = modifier
@@ -77,6 +78,13 @@ fun FavoriteCard(
                 }
             }
 
+            if (onHomePrimaryClick != null) {
+                HomeRegionalGuidePrimaryButton(
+                    isHomePrimary = favorite.isHomeRegionalGuidePrimary,
+                    onClick = onHomePrimaryClick,
+                )
+            }
+
             if (onRemoveClick != null) {
                 IconButton(onClick = onRemoveClick) {
                     Icon(
@@ -95,6 +103,43 @@ fun FavoriteCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun HomeRegionalGuidePrimaryButton(
+    isHomePrimary: Boolean,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(32.dp),
+    ) {
+        Icon(
+            painter =
+                painterResource(
+                    id = if (isHomePrimary) {
+                        CommonR.drawable.ic_home_pin_filled
+                    } else {
+                        CommonR.drawable.ic_home_pin
+                    },
+                ),
+            contentDescription =
+                stringResource(
+                    id = if (isHomePrimary) {
+                        R.string.favorite_home_regional_guide_unpin_action
+                    } else {
+                        R.string.favorite_home_regional_guide_pin_action
+                    },
+                ),
+            modifier = Modifier.size(20.dp),
+            tint =
+                if (isHomePrimary) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outline
+                },
+        )
     }
 }
 

@@ -10,6 +10,9 @@ import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveRegionalGuideFavorit
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveCollectionSpotFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.RemoveRegionalGuideFavoriteUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ClearHomeRegionalGuidePrimaryFavoriteUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.SetHomeRegionalGuidePrimaryFavoriteUseCase
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteCollectionSpotUiMapper
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteItemGuideUiMapper
 import com.team.yeogibeoryeo.presentation.favorites.mapper.FavoriteRegionalGuideUiMapper
@@ -38,6 +41,12 @@ class FavoritesViewModel
         private val removeFavoriteUseCase: RemoveFavoriteUseCase,
         private val removeCollectionSpotFavoriteUseCase: RemoveCollectionSpotFavoriteUseCase,
         private val removeRegionalGuideFavoriteUseCase: RemoveRegionalGuideFavoriteUseCase,
+        observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase:
+            ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase,
+        private val setHomeRegionalGuidePrimaryFavoriteUseCase:
+            SetHomeRegionalGuidePrimaryFavoriteUseCase,
+        private val clearHomeRegionalGuidePrimaryFavoriteUseCase:
+            ClearHomeRegionalGuidePrimaryFavoriteUseCase,
         private val itemGuideUiMapper: FavoriteItemGuideUiMapper,
         private val collectionSpotUiMapper: FavoriteCollectionSpotUiMapper,
         private val regionalGuideUiMapper: FavoriteRegionalGuideUiMapper,
@@ -54,7 +63,8 @@ class FavoritesViewModel
                 observeFavoritesUseCase(),
                 observeCollectionSpotFavoritesUseCase(),
                 observeRegionalGuideFavoriteSnapshotsUseCase(),
-            ) { selectedTab, favorites, collectionSpotFavorites, regionalGuideSnapshots ->
+                observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(),
+            ) { selectedTab, favorites, collectionSpotFavorites, regionalGuideSnapshots, primaryTargetId ->
                 val itemGuideFavorites =
                     favorites
                         .filter { it.type == FavoriteTargetType.ITEM_GUIDE }
@@ -68,7 +78,12 @@ class FavoritesViewModel
                         .filter { it.type == FavoriteTargetType.REGIONAL_GUIDE }
                         .mapNotNull { favorite ->
                             regionalGuideSnapshotsById[favorite.targetId]
-                                ?.let { snapshot -> regionalGuideUiMapper.map(snapshot) }
+                                ?.let { snapshot ->
+                                    regionalGuideUiMapper.map(
+                                        snapshot = snapshot,
+                                        isHomePrimary = favorite.targetId == primaryTargetId,
+                                    )
+                                }
                         }
 
                     FavoritesUiState(
@@ -103,6 +118,27 @@ class FavoritesViewModel
         fun removeRegionalGuideFavorite(targetId: String) {
             removeFavorite(FavoriteTargetType.REGIONAL_GUIDE, targetId) {
                 removeRegionalGuideFavoriteUseCase(targetId)
+            }
+        }
+
+        fun toggleHomeRegionalGuidePrimaryFavorite(targetId: String) {
+            val isHomePrimary =
+                uiState.value.regionalGuideFavorites.any { favorite ->
+                    favorite.targetId == targetId && favorite.isHomeRegionalGuidePrimary
+                }
+
+            viewModelScope.launch {
+                try {
+                    if (isHomePrimary) {
+                        clearHomeRegionalGuidePrimaryFavoriteUseCase()
+                    } else {
+                        setHomeRegionalGuidePrimaryFavoriteUseCase(targetId)
+                    }
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (_: Throwable) {
+                    _events.emit(FavoritesEvent.FavoriteUpdateFailed)
+                }
             }
         }
 
