@@ -534,6 +534,27 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
             assertEquals(HomeRegionalGuideSummaryResult.NoFavorite, result)
         }
 
+    @Test
+    fun `즐겨찾기에 없는 대표 저장값은 홈 요약 관찰 중 정리한다`() =
+        runBlocking {
+            val targetId = "regional"
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                    initialTargetId = targetId,
+                    initialLastSelectedTargetId = targetId,
+                )
+            val useCase =
+                createUseCase(
+                    primaryFavoriteRepository = primaryFavoriteRepository,
+                )
+
+            val result = useCase().first()
+
+            assertEquals(HomeRegionalGuideSummaryResult.NoFavorite, result)
+            assertEquals(null, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(null, primaryFavoriteRepository.lastSelectedTargetId.value)
+        }
+
     private fun createUseCase(
         favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
         snapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
@@ -691,8 +712,8 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         private var setLastSelectedFailureCount: Int = 0,
         private var clearLastSelectedFailureCount: Int = 0,
     ) : HomeRegionalGuidePrimaryFavoriteRepository {
-        private val primaryTargetId = MutableStateFlow(initialTargetId)
-        private val lastSelectedTargetId = MutableStateFlow(initialLastSelectedTargetId)
+        val primaryTargetId = MutableStateFlow(initialTargetId)
+        val lastSelectedTargetId = MutableStateFlow(initialLastSelectedTargetId)
 
         override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
 

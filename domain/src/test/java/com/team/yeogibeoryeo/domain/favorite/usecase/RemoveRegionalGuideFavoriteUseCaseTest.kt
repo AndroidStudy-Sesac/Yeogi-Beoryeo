@@ -11,7 +11,7 @@ import org.junit.Test
 
 class RemoveRegionalGuideFavoriteUseCaseTest {
     @Test
-    fun `대표 저장값 정리 실패 후 같은 대상으로 재시도하면 남은 값을 정리한다`() =
+    fun `대표 저장값 정리가 실패해도 즐겨찾기 삭제는 성공으로 처리한다`() =
         runBlocking {
             val targetId = "regional-guide-primary"
             val favoriteRepository = FakeRegionalGuideFavoriteRepository()
@@ -27,13 +27,11 @@ class RemoveRegionalGuideFavoriteUseCaseTest {
                     homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
                 )
 
-            val firstResult = runCatching { useCase(targetId) }
             useCase(targetId)
 
-            assertEquals(true, firstResult.isFailure)
-            assertEquals(2, favoriteRepository.removeCallCount)
-            assertEquals(null, primaryFavoriteRepository.primaryTargetId.value)
-            assertEquals(null, primaryFavoriteRepository.lastSelectedTargetId.value)
+            assertEquals(1, favoriteRepository.removeCallCount)
+            assertEquals(targetId, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(targetId, primaryFavoriteRepository.lastSelectedTargetId.value)
         }
 
     private class FakeRegionalGuideFavoriteRepository : RegionalGuideFavoriteRepository {

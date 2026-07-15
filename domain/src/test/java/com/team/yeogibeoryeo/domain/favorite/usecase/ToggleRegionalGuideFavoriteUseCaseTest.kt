@@ -47,7 +47,7 @@ class ToggleRegionalGuideFavoriteUseCaseTest {
         }
 
     @Test
-    fun `상세 화면 해제 후 대표 저장값 정리가 실패하면 재시도로 남은 값을 정리한다`() =
+    fun `상세 화면 해제 후 대표 저장값 정리가 실패해도 즐겨찾기 해제는 유지한다`() =
         runBlocking {
             val snapshot = sampleSnapshot()
             val favoriteRepository =
@@ -73,12 +73,46 @@ class ToggleRegionalGuideFavoriteUseCaseTest {
                     homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
                 )
 
-            val firstResult = runCatching { useCase(snapshot) }
-            primaryFavoriteRepository.clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
-                snapshot.compatibleTargetIds,
-            )
+            val isFavorite = useCase(snapshot)
 
-            assertEquals(true, firstResult.isFailure)
+            assertEquals(false, isFavorite)
+            assertEquals(false, favoriteRepository.isFavorite(snapshot.targetId))
+            assertEquals(snapshot.targetId, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(snapshot.targetId, primaryFavoriteRepository.lastSelectedTargetId.value)
+        }
+
+    @Test
+    fun `대표 저장값 정리 실패 후 다시 추가해도 이전 대표 고정값은 복원되지 않는다`() =
+        runBlocking {
+            val snapshot = sampleSnapshot()
+            val favoriteRepository =
+                FakeRegionalGuideFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                    initialPrimaryTargetId = snapshot.targetId,
+                    initialLastSelectedTargetId = snapshot.targetId,
+                    clearFailureCount = 1,
+                )
+            val useCase =
+                ToggleRegionalGuideFavoriteUseCase(
+                    repository = favoriteRepository,
+                    homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
+                )
+
+            useCase(snapshot)
+            val isFavorite = useCase(snapshot)
+
+            assertEquals(true, isFavorite)
+            assertEquals(true, favoriteRepository.isFavorite(snapshot.targetId))
             assertEquals(null, primaryFavoriteRepository.primaryTargetId.value)
             assertEquals(null, primaryFavoriteRepository.lastSelectedTargetId.value)
         }
@@ -154,6 +188,12 @@ class ToggleRegionalGuideFavoriteUseCaseTest {
                 true
             }
         }
+
+        fun isFavorite(targetId: String): Boolean =
+            favorites.value.any { favorite ->
+                favorite.type == FavoriteTargetType.REGIONAL_GUIDE &&
+                    favorite.targetId == targetId
+            }
 
         override suspend fun removeFavorite(targetId: String) = Unit
     }

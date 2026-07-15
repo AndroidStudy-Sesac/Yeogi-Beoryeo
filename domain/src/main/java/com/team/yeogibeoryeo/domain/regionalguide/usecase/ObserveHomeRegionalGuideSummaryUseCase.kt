@@ -53,6 +53,16 @@ class ObserveHomeRegionalGuideSummaryUseCase
                 )
             }
                 .runningFold(HomeRegionalGuidePrimaryFavoriteSelection()) { previous, input ->
+                    val invalidSavedTargetIds = input.invalidSavedTargetIds()
+                    if (invalidSavedTargetIds.isNotEmpty()) {
+                        persistRepresentativeCache {
+                            homeRegionalGuidePrimaryFavoriteRepository
+                                .clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+                                    invalidSavedTargetIds,
+                                )
+                        }
+                    }
+
                     val primaryFavorite =
                         selectHomeRegionalGuidePrimaryFavoriteUseCase(
                             favorites = input.favorites,
@@ -67,13 +77,13 @@ class ObserveHomeRegionalGuideSummaryUseCase
                     val selectedTargetId = primaryFavorite?.targetId
                     when {
                         selectedTargetId == null && input.lastSelectedTargetId != null ->
-                            persistLastSelectedTargetId {
+                            persistRepresentativeCache {
                                 homeRegionalGuidePrimaryFavoriteRepository
                                     .clearLastSelectedFavoriteTargetIdIfMatches(input.lastSelectedTargetId)
                             }
 
                         selectedTargetId != null && selectedTargetId != input.lastSelectedTargetId ->
-                            persistLastSelectedTargetId {
+                            persistRepresentativeCache {
                                 homeRegionalGuidePrimaryFavoriteRepository
                                     .setLastSelectedFavoriteTargetId(selectedTargetId)
                             }
@@ -108,13 +118,13 @@ class ObserveHomeRegionalGuideSummaryUseCase
                     }
                 }
 
-        private suspend fun persistLastSelectedTargetId(persist: suspend () -> Unit) {
+        private suspend fun persistRepresentativeCache(persist: suspend () -> Unit) {
             try {
                 persist()
             } catch (exception: CancellationException) {
                 throw exception
             } catch (_: Throwable) {
-                // Last-selected persistence is a cache for representative stability.
+                // Representative persistence is a cache for selection stability.
                 // Summary state should still be emitted even when this write fails.
             }
         }
@@ -186,7 +196,20 @@ class ObserveHomeRegionalGuideSummaryUseCase
             val snapshots: List<RegionalGuideFavoriteSnapshot>,
             val pinnedTargetId: String?,
             val lastSelectedTargetId: String?,
-        )
+        ) {
+            fun invalidSavedTargetIds(): List<String> {
+                val favoriteTargetIds =
+                    favorites
+                        .filter { favorite -> favorite.type == FavoriteTargetType.REGIONAL_GUIDE }
+                        .map { favorite -> favorite.targetId }
+                        .toSet()
+
+                return listOfNotNull(
+                    pinnedTargetId?.takeIf { targetId -> targetId !in favoriteTargetIds },
+                    lastSelectedTargetId?.takeIf { targetId -> targetId !in favoriteTargetIds },
+                ).distinct()
+            }
+        }
 
         private data class HomeRegionalGuidePrimaryFavoriteSelection(
             val favorite: Favorite? = null,
