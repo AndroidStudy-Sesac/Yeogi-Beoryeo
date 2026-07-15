@@ -693,6 +693,79 @@ class FavoritesViewModelTest {
         }
 
     @Test
+    fun `고정 지역을 빠르게 전환해도 이전 지역 해제가 새 고정값을 지우지 않는다`() =
+        runTest {
+            val firstSnapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary-a",
+                    region = Region(sido = "Sido", sigungu = "SigunguA"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val secondSnapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary-b",
+                    region = Region(sido = "Sido", sigungu = "SigunguB"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val setStarted = CompletableDeferred<Unit>()
+            val continueSet = CompletableDeferred<Unit>()
+            val clearStarted = CompletableDeferred<Unit>()
+            val continueClear = CompletableDeferred<Unit>()
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                    initialTargetId = firstSnapshot.targetId,
+                    setStarted = setStarted,
+                    continueSet = continueSet,
+                    clearStarted = clearStarted,
+                    continueClear = continueClear,
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = firstSnapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = secondSnapshot.targetId,
+                                        savedAtMillis = 2L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            snapshots = listOf(firstSnapshot, secondSnapshot),
+                        ),
+                    primaryFavoriteRepository = primaryFavoriteRepository,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.toggleHomeRegionalGuidePrimaryFavorite(secondSnapshot.targetId)
+            runCurrent()
+            setStarted.await()
+            viewModel.toggleHomeRegionalGuidePrimaryFavorite(firstSnapshot.targetId)
+            runCurrent()
+            clearStarted.await()
+            continueSet.complete(Unit)
+            runCurrent()
+            continueClear.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(secondSnapshot.targetId, primaryFavoriteRepository.primaryTargetId.value)
+        }
+
+    @Test
     fun `홈 고정된 지역 가이드를 삭제하면 고정 상태도 초기화한다`() =
         runTest {
             val snapshot =
@@ -1110,12 +1183,21 @@ class FavoritesViewModelTest {
 
     private class FakeHomeRegionalGuidePrimaryFavoriteRepository(
         initialTargetId: String? = null,
+        private val setStarted: CompletableDeferred<Unit>? = null,
+        private val continueSet: CompletableDeferred<Unit>? = null,
+        private val clearStarted: CompletableDeferred<Unit>? = null,
+        private val continueClear: CompletableDeferred<Unit>? = null,
     ) : HomeRegionalGuidePrimaryFavoriteRepository {
         val primaryTargetId = MutableStateFlow(initialTargetId)
+        val lastSelectedTargetId = MutableStateFlow<String?>(null)
 
         override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
 
+        override fun observeLastSelectedFavoriteTargetId(): Flow<String?> = lastSelectedTargetId
+
         override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
+            setStarted?.complete(Unit)
+            continueSet?.await()
             primaryTargetId.value = targetId
         }
 
@@ -1124,8 +1206,24 @@ class FavoritesViewModelTest {
         }
 
         override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
+            clearStarted?.complete(Unit)
+            continueClear?.await()
             if (primaryTargetId.value == targetId) {
                 primaryTargetId.value = null
+            }
+        }
+
+        override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            lastSelectedTargetId.value = targetId
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetId() {
+            lastSelectedTargetId.value = null
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
             }
         }
     }

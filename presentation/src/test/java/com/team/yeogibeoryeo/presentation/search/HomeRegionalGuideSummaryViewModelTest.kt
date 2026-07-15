@@ -16,11 +16,12 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupExcep
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
-import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
+import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.BuildHomeRegionalGuideSummaryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuideSummaryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectHomeRegionalGuidePrimaryFavoriteUseCase
@@ -426,6 +427,9 @@ class HomeRegionalGuideSummaryViewModelTest {
                         SelectHomeRegionalGuidePrimaryFavoriteUseCase(),
                     observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase =
                         ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(primaryFavoriteRepository),
+                    observeHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase =
+                        ObserveHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase(primaryFavoriteRepository),
+                    homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
                 ),
         )
 
@@ -552,8 +556,11 @@ class HomeRegionalGuideSummaryViewModelTest {
         initialTargetId: String? = null,
     ) : HomeRegionalGuidePrimaryFavoriteRepository {
         private val primaryTargetId = MutableStateFlow(initialTargetId)
+        private val lastSelectedTargetId = MutableStateFlow<String?>(null)
 
         override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
+
+        override fun observeLastSelectedFavoriteTargetId(): Flow<String?> = lastSelectedTargetId
 
         override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
             primaryTargetId.value = targetId
@@ -566,6 +573,20 @@ class HomeRegionalGuideSummaryViewModelTest {
         override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
             if (primaryTargetId.value == targetId) {
                 primaryTargetId.value = null
+            }
+        }
+
+        override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            lastSelectedTargetId.value = targetId
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetId() {
+            lastSelectedTargetId.value = null
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
             }
         }
     }

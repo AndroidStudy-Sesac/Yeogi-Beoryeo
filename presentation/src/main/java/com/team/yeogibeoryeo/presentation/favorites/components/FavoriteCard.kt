@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 import com.team.yeogibeoryeo.common.R as CommonR
@@ -59,6 +60,13 @@ fun FavoriteCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val titleMaxLines =
+                if (favorite.type == FavoriteTargetType.REGIONAL_GUIDE) {
+                    FavoriteCardDefaults.RegionalGuideTitleMaxLines
+                } else {
+                    FavoriteCardDefaults.TitleMaxLines
+                }
+
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -70,7 +78,7 @@ fun FavoriteCard(
                         fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                     ),
-                    maxLines = 1,
+                    maxLines = titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
                 favorite.subtitle?.let { subtitle ->
@@ -159,4 +167,9 @@ private fun FavoriteMetadataChip(text: String) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
+}
+
+private object FavoriteCardDefaults {
+    const val TitleMaxLines = 1
+    const val RegionalGuideTitleMaxLines = 2
 }

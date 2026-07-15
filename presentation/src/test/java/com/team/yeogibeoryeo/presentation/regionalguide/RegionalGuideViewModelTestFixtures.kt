@@ -23,6 +23,7 @@ import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGui
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
+import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideEupmyeondongOptionsUseCase
@@ -87,7 +88,12 @@ internal fun createViewModel(
             NormalizeRegionForRegionalGuideUseCase(regionOptionsRepository)
         ),
         observeFavoriteUseCase = ObserveFavoriteUseCase(favoriteRepository),
-        toggleRegionalGuideFavoriteUseCase = ToggleRegionalGuideFavoriteUseCase(regionalGuideFavoriteRepository),
+        toggleRegionalGuideFavoriteUseCase =
+            ToggleRegionalGuideFavoriteUseCase(
+                repository = regionalGuideFavoriteRepository,
+                homeRegionalGuidePrimaryFavoriteRepository =
+                    FakeHomeRegionalGuidePrimaryFavoriteRepository(),
+            ),
         getRegionalGuideFavoriteSnapshotUseCase =
             GetRegionalGuideFavoriteSnapshotUseCase(regionalGuideSnapshotRepository),
     )
@@ -343,6 +349,45 @@ internal class FakeRegionalGuideFavoriteRepository(
         compatibleTargetIds.forEach { compatibleTargetId ->
             favoriteRepository.removeFavorite(FavoriteTargetType.REGIONAL_GUIDE, compatibleTargetId)
             snapshotRepository.deleteSnapshot(compatibleTargetId)
+        }
+    }
+}
+
+internal class FakeHomeRegionalGuidePrimaryFavoriteRepository(
+    initialTargetId: String? = null,
+) : HomeRegionalGuidePrimaryFavoriteRepository {
+    private val primaryTargetId = MutableStateFlow(initialTargetId)
+    private val lastSelectedTargetId = MutableStateFlow<String?>(null)
+
+    override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
+
+    override fun observeLastSelectedFavoriteTargetId(): Flow<String?> = lastSelectedTargetId
+
+    override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
+        primaryTargetId.value = targetId
+    }
+
+    override suspend fun clearPrimaryFavoriteTargetId() {
+        primaryTargetId.value = null
+    }
+
+    override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
+        if (primaryTargetId.value == targetId) {
+            primaryTargetId.value = null
+        }
+    }
+
+    override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+        lastSelectedTargetId.value = targetId
+    }
+
+    override suspend fun clearLastSelectedFavoriteTargetId() {
+        lastSelectedTargetId.value = null
+    }
+
+    override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+        if (lastSelectedTargetId.value == targetId) {
+            lastSelectedTargetId.value = null
         }
     }
 }

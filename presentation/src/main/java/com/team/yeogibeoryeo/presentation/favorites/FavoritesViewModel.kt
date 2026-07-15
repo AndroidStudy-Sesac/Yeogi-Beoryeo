@@ -130,7 +130,7 @@ class FavoritesViewModel
             viewModelScope.launch {
                 try {
                     if (isHomePrimary) {
-                        clearHomeRegionalGuidePrimaryFavoriteUseCase()
+                        clearHomeRegionalGuidePrimaryFavoriteUseCase(targetId)
                     } else {
                         setHomeRegionalGuidePrimaryFavoriteUseCase(targetId)
                     }

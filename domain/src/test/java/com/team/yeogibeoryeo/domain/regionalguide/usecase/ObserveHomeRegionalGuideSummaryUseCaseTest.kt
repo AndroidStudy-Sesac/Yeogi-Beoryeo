@@ -18,8 +18,8 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupExcep
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
-import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
+import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -387,7 +387,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `즐겨찾기 변경 시 요약을 갱신한다`() =
+    fun `재수집해도 기존 대표 지역이 유효하면 유지한다`() =
         runBlocking {
             val firstSnapshot = sampleSnapshot(targetId = "first", sigungu = "중구")
             val secondSnapshot = sampleSnapshot(targetId = "second", sigungu = "노원구")
@@ -429,7 +429,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
             val secondResult = useCase().drop(1).first() as HomeRegionalGuideSummaryResult.Success
 
             assertEquals("first", firstResult.summary.targetId)
-            assertEquals("second", secondResult.summary.targetId)
+            assertEquals("first", secondResult.summary.targetId)
         }
 
     @Test
@@ -506,6 +506,9 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                 SelectHomeRegionalGuidePrimaryFavoriteUseCase(),
             observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase =
                 ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(primaryFavoriteRepository),
+            observeHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase =
+                ObserveHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase(primaryFavoriteRepository),
+            homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
         )
 
     private fun sampleSnapshot(
@@ -633,8 +636,11 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         initialTargetId: String? = null,
     ) : HomeRegionalGuidePrimaryFavoriteRepository {
         private val primaryTargetId = MutableStateFlow(initialTargetId)
+        private val lastSelectedTargetId = MutableStateFlow<String?>(null)
 
         override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
+
+        override fun observeLastSelectedFavoriteTargetId(): Flow<String?> = lastSelectedTargetId
 
         override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
             primaryTargetId.value = targetId
@@ -647,6 +653,20 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
             if (primaryTargetId.value == targetId) {
                 primaryTargetId.value = null
+            }
+        }
+
+        override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            lastSelectedTargetId.value = targetId
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetId() {
+            lastSelectedTargetId.value = null
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
             }
         }
     }

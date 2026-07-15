@@ -30,6 +30,18 @@ class DataStoreHomeRegionalGuidePrimaryFavoriteRepository
                         ?.takeIf { targetId -> targetId.isNotBlank() }
                 }
 
+        override fun observeLastSelectedFavoriteTargetId(): Flow<String?> =
+            dataStore.data
+                .catch { exception ->
+                    if (exception is CancellationException) throw exception
+                    emit(emptyPreferences())
+                }
+                .map { preferences ->
+                    preferences[HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY]
+                        ?.trim()
+                        ?.takeIf { targetId -> targetId.isNotBlank() }
+                }
+
         override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
             val trimmedTargetId = targetId.trim()
             if (trimmedTargetId.isBlank()) return
@@ -53,8 +65,33 @@ class DataStoreHomeRegionalGuidePrimaryFavoriteRepository
             }
         }
 
+        override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            val trimmedTargetId = targetId.trim()
+            if (trimmedTargetId.isBlank()) return
+
+            dataStore.edit { preferences ->
+                preferences[HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY] = trimmedTargetId
+            }
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetId() {
+            dataStore.edit { preferences ->
+                preferences.remove(HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY)
+            }
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            dataStore.edit { preferences ->
+                if (preferences[HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY] == targetId) {
+                    preferences.remove(HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY)
+                }
+            }
+        }
+
         private companion object {
             val HOME_REGIONAL_GUIDE_PRIMARY_FAVORITE_TARGET_ID_KEY =
                 stringPreferencesKey("home_regional_guide_primary_favorite_target_id")
+            val HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY =
+                stringPreferencesKey("home_regional_guide_last_selected_favorite_target_id")
         }
     }
