@@ -2,6 +2,7 @@
 
 package com.team.yeogibeoryeo.navigation
 
+import androidx.annotation.Keep
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
 
@@ -19,6 +20,7 @@ data class MapRoute(
 )
 
 @Serializable
+@Keep
 enum class CollectionSpotRouteType {
     SMALL_E_WASTE_BIN,
     BATTERY_BIN,
@@ -43,6 +45,7 @@ data class RegionalGuideRoute(
 )
 
 @Serializable
+@Keep
 enum class RegionalGuideEntrySource {
     FAVORITES,
 }
@@ -74,6 +77,7 @@ data class SettingsDetailRoute(
 )
 
 @Serializable
+@Keep
 enum class SettingsDetailRouteType {
     Notice,
     Contact,
@@ -91,6 +95,7 @@ data class ItemUsefulGuideRoute(
 )
 
 @Serializable
+@Keep
 enum class ItemUsefulGuideRouteType {
     SMALL_E_WASTE,
     REGIONAL_GUIDE,
@@ -105,6 +110,7 @@ data class ItemGuideDetailRoute(
 )
 
 @Serializable
+@Keep
 enum class ItemGuideDetailSource {
     SEARCH,
     FAVORITES,

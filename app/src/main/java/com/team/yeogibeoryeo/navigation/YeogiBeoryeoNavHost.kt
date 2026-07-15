@@ -78,7 +78,7 @@ fun YeogiBeoryeoNavHost(
 
     LaunchedEffect(currentBackStackEntry) {
         isBottomBarVisible = true
-        if (!isItemSearchScreen) {
+        if (!isItemSearchScreen && isItemSearchBottomBarScrollEnabled) {
             isItemSearchBottomBarScrollEnabled = false
         }
     }
@@ -227,7 +227,10 @@ fun YeogiBeoryeoNavHost(
                         }
                     },
                     onItemSearchBottomBarScrollEnabledChanged = { isEnabled ->
-                        if (isItemSearchScreen) {
+                        if (
+                            isItemSearchScreen &&
+                            isItemSearchBottomBarScrollEnabled != isEnabled
+                        ) {
                             isItemSearchBottomBarScrollEnabled = isEnabled
                         }
                     },
@@ -269,6 +272,7 @@ fun YeogiBeoryeoNavHost(
                     onOpenNaverMapOpenSourceLicenseClick = {
                         currentContext.openNaverMapOpenSourceLicense()
                     },
+                    onOpenSourceClick = currentContext::openUrl,
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (isSettingsDetailScreen) {
                             isBottomBarVisible = isVisible
