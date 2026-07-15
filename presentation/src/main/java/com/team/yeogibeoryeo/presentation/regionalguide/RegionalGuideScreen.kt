@@ -119,6 +119,7 @@ fun RegionalGuideRoute(
         onSidoSelected = viewModel::onSidoSelected,
         onSigunguSelected = viewModel::onSigunguSelected,
         onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
+        onRegionSelectionStarted = viewModel::onRegionSelectionStarted,
         onRegionSelectorDropdownExpanded = viewModel::onRegionSelectorDropdownExpanded,
         onRegionSelectorDropdownDismissed = viewModel::onRegionSelectorDropdownDismissed,
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
@@ -151,6 +152,7 @@ fun RegionalGuideScreen(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
+    onRegionSelectionStarted: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
@@ -219,6 +221,7 @@ fun RegionalGuideScreen(
             }
 
             RegionalGuideEmptyActionType.SELECT_REGION -> {
+                onRegionSelectionStarted()
                 isRegionSelectorExpanded = true
                 onRegionSelectorDropdownDismissed()
             }
@@ -366,17 +369,32 @@ fun RegionalGuideScreen(
                         uiState = regionSelectorUiState,
                         compact = isRegionSelectorCompact,
                         compactRegionText = compactRegionText,
-                        onSidoSelected = onSidoSelected,
-                        onSigunguSelected = onSigunguSelected,
-                        onEupmyeondongSelected = onEupmyeondongSelected,
-                        onDropdownExpanded = onRegionSelectorDropdownExpanded,
+                        onSidoSelected = { sido ->
+                            clearSearchFocus()
+                            onSidoSelected(sido)
+                        },
+                        onSigunguSelected = { sigungu ->
+                            clearSearchFocus()
+                            onSigunguSelected(sigungu)
+                        },
+                        onEupmyeondongSelected = { eupmyeondong ->
+                            clearSearchFocus()
+                            onEupmyeondongSelected(eupmyeondong)
+                        },
+                        onDropdownExpanded = { dropdown ->
+                            clearSearchFocus()
+                            onRegionSelectorDropdownExpanded(dropdown)
+                        },
                         onDropdownDismissed = onRegionSelectorDropdownDismissed,
                         onSearchClick = {
+                            clearSearchFocus()
                             collapseRegionSelector()
                             onRegionSelectorDropdownDismissed()
                             onRegionSelectionSearchClick()
                         },
                         onChangeClick = {
+                            clearSearchFocus()
+                            onRegionSelectionStarted()
                             isRegionSelectorExpanded = true
                         },
                     )
