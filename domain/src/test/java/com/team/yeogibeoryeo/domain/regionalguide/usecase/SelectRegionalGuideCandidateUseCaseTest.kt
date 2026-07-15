@@ -2061,7 +2061,10 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     targetRegionName = "없음",
                     disposalPlaceType = "거점수거",
                     schedules = listOf(firstSchedule),
-                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "invalid")
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "invalid",
+                        dataCriteriaDate = "20240101"
+                    )
                 ),
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2070,7 +2073,63 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     targetRegionName = "없음",
                     disposalPlaceType = "거점수거",
                     schedules = listOf(secondSchedule),
-                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "20240709000000")
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "20240709000000",
+                        dataCriteriaDate = "20240709"
+                    )
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    eupmyeondong = "양구읍"
+                ),
+                sigunguQuery = "양구군"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals(listOf(firstSchedule, secondSchedule), guide.schedules)
+    }
+
+    @Test
+    fun `최종수정일이 일부 누락되면 데이터 기준일로 넘기지 않고 기존 병합 정책을 유지한다`() {
+        val firstSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "월"
+        )
+        val secondSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.FOOD,
+            disposalDays = "화"
+        )
+
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "없음",
+                    targetRegionName = "없음",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(firstSchedule),
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = null,
+                        dataCriteriaDate = "20240101"
+                    )
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "없음",
+                    targetRegionName = "없음",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(secondSchedule),
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "20240709000000",
+                        dataCriteriaDate = "20240709"
+                    )
                 )
             ),
             query = regionalGuideQuery(
@@ -2155,7 +2214,10 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     targetRegionName = "없음",
                     disposalPlaceType = "거점수거",
                     schedules = listOf(firstSchedule),
-                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "20240709000000")
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "20240709000000",
+                        dataCriteriaDate = "20240101"
+                    )
                 ),
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2164,7 +2226,10 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     targetRegionName = "없음",
                     disposalPlaceType = "거점수거",
                     schedules = listOf(secondSchedule),
-                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "20240709000000")
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "20240709000000",
+                        dataCriteriaDate = "20240709"
+                    )
                 )
             ),
             query = regionalGuideQuery(
@@ -2180,6 +2245,123 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
         val guide = (result as RegionalGuideLookupResult.Success).guide
 
         assertEquals(listOf(firstSchedule, secondSchedule), guide.schedules)
+    }
+
+    @Test
+    fun `최종수정일이 9자리에서 13자리이면 최신 행을 임의 선택하지 않고 기존 병합 정책을 유지한다`() {
+        val firstSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "월"
+        )
+        val secondSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.FOOD,
+            disposalDays = "화"
+        )
+
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "없음",
+                    targetRegionName = "없음",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(firstSchedule),
+                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "202407091")
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "없음",
+                    targetRegionName = "없음",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(secondSchedule),
+                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "2024070912300")
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    eupmyeondong = "양구읍"
+                ),
+                sigunguQuery = "양구군"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals(listOf(firstSchedule, secondSchedule), guide.schedules)
+    }
+
+    @Test
+    fun `최신성 판단 실패 후 후보 재필터링 시 최신 행을 다시 선택하지 않는다`() {
+        val firstSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "월"
+        )
+        val invalidSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.FOOD,
+            disposalDays = "화"
+        )
+        val latestSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.RECYCLABLE,
+            disposalDays = "수"
+        )
+
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "양구읍",
+                    targetRegionName = "일부지역",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(firstSchedule),
+                    uncollectedDays = "설날",
+                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "20240101000000")
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "양구읍",
+                    targetRegionName = "일부지역",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(invalidSchedule),
+                    uncollectedDays = "설날",
+                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "invalid")
+                ),
+                regionalDisposalGuide(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    managementZoneName = "양구읍",
+                    targetRegionName = "일부지역",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(latestSchedule),
+                    uncollectedDays = "추석",
+                    sourceMetadata = RegionalGuideSourceMetadata(lastModifiedPoint = "20240709000000")
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "강원특별자치도",
+                    sigungu = "양구군",
+                    eupmyeondong = "양구읍"
+                ),
+                sigunguQuery = "양구군"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(2, candidates.size)
+        assertEquals(
+            listOf(
+                listOf(firstSchedule, invalidSchedule),
+                listOf(latestSchedule)
+            ),
+            candidates.map { guide -> guide.schedules }
+        )
     }
 
     @Test

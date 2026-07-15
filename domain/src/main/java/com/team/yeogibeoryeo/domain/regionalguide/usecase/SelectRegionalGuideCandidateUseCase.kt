@@ -28,7 +28,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         val filteredCandidates = candidates
             .filterBySido(query.displayRegion)
             .filterBySigungu(query)
-            .mergeDuplicateCandidateRows()
+            .mergeDuplicateCandidateRowsByLatestDate()
 
         if (filteredCandidates.isEmpty()) {
             return RegionalGuideLookupResult.CandidateNotFound
@@ -180,7 +180,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         if (exactMatches.isNotEmpty()) {
-            return exactMatches.mergeDuplicateCandidateRows()
+            return exactMatches.mergeLegacyDuplicateCandidateRows()
         }
 
         val targetRegionMatches = filter { guide ->
@@ -191,7 +191,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return (targetRegionMatches + managementZoneMatches)
-            .mergeDuplicateCandidateRows()
+            .mergeLegacyDuplicateCandidateRows()
     }
 
     private fun List<RegionalDisposalGuide>.filterByMappedAdminDongs(
@@ -207,7 +207,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             guide.managementZoneName.matchesExactMappedAdminDong(adminDongNames) ||
                 guide.targetRegionName.matchesExactMappedAdminDong(adminDongNames)
         }
-            .mergeDuplicateCandidateRows()
+            .mergeLegacyDuplicateCandidateRows()
     }
 
     private fun List<RegionalDisposalGuide>.selectOverallCandidates(
@@ -250,18 +250,6 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         return RegionalGuideLookupResult.Candidates(
             guides = map { guide -> guide.withDisplayRegion(displayRegion) },
             reason = RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES
-        )
-    }
-
-    private fun List<RegionalDisposalGuide>.toCandidateListOrNull(
-        displayRegion: Region,
-        candidateReason: RegionalGuideCandidateLookupReason
-    ): RegionalGuideLookupResult.Candidates? {
-        if (isEmpty()) return null
-
-        return RegionalGuideLookupResult.Candidates(
-            guides = map { guide -> guide.withDisplayRegion(displayRegion) },
-            reason = candidateReason
         )
     }
 
@@ -316,7 +304,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             )
         }
 
-    private fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRows(): List<RegionalDisposalGuide> =
+    private fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRowsByLatestDate(): List<RegionalDisposalGuide> =
         groupBy { guide -> guide.toLatestCandidateKey() }
             .values
             .flatMap { guides ->
@@ -325,9 +313,17 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                     ?: guides.mergeLegacyDuplicateCandidateRows()
             }
 
-    private fun List<RegionalDisposalGuide>.selectUniqueLatestGuide(): RegionalDisposalGuide? =
-        selectUniqueLatestGuideBy { guide -> guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull() }
-            ?: selectUniqueLatestGuideBy { guide -> guide.sourceMetadata?.dataCriteriaDate.toComparableDatePointOrNull() }
+    private fun List<RegionalDisposalGuide>.selectUniqueLatestGuide(): RegionalDisposalGuide? {
+        if (any { guide -> !guide.sourceMetadata?.lastModifiedPoint.isNullOrBlank() }) {
+            return selectUniqueLatestGuideBy { guide ->
+                guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull()
+            }
+        }
+
+        return selectUniqueLatestGuideBy { guide ->
+            guide.sourceMetadata?.dataCriteriaDate.toComparableDatePointOrNull()
+        }
+    }
 
     private fun List<RegionalDisposalGuide>.selectUniqueLatestGuideBy(
         datePointSelector: (RegionalDisposalGuide) -> Long?
@@ -337,8 +333,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         val latestDatePoint = datePoints.maxOf { (_, datePoint) -> checkNotNull(datePoint) }
         return datePoints
-            .filter { (_, datePoint) -> datePoint == latestDatePoint }
-            .singleOrNull()
+            .singleOrNull { (_, datePoint) -> datePoint == latestDatePoint }
             ?.first
     }
 
@@ -381,9 +376,9 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             ?.filter { char -> char.isDigit() }
             ?: return null
 
-        val datePoint = when {
-            digits.length >= DATE_TIME_POINT_LENGTH -> digits.take(DATE_TIME_POINT_LENGTH)
-            digits.length >= DATE_POINT_LENGTH -> digits.take(DATE_POINT_LENGTH).padEnd(DATE_TIME_POINT_LENGTH, '0')
+        val datePoint = when (digits.length) {
+            DATE_TIME_POINT_LENGTH -> digits
+            DATE_POINT_LENGTH -> digits.padEnd(DATE_TIME_POINT_LENGTH, '0')
             else -> return null
         }
 
