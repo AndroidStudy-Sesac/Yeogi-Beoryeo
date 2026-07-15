@@ -40,6 +40,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.naver.maps.map.app.LegalNoticeActivity
+import com.naver.maps.map.app.OpenSourceLicenseActivity
 import com.team.yeogibeoryeo.BuildConfig
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
@@ -261,6 +263,12 @@ fun YeogiBeoryeoNavHost(
                     onOpenPrivacyPolicyClick = {
                         currentContext.openUrl(PRIVACY_POLICY_URL)
                     },
+                    onOpenNaverMapLegalNoticeClick = {
+                        currentContext.openNaverMapLegalNotice()
+                    },
+                    onOpenNaverMapOpenSourceLicenseClick = {
+                        currentContext.openNaverMapOpenSourceLicense()
+                    },
                     onBottomBarVisibilityChanged = { isVisible ->
                         if (isSettingsDetailScreen) {
                             isBottomBarVisible = isVisible
@@ -346,5 +354,17 @@ private fun android.content.Context.openAppSettings() {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri)
     runCatching {
         startActivity(intent)
+    }
+}
+
+private fun android.content.Context.openNaverMapLegalNotice() {
+    runCatching {
+        startActivity(Intent(this, LegalNoticeActivity::class.java))
+    }
+}
+
+private fun android.content.Context.openNaverMapOpenSourceLicense() {
+    runCatching {
+        startActivity(Intent(this, OpenSourceLicenseActivity::class.java))
     }
 }

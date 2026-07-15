@@ -36,6 +36,8 @@ internal fun SettingsDetailScreen(
     onBackClick: () -> Unit,
     onOpenAppSettingsClick: () -> Unit,
     onOpenPrivacyPolicyClick: () -> Unit,
+    onOpenNaverMapLegalNoticeClick: () -> Unit,
+    onOpenNaverMapOpenSourceLicenseClick: () -> Unit,
     onClearLocationCacheClick: () -> Unit,
     cacheUiState: SettingsCacheUiState,
     cacheEvents: SharedFlow<SettingsCacheEvent>,
@@ -95,7 +97,12 @@ internal fun SettingsDetailScreen(
                 SettingsDetailType.PrivacyPolicy -> item {
                     PrivacyPolicyDetail(onOpenPrivacyPolicyClick = onOpenPrivacyPolicyClick)
                 }
-                SettingsDetailType.Sources -> item { SourcesDetail() }
+                SettingsDetailType.Sources -> item {
+                    SourcesDetail(
+                        onOpenNaverMapLegalNoticeClick = onOpenNaverMapLegalNoticeClick,
+                        onOpenNaverMapOpenSourceLicenseClick = onOpenNaverMapOpenSourceLicenseClick,
+                    )
+                }
                 SettingsDetailType.Cache -> item {
                     CacheDetail(
                         onClearLocationCacheClick = onClearLocationCacheClick,
