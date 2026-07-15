@@ -10,13 +10,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
+import com.team.yeogibeoryeo.presentation.regionalguide.regionSearchCandidateListScrollKey
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 
 @Composable
 fun RegionalGuideAmbiguousResult(
     candidates: List<RegionSearchCandidateUiModel>,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollStateKey: String = candidates
+        .filter { candidate -> candidate.isValid }
+        .regionSearchCandidateListScrollKey(),
+    initialScrollPosition: RegionalGuideCandidateListScrollPosition =
+        RegionalGuideCandidateListScrollPosition.Initial,
+    onScrollPositionChange: (RegionalGuideCandidateListScrollPosition) -> Unit = {},
 ) {
     val validCandidates = candidates.filter { candidate -> candidate.isValid }
 
@@ -26,7 +34,10 @@ fun RegionalGuideAmbiguousResult(
         candidates = validCandidates,
         key = { candidate -> candidate.stableKey },
         onCandidateClick = onCandidateClick,
-        modifier = modifier
+        modifier = modifier,
+        scrollStateKey = scrollStateKey,
+        initialScrollPosition = initialScrollPosition,
+        onScrollPositionChange = onScrollPositionChange,
     ) { candidate ->
         RegionalGuideCandidateRowText(text = candidate.displayText)
     }

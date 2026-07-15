@@ -310,6 +310,33 @@ class RegionalGuideViewModel @Inject constructor(
         )
     }
 
+    fun onCandidateListScrollPositionChanged(
+        candidateListScrollKey: String,
+        position: RegionalGuideCandidateListScrollPosition
+    ) {
+        val normalizedPosition = position.coerceAtLeastInitial()
+
+        _uiState.update { state ->
+            when (state) {
+                is RegionalGuideUiState.Ambiguous ->
+                    if (state.candidateListScrollKey() == candidateListScrollKey) {
+                        state.copy(candidateListScrollPosition = normalizedPosition)
+                    } else {
+                        state
+                    }
+
+                is RegionalGuideUiState.GuideCandidates ->
+                    if (state.candidateListScrollKey() == candidateListScrollKey) {
+                        state.copy(candidateListScrollPosition = normalizedPosition)
+                    } else {
+                        state
+                    }
+
+                else -> state
+            }
+        }
+    }
+
     fun restoreCandidatesFromDetail(): Boolean {
         val entry = guideCandidateBackStackEntries.removeLastOrNull()
 
@@ -1043,6 +1070,13 @@ class RegionalGuideViewModel @Inject constructor(
             .filter { regionName -> regionName.isNotBlank() }
             .joinToString(" > ")
             .ifBlank { targetRegionName ?: managementZoneName ?: "" }
+
+    private fun RegionalGuideCandidateListScrollPosition.coerceAtLeastInitial():
+        RegionalGuideCandidateListScrollPosition =
+        RegionalGuideCandidateListScrollPosition(
+            firstVisibleItemIndex = firstVisibleItemIndex.coerceAtLeast(0),
+            firstVisibleItemScrollOffset = firstVisibleItemScrollOffset.coerceAtLeast(0),
+        )
 
     private fun collapseRegionSelectorDropdowns() {
         _regionSelectorUiState.update { state ->
