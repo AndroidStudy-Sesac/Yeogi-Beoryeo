@@ -8,12 +8,16 @@ import javax.inject.Inject
 class FavoriteRegionalGuideUiMapper
     @Inject
     constructor() {
-        fun map(snapshot: RegionalGuideFavoriteSnapshot): FavoriteUiModel =
+        fun map(
+            snapshot: RegionalGuideFavoriteSnapshot,
+            isHomePrimary: Boolean = false,
+        ): FavoriteUiModel =
             FavoriteUiModel(
                 type = FavoriteTargetType.REGIONAL_GUIDE,
                 targetId = snapshot.targetId,
                 title = snapshot.regionDisplayName(),
                 subtitle = snapshot.toSubtitle(),
+                isHomeRegionalGuidePrimary = isHomePrimary,
             )
 
         private fun RegionalGuideFavoriteSnapshot.regionDisplayName(): String =

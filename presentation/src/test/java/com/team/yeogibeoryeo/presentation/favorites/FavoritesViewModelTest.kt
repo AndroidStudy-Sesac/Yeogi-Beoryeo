@@ -23,6 +23,10 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalSubCategory
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ClearHomeRegionalGuidePrimaryFavoriteUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.SetHomeRegionalGuidePrimaryFavoriteUseCase
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
@@ -565,6 +569,247 @@ class FavoritesViewModelTest {
         }
 
     @Test
+    fun `지역 가이드 홈 고정 대상이면 UI 모델에 고정 상태를 표시한다`() =
+        runTest {
+            val snapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary",
+                    region = Region(sido = "Sido", sigungu = "Sigungu"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+                    primaryFavoriteRepository =
+                        FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                            initialTargetId = snapshot.targetId,
+                        ),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            val regionalGuide = viewModel.uiState.value.regionalGuideFavorites.single()
+
+            assertEquals(true, regionalGuide.isHomeRegionalGuidePrimary)
+        }
+
+    @Test
+    fun `지역 가이드 홈 고정 버튼을 누르면 대표 지역을 저장한다`() =
+        runTest {
+            val snapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary",
+                    region = Region(sido = "Sido", sigungu = "Sigungu"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val primaryFavoriteRepository = FakeHomeRegionalGuidePrimaryFavoriteRepository()
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+                    primaryFavoriteRepository = primaryFavoriteRepository,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.toggleHomeRegionalGuidePrimaryFavorite(snapshot.targetId)
+            advanceUntilIdle()
+
+            assertEquals(snapshot.targetId, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(true, viewModel.uiState.value.regionalGuideFavorites.single().isHomeRegionalGuidePrimary)
+        }
+
+    @Test
+    fun `홈 고정된 지역 가이드를 다시 누르면 고정을 해제한다`() =
+        runTest {
+            val snapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary",
+                    region = Region(sido = "Sido", sigungu = "Sigungu"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(initialTargetId = snapshot.targetId)
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+                    primaryFavoriteRepository = primaryFavoriteRepository,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.toggleHomeRegionalGuidePrimaryFavorite(snapshot.targetId)
+            advanceUntilIdle()
+
+            assertEquals(null, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(false, viewModel.uiState.value.regionalGuideFavorites.single().isHomeRegionalGuidePrimary)
+        }
+
+    @Test
+    fun `고정 지역을 빠르게 전환해도 이전 지역 해제가 새 고정값을 지우지 않는다`() =
+        runTest {
+            val firstSnapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary-a",
+                    region = Region(sido = "Sido", sigungu = "SigunguA"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val secondSnapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary-b",
+                    region = Region(sido = "Sido", sigungu = "SigunguB"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val setStarted = CompletableDeferred<Unit>()
+            val continueSet = CompletableDeferred<Unit>()
+            val clearStarted = CompletableDeferred<Unit>()
+            val continueClear = CompletableDeferred<Unit>()
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                    initialTargetId = firstSnapshot.targetId,
+                    setStarted = setStarted,
+                    continueSet = continueSet,
+                    clearStarted = clearStarted,
+                    continueClear = continueClear,
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = firstSnapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = secondSnapshot.targetId,
+                                        savedAtMillis = 2L,
+                                    ),
+                                ),
+                        ),
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            snapshots = listOf(firstSnapshot, secondSnapshot),
+                        ),
+                    primaryFavoriteRepository = primaryFavoriteRepository,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.toggleHomeRegionalGuidePrimaryFavorite(secondSnapshot.targetId)
+            runCurrent()
+            setStarted.await()
+            viewModel.toggleHomeRegionalGuidePrimaryFavorite(firstSnapshot.targetId)
+            runCurrent()
+            clearStarted.await()
+            continueSet.complete(Unit)
+            runCurrent()
+            continueClear.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(secondSnapshot.targetId, primaryFavoriteRepository.primaryTargetId.value)
+        }
+
+    @Test
+    fun `홈 고정된 지역 가이드를 삭제하면 고정 상태도 초기화한다`() =
+        runTest {
+            val snapshot =
+                RegionalGuideFavoriteSnapshot(
+                    targetId = "regional-guide-primary",
+                    region = Region(sido = "Sido", sigungu = "Sigungu"),
+                    targetRegionName = null,
+                    managementZoneName = null,
+                )
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(initialTargetId = snapshot.targetId)
+            val snapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot))
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                    regionalGuideSnapshotRepository = snapshotRepository,
+                    primaryFavoriteRepository = primaryFavoriteRepository,
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            viewModel.removeRegionalGuideFavorite(snapshot.targetId)
+            advanceUntilIdle()
+
+            assertEquals(null, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(false, favoriteRepository.isFavorite(FavoriteTargetType.REGIONAL_GUIDE, snapshot.targetId))
+        }
+
+    @Test
     fun `품목 즐겨찾기 삭제 실패 시 목록을 유지하고 실패 이벤트를 보낸다`() =
         runTest {
             val guide = sampleItemGuide()
@@ -751,6 +996,8 @@ class FavoritesViewModelTest {
             FakeCollectionSpotFavoriteSnapshotRepository(),
         regionalGuideSnapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
             FakeRegionalGuideFavoriteSnapshotRepository(),
+        primaryFavoriteRepository: FakeHomeRegionalGuidePrimaryFavoriteRepository =
+            FakeHomeRegionalGuidePrimaryFavoriteRepository(),
         collectionSpotRemoveFailure: Exception? = null,
         regionalGuideRemoveFailure: Exception? = null,
     ): FavoritesViewModel =
@@ -764,6 +1011,8 @@ class FavoritesViewModelTest {
                 ),
             observeRegionalGuideFavoriteSnapshotsUseCase =
                 ObserveRegionalGuideFavoriteSnapshotsUseCase(regionalGuideSnapshotRepository),
+            observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase =
+                ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(primaryFavoriteRepository),
             removeFavoriteUseCase = RemoveFavoriteUseCase(favoriteRepository),
             removeCollectionSpotFavoriteUseCase =
                 RemoveCollectionSpotFavoriteUseCase(
@@ -782,7 +1031,12 @@ class FavoritesViewModelTest {
                             snapshotRepository = regionalGuideSnapshotRepository,
                             removeFailure = regionalGuideRemoveFailure,
                         ),
+                    homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
                 ),
+            setHomeRegionalGuidePrimaryFavoriteUseCase =
+                SetHomeRegionalGuidePrimaryFavoriteUseCase(primaryFavoriteRepository),
+            clearHomeRegionalGuidePrimaryFavoriteUseCase =
+                ClearHomeRegionalGuidePrimaryFavoriteUseCase(primaryFavoriteRepository),
             itemGuideUiMapper = FavoriteItemGuideUiMapper(GetDisposalItemGuideUseCase(itemRepository)),
             collectionSpotUiMapper = FavoriteCollectionSpotUiMapper(),
             regionalGuideUiMapper = FavoriteRegionalGuideUiMapper(),
@@ -924,6 +1178,65 @@ class FavoritesViewModelTest {
 
         override suspend fun deleteSnapshot(targetId: String) {
             snapshots.value = snapshots.value.filterNot { it.targetId == targetId }
+        }
+    }
+
+    private class FakeHomeRegionalGuidePrimaryFavoriteRepository(
+        initialTargetId: String? = null,
+        private val setStarted: CompletableDeferred<Unit>? = null,
+        private val continueSet: CompletableDeferred<Unit>? = null,
+        private val clearStarted: CompletableDeferred<Unit>? = null,
+        private val continueClear: CompletableDeferred<Unit>? = null,
+    ) : HomeRegionalGuidePrimaryFavoriteRepository {
+        val primaryTargetId = MutableStateFlow(initialTargetId)
+        val lastSelectedTargetId = MutableStateFlow<String?>(null)
+
+        override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
+
+        override fun observeLastSelectedFavoriteTargetId(): Flow<String?> = lastSelectedTargetId
+
+        override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
+            setStarted?.complete(Unit)
+            continueSet?.await()
+            primaryTargetId.value = targetId
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetId() {
+            primaryTargetId.value = null
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
+            clearStarted?.complete(Unit)
+            continueClear?.await()
+            if (primaryTargetId.value == targetId) {
+                primaryTargetId.value = null
+            }
+        }
+
+        override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            lastSelectedTargetId.value = targetId
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetId() {
+            lastSelectedTargetId.value = null
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
+            }
+        }
+
+        override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+            targetIds: Collection<String>,
+        ) {
+            val targetIdSet = targetIds.toSet()
+            if (primaryTargetId.value in targetIdSet) {
+                primaryTargetId.value = null
+            }
+            if (lastSelectedTargetId.value in targetIdSet) {
+                lastSelectedTargetId.value = null
+            }
         }
     }
 

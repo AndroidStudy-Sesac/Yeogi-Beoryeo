@@ -18,6 +18,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupExcep
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
+import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -386,7 +387,7 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
     @Test
-    fun `즐겨찾기 변경 시 요약을 갱신한다`() =
+    fun `재수집해도 기존 대표 지역이 유효하면 유지한다`() =
         runBlocking {
             val firstSnapshot = sampleSnapshot(targetId = "first", sigungu = "중구")
             val secondSnapshot = sampleSnapshot(targetId = "second", sigungu = "노원구")
@@ -428,7 +429,130 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
             val secondResult = useCase().drop(1).first() as HomeRegionalGuideSummaryResult.Success
 
             assertEquals("first", firstResult.summary.targetId)
-            assertEquals("second", secondResult.summary.targetId)
+            assertEquals("first", secondResult.summary.targetId)
+        }
+
+    @Test
+    fun `대표 지역 즐겨찾기가 삭제되면 남은 즐겨찾기에서 새 대표 지역을 선택한다`() =
+        runBlocking {
+            val firstSnapshot = sampleSnapshot(targetId = "first", sigungu = "Junggu")
+            val secondSnapshot = sampleSnapshot(targetId = "second", sigungu = "Nowongu")
+            val favoriteRepository = FakeFavoriteRepository()
+            val snapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(
+                    initialSnapshots = listOf(firstSnapshot, secondSnapshot),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = snapshotRepository,
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            candidates =
+                                listOf(
+                                    sampleGuide(region = firstSnapshot.region),
+                                    sampleGuide(region = secondSnapshot.region),
+                                ),
+                        ),
+                )
+
+            favoriteRepository.addFavorite(
+                Favorite(
+                    type = FavoriteTargetType.REGIONAL_GUIDE,
+                    targetId = firstSnapshot.targetId,
+                    savedAtMillis = 1L,
+                ),
+            )
+            useCase().drop(1).first() as HomeRegionalGuideSummaryResult.Success
+
+            favoriteRepository.addFavorite(
+                Favorite(
+                    type = FavoriteTargetType.REGIONAL_GUIDE,
+                    targetId = secondSnapshot.targetId,
+                    savedAtMillis = 2L,
+                ),
+            )
+            favoriteRepository.removeFavorite(
+                type = FavoriteTargetType.REGIONAL_GUIDE,
+                targetId = firstSnapshot.targetId,
+            )
+            val result = useCase().drop(1).first() as HomeRegionalGuideSummaryResult.Success
+
+            assertEquals("second", result.summary.targetId)
+        }
+
+    @Test
+    fun `마지막 대표 지역 저장이 실패해도 요약을 방출한다`() =
+        runBlocking {
+            val snapshot = sampleSnapshot(targetId = "regional")
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(listOf(snapshot)),
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            candidates = listOf(sampleGuide(region = snapshot.region)),
+                        ),
+                    primaryFavoriteRepository =
+                        FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                            setLastSelectedFailureCount = 1,
+                        ),
+                )
+
+            val result = useCase().drop(1).first()
+
+            require(result is HomeRegionalGuideSummaryResult.Success)
+            assertEquals(snapshot.targetId, result.summary.targetId)
+        }
+
+    @Test
+    fun `마지막 대표 지역 정리가 실패해도 즐겨찾기 없음 상태를 방출한다`() =
+        runBlocking {
+            val targetId = "regional"
+            val useCase =
+                createUseCase(
+                    primaryFavoriteRepository =
+                        FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                            initialLastSelectedTargetId = targetId,
+                            clearLastSelectedFailureCount = 1,
+                        ),
+                )
+
+            val result = useCase().first()
+
+            assertEquals(HomeRegionalGuideSummaryResult.NoFavorite, result)
+        }
+
+    @Test
+    fun `즐겨찾기에 없는 대표 저장값은 홈 요약 관찰 중 정리한다`() =
+        runBlocking {
+            val targetId = "regional"
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                    initialTargetId = targetId,
+                    initialLastSelectedTargetId = targetId,
+                )
+            val useCase =
+                createUseCase(
+                    primaryFavoriteRepository = primaryFavoriteRepository,
+                )
+
+            val result = useCase().first()
+
+            assertEquals(HomeRegionalGuideSummaryResult.NoFavorite, result)
+            assertEquals(null, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(null, primaryFavoriteRepository.lastSelectedTargetId.value)
         }
 
     private fun createUseCase(
@@ -436,6 +560,8 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         snapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
             FakeRegionalGuideFavoriteSnapshotRepository(),
         regionalRepository: FakeRegionalDisposalGuideRepository = FakeRegionalDisposalGuideRepository(),
+        primaryFavoriteRepository: FakeHomeRegionalGuidePrimaryFavoriteRepository =
+            FakeHomeRegionalGuidePrimaryFavoriteRepository(),
     ): ObserveHomeRegionalGuideSummaryUseCase =
         ObserveHomeRegionalGuideSummaryUseCase(
             observeFavoritesUseCase = ObserveFavoritesUseCase(favoriteRepository),
@@ -450,6 +576,13 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
                         FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                 ),
             buildHomeRegionalGuideSummaryUseCase = BuildHomeRegionalGuideSummaryUseCase(),
+            selectHomeRegionalGuidePrimaryFavoriteUseCase =
+                SelectHomeRegionalGuidePrimaryFavoriteUseCase(),
+            observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase =
+                ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(primaryFavoriteRepository),
+            observeHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase =
+                ObserveHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase(primaryFavoriteRepository),
+            homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
         )
 
     private fun sampleSnapshot(
@@ -570,6 +703,72 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         ): Result<List<RegionalDisposalGuide>> {
             requestedSigungu += query.sigunguQuery
             return result ?: Result.success(candidates.filter { it.region.sigungu == query.sigunguQuery })
+        }
+    }
+
+    private class FakeHomeRegionalGuidePrimaryFavoriteRepository(
+        initialTargetId: String? = null,
+        initialLastSelectedTargetId: String? = null,
+        private var setLastSelectedFailureCount: Int = 0,
+        private var clearLastSelectedFailureCount: Int = 0,
+    ) : HomeRegionalGuidePrimaryFavoriteRepository {
+        val primaryTargetId = MutableStateFlow(initialTargetId)
+        val lastSelectedTargetId = MutableStateFlow(initialLastSelectedTargetId)
+
+        override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
+
+        override fun observeLastSelectedFavoriteTargetId(): Flow<String?> = lastSelectedTargetId
+
+        override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
+            primaryTargetId.value = targetId
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetId() {
+            primaryTargetId.value = null
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
+            if (primaryTargetId.value == targetId) {
+                primaryTargetId.value = null
+            }
+        }
+
+        override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            if (setLastSelectedFailureCount > 0) {
+                setLastSelectedFailureCount -= 1
+                throw IllegalStateException("마지막 대표 저장 실패")
+            }
+            lastSelectedTargetId.value = targetId
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetId() {
+            if (clearLastSelectedFailureCount > 0) {
+                clearLastSelectedFailureCount -= 1
+                throw IllegalStateException("마지막 대표 정리 실패")
+            }
+            lastSelectedTargetId.value = null
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            if (clearLastSelectedFailureCount > 0) {
+                clearLastSelectedFailureCount -= 1
+                throw IllegalStateException("마지막 대표 정리 실패")
+            }
+            if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
+            }
+        }
+
+        override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+            targetIds: Collection<String>,
+        ) {
+            val targetIdSet = targetIds.toSet()
+            if (primaryTargetId.value in targetIdSet) {
+                primaryTargetId.value = null
+            }
+            if (lastSelectedTargetId.value in targetIdSet) {
+                lastSelectedTargetId.value = null
+            }
         }
     }
 
