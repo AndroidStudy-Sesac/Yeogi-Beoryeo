@@ -225,6 +225,10 @@
     <string name="settings_source_interior_ministry_description">출처\n• 생활쓰레기배출정보 조회서비스\n• 행정기관 및 관할구역 코드 자료\n\n데이터 기준\n행정구역 데이터: 2026-07-01\n지역별 배출 정보: 공공데이터포털 Open API 생활쓰레기배출정보 조회서비스\n\n가공 여부\n행정구역 데이터는 앱 사용 목적에 맞게 가공했습니다.\n지역별 배출 정보는 API 응답을 화면에 맞게 변환하여 제공합니다.</string>
     <string name="settings_sources_usage_title">이용 안내</string>
     <string name="settings_sources_usage_description">원본 데이터의 출처와 기준일을 함께 표시합니다.\n가공 데이터는 앱 사용 목적에 맞게 편집한 정보입니다.\n분리배출 기준과 행정구역 정보는 정책 변경에 따라 달라질 수 있습니다.\n자세한 출처와 이용조건은 공개 GitHub 저장소의 DATA_SOURCES.md에서 확인할 수 있습니다.</string>
+    <string name="settings_naver_map_title">NAVER 지도</string>
+    <string name="settings_naver_map_usage_description">수거 장소 지도에는 NAVER 지도 Android SDK를 사용합니다. SDK의 법적 고지와 오픈소스 라이선스는 아래 메뉴에서 확인할 수 있습니다.</string>
+    <string name="settings_naver_map_legal_notice_action">NAVER 지도 법적 고지</string>
+    <string name="settings_naver_map_open_source_license_action">NAVER 지도 오픈소스 라이선스</string>
     <string name="settings_open_source_title">오픈소스 라이선스</string>
     <string name="settings_tabler_icons_title">Tabler Icons</string>
     <string name="settings_tabler_usage_title">MIT License</string>
