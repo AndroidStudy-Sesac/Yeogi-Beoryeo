@@ -390,6 +390,18 @@ internal class FakeHomeRegionalGuidePrimaryFavoriteRepository(
             lastSelectedTargetId.value = null
         }
     }
+
+    override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+        targetIds: Collection<String>,
+    ) {
+        val targetIdSet = targetIds.toSet()
+        if (primaryTargetId.value in targetIdSet) {
+            primaryTargetId.value = null
+        }
+        if (lastSelectedTargetId.value in targetIdSet) {
+            lastSelectedTargetId.value = null
+        }
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

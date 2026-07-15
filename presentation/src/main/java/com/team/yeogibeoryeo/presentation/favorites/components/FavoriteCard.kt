@@ -25,10 +25,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
-import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun FavoriteCard(
@@ -62,9 +62,9 @@ fun FavoriteCard(
         ) {
             val titleMaxLines =
                 if (favorite.type == FavoriteTargetType.REGIONAL_GUIDE) {
-                    FavoriteCardDefaults.RegionalGuideTitleMaxLines
+                    FavoriteCardDefaults.REGIONAL_GUIDE_TITLE_MAX_LINES
                 } else {
-                    FavoriteCardDefaults.TitleMaxLines
+                    FavoriteCardDefaults.TITLE_MAX_LINES
                 }
 
             Column(
@@ -89,6 +89,7 @@ fun FavoriteCard(
             if (onHomePrimaryClick != null) {
                 HomeRegionalGuidePrimaryButton(
                     isHomePrimary = favorite.isHomeRegionalGuidePrimary,
+                    title = favorite.title,
                     onClick = onHomePrimaryClick,
                 )
             }
@@ -117,12 +118,10 @@ fun FavoriteCard(
 @Composable
 private fun HomeRegionalGuidePrimaryButton(
     isHomePrimary: Boolean,
+    title: String,
     onClick: () -> Unit,
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier.size(32.dp),
-    ) {
+    IconButton(onClick = onClick) {
         Icon(
             painter =
                 painterResource(
@@ -139,6 +138,7 @@ private fun HomeRegionalGuidePrimaryButton(
                     } else {
                         R.string.favorite_home_regional_guide_pin_action
                     },
+                    title,
                 ),
             modifier = Modifier.size(20.dp),
             tint =
@@ -170,6 +170,6 @@ private fun FavoriteMetadataChip(text: String) {
 }
 
 private object FavoriteCardDefaults {
-    const val TitleMaxLines = 1
-    const val RegionalGuideTitleMaxLines = 2
+    const val TITLE_MAX_LINES = 1
+    const val REGIONAL_GUIDE_TITLE_MAX_LINES = 2
 }

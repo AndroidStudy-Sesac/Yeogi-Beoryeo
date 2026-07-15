@@ -18,4 +18,6 @@ interface HomeRegionalGuidePrimaryFavoriteRepository {
     suspend fun clearLastSelectedFavoriteTargetId()
 
     suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String)
+
+    suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(targetIds: Collection<String>)
 }

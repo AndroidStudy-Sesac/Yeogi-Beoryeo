@@ -171,8 +171,8 @@
     <string name="back_action">뒤로가기</string>
     <string name="favorite_add_action">즐겨찾기 추가</string>
     <string name="favorite_remove_action">즐겨찾기 해제</string>
-    <string name="favorite_home_regional_guide_pin_action">홈 지역 가이드로 고정</string>
-    <string name="favorite_home_regional_guide_unpin_action">홈 지역 가이드 고정 해제</string>
+    <string name="favorite_home_regional_guide_pin_action">%1$s 홈 지역 가이드로 고정</string>
+    <string name="favorite_home_regional_guide_unpin_action">%1$s 홈 지역 가이드 고정 해제</string>
     <string name="item_card_open_action_label">상세 보기</string>
     <string name="item_card_favorite_saved_state">즐겨찾기됨</string>
     <string name="item_card_favorite_not_saved_state">즐겨찾기 안 됨</string>

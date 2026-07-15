@@ -481,6 +481,59 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
             assertEquals("second", result.summary.targetId)
         }
 
+    @Test
+    fun `마지막 대표 지역 저장이 실패해도 요약을 방출한다`() =
+        runBlocking {
+            val snapshot = sampleSnapshot(targetId = "regional")
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val useCase =
+                createUseCase(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(listOf(snapshot)),
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            candidates = listOf(sampleGuide(region = snapshot.region)),
+                        ),
+                    primaryFavoriteRepository =
+                        FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                            setLastSelectedFailureCount = 1,
+                        ),
+                )
+
+            val result = useCase().drop(1).first()
+
+            require(result is HomeRegionalGuideSummaryResult.Success)
+            assertEquals(snapshot.targetId, result.summary.targetId)
+        }
+
+    @Test
+    fun `마지막 대표 지역 정리가 실패해도 즐겨찾기 없음 상태를 방출한다`() =
+        runBlocking {
+            val targetId = "regional"
+            val useCase =
+                createUseCase(
+                    primaryFavoriteRepository =
+                        FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                            initialLastSelectedTargetId = targetId,
+                            clearLastSelectedFailureCount = 1,
+                        ),
+                )
+
+            val result = useCase().first()
+
+            assertEquals(HomeRegionalGuideSummaryResult.NoFavorite, result)
+        }
+
     private fun createUseCase(
         favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
         snapshotRepository: FakeRegionalGuideFavoriteSnapshotRepository =
@@ -634,9 +687,12 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
 
     private class FakeHomeRegionalGuidePrimaryFavoriteRepository(
         initialTargetId: String? = null,
+        initialLastSelectedTargetId: String? = null,
+        private var setLastSelectedFailureCount: Int = 0,
+        private var clearLastSelectedFailureCount: Int = 0,
     ) : HomeRegionalGuidePrimaryFavoriteRepository {
         private val primaryTargetId = MutableStateFlow(initialTargetId)
-        private val lastSelectedTargetId = MutableStateFlow<String?>(null)
+        private val lastSelectedTargetId = MutableStateFlow(initialLastSelectedTargetId)
 
         override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
 
@@ -657,15 +713,39 @@ class ObserveHomeRegionalGuideSummaryUseCaseTest {
         }
 
         override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            if (setLastSelectedFailureCount > 0) {
+                setLastSelectedFailureCount -= 1
+                throw IllegalStateException("마지막 대표 저장 실패")
+            }
             lastSelectedTargetId.value = targetId
         }
 
         override suspend fun clearLastSelectedFavoriteTargetId() {
+            if (clearLastSelectedFailureCount > 0) {
+                clearLastSelectedFailureCount -= 1
+                throw IllegalStateException("마지막 대표 정리 실패")
+            }
             lastSelectedTargetId.value = null
         }
 
         override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            if (clearLastSelectedFailureCount > 0) {
+                clearLastSelectedFailureCount -= 1
+                throw IllegalStateException("마지막 대표 정리 실패")
+            }
             if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
+            }
+        }
+
+        override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+            targetIds: Collection<String>,
+        ) {
+            val targetIdSet = targetIds.toSet()
+            if (primaryTargetId.value in targetIdSet) {
+                primaryTargetId.value = null
+            }
+            if (lastSelectedTargetId.value in targetIdSet) {
                 lastSelectedTargetId.value = null
             }
         }

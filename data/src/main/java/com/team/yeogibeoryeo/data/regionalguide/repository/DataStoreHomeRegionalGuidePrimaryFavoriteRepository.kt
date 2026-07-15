@@ -88,6 +88,25 @@ class DataStoreHomeRegionalGuidePrimaryFavoriteRepository
             }
         }
 
+        override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+            targetIds: Collection<String>,
+        ) {
+            val targetIdSet =
+                targetIds
+                    .mapNotNull { targetId -> targetId.trim().takeIf { it.isNotBlank() } }
+                    .toSet()
+            if (targetIdSet.isEmpty()) return
+
+            dataStore.edit { preferences ->
+                if (preferences[HOME_REGIONAL_GUIDE_PRIMARY_FAVORITE_TARGET_ID_KEY] in targetIdSet) {
+                    preferences.remove(HOME_REGIONAL_GUIDE_PRIMARY_FAVORITE_TARGET_ID_KEY)
+                }
+                if (preferences[HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY] in targetIdSet) {
+                    preferences.remove(HOME_REGIONAL_GUIDE_LAST_SELECTED_FAVORITE_TARGET_ID_KEY)
+                }
+            }
+        }
+
         private companion object {
             val HOME_REGIONAL_GUIDE_PRIMARY_FAVORITE_TARGET_ID_KEY =
                 stringPreferencesKey("home_regional_guide_primary_favorite_target_id")

@@ -176,7 +176,7 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
-    fun `대표가 아닌 즐겨찾기가 추가되어도 기존 대표 지역 요약을 유지한다`() =
+    fun `대표가 아닌 즐겨찾기가 변경되어도 기존 대표 지역 요약을 다시 조회하지 않는다`() =
         runTest {
             val firstSnapshot =
                 sampleSnapshot(
@@ -199,37 +199,36 @@ class HomeRegionalGuideSummaryViewModelTest {
                             ),
                         ),
                 )
+            val snapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(
+                    initialSnapshots = listOf(firstSnapshot),
+                )
+            val regionalRepository =
+                FakeRegionalDisposalGuideRepository(
+                    guides =
+                        listOf(
+                            sampleGuide(region = firstSnapshot.region),
+                            sampleGuide(region = secondSnapshot.region),
+                        ),
+                )
             val viewModel =
                 createViewModel(
                     favoriteRepository = favoriteRepository,
-                    snapshotRepository =
-                        FakeRegionalGuideFavoriteSnapshotRepository(
-                            initialSnapshots = listOf(firstSnapshot, secondSnapshot),
-                        ),
-                    regionalRepository =
-                        FakeRegionalDisposalGuideRepository(
-                            guides =
-                                listOf(
-                                    sampleGuide(region = firstSnapshot.region),
-                                    sampleGuide(region = secondSnapshot.region),
-                                ),
-                        ),
+                    snapshotRepository = snapshotRepository,
+                    regionalRepository = regionalRepository,
                 )
             collectState(viewModel)
             advanceUntilIdle()
 
-            favoriteRepository.addFavorite(
-                Favorite(
-                    type = FavoriteTargetType.REGIONAL_GUIDE,
-                    targetId = secondSnapshot.targetId,
-                    savedAtMillis = 2L,
-                ),
-            )
+            snapshotRepository.upsertSnapshot(secondSnapshot)
+            advanceUntilIdle()
+            snapshotRepository.deleteSnapshot(secondSnapshot.targetId)
             advanceUntilIdle()
 
             val summary = viewModel.uiState.value as HomeRegionalGuideSummaryUiState.Summary
             assertEquals("first", summary.targetId)
             assertEquals("Sido > First > Dong", summary.regionName)
+            assertEquals(1, regionalRepository.requestCount)
         }
 
     @Test
@@ -586,6 +585,18 @@ class HomeRegionalGuideSummaryViewModelTest {
 
         override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
             if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
+            }
+        }
+
+        override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+            targetIds: Collection<String>,
+        ) {
+            val targetIdSet = targetIds.toSet()
+            if (primaryTargetId.value in targetIdSet) {
+                primaryTargetId.value = null
+            }
+            if (lastSelectedTargetId.value in targetIdSet) {
                 lastSelectedTargetId.value = null
             }
         }

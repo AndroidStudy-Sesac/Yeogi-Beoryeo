@@ -15,12 +15,8 @@ class ToggleRegionalGuideFavoriteUseCase
         suspend operator fun invoke(snapshot: RegionalGuideFavoriteSnapshot): Boolean {
             val isFavorite = repository.toggleFavorite(snapshot)
             if (!isFavorite) {
-                snapshot.compatibleTargetIds.forEach { targetId ->
-                    homeRegionalGuidePrimaryFavoriteRepository
-                        .clearPrimaryFavoriteTargetIdIfMatches(targetId)
-                    homeRegionalGuidePrimaryFavoriteRepository
-                        .clearLastSelectedFavoriteTargetIdIfMatches(targetId)
-                }
+                homeRegionalGuidePrimaryFavoriteRepository
+                    .clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(snapshot.compatibleTargetIds)
             }
             return isFavorite
         }

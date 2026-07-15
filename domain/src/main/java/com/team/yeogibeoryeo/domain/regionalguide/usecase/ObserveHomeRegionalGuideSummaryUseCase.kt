@@ -10,6 +10,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummary
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -66,12 +67,16 @@ class ObserveHomeRegionalGuideSummaryUseCase
                     val selectedTargetId = primaryFavorite?.targetId
                     when {
                         selectedTargetId == null && input.lastSelectedTargetId != null ->
-                            homeRegionalGuidePrimaryFavoriteRepository
-                                .clearLastSelectedFavoriteTargetId()
+                            persistLastSelectedTargetId {
+                                homeRegionalGuidePrimaryFavoriteRepository
+                                    .clearLastSelectedFavoriteTargetIdIfMatches(input.lastSelectedTargetId)
+                            }
 
                         selectedTargetId != null && selectedTargetId != input.lastSelectedTargetId ->
-                            homeRegionalGuidePrimaryFavoriteRepository
-                                .setLastSelectedFavoriteTargetId(selectedTargetId)
+                            persistLastSelectedTargetId {
+                                homeRegionalGuidePrimaryFavoriteRepository
+                                    .setLastSelectedFavoriteTargetId(selectedTargetId)
+                            }
                     }
 
                     HomeRegionalGuidePrimaryFavoriteSelection(
@@ -102,6 +107,17 @@ class ObserveHomeRegionalGuideSummaryUseCase
                         emit(loadSummary(snapshot))
                     }
                 }
+
+        private suspend fun persistLastSelectedTargetId(persist: suspend () -> Unit) {
+            try {
+                persist()
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Throwable) {
+                // Last-selected persistence is a cache for representative stability.
+                // Summary state should still be emitted even when this write fails.
+            }
+        }
 
         private suspend fun loadSummary(
             snapshot: RegionalGuideFavoriteSnapshot,

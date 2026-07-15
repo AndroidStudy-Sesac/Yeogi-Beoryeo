@@ -14,12 +14,10 @@ class RemoveRegionalGuideFavoriteUseCase
     ) {
         suspend operator fun invoke(targetId: String) {
             repository.removeFavorite(targetId)
-            targetId.compatibleRegionalGuideTargetIds().forEach { compatibleTargetId ->
-                homeRegionalGuidePrimaryFavoriteRepository
-                    .clearPrimaryFavoriteTargetIdIfMatches(compatibleTargetId)
-                homeRegionalGuidePrimaryFavoriteRepository
-                    .clearLastSelectedFavoriteTargetIdIfMatches(compatibleTargetId)
-            }
+            homeRegionalGuidePrimaryFavoriteRepository
+                .clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+                    targetId.compatibleRegionalGuideTargetIds(),
+                )
         }
 
         private fun String.compatibleRegionalGuideTargetIds(): List<String> {

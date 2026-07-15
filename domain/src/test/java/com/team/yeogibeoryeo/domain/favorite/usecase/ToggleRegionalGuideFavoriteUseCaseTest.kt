@@ -47,6 +47,43 @@ class ToggleRegionalGuideFavoriteUseCaseTest {
         }
 
     @Test
+    fun `상세 화면 해제 후 대표 저장값 정리가 실패하면 재시도로 남은 값을 정리한다`() =
+        runBlocking {
+            val snapshot = sampleSnapshot()
+            val favoriteRepository =
+                FakeRegionalGuideFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = snapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val primaryFavoriteRepository =
+                FakeHomeRegionalGuidePrimaryFavoriteRepository(
+                    initialPrimaryTargetId = snapshot.targetId,
+                    initialLastSelectedTargetId = snapshot.targetId,
+                    clearFailureCount = 1,
+                )
+            val useCase =
+                ToggleRegionalGuideFavoriteUseCase(
+                    repository = favoriteRepository,
+                    homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
+                )
+
+            val firstResult = runCatching { useCase(snapshot) }
+            primaryFavoriteRepository.clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+                snapshot.compatibleTargetIds,
+            )
+
+            assertEquals(true, firstResult.isFailure)
+            assertEquals(null, primaryFavoriteRepository.primaryTargetId.value)
+            assertEquals(null, primaryFavoriteRepository.lastSelectedTargetId.value)
+        }
+
+    @Test
     fun `상세 화면에서 해제한 지역을 다시 추가해도 이전 대표 고정값은 복원되지 않는다`() =
         runBlocking {
             val snapshot = sampleSnapshot()
@@ -124,6 +161,7 @@ class ToggleRegionalGuideFavoriteUseCaseTest {
     private class FakeHomeRegionalGuidePrimaryFavoriteRepository(
         initialPrimaryTargetId: String? = null,
         initialLastSelectedTargetId: String? = null,
+        private var clearFailureCount: Int = 0,
     ) : HomeRegionalGuidePrimaryFavoriteRepository {
         val primaryTargetId = MutableStateFlow(initialPrimaryTargetId)
         val lastSelectedTargetId = MutableStateFlow(initialLastSelectedTargetId)
@@ -156,6 +194,22 @@ class ToggleRegionalGuideFavoriteUseCaseTest {
 
         override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
             if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
+            }
+        }
+
+        override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+            targetIds: Collection<String>,
+        ) {
+            if (clearFailureCount > 0) {
+                clearFailureCount -= 1
+                throw IllegalStateException("대표 저장값 정리 실패")
+            }
+            val targetIdSet = targetIds.toSet()
+            if (primaryTargetId.value in targetIdSet) {
+                primaryTargetId.value = null
+            }
+            if (lastSelectedTargetId.value in targetIdSet) {
                 lastSelectedTargetId.value = null
             }
         }
