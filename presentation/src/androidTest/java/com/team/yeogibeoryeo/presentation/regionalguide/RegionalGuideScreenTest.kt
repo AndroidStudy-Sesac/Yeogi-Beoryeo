@@ -6,6 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -82,6 +85,61 @@ class RegionalGuideScreenTest {
 
         composeTestRule.onNodeWithText("- 장소 A").assertIsDisplayed()
         composeTestRule.onNodeWithText("- 장소 B").assertIsDisplayed()
+    }
+
+    @Test
+    fun 지역_선택_변경을_누르면_검색창_포커스를_해제한다() {
+        var regionSelectionStarted = false
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalGuideScreen(
+                    uiState = RegionalGuideUiState.Success(
+                        query = "장암면",
+                        guide = RegionalGuideUiModel(
+                            regionName = "충청남도 부여군 장암면",
+                            managementZoneName = "부여군",
+                            targetRegionName = "장암면",
+                            disposalPlaceType = "문전수거",
+                            disposalPlaceDescription = null,
+                            schedules = emptyList(),
+                            uncollectedDays = null,
+                            departmentInfo = null,
+                        ),
+                    ),
+                    searchKeyword = "",
+                    regionSelectorUiState = RegionSelectorUiState(
+                        sidoOptions = listOf("충청남도"),
+                        sigunguOptions = listOf("부여군"),
+                        eupmyeondongOptions = listOf("장암면"),
+                        selectedSido = "충청남도",
+                        selectedSigungu = "부여군",
+                        selectedEupmyeondong = "장암면",
+                    ),
+                    onSearchKeywordChange = {},
+                    onSearchClick = {},
+                    onRetryClick = {},
+                    onEmptySearchActionClick = {},
+                    onSidoSelected = {},
+                    onSigunguSelected = {},
+                    onEupmyeondongSelected = {},
+                    onRegionSelectionStarted = {
+                        regionSelectionStarted = true
+                    },
+                    onRegionSelectionSearchClick = {},
+                    onCandidateClick = {},
+                    onGuideCandidateClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction()).performClick()
+        composeTestRule.onNode(hasSetTextAction()).assertIsFocused()
+
+        composeTestRule.onNodeWithText("변경").performClick()
+
+        composeTestRule.onNode(hasSetTextAction()).assertIsNotFocused()
+        assertTrue(regionSelectionStarted)
     }
 
     @Test

@@ -95,7 +95,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onSidoSelected(sido: String) {
-        dismissSearchCandidateState()
+        onRegionSelectionStarted()
         clearGuideCandidateBackStack()
         sigunguOptionsJob?.cancel()
         eupmyeondongOptionsJob?.cancel()
@@ -127,7 +127,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onSigunguSelected(sigungu: String) {
-        dismissSearchCandidateState()
+        onRegionSelectionStarted()
         clearGuideCandidateBackStack()
         eupmyeondongOptionsJob?.cancel()
 
@@ -171,7 +171,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onEupmyeondongSelected(eupmyeondong: String) {
-        dismissSearchCandidateState()
+        onRegionSelectionStarted()
         clearGuideCandidateBackStack()
         _regionSelectorUiState.update { state ->
             state.copy(
@@ -182,7 +182,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onRegionSelectorDropdownExpanded(dropdown: RegionSelectorDropdown) {
-        dismissSearchCandidateState()
+        onRegionSelectionStarted()
         _regionSelectorUiState.update { state ->
             if (dropdown == RegionSelectorDropdown.EUPMYEONDONG &&
                 !state.isEupmyeondongSelectionEnabled
@@ -199,7 +199,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun onRegionSelectionSearchClick() {
-        dismissSearchCandidateState()
+        onRegionSelectionStarted()
         collapseRegionSelectorDropdowns()
 
         val state = regionSelectorUiState.value
@@ -250,6 +250,22 @@ class RegionalGuideViewModel @Inject constructor(
     fun prepareSearchAgain() {
         if (_uiState.value is RegionalGuideUiState.Empty) {
             _uiState.value = RegionalGuideUiState.Idle
+        }
+    }
+
+    fun onRegionSelectionStarted() {
+        keywordSuggestionJob?.cancel()
+        guideLookupJob?.cancel()
+        clearGuideCandidateBackStack()
+
+        _uiState.update { state ->
+            when (state) {
+                is RegionalGuideUiState.Loading,
+                is RegionalGuideUiState.Ambiguous,
+                is RegionalGuideUiState.GuideCandidates -> RegionalGuideUiState.Idle
+
+                else -> state
+            }
         }
     }
 
@@ -1069,22 +1085,6 @@ class RegionalGuideViewModel @Inject constructor(
             } else {
                 state.copy(expandedDropdown = null)
             }
-        }
-    }
-
-    private fun dismissSearchCandidateState() {
-        keywordSuggestionJob?.cancel()
-
-        val shouldDismissCandidates = when (uiState.value) {
-            is RegionalGuideUiState.Ambiguous,
-            is RegionalGuideUiState.GuideCandidates -> true
-
-            else -> false
-        }
-
-        if (shouldDismissCandidates) {
-            clearGuideCandidateBackStack()
-            _uiState.value = RegionalGuideUiState.Idle
         }
     }
 

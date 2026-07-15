@@ -119,6 +119,7 @@ fun RegionalGuideRoute(
         onSidoSelected = viewModel::onSidoSelected,
         onSigunguSelected = viewModel::onSigunguSelected,
         onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
+        onRegionSelectionStarted = viewModel::onRegionSelectionStarted,
         onRegionSelectorDropdownExpanded = viewModel::onRegionSelectorDropdownExpanded,
         onRegionSelectorDropdownDismissed = viewModel::onRegionSelectorDropdownDismissed,
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
@@ -152,6 +153,7 @@ fun RegionalGuideScreen(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
+    onRegionSelectionStarted: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
@@ -221,6 +223,7 @@ fun RegionalGuideScreen(
             }
 
             RegionalGuideEmptyActionType.SELECT_REGION -> {
+                onRegionSelectionStarted()
                 isRegionSelectorExpanded = true
                 onRegionSelectorDropdownDismissed()
             }
@@ -415,6 +418,7 @@ fun RegionalGuideScreen(
                         },
                         onChangeClick = {
                             clearSearchFocus()
+                            onRegionSelectionStarted()
                             isRegionSelectorExpanded = true
                         },
                     )
