@@ -6,6 +6,7 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -254,8 +255,6 @@ private fun CollectionSpotMapContent(
     val hasResultListToReturn = uiState.hasSearched ||
         uiState.spots.isNotEmpty() ||
         hasRegionSelection
-    val shouldShowMapOverlayControls =
-        mapUiMode != MapUiMode.SpotDetail && sheetLevel != MapSheetLevel.Expanded
 
     BackHandler(enabled = hasRegionDetailSelection) {
         onRegionDetailBackClick()
@@ -358,7 +357,7 @@ private fun CollectionSpotMapContent(
         onBottomBarVisibilityChanged(!shouldHideBottomBar)
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
     ) {
         val density = LocalDensity.current
@@ -371,6 +370,12 @@ private fun CollectionSpotMapContent(
         val naverLogoBottomPadding = naverLogoBottomPadding(
             shouldShowBottomSheet = shouldShowBottomSheet,
             visibleSheetHeight = visibleSheetHeight,
+        )
+        val shouldShowMapOverlayControls = shouldShowMapOverlayControls(
+            mapUiMode = mapUiMode,
+            maxHeight = maxHeight,
+            searchBarTopPadding = searchBarTopPadding,
+            naverLogoBottomPadding = naverLogoBottomPadding,
         )
 
         CollectionSpotNaverMap(
@@ -590,6 +595,21 @@ private fun naverLogoBottomPadding(
     visibleSheetHeight + NaverLogoBottomPadding
 }
 
+private fun shouldShowMapOverlayControls(
+    mapUiMode: MapUiMode,
+    maxHeight: Dp,
+    searchBarTopPadding: Dp,
+    naverLogoBottomPadding: Dp,
+): Boolean {
+    if (mapUiMode == MapUiMode.SpotDetail) return false
+
+    val naverLogoTop = maxHeight - naverLogoBottomPadding - NaverLogoEstimatedHeight
+    val searchOverlayBottom =
+        searchBarTopPadding + MapSearchBarMinHeight + MapSearchOverlayLogoGap
+
+    return naverLogoTop > searchOverlayBottom
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun CollectionSpotMapContentPreview() {
@@ -636,6 +656,9 @@ private fun MapSearchMode.toLoadingDescriptionResId(): Int {
 private val MyLocationButtonHorizontalPadding = 16.dp
 private val MyLocationButtonBottomPadding = 16.dp
 private val NaverLogoBottomPadding = 16.dp
+private val NaverLogoEstimatedHeight = 24.dp
+private val MapSearchBarMinHeight = 56.dp
+private val MapSearchOverlayLogoGap = 8.dp
 private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
 private val FavoriteSnackbarIconSize = 20.dp

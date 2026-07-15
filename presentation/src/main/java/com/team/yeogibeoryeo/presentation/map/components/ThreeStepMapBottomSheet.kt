@@ -50,7 +50,7 @@ fun ThreeStepMapBottomSheet(
         val mediumOffset = with(density) {
             (sheetHeight - MapSpotDetailBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
         }
-        val halfOffset = (sheetHeightPx * (1f - MapSheetHalfVisibleRatio))
+        val halfOffset = (sheetHeightPx * (1f - MAP_SHEET_HALF_VISIBLE_RATIO))
             .coerceIn(0f, hiddenOffset)
         val expandedOffset = 0f
         fun offsetFor(level: MapSheetLevel): Float =
@@ -132,6 +132,6 @@ enum class MapSheetLevel {
 }
 
 private val MapSheetTopMargin = 72.dp
-private const val MapSheetHalfVisibleRatio = 0.55f
+private const val MAP_SHEET_HALF_VISIBLE_RATIO = 0.55f
 val MapResultBottomSheetPeekHeight = 144.dp
 val MapSpotDetailBottomSheetPeekHeight = 220.dp
