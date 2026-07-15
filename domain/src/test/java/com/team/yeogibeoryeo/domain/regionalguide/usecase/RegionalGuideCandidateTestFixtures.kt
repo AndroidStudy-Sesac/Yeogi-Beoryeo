@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.usecase
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideSourceMetadata
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 
 internal fun regionalGuideQuery(
@@ -26,6 +27,7 @@ internal fun regionalDisposalGuide(
     uncollectedDays: String? = null,
     departmentName: String? = null,
     departmentPhoneNumber: String? = null,
+    sourceMetadata: RegionalGuideSourceMetadata? = null,
 ): RegionalDisposalGuide =
     RegionalDisposalGuide(
         region = Region(
@@ -41,4 +43,5 @@ internal fun regionalDisposalGuide(
         uncollectedDays = uncollectedDays,
         departmentName = departmentName,
         departmentPhoneNumber = departmentPhoneNumber,
+        sourceMetadata = sourceMetadata,
     )

@@ -218,4 +218,42 @@ class RegionalGuideMapperTest {
         assertNull(schedule.disposalMethod)
         assertEquals("대형폐기물 지정 장소", schedule.disposalPlace)
     }
+
+    @Test
+    fun `출처 메타데이터 필드를 도메인 메타데이터로 변환한다`() {
+        val result = RegionalGuideMapper.mapToDomain(
+            baseRegion = Region(sido = "Seoul", sigungu = "Junggu"),
+            dto = RegionalGuideItemDto(
+                managementNumber = " MNG-1 ",
+                lastModifiedPoint = " 20240709010101 ",
+                dataCriteriaDate = " 20240709 ",
+                dataUpdatedPoint = " ",
+                dataUpdateType = " U ",
+            )
+        )
+
+        val metadata = checkNotNull(result.sourceMetadata)
+
+        assertEquals("MNG-1", metadata.managementNumber)
+        assertEquals("20240709010101", metadata.lastModifiedPoint)
+        assertEquals("20240709", metadata.dataCriteriaDate)
+        assertNull(metadata.dataUpdatedPoint)
+        assertEquals("U", metadata.dataUpdateType)
+    }
+
+    @Test
+    fun `출처 메타데이터 필드가 모두 비어 있으면 널로 반환한다`() {
+        val result = RegionalGuideMapper.mapToDomain(
+            baseRegion = Region(sido = "Seoul", sigungu = "Junggu"),
+            dto = RegionalGuideItemDto(
+                managementNumber = " ",
+                lastModifiedPoint = " ",
+                dataCriteriaDate = null,
+                dataUpdatedPoint = " ",
+                dataUpdateType = null,
+            )
+        )
+
+        assertNull(result.sourceMetadata)
+    }
 }

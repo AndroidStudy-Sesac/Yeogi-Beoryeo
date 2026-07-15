@@ -32,4 +32,25 @@ class RegionalGuideItemDtoTest {
         assertEquals("02-1234-5678", dto.departmentPhoneNumber)
         assertEquals("대형폐기물 지정 장소", dto.largeItemDisposalPlace)
     }
+
+    @Test
+    fun `응답 출처 메타데이터 필드를 파싱한다`() {
+        val dto = json.decodeFromString<RegionalGuideItemDto>(
+            """
+            {
+              "MNG_NO": "MNG-1",
+              "LAST_MDFCN_PNT": "20240709010101",
+              "DAT_CRTR_YMD": "20240709",
+              "DAT_UPDT_PNT": "20240710000000",
+              "DAT_UPDT_SE": "U"
+            }
+            """.trimIndent()
+        )
+
+        assertEquals("MNG-1", dto.managementNumber)
+        assertEquals("20240709010101", dto.lastModifiedPoint)
+        assertEquals("20240709", dto.dataCriteriaDate)
+        assertEquals("20240710000000", dto.dataUpdatedPoint)
+        assertEquals("U", dto.dataUpdateType)
+    }
 }
