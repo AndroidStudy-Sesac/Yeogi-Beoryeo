@@ -36,6 +36,7 @@ internal fun SettingsDetailScreen(
     onBackClick: () -> Unit,
     onOpenAppSettingsClick: () -> Unit,
     onOpenPrivacyPolicyClick: () -> Unit,
+    onOpenSourceClick: (String) -> Unit,
     onClearLocationCacheClick: () -> Unit,
     cacheUiState: SettingsCacheUiState,
     cacheEvents: SharedFlow<SettingsCacheEvent>,
@@ -95,7 +96,9 @@ internal fun SettingsDetailScreen(
                 SettingsDetailType.PrivacyPolicy -> item {
                     PrivacyPolicyDetail(onOpenPrivacyPolicyClick = onOpenPrivacyPolicyClick)
                 }
-                SettingsDetailType.Sources -> item { SourcesDetail() }
+                SettingsDetailType.Sources -> item {
+                    SourcesDetail(onOpenSourceClick = onOpenSourceClick)
+                }
                 SettingsDetailType.Cache -> item {
                     CacheDetail(
                         onClearLocationCacheClick = onClearLocationCacheClick,
