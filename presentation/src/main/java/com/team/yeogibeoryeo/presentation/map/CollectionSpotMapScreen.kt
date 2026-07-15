@@ -6,7 +6,6 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -236,6 +235,7 @@ private fun CollectionSpotMapContent(
     var sheetRevealRequest by remember { mutableIntStateOf(0) }
     var mapCenterCoordinate by remember { mutableStateOf<Coordinate?>(null) }
     var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
+    var visibleSheetHeight by remember { mutableStateOf(0.dp) }
     val selectedSpot = uiState.selectedSpot
     val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
     val hasNoticeOrError = uiState.locationNotice != null ||
@@ -358,7 +358,7 @@ private fun CollectionSpotMapContent(
         onBottomBarVisibilityChanged(!shouldHideBottomBar)
     }
 
-    BoxWithConstraints(
+    Box(
         modifier = modifier.fillMaxSize(),
     ) {
         val density = LocalDensity.current
@@ -369,9 +369,8 @@ private fun CollectionSpotMapContent(
             WindowInsets.statusBars.getTop(density).toDp()
         } + MapOverlayControlsTopPadding
         val naverLogoBottomPadding = naverLogoBottomPadding(
-            sheetLevel = sheetLevel,
             shouldShowBottomSheet = shouldShowBottomSheet,
-            maxHeight = maxHeight,
+            visibleSheetHeight = visibleSheetHeight,
         )
 
         CollectionSpotNaverMap(
@@ -492,6 +491,9 @@ private fun CollectionSpotMapContent(
                     sheetLevel = level
                 },
                 modifier = Modifier.align(Alignment.BottomCenter),
+                onVisibleHeightChanged = { height ->
+                    visibleSheetHeight = height
+                },
             ) {
                 when (mapUiMode) {
                     MapUiMode.SpotDetail -> {
@@ -580,26 +582,13 @@ private fun myLocationButtonBottomPadding(
 }
 
 private fun naverLogoBottomPadding(
-    sheetLevel: MapSheetLevel,
     shouldShowBottomSheet: Boolean,
-    maxHeight: Dp,
+    visibleSheetHeight: Dp,
 ) = if (!shouldShowBottomSheet) {
     NaverLogoBottomPadding
 } else {
-    when (sheetLevel) {
-        MapSheetLevel.Hidden -> NaverLogoBottomPadding
-        MapSheetLevel.Peek -> MapResultBottomSheetPeekHeight + NaverLogoBottomPadding
-        MapSheetLevel.Medium -> MapSpotDetailBottomSheetPeekHeight + NaverLogoBottomPadding
-        MapSheetLevel.Half -> visibleHalfSheetHeight(maxHeight) + NaverLogoBottomPadding
-        MapSheetLevel.Expanded -> expandedSheetHeight(maxHeight) + NaverLogoBottomPadding
-    }
+    visibleSheetHeight + NaverLogoBottomPadding
 }
-
-private fun visibleHalfSheetHeight(maxHeight: Dp): Dp =
-    expandedSheetHeight(maxHeight) * MapSheetHalfVisibleRatio
-
-private fun expandedSheetHeight(maxHeight: Dp): Dp =
-    (maxHeight - MapSheetTopMargin).coerceAtLeast(0.dp)
 
 @Preview(showBackground = true)
 @Composable
@@ -649,8 +638,6 @@ private val MyLocationButtonBottomPadding = 16.dp
 private val NaverLogoBottomPadding = 16.dp
 private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
-private val MapSheetTopMargin = 72.dp
-private const val MapSheetHalfVisibleRatio = 0.55f
 private val FavoriteSnackbarIconSize = 20.dp
 
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
