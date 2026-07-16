@@ -1,5 +1,7 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.model
 
+import com.team.yeogibeoryeo.domain.region.model.RegionNameNaturalComparator
+
 data class RegionalGuideCandidateUiModel(
     val guide: RegionalGuideUiModel,
     val sido: String?,
@@ -28,13 +30,9 @@ data class RegionalGuideCandidateUiModel(
             .joinToString(CANDIDATE_LABEL_SEPARATOR)
 
     internal val sortText: String =
-        primaryDisplayParts().let { parts ->
-            when {
-                parts.size >= 2 -> listOf(parts[1], parts[0])
-                parts.isNotEmpty() -> parts
-                else -> listOf(displayText)
-            }
-        }.joinToString(CANDIDATE_LABEL_SEPARATOR)
+        primaryDisplayParts()
+            .ifEmpty { listOf(displayText) }
+            .joinToString(CANDIDATE_LABEL_SEPARATOR)
 
     internal val orderedManagementZoneSortText: String? =
         primaryDisplayParts()
@@ -232,17 +230,19 @@ internal val regionalGuideCandidateDisplayComparator: Comparator<RegionalGuideCa
             leftOrderedManagementZoneSortText != null &&
             rightOrderedManagementZoneSortText != null
         ) {
-            compareNaturalText(leftOrderedManagementZoneSortText, rightOrderedManagementZoneSortText)
+            RegionNameNaturalComparator.compare(
+                leftOrderedManagementZoneSortText,
+                rightOrderedManagementZoneSortText
+            )
         } else {
-            compareNaturalText(left.sortText, right.sortText)
+            RegionNameNaturalComparator.compare(left.sortText, right.sortText)
         }
 
         primaryComparison
             .takeIf { comparison -> comparison != 0 }
-            ?: compareNaturalText(left.displayText, right.displayText)
+            ?: RegionNameNaturalComparator.compare(left.displayText, right.displayText)
     }
 
-private val naturalSortTokenRegex = Regex("\\d+|\\D+")
 private val leadingNumberRegex = Regex("^제?\\s*(\\d+)")
 private val leadingRomanNumeralRegex = Regex(
     "^([IVXLCDM]+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]+)(?=\\s*(구역|권역))",
@@ -306,33 +306,4 @@ private fun String.toRomanNumeralOrNull(): Int? {
     }
 
     return total.takeIf { value -> value > 0 }
-}
-
-private fun compareNaturalText(left: String, right: String): Int {
-    val leftTokens = left.naturalSortTokens()
-    val rightTokens = right.naturalSortTokens()
-    val minSize = minOf(leftTokens.size, rightTokens.size)
-
-    for (index in 0 until minSize) {
-        val comparison = compareNaturalToken(leftTokens[index], rightTokens[index])
-        if (comparison != 0) return comparison
-    }
-
-    return leftTokens.size.compareTo(rightTokens.size)
-}
-
-private fun String.naturalSortTokens(): List<String> =
-    naturalSortTokenRegex.findAll(this).map { match -> match.value }.toList()
-
-private fun compareNaturalToken(left: String, right: String): Int {
-    val leftNumber = left.toLongOrNull()
-    val rightNumber = right.toLongOrNull()
-
-    return if (leftNumber != null && rightNumber != null) {
-        leftNumber.compareTo(rightNumber)
-            .takeIf { comparison -> comparison != 0 }
-            ?: left.length.compareTo(right.length)
-    } else {
-        left.compareTo(right)
-    }
 }

@@ -16,9 +16,7 @@ import com.team.yeogibeoryeo.domain.region.repository.RegionRepository
 import com.team.yeogibeoryeo.domain.region.usecase.ClassifyRegionSearchInputUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
@@ -27,6 +25,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePr
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideEupmyeondongOptionsUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideDisplayRegionUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
@@ -66,7 +65,8 @@ internal fun createViewModel(
             resolveRegionFromKeywordUseCase = ResolveRegionFromKeywordUseCase(
                 repository = regionRepository,
                 regionOptionsRepository = regionOptionsRepository
-            )
+            ),
+            regionOptionsRepository = regionOptionsRepository,
         ),
         extractRegionFromAddressUseCase = ExtractRegionFromAddressUseCase(regionRepository),
         getRegionalDisposalGuideUseCase = GetRegionalDisposalGuideUseCase(
@@ -78,9 +78,11 @@ internal fun createViewModel(
             )
         ),
         getSidoOptionsUseCase = GetSidoOptionsUseCase(regionOptionsRepository),
-        getSigunguOptionsUseCase = GetSigunguOptionsUseCase(regionOptionsRepository),
+        getRegionalGuideSigunguOptionsUseCase = GetRegionalGuideSigunguOptionsUseCase(
+            regionOptionsRepository
+        ),
         getRegionalGuideEupmyeondongOptionsUseCase = GetRegionalGuideEupmyeondongOptionsUseCase(
-            getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
+            regionOptionsRepository = regionOptionsRepository,
             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
             repository = regionalGuideOptionRepository,
         ),

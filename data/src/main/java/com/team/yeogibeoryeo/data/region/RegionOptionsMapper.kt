@@ -2,8 +2,12 @@ package com.team.yeogibeoryeo.data.region
 
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
+import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.region.model.RegionCandidateComparator
+import com.team.yeogibeoryeo.domain.region.model.RegionNameNaturalComparator
+import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
 
@@ -51,6 +55,84 @@ internal object RegionOptionsMapper {
             .toList()
     }
 
+    fun getRegionalGuideEupmyeondongOptions(
+        administrativeRegions: List<AdministrativeRegionDto>,
+        sido: String,
+        sigungu: String
+    ): List<String> {
+        return administrativeRegions
+            .asSequence()
+            .filter { region ->
+                RegionSidoAliasPolicy.isSameSido(
+                    requestedSido = sido,
+                    requestedSigungu = sigungu,
+                    candidateSido = region.sidoName,
+                    candidateSigungu = region.sigunguName,
+                ) && region.toInfoSigunguOptionName().isSameGuideSigunguName(sigungu)
+            }
+            .map { region -> region.eupmyeondongName }
+            .filter { eupmyeondong -> eupmyeondong.isNotBlank() }
+            .distinct()
+            .sortedWith(REGION_OPTION_NAME_COMPARATOR)
+            .toList()
+    }
+
+    fun getRegionalGuideSigunguOptions(
+        regionalGuideRegions: List<RegionalGuideRegionDto>,
+        sido: String
+    ): List<String> {
+        return regionalGuideRegions
+            .asSequence()
+            .filter { region ->
+                region.sidoName == sido ||
+                    RegionSidoAliasPolicy.isSameSido(
+                        requestedSido = sido,
+                        requestedSigungu = null,
+                        candidateSido = region.sidoName,
+                        candidateSigungu = region.sigunguName,
+                    )
+            }
+            .map { region -> region.toDisplaySigunguName() }
+            .filter { sigungu -> sigungu.isNotBlank() }
+            .distinct()
+            .sorted()
+            .toList()
+    }
+
+    fun filterRegionalGuideEupmyeondongOptions(
+        options: List<String>,
+        availability: List<RegionalGuideAvailabilityDto>,
+        sido: String,
+        sigungu: String,
+    ): List<String> {
+        val scopeRegion = Region(
+            sido = sido,
+            sigungu = sigungu,
+        )
+        val scopedAvailability = availability.filter { availableRegion ->
+            availableRegion.matchesRegionalGuideScope(scopeRegion)
+        }
+
+        val availableOptions = options.filter { option ->
+            scopedAvailability.any { availableRegion ->
+                availableRegion.matchesRegionalGuideEupmyeondong(option)
+            }
+        }
+        if (availableOptions.isNotEmpty()) {
+            return availableOptions
+                .distinct()
+                .sortedWith(REGION_OPTION_NAME_COMPARATOR)
+        }
+
+        if (scopedAvailability.hasNoEupmyeondongCoverage()) {
+            return options
+                .distinct()
+                .sortedWith(REGION_OPTION_NAME_COMPARATOR)
+        }
+
+        return emptyList()
+    }
+
     fun findSigunguRegions(
         administrativeRegions: List<AdministrativeRegionDto>,
         regionalGuideRegions: List<RegionalGuideRegionDto>,
@@ -86,10 +168,7 @@ internal object RegionOptionsMapper {
 
         val administrativeMatches = administrativeRegions
             .filter { region ->
-                RegionalGuideEupmyeondongNamePolicy.matchesKeyword(
-                    eupmyeondongName = region.eupmyeondongName,
-                    keyword = targetKeyword,
-                )
+                region.eupmyeondongName.matchesAdministrativeEupmyeondongKeyword(targetKeyword)
             }
             .map { region ->
                 RegionNormalizer.normalize(
@@ -100,7 +179,6 @@ internal object RegionOptionsMapper {
                     )
                 )
             }
-
         val legalMatches = legalAdminDongMappings
             .filter { mapping -> mapping.hasSameSigunguCode() }
             .mapNotNull { mapping ->
@@ -124,6 +202,232 @@ internal object RegionOptionsMapper {
         return (administrativeMatches + legalMatches)
             .distinctByRegionWithEupmyeondong()
             .sortedWith(REGION_NAME_COMPARATOR)
+    }
+
+    fun findRegionalGuideEupmyeondongRegions(
+        administrativeRegions: List<AdministrativeRegionDto>,
+        legalAdminDongMappings: List<LegalAdminDongMappingDto>,
+        keyword: String
+    ): List<Region> {
+        val targetKeyword = keyword.trim()
+        if (targetKeyword.isBlank()) return emptyList()
+
+        val administrativeMatches = administrativeRegions
+            .filter { region ->
+                region.eupmyeondongName.matchesAdministrativeEupmyeondongKeyword(targetKeyword) ||
+                    region.matchesNumberedDongAliasInSameScope(
+                        targetKeyword = targetKeyword,
+                        administrativeRegions = administrativeRegions,
+                        legalAdminDongMappings = legalAdminDongMappings
+                    )
+            }
+            .map { region ->
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = region.sidoName,
+                        sigungu = region.sigunguName.ifBlank { null },
+                        eupmyeondong = region.eupmyeondongName
+                    )
+                )
+            }
+        val hasNumberedDongAliasMatch = administrativeMatches.any { region ->
+            RegionalGuideEupmyeondongNamePolicy.isNumberedDongAliasOf(
+                name = region.eupmyeondong,
+                keyword = targetKeyword
+            )
+        }
+        val numberedDongAliasMatchedScopes = administrativeMatches
+            .filter { region ->
+                RegionalGuideEupmyeondongNamePolicy.isNumberedDongAliasOf(
+                    name = region.eupmyeondong,
+                    keyword = targetKeyword
+                )
+            }
+            .map { region -> region.toRegionScopeKey() }
+            .toSet()
+
+        val legalMatches = legalAdminDongMappings
+            .filter { mapping -> mapping.hasSameSigunguCode() }
+            .mapNotNull { mapping ->
+                val legalDongName = mapping.legalDongName
+                    .trim()
+                    .matchedLegalDongNameForKeyword(
+                        targetKeyword = targetKeyword,
+                        allowSuffixlessDongMatch = administrativeMatches.isEmpty()
+                    )
+                    ?: return@mapNotNull null
+
+                if (
+                    hasNumberedDongAliasMatch &&
+                    mapping.legalDongName.trim() == targetKeyword &&
+                    mapping.toRegionScopeKey() in numberedDongAliasMatchedScopes
+                ) {
+                    return@mapNotNull null
+                }
+
+                RegionNormalizer.normalize(
+                    Region(
+                        sido = mapping.sidoName.trim(),
+                        sigungu = mapping.sigunguName.trimToNull(),
+                        eupmyeondong = legalDongName
+                    )
+                )
+            }
+
+        return (administrativeMatches + legalMatches)
+            .distinctByRegionWithEupmyeondong()
+            .sortedWith(REGIONAL_GUIDE_REGION_NAME_COMPARATOR)
+    }
+
+    fun filterAvailableRegionalGuideRegions(
+        regions: List<Region>,
+        availability: List<RegionalGuideAvailabilityDto>,
+    ): List<Region> {
+        val scopedAvailabilityByRegionScope = regions
+            .map { region -> region.toRegionScopeKey() }
+            .distinct()
+            .associateWith { scope ->
+                availability.filter { availableRegion ->
+                    availableRegion.matchesRegionalGuideScope(
+                        Region(
+                            sido = scope.sido,
+                            sigungu = scope.sigungu,
+                        )
+                    )
+                }
+            }
+
+        return regions
+            .groupBy { region -> region.toRegionScopeKey() }
+            .flatMap { (scope, scopedRegions) ->
+                val scopedAvailability = scopedAvailabilityByRegionScope.getValue(scope)
+                val availableRegions = scopedRegions.filter { region ->
+                    scopedAvailability.any { availableRegion ->
+                        availableRegion.matchesRegionalGuideRegion(region)
+                    }
+                }
+
+                when {
+                    availableRegions.isNotEmpty() -> availableRegions
+                    scopedAvailability.hasNoEupmyeondongCoverage() -> scopedRegions
+                    else -> emptyList()
+                }
+            }
+            .distinctByRegionWithEupmyeondong()
+            .sortedWith(REGIONAL_GUIDE_REGION_NAME_COMPARATOR)
+    }
+
+    private fun AdministrativeRegionDto.matchesNumberedDongAliasInSameScope(
+        targetKeyword: String,
+        administrativeRegions: List<AdministrativeRegionDto>,
+        legalAdminDongMappings: List<LegalAdminDongMappingDto>
+    ): Boolean {
+        if (!RegionalGuideEupmyeondongNamePolicy.isNumberedDongAliasOf(eupmyeondongName, targetKeyword)) {
+            return false
+        }
+
+        val scopeKey = toRegionScopeKey()
+        val hasAdministrativeKeywordMatch = administrativeRegions.any { region ->
+            region.toRegionScopeKey() == scopeKey &&
+                region.eupmyeondongName.matchesAdministrativeEupmyeondongKeyword(targetKeyword)
+        }
+        if (hasAdministrativeKeywordMatch) return false
+
+        val adminDongNames = legalAdminDongMappings.exactLegalAdminDongNames(
+            targetKeyword = targetKeyword,
+            scopeKey = scopeKey
+        )
+        val numberedAliasAdminDongNames = adminDongNames
+            .filter { adminDongName ->
+                RegionalGuideEupmyeondongNamePolicy.isNumberedDongAliasOf(
+                    name = adminDongName,
+                    keyword = targetKeyword
+                )
+            }
+
+        return adminDongNames.isEmpty() ||
+            numberedAliasAdminDongNames.isNotEmpty() &&
+            (
+                numberedAliasAdminDongNames.size == adminDongNames.size ||
+                    numberedAliasAdminDongNames.size == SINGLE_NUMBERED_ALIAS_MATCH_SIZE
+                )
+    }
+
+    private fun RegionalGuideAvailabilityDto.matchesRegionalGuideRegion(region: Region): Boolean {
+        val eupmyeondong = region.eupmyeondong ?: return false
+
+        return matchesRegionalGuideScope(region) &&
+            matchesRegionalGuideEupmyeondong(eupmyeondong)
+    }
+
+    private fun RegionalGuideAvailabilityDto.matchesRegionalGuideScope(region: Region): Boolean {
+        return RegionSidoAliasPolicy.isSameSido(
+            requestedSido = region.sido,
+            requestedSigungu = region.sigungu,
+            candidateSido = sidoName,
+            candidateSigungu = sigunguName,
+        ) &&
+            sigunguName.isSameGuideSigunguName(region.sigungu.orEmpty())
+    }
+
+    private fun RegionalGuideAvailabilityDto.matchesRegionalGuideEupmyeondong(
+        eupmyeondong: String
+    ): Boolean {
+        return listOf(managementZoneName, targetRegionName).any { regionName ->
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = regionName,
+                eupmyeondong = eupmyeondong,
+            ) || regionName.matchesGuideAreaCoverage(eupmyeondong)
+        } || RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+            targetRegionName = targetRegionName,
+            eupmyeondong = eupmyeondong,
+        )
+    }
+
+    private fun List<RegionalGuideAvailabilityDto>.hasNoEupmyeondongCoverage(): Boolean =
+        isNotEmpty() && none { availableRegion ->
+            RegionalGuideEupmyeondongNamePolicy.hasEupmyeondongCoverage(
+                availableRegion.managementZoneName,
+            ) ||
+                RegionalGuideEupmyeondongNamePolicy.hasEupmyeondongCoverage(
+                    availableRegion.targetRegionName,
+                )
+        }
+
+    private fun String.matchesGuideAreaCoverage(eupmyeondong: String): Boolean {
+        val normalizedName = replace(WHITESPACE_REGEX, "")
+        val normalizedEupmyeondong = eupmyeondong.trim()
+
+        return when (normalizedName) {
+            DONG_AREA -> normalizedEupmyeondong.endsWith(DONG_SUFFIX)
+            EUP_MYEON_AREA ->
+                normalizedEupmyeondong.endsWith(EUP_SUFFIX) ||
+                    normalizedEupmyeondong.endsWith(MYEON_SUFFIX)
+
+            else -> false
+        }
+    }
+
+    private fun List<LegalAdminDongMappingDto>.exactLegalAdminDongNames(
+        targetKeyword: String,
+        scopeKey: RegionScopeKey
+    ): List<String> {
+        return filter { mapping ->
+            mapping.hasSameSigunguCode() &&
+                mapping.toRegionScopeKey() == scopeKey &&
+                mapping.legalDongName.trim() == targetKeyword
+        }
+            .mapNotNull { mapping -> mapping.adminDongName.trimToNull() }
+            .distinct()
+    }
+
+    private fun String.matchesAdministrativeEupmyeondongKeyword(
+        keyword: String
+    ): Boolean {
+        return RegionalGuideEupmyeondongNamePolicy.matchesKeyword(
+            eupmyeondongName = this,
+            keyword = keyword,
+        )
     }
 
     fun findLegalDongKeywordsByRegion(
@@ -322,6 +626,24 @@ internal object RegionOptionsMapper {
         }
     }
 
+    private fun AdministrativeRegionDto.toRegionScopeKey(): RegionScopeKey =
+        RegionScopeKey(
+            sido = sidoName.trim(),
+            sigungu = sigunguName.trim()
+        )
+
+    private fun LegalAdminDongMappingDto.toRegionScopeKey(): RegionScopeKey =
+        RegionScopeKey(
+            sido = sidoName.trim(),
+            sigungu = sigunguName.trim()
+        )
+
+    private fun Region.toRegionScopeKey(): RegionScopeKey =
+        RegionScopeKey(
+            sido = sido.orEmpty(),
+            sigungu = sigungu.orEmpty()
+        )
+
     private fun String.matchedLegalDongNameForKeyword(
         targetKeyword: String,
         allowSuffixlessDongMatch: Boolean = true
@@ -360,77 +682,30 @@ internal object RegionOptionsMapper {
     private val REGION_NAME_COMPARATOR = compareBy<Region>(
         { region -> region.sido.orEmpty() },
         { region -> region.sigungu.orEmpty() },
-        { region -> region.eupmyeondong.orEmpty() }
+        { region -> region.eupmyeondong.orEmpty() },
     )
 
-    private val REGION_OPTION_NAME_COMPARATOR = Comparator<String> { first, second ->
-        compareNaturalRegionName(first, second)
-    }
+    private val REGIONAL_GUIDE_REGION_NAME_COMPARATOR = RegionCandidateComparator
 
-    private fun compareNaturalRegionName(
-        first: String,
-        second: String
-    ): Int {
-        var firstIndex = 0
-        var secondIndex = 0
+    private val REGION_OPTION_NAME_COMPARATOR = RegionNameNaturalComparator
 
-        while (firstIndex < first.length && secondIndex < second.length) {
-            val firstChar = first[firstIndex]
-            val secondChar = second[secondIndex]
+    private val WHITESPACE_REGEX = Regex("\\s+")
 
-            if (firstChar.isDigit() && secondChar.isDigit()) {
-                val firstNumberEnd = first.findNumberEndIndex(firstIndex)
-                val secondNumberEnd = second.findNumberEndIndex(secondIndex)
-                val numberComparison = compareNaturalNumberText(
-                    first.substring(firstIndex, firstNumberEnd),
-                    second.substring(secondIndex, secondNumberEnd)
-                )
+    private const val DONG_AREA = "동지역"
+    private const val EUP_MYEON_AREA = "읍면지역"
+    private const val EUP_SUFFIX = "읍"
+    private const val MYEON_SUFFIX = "면"
+    private const val DONG_SUFFIX = "동"
 
-                if (numberComparison != 0) return numberComparison
-
-                firstIndex = firstNumberEnd
-                secondIndex = secondNumberEnd
-            } else {
-                val charComparison = firstChar.compareTo(secondChar)
-                if (charComparison != 0) return charComparison
-
-                firstIndex += 1
-                secondIndex += 1
-            }
-        }
-
-        return first.length.compareTo(second.length)
-    }
-
-    private fun String.findNumberEndIndex(
-        startIndex: Int
-    ): Int {
-        var endIndex = startIndex
-
-        while (endIndex < length && this[endIndex].isDigit()) {
-            endIndex += 1
-        }
-
-        return endIndex
-    }
-
-    private fun compareNaturalNumberText(
-        first: String,
-        second: String
-    ): Int {
-        val normalizedFirst = first.trimStart('0').ifEmpty { "0" }
-        val normalizedSecond = second.trimStart('0').ifEmpty { "0" }
-
-        return normalizedFirst.length.compareTo(normalizedSecond.length)
-            .takeIf { comparison -> comparison != 0 }
-            ?: normalizedFirst.compareTo(normalizedSecond)
-                .takeIf { comparison -> comparison != 0 }
-            ?: first.length.compareTo(second.length)
-    }
+    private data class RegionScopeKey(
+        val sido: String,
+        val sigungu: String
+    )
 
     private const val SEJONG_SIDO = "세종특별자치시"
     private const val NO_SIGUNGU_NAME = "없음"
     private const val CITY_SUFFIX = "시"
+    private const val SINGLE_NUMBERED_ALIAS_MATCH_SIZE = 1
     private const val SIGUNGU_CODE_PREFIX_LENGTH = 5
     private val EUPMYEONDONG_SUFFIXES = setOf('읍', '면', '동')
     private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+가""".toRegex()

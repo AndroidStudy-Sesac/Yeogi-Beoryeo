@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.domain.regionalguide.usecase
+package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
@@ -360,6 +360,38 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
             guide.targetRegionName
         )
     }
+
+    @Test
+    fun `법정동 이름으로 시작하는 상세 대상지역 후보만 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "의왕시",
+                    managementZoneName = "의왕시",
+                    targetRegionName = "부곡중앙북6길",
+                ),
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "의왕시",
+                    managementZoneName = "의왕시",
+                    targetRegionName = "가구단지길",
+                ),
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경기도",
+                    sigungu = "의왕시",
+                    eupmyeondong = "부곡동",
+                ),
+                sigunguQuery = "의왕시",
+            ),
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("부곡중앙북6길", guide.targetRegionName)
+    }
 }
 
 class SelectRegionalGuideCandidateIdentityUseCaseTest {
@@ -398,6 +430,188 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
         assertEquals(2, candidates.size)
         assertEquals("노은2동", candidates[0].managementZoneName)
         assertEquals("노은3동", candidates[1].managementZoneName)
+    }
+
+    @Test
+    fun `법정동 매핑 관리구역 후보가 있으면 단일 대상지역명 정확 매칭보다 후보 목록을 우선한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "죽동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "반석동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "지족동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    eupmyeondong = "반석동"
+                ),
+                sigunguQuery = "유성구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "노은2동"),
+                Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "노은3동")
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf("노은2동", "노은3동"),
+            candidates.map { guide -> guide.managementZoneName }
+        )
+        assertEquals(
+            listOf("반석동 일부지역", "반석동"),
+            candidates.map { guide -> guide.targetRegionName }
+        )
+    }
+
+    @Test
+    fun `출장소 행정동 후보는 부모 읍면동 가이드로 연결한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달성군",
+                    managementZoneName = "다사읍",
+                    targetRegionName = "다사읍"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달성군",
+                    eupmyeondong = "다사읍서재출장소"
+                ),
+                sigunguQuery = "달성군"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("다사읍", guide.managementZoneName)
+    }
+
+    @Test
+    fun `번호가 생략된 동 검색어는 번호가 붙은 관리구역명 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은1동",
+                    targetRegionName = "노은1동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "온천2동",
+                    targetRegionName = "봉명동 일부지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    eupmyeondong = "노은동"
+                ),
+                sigunguQuery = "유성구"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(3, candidates.size)
+        assertEquals(
+            listOf("노은1동", "노은2동", "노은3동"),
+            candidates.map { guide -> guide.managementZoneName }
+        )
+    }
+
+    @Test
+    fun `번호가 생략된 동 검색어는 대상지역명보다 번호 관리구역명 후보를 우선한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은1동",
+                    targetRegionName = "노은1동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "상대동",
+                    targetRegionName = "노은동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "신성동",
+                    targetRegionName = "노은동 일부지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    eupmyeondong = "노은동"
+                ),
+                sigunguQuery = "유성구"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf("노은1동", "노은2동", "노은3동"),
+            candidates.map { guide -> guide.managementZoneName }
+        )
     }
 
     @Test

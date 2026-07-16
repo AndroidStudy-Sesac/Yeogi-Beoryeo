@@ -88,7 +88,7 @@ class ResolveMapRegionSearchCandidateUseCaseTest {
         }
 
     @Test
-    fun `후보가 1개이면 선택 UI 없이 바로 검색 결과를 반환한다`() =
+    fun `후보가 1개이면 선택 화면 없이 바로 검색 결과를 반환한다`() =
         runSuspendTest {
             val result = useCase("문래동")
 
@@ -207,6 +207,26 @@ class ResolveMapRegionSearchCandidateUseCaseTest {
             assertEquals("금호동", result.searchKeyword)
             assertEquals("전라남도 광양시 금호동", result.selectedCandidate?.displayName)
         }
+
+    @Test
+    fun `법정동 후보가 유지되면 지도 검색은 해당 지역으로 보정한다`() = runSuspendTest {
+        val useCase = ResolveMapRegionSearchCandidateUseCase(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "노은동" to listOf(
+                        Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "노은동")
+                    )
+                )
+            ),
+            normalizeKeywordUseCase = NormalizeCollectionSpotSearchKeywordUseCase(),
+        )
+
+        val result = useCase("노은동")
+
+        assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+        result as MapRegionSearchCandidateResult.ReadyToSearch
+        assertEquals("대전광역시 유성구 노은동", result.selectedCandidate?.displayName)
+    }
 
     private fun runSuspendTest(block: suspend () -> Unit) {
         kotlinx.coroutines.runBlocking {

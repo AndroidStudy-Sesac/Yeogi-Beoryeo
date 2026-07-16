@@ -10,14 +10,35 @@ interface RegionOptionsRepository {
         sido: String
     ): List<String>
 
+    suspend fun getRegionalGuideSigunguOptions(
+        sido: String
+    ): List<String> = getSigunguOptions(sido)
+
     suspend fun getEupmyeondongOptions(
         sido: String,
         sigungu: String
     ): List<String>
 
+    suspend fun getRegionalGuideEupmyeondongOptions(
+        sido: String,
+        sigungu: String
+    ): List<String> = getEupmyeondongOptions(sido, sigungu)
+
     suspend fun findRegionsByEupmyeondongKeyword(
         keyword: String
     ): List<Region>
+
+    suspend fun findRegionalGuideRegionsByEupmyeondongKeyword(
+        keyword: String
+    ): List<Region> = findRegionsByEupmyeondongKeyword(keyword)
+
+    suspend fun findAvailableRegionalGuideRegionsByEupmyeondongKeyword(
+        keyword: String
+    ): List<Region> = findRegionalGuideRegionsByEupmyeondongKeyword(keyword)
+
+    suspend fun filterAvailableRegionalGuideRegions(
+        regions: List<Region>
+    ): List<Region> = regions
 
     suspend fun findLegalDongKeywordsByRegion(
         region: Region,
