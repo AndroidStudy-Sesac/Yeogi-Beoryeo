@@ -7,6 +7,27 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-16
+
+### Added
+
+- 저장한 지역 가이드 중 홈에 표시할 대표 지역을 직접 고정하는 기능
+- 설정의 출처 및 이용조건에서 NAVER 지도 법적 고지와 오픈소스 라이선스를 확인하는 경로
+
+### Changed
+
+- 홈 지역 가이드 대표 지역과 이전 요약을 앱 재실행, 재수집, 로딩, 조회 실패 상황에서도 안정적으로 유지
+- 저장한 지역 가이드의 긴 지역명을 최대 2줄로 표시하고 대표 지역 고정 버튼의 터치 영역과 TalkBack 설명 개선
+- CI의 기본 검증과 전체 검증에 app 모듈 단위 테스트 추가
+
+### Fixed
+
+- 지역 선택 중 검색 후보 목록과 지역 선택 목록이 동시에 노출되는 문제 수정
+- 지역 가이드 후보 상세에서 돌아오면 후보 목록의 스크롤 위치가 초기화되는 문제 수정
+- 동일한 지역 가이드 후보가 여러 개 내려오면 날짜 정보가 유효한 최신 항목을 우선 적용해 중복 노출을 줄임
+- NAVER 지도 로고 클릭으로 비정상 종료될 수 있는 경로를 차단하고 바텀시트에 로고가 가려지는 문제 수정
+- release 테스트와 lint까지 키스토어를 요구하던 서명 검증을 실제 배포 산출물 작업에만 적용하도록 수정
+
 ## [0.1.0] - 2026-07-14
 
 ### Added
@@ -27,5 +48,6 @@
 
 - 저장소 밖의 업로드 키로 서명된 Google Play 배포용 AAB 생성 절차
 
-[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/releases/tag/v0.1.0
