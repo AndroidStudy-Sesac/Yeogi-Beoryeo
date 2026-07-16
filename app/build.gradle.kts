@@ -1,5 +1,23 @@
 import java.util.Properties
 
+val releaseArtifactTaskNames = setOf(
+    "assembleRelease",
+    "bundleRelease",
+    "packageRelease",
+    "packageReleaseBundle",
+    "packageReleaseUniversalApk",
+)
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.isFile) {
+        keystorePropertiesFile.inputStream().use(::load)
+    }
+}
+
+fun requiredSigningProperty(name: String): String =
+    keystoreProperties.getProperty(name)?.trim()?.takeIf(String::isNotEmpty)
+        ?: throw GradleException("keystore.properties에 $name 값을 추가해야 합니다.")
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -22,7 +40,7 @@ android {
     val localProperties = Properties().apply {
         val file = rootProject.file("local.properties")
         if (file.exists()) {
-            load(file.inputStream())
+            file.inputStream().use(::load)
         }
     }
 
@@ -36,8 +54,8 @@ android {
         applicationId = "com.team.yeogibeoryeo"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -56,9 +74,27 @@ android {
         )
     }
 
+    val releaseSigningConfig = if (keystorePropertiesFile.isFile) {
+        signingConfigs.create("release") {
+            val configuredStoreFile = rootProject.file(requiredSigningProperty("storeFile"))
+            if (!configuredStoreFile.isFile) {
+                throw GradleException("출시용 키 저장소 파일을 찾을 수 없습니다: $configuredStoreFile")
+            }
+
+            storeFile = configuredStoreFile
+            storePassword = requiredSigningProperty("storePassword")
+            keyAlias = requiredSigningProperty("keyAlias")
+            keyPassword = requiredSigningProperty("keyPassword")
+        }
+    } else {
+        null
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = releaseSigningConfig
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -74,6 +110,18 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+if (!keystorePropertiesFile.isFile) {
+    val verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
+        doLast {
+            throw GradleException("release 빌드에는 프로젝트 루트의 keystore.properties가 필요합니다.")
+        }
+    }
+
+    tasks.matching { it.name in releaseArtifactTaskNames }.configureEach {
+        dependsOn(verifyReleaseSigning)
     }
 }
 
