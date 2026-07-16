@@ -15,6 +15,7 @@ import com.team.yeogibeoryeo.presentation.common.DISPOSAL_PORTAL_URL
 import com.team.yeogibeoryeo.presentation.common.REGIONAL_WASTE_API_URL
 import com.team.yeogibeoryeo.presentation.settings.detail.SourcesDetail
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -58,14 +59,45 @@ class SettingsSourcesTest {
         }
     }
 
+    @Test
+    fun 네이버_지도_고지_버튼은_전용_콜백을_호출한다() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        var legalNoticeClicked = false
+        var openSourceLicenseClicked = false
+
+        setSourcesContent(
+            onOpenNaverMapLegalNoticeClick = { legalNoticeClicked = true },
+            onOpenNaverMapOpenSourceLicenseClick = { openSourceLicenseClicked = true },
+        )
+
+        composeTestRule
+            .onNodeWithText(context.getString(R.string.settings_naver_map_legal_notice_action))
+            .performScrollTo()
+            .performClick()
+        composeTestRule
+            .onNodeWithText(context.getString(R.string.settings_naver_map_open_source_license_action))
+            .performScrollTo()
+            .performClick()
+
+        assertTrue(legalNoticeClicked)
+        assertTrue(openSourceLicenseClicked)
+    }
+
     private fun setSourcesContent(
+        onOpenNaverMapLegalNoticeClick: () -> Unit = {},
+        onOpenNaverMapOpenSourceLicenseClick: () -> Unit = {},
         onOpenSourceClick: (String) -> Unit = {},
     ) {
         composeTestRule.setContent {
             MaterialTheme {
                 LazyColumn {
                     item {
-                        SourcesDetail(onOpenSourceClick = onOpenSourceClick)
+                        SourcesDetail(
+                            onOpenNaverMapLegalNoticeClick = onOpenNaverMapLegalNoticeClick,
+                            onOpenNaverMapOpenSourceLicenseClick =
+                                onOpenNaverMapOpenSourceLicenseClick,
+                            onOpenSourceClick = onOpenSourceClick,
+                        )
                     }
                 }
             }

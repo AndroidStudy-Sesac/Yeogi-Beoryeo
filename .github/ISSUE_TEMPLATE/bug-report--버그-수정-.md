@@ -9,8 +9,8 @@ assignees: ''
 
 ## 🚨 버그 내용 (Description)
 ## 👣 재현 방법 (Steps to Reproduce)
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## 📸 스크린샷 및 로그 (Screenshot / Logcat)

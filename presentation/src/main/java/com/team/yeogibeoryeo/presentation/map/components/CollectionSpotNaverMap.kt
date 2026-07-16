@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,8 +9,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Modifier
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
@@ -17,6 +20,7 @@ import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapProperties
+import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.MarkerState
 import com.naver.maps.map.compose.NaverMap
@@ -38,6 +42,7 @@ fun CollectionSpotNaverMap(
     onCameraCenterChanged: (Coordinate) -> Unit,
     onUserCameraMove: () -> Unit,
     modifier: Modifier = Modifier,
+    naverLogoBottomPadding: Dp = NaverLogoDefaultBottomPadding,
 ) {
     val defaultMarkerColor = MaterialTheme.colorScheme.primary
     val selectedMarkerColor = MaterialTheme.colorScheme.tertiary
@@ -52,6 +57,15 @@ fun CollectionSpotNaverMap(
         } else {
             LocationTrackingMode.None
         },
+    )
+    val mapUiSettings = MapUiSettings(
+        isLogoClickEnabled = false,
+        logoMargin = PaddingValues(
+            start = NaverLogoHorizontalPadding,
+            top = NaverLogoTopPadding,
+            end = NaverLogoHorizontalPadding,
+            bottom = naverLogoBottomPadding,
+        ),
     )
 
     val cameraPositionState = rememberCameraPositionState {
@@ -132,6 +146,7 @@ fun CollectionSpotNaverMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
         properties = mapProperties,
+        uiSettings = mapUiSettings,
         locationSource = locationSource.takeIf {
             isLocationPermissionGranted
         },
@@ -183,6 +198,9 @@ private const val PROGRAMMATIC_CAMERA_MOVE_GUARD_FRAMES = 3
 
 private const val DEFAULT_MARKER_Z_INDEX = 0
 private const val SELECTED_MARKER_Z_INDEX = 10
+private val NaverLogoHorizontalPadding = 12.dp
+private val NaverLogoTopPadding = 16.dp
+private val NaverLogoDefaultBottomPadding = 16.dp
 
 private data class CameraSnapshot(
     val latitude: Double,

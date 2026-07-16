@@ -36,6 +36,8 @@ internal fun SettingsDetailScreen(
     onBackClick: () -> Unit,
     onOpenAppSettingsClick: () -> Unit,
     onOpenPrivacyPolicyClick: () -> Unit,
+    onOpenNaverMapLegalNoticeClick: () -> Unit,
+    onOpenNaverMapOpenSourceLicenseClick: () -> Unit,
     onOpenSourceClick: (String) -> Unit,
     onClearLocationCacheClick: () -> Unit,
     cacheUiState: SettingsCacheUiState,
@@ -97,7 +99,11 @@ internal fun SettingsDetailScreen(
                     PrivacyPolicyDetail(onOpenPrivacyPolicyClick = onOpenPrivacyPolicyClick)
                 }
                 SettingsDetailType.Sources -> item {
-                    SourcesDetail(onOpenSourceClick = onOpenSourceClick)
+                    SourcesDetail(
+                        onOpenNaverMapLegalNoticeClick = onOpenNaverMapLegalNoticeClick,
+                        onOpenNaverMapOpenSourceLicenseClick = onOpenNaverMapOpenSourceLicenseClick,
+                        onOpenSourceClick = onOpenSourceClick,
+                    )
                 }
                 SettingsDetailType.Cache -> item {
                     CacheDetail(

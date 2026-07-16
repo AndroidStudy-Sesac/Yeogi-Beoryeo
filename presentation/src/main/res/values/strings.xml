@@ -171,6 +171,8 @@
     <string name="back_action">뒤로가기</string>
     <string name="favorite_add_action">즐겨찾기 추가</string>
     <string name="favorite_remove_action">즐겨찾기 해제</string>
+    <string name="favorite_home_regional_guide_pin_action">%1$s 홈 지역 가이드로 고정</string>
+    <string name="favorite_home_regional_guide_unpin_action">%1$s 홈 지역 가이드 고정 해제</string>
     <string name="item_card_open_action_label">상세 보기</string>
     <string name="item_card_favorite_saved_state">즐겨찾기됨</string>
     <string name="item_card_favorite_not_saved_state">즐겨찾기 안 됨</string>
@@ -231,6 +233,10 @@
     <string name="settings_source_administrative_code_link">행정기관 및 관할구역 코드 자료 열기</string>
     <string name="settings_sources_usage_title">이용 안내</string>
     <string name="settings_sources_usage_description">원본 데이터의 출처와 기준일을 함께 표시합니다.\n가공 데이터는 앱 사용 목적에 맞게 편집한 정보입니다.\n분리배출 기준과 행정구역 정보는 정책 변경에 따라 달라질 수 있습니다.\n자세한 출처와 이용조건은 공개 GitHub 저장소의 DATA_SOURCES.md에서 확인할 수 있습니다.</string>
+    <string name="settings_naver_map_title">NAVER 지도</string>
+    <string name="settings_naver_map_usage_description">수거 장소 지도에는 NAVER 지도 Android SDK를 사용합니다. SDK의 법적 고지와 오픈소스 라이선스는 아래 메뉴에서 확인할 수 있습니다.</string>
+    <string name="settings_naver_map_legal_notice_action">NAVER 지도 법적 고지</string>
+    <string name="settings_naver_map_open_source_license_action">NAVER 지도 오픈소스 라이선스</string>
     <string name="settings_open_source_title">오픈소스 라이선스</string>
     <string name="settings_tabler_icons_title">Tabler Icons</string>
     <string name="settings_tabler_usage_title">MIT License</string>

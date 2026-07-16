@@ -9,11 +9,16 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryBuildResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.HomeRegionalGuideSummaryResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
+import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.runningFold
 import javax.inject.Inject
 
 class ObserveHomeRegionalGuideSummaryUseCase
@@ -23,23 +28,81 @@ class ObserveHomeRegionalGuideSummaryUseCase
         private val observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
         private val getRegionalDisposalGuideUseCase: GetRegionalDisposalGuideUseCase,
         private val buildHomeRegionalGuideSummaryUseCase: BuildHomeRegionalGuideSummaryUseCase,
+        private val selectHomeRegionalGuidePrimaryFavoriteUseCase:
+            SelectHomeRegionalGuidePrimaryFavoriteUseCase,
+        private val observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase:
+            ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase,
+        private val observeHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase:
+            ObserveHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase,
+        private val homeRegionalGuidePrimaryFavoriteRepository:
+            HomeRegionalGuidePrimaryFavoriteRepository,
     ) {
         @OptIn(ExperimentalCoroutinesApi::class)
         operator fun invoke(): Flow<HomeRegionalGuideSummaryResult> =
             combine(
                 observeFavoritesUseCase(FavoriteTargetType.REGIONAL_GUIDE),
                 observeRegionalGuideFavoriteSnapshotsUseCase(),
-            ) { favorites, snapshots ->
-                favorites.latestRegionalGuideFavorite() to snapshots.associateBy { it.targetId }
+                observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(),
+                observeHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase(),
+            ) { favorites, snapshots, pinnedTargetId, lastSelectedTargetId ->
+                HomeRegionalGuidePrimaryFavoriteInput(
+                    favorites = favorites,
+                    snapshots = snapshots,
+                    pinnedTargetId = pinnedTargetId,
+                    lastSelectedTargetId = lastSelectedTargetId,
+                )
             }
-                .flatMapLatest { (favorite, snapshotsByTargetId) ->
+                .runningFold(HomeRegionalGuidePrimaryFavoriteSelection()) { previous, input ->
+                    val invalidSavedTargetIds = input.invalidSavedTargetIds()
+                    if (invalidSavedTargetIds.isNotEmpty()) {
+                        persistRepresentativeCache {
+                            homeRegionalGuidePrimaryFavoriteRepository
+                                .clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+                                    invalidSavedTargetIds,
+                                )
+                        }
+                    }
+
+                    val primaryFavorite =
+                        selectHomeRegionalGuidePrimaryFavoriteUseCase(
+                            favorites = input.favorites,
+                            snapshots = input.snapshots,
+                            pinnedTargetId = input.pinnedTargetId,
+                            previousTargetId = input.lastSelectedTargetId ?: previous.targetId,
+                        )
+                    val snapshot =
+                        input.snapshots.firstOrNull { snapshot ->
+                            snapshot.targetId == primaryFavorite?.targetId
+                        }
+                    val selectedTargetId = primaryFavorite?.targetId
+                    when {
+                        selectedTargetId == null && input.lastSelectedTargetId != null ->
+                            persistRepresentativeCache {
+                                homeRegionalGuidePrimaryFavoriteRepository
+                                    .clearLastSelectedFavoriteTargetIdIfMatches(input.lastSelectedTargetId)
+                            }
+
+                        selectedTargetId != null && selectedTargetId != input.lastSelectedTargetId ->
+                            persistRepresentativeCache {
+                                homeRegionalGuidePrimaryFavoriteRepository
+                                    .setLastSelectedFavoriteTargetId(selectedTargetId)
+                            }
+                    }
+
+                    HomeRegionalGuidePrimaryFavoriteSelection(
+                        favorite = primaryFavorite,
+                        snapshot = snapshot,
+                    )
+                }
+                .drop(1)
+                .distinctUntilChanged()
+                .flatMapLatest { (favorite, snapshot) ->
                     flow {
                         if (favorite == null) {
                             emit(HomeRegionalGuideSummaryResult.NoFavorite)
                             return@flow
                         }
 
-                        val snapshot = snapshotsByTargetId[favorite.targetId]
                         if (snapshot == null) {
                             emit(HomeRegionalGuideSummaryResult.FavoriteRestoreFailed(favorite.targetId))
                             return@flow
@@ -54,6 +117,17 @@ class ObserveHomeRegionalGuideSummaryUseCase
                         emit(loadSummary(snapshot))
                     }
                 }
+
+        private suspend fun persistRepresentativeCache(persist: suspend () -> Unit) {
+            try {
+                persist()
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Throwable) {
+                // Representative persistence is a cache for selection stability.
+                // Summary state should still be emitted even when this write fails.
+            }
+        }
 
         private suspend fun loadSummary(
             snapshot: RegionalGuideFavoriteSnapshot,
@@ -108,9 +182,6 @@ class ObserveHomeRegionalGuideSummaryUseCase
             }
         }
 
-        private fun List<Favorite>.latestRegionalGuideFavorite(): Favorite? =
-            maxByOrNull { favorite -> favorite.savedAtMillis }
-
         private fun Region.displayName(): String =
             listOfNotNull(
                 sido?.trimToNull(),
@@ -119,4 +190,32 @@ class ObserveHomeRegionalGuideSummaryUseCase
             ).joinToString(" > ")
 
         private fun String?.trimToNull(): String? = this?.trim()?.takeIf { it.isNotBlank() }
+
+        private data class HomeRegionalGuidePrimaryFavoriteInput(
+            val favorites: List<Favorite>,
+            val snapshots: List<RegionalGuideFavoriteSnapshot>,
+            val pinnedTargetId: String?,
+            val lastSelectedTargetId: String?,
+        ) {
+            fun invalidSavedTargetIds(): List<String> {
+                val favoriteTargetIds =
+                    favorites
+                        .filter { favorite -> favorite.type == FavoriteTargetType.REGIONAL_GUIDE }
+                        .map { favorite -> favorite.targetId }
+                        .toSet()
+
+                return listOfNotNull(
+                    pinnedTargetId?.takeIf { targetId -> targetId !in favoriteTargetIds },
+                    lastSelectedTargetId?.takeIf { targetId -> targetId !in favoriteTargetIds },
+                ).distinct()
+            }
+        }
+
+        private data class HomeRegionalGuidePrimaryFavoriteSelection(
+            val favorite: Favorite? = null,
+            val snapshot: RegionalGuideFavoriteSnapshot? = null,
+        ) {
+            val targetId: String?
+                get() = favorite?.targetId
+        }
     }

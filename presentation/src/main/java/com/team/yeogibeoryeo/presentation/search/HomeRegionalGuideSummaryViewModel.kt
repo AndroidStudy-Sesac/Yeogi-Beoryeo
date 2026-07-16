@@ -32,7 +32,7 @@ class HomeRegionalGuideSummaryViewModel
                 .map { result -> result.toUiState() }
                 .runningFold(
                     initial = HomeRegionalGuideSummaryUiState.Loading(),
-                    operation = ::keepPreviousSummaryWhileRefreshing,
+                    operation = ::keepPreviousSummaryForTransientState,
                 )
                 .stateIn(
                     scope = viewModelScope,
@@ -44,20 +44,28 @@ class HomeRegionalGuideSummaryViewModel
             retryRequests.tryEmit(Unit)
         }
 
-        private fun keepPreviousSummaryWhileRefreshing(
+        private fun keepPreviousSummaryForTransientState(
             previous: HomeRegionalGuideSummaryUiState,
             next: HomeRegionalGuideSummaryUiState,
         ): HomeRegionalGuideSummaryUiState {
             return if (
                 previous is HomeRegionalGuideSummaryUiState.Summary &&
-                    next is HomeRegionalGuideSummaryUiState.Loading &&
-                    previous.targetId == next.targetId
+                    next.keepsPreviousSummary(previous.targetId)
             ) {
                 previous
             } else {
                 next
             }
         }
+
+        private fun HomeRegionalGuideSummaryUiState.keepsPreviousSummary(
+            targetId: String,
+        ): Boolean =
+            when (this) {
+                is HomeRegionalGuideSummaryUiState.Loading -> this.targetId == targetId
+                is HomeRegionalGuideSummaryUiState.LoadFailed -> this.targetId == targetId
+                else -> false
+            }
 
         private companion object {
             const val STOP_TIMEOUT_MILLIS = 5_000L

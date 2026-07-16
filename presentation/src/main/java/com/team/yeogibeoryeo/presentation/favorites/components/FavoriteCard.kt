@@ -25,9 +25,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.team.yeogibeoryeo.common.R as CommonR
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
-import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun FavoriteCard(
@@ -36,6 +37,7 @@ fun FavoriteCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onRemoveClick: (() -> Unit)? = null,
+    onHomePrimaryClick: (() -> Unit)? = null,
 ) {
     Card(
         modifier = modifier
@@ -58,6 +60,13 @@ fun FavoriteCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val titleMaxLines =
+                if (favorite.type == FavoriteTargetType.REGIONAL_GUIDE) {
+                    FavoriteCardDefaults.REGIONAL_GUIDE_TITLE_MAX_LINES
+                } else {
+                    FavoriteCardDefaults.TITLE_MAX_LINES
+                }
+
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -69,12 +78,20 @@ fun FavoriteCard(
                         fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                     ),
-                    maxLines = 1,
+                    maxLines = titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
                 favorite.subtitle?.let { subtitle ->
                     FavoriteMetadataChip(text = subtitle)
                 }
+            }
+
+            if (onHomePrimaryClick != null) {
+                HomeRegionalGuidePrimaryButton(
+                    isHomePrimary = favorite.isHomeRegionalGuidePrimary,
+                    title = favorite.title,
+                    onClick = onHomePrimaryClick,
+                )
             }
 
             if (onRemoveClick != null) {
@@ -99,6 +116,42 @@ fun FavoriteCard(
 }
 
 @Composable
+private fun HomeRegionalGuidePrimaryButton(
+    isHomePrimary: Boolean,
+    title: String,
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick) {
+        Icon(
+            painter =
+                painterResource(
+                    id = if (isHomePrimary) {
+                        CommonR.drawable.ic_home_pin_filled
+                    } else {
+                        CommonR.drawable.ic_home_pin
+                    },
+                ),
+            contentDescription =
+                stringResource(
+                    id = if (isHomePrimary) {
+                        R.string.favorite_home_regional_guide_unpin_action
+                    } else {
+                        R.string.favorite_home_regional_guide_pin_action
+                    },
+                    title,
+                ),
+            modifier = Modifier.size(20.dp),
+            tint =
+                if (isHomePrimary) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outline
+                },
+        )
+    }
+}
+
+@Composable
 private fun FavoriteMetadataChip(text: String) {
     Text(
         text = text,
@@ -114,4 +167,9 @@ private fun FavoriteMetadataChip(text: String) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
+}
+
+private object FavoriteCardDefaults {
+    const val TITLE_MAX_LINES = 1
+    const val REGIONAL_GUIDE_TITLE_MAX_LINES = 2
 }

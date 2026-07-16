@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - develop
+      - main
     paths:
       - '.github/workflows/android-ci.yml'
       - 'app/**'
@@ -157,7 +158,7 @@ jobs:
             esac
           done <<< "$CHANGED_FILES"
 
-          tasks=(":app:assembleDebug")
+          tasks=(":app:testDebugUnitTest" ":app:assembleDebug")
 
           if [[ "$full_test" == "true" ]]; then
             tasks=(
@@ -165,6 +166,7 @@ jobs:
               ":data:testDebugUnitTest"
               ":presentation:testDebugUnitTest"
               ":domain:test"
+              ":app:testDebugUnitTest"
               ":app:assembleDebug"
             )
           else

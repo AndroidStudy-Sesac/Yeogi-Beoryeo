@@ -12,4 +12,5 @@ data class RegionalDisposalGuide(
     val uncollectedDays: String? = null,
     val departmentName: String? = null,
     val departmentPhoneNumber: String? = null,
+    val sourceMetadata: RegionalGuideSourceMetadata? = null,
 )

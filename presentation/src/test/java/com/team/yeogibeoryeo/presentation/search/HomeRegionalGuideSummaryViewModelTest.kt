@@ -11,14 +11,20 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
+import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.BuildHomeRegionalGuideSummaryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGuideSummaryUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectHomeRegionalGuidePrimaryFavoriteUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
 import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -170,6 +176,167 @@ class HomeRegionalGuideSummaryViewModelTest {
         }
 
     @Test
+    fun `대표가 아닌 즐겨찾기가 변경되어도 기존 대표 지역 요약을 다시 조회하지 않는다`() =
+        runTest {
+            val firstSnapshot =
+                sampleSnapshot(
+                    targetId = "first",
+                    region = Region(sido = "Sido", sigungu = "First", eupmyeondong = "Dong"),
+                )
+            val secondSnapshot =
+                sampleSnapshot(
+                    targetId = "second",
+                    region = Region(sido = "Sido", sigungu = "Second", eupmyeondong = "Dong"),
+                )
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = firstSnapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val snapshotRepository =
+                FakeRegionalGuideFavoriteSnapshotRepository(
+                    initialSnapshots = listOf(firstSnapshot),
+                )
+            val regionalRepository =
+                FakeRegionalDisposalGuideRepository(
+                    guides =
+                        listOf(
+                            sampleGuide(region = firstSnapshot.region),
+                            sampleGuide(region = secondSnapshot.region),
+                        ),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository = snapshotRepository,
+                    regionalRepository = regionalRepository,
+                )
+            collectState(viewModel)
+            advanceUntilIdle()
+
+            snapshotRepository.upsertSnapshot(secondSnapshot)
+            advanceUntilIdle()
+            snapshotRepository.deleteSnapshot(secondSnapshot.targetId)
+            advanceUntilIdle()
+
+            val summary = viewModel.uiState.value as HomeRegionalGuideSummaryUiState.Summary
+            assertEquals("first", summary.targetId)
+            assertEquals("Sido > First > Dong", summary.regionName)
+            assertEquals(1, regionalRepository.requestCount)
+        }
+
+    @Test
+    fun `대표 지역 즐겨찾기가 삭제되면 남은 즐겨찾기 요약으로 갱신한다`() =
+        runTest {
+            val firstSnapshot =
+                sampleSnapshot(
+                    targetId = "first",
+                    region = Region(sido = "Sido", sigungu = "First", eupmyeondong = "Dong"),
+                )
+            val secondSnapshot =
+                sampleSnapshot(
+                    targetId = "second",
+                    region = Region(sido = "Sido", sigungu = "Second", eupmyeondong = "Dong"),
+                )
+            val favoriteRepository =
+                FakeFavoriteRepository(
+                    initialFavorites =
+                        listOf(
+                            Favorite(
+                                type = FavoriteTargetType.REGIONAL_GUIDE,
+                                targetId = firstSnapshot.targetId,
+                                savedAtMillis = 1L,
+                            ),
+                        ),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    snapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            initialSnapshots = listOf(firstSnapshot, secondSnapshot),
+                        ),
+                    regionalRepository =
+                        FakeRegionalDisposalGuideRepository(
+                            guides =
+                                listOf(
+                                    sampleGuide(region = firstSnapshot.region),
+                                    sampleGuide(region = secondSnapshot.region),
+                                ),
+                        ),
+                )
+            collectState(viewModel)
+            advanceUntilIdle()
+
+            favoriteRepository.addFavorite(
+                Favorite(
+                    type = FavoriteTargetType.REGIONAL_GUIDE,
+                    targetId = secondSnapshot.targetId,
+                    savedAtMillis = 2L,
+                ),
+            )
+            advanceUntilIdle()
+
+            favoriteRepository.removeFavorite(
+                type = FavoriteTargetType.REGIONAL_GUIDE,
+                targetId = firstSnapshot.targetId,
+            )
+            advanceUntilIdle()
+
+            val summary = viewModel.uiState.value as HomeRegionalGuideSummaryUiState.Summary
+            assertEquals("second", summary.targetId)
+            assertEquals("Sido > Second > Dong", summary.regionName)
+        }
+
+    @Test
+    fun `조회 실패 시 이전 요약이 있으면 유지한다`() =
+        runTest {
+            val snapshot = sampleSnapshot(targetId = "regional-target")
+            val regionalRepository =
+                FakeRegionalDisposalGuideRepository(
+                    guides = listOf(sampleGuide(region = snapshot.region)),
+                )
+            val viewModel =
+                createViewModel(
+                    favoriteRepository =
+                        FakeFavoriteRepository(
+                            initialFavorites =
+                                listOf(
+                                    Favorite(
+                                        type = FavoriteTargetType.REGIONAL_GUIDE,
+                                        targetId = snapshot.targetId,
+                                        savedAtMillis = 1L,
+                                    ),
+                                ),
+                        ),
+                    snapshotRepository =
+                        FakeRegionalGuideFavoriteSnapshotRepository(
+                            initialSnapshots = listOf(snapshot),
+                        ),
+                    regionalRepository = regionalRepository,
+                )
+            collectState(viewModel)
+            advanceUntilIdle()
+            val previousSummary = viewModel.uiState.value
+
+            regionalRepository.result =
+                Result.failure(
+                    RegionalGuideLookupException(reason = RegionalGuideFailureReason.NETWORK),
+                )
+            viewModel.retry()
+            advanceUntilIdle()
+
+            assertEquals(previousSummary, viewModel.uiState.value)
+            assertEquals(2, regionalRepository.requestCount)
+        }
+
+    @Test
     fun `일반쓰레기 요일이 미지정이면 대체 요일이 적용된 요약을 보여준다`() =
         runTest {
             val snapshot = sampleSnapshot(targetId = "regional-target")
@@ -237,6 +404,8 @@ class HomeRegionalGuideSummaryViewModelTest {
             FakeRegionalGuideFavoriteSnapshotRepository(),
         regionalRepository: FakeRegionalDisposalGuideRepository =
             FakeRegionalDisposalGuideRepository(),
+        primaryFavoriteRepository: FakeHomeRegionalGuidePrimaryFavoriteRepository =
+            FakeHomeRegionalGuidePrimaryFavoriteRepository(),
     ): HomeRegionalGuideSummaryViewModel =
         HomeRegionalGuideSummaryViewModel(
             observeHomeRegionalGuideSummaryUseCase =
@@ -253,6 +422,13 @@ class HomeRegionalGuideSummaryViewModelTest {
                                 FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                         ),
                     buildHomeRegionalGuideSummaryUseCase = BuildHomeRegionalGuideSummaryUseCase(),
+                    selectHomeRegionalGuidePrimaryFavoriteUseCase =
+                        SelectHomeRegionalGuidePrimaryFavoriteUseCase(),
+                    observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase =
+                        ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(primaryFavoriteRepository),
+                    observeHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase =
+                        ObserveHomeRegionalGuideLastSelectedFavoriteTargetIdUseCase(primaryFavoriteRepository),
+                    homeRegionalGuidePrimaryFavoriteRepository = primaryFavoriteRepository,
                 ),
         )
 
@@ -360,6 +536,7 @@ class HomeRegionalGuideSummaryViewModelTest {
 
     private class FakeRegionalDisposalGuideRepository(
         private val guides: List<RegionalDisposalGuide> = emptyList(),
+        var result: Result<List<RegionalDisposalGuide>>? = null,
     ) : RegionalDisposalGuideRepository {
         var requestCount = 0
             private set
@@ -368,7 +545,60 @@ class HomeRegionalGuideSummaryViewModelTest {
             query: RegionalGuideQuery,
         ): Result<List<RegionalDisposalGuide>> {
             requestCount += 1
-            return Result.success(guides.filter { guide -> guide.region.sigungu == query.sigunguQuery })
+            return result ?: Result.success(
+                guides.filter { guide -> guide.region.sigungu == query.sigunguQuery },
+            )
+        }
+    }
+
+    private class FakeHomeRegionalGuidePrimaryFavoriteRepository(
+        initialTargetId: String? = null,
+    ) : HomeRegionalGuidePrimaryFavoriteRepository {
+        private val primaryTargetId = MutableStateFlow(initialTargetId)
+        private val lastSelectedTargetId = MutableStateFlow<String?>(null)
+
+        override fun observePrimaryFavoriteTargetId(): Flow<String?> = primaryTargetId
+
+        override fun observeLastSelectedFavoriteTargetId(): Flow<String?> = lastSelectedTargetId
+
+        override suspend fun setPrimaryFavoriteTargetId(targetId: String) {
+            primaryTargetId.value = targetId
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetId() {
+            primaryTargetId.value = null
+        }
+
+        override suspend fun clearPrimaryFavoriteTargetIdIfMatches(targetId: String) {
+            if (primaryTargetId.value == targetId) {
+                primaryTargetId.value = null
+            }
+        }
+
+        override suspend fun setLastSelectedFavoriteTargetId(targetId: String) {
+            lastSelectedTargetId.value = targetId
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetId() {
+            lastSelectedTargetId.value = null
+        }
+
+        override suspend fun clearLastSelectedFavoriteTargetIdIfMatches(targetId: String) {
+            if (lastSelectedTargetId.value == targetId) {
+                lastSelectedTargetId.value = null
+            }
+        }
+
+        override suspend fun clearPrimaryAndLastSelectedFavoriteTargetIdsIfMatches(
+            targetIds: Collection<String>,
+        ) {
+            val targetIdSet = targetIds.toSet()
+            if (primaryTargetId.value in targetIdSet) {
+                primaryTargetId.value = null
+            }
+            if (lastSelectedTargetId.value in targetIdSet) {
+                lastSelectedTargetId.value = null
+            }
         }
     }
 

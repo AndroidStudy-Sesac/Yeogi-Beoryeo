@@ -1,18 +1,11 @@
 import java.util.Properties
 
-val releaseLifecycleTaskNames = setOf("assemble", "build", "bundle")
-val releaseBuildRequested = gradle.startParameter.taskNames.any { requestedTask ->
-    val taskName = requestedTask.substringAfterLast(':')
-    val targetsApp = !requestedTask.startsWith(':') || requestedTask.startsWith("${project.path}:")
-
-    targetsApp && (
-        taskName.lowercase() in releaseLifecycleTaskNames ||
-            taskName.contains("Release", ignoreCase = true)
-    )
-}
-val releaseArtifactTaskName = Regex(
-    pattern = "^(assemble|bundle|package).*Release.*$",
-    option = RegexOption.IGNORE_CASE,
+val releaseArtifactTaskNames = setOf(
+    "assembleRelease",
+    "bundleRelease",
+    "packageRelease",
+    "packageReleaseBundle",
+    "packageReleaseUniversalApk",
 )
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
@@ -61,8 +54,8 @@ android {
         applicationId = "com.team.yeogibeoryeo"
         minSdk = 28
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -94,9 +87,6 @@ android {
             keyPassword = requiredSigningProperty("keyPassword")
         }
     } else {
-        if (releaseBuildRequested) {
-            throw GradleException("release 빌드에는 프로젝트 루트의 keystore.properties가 필요합니다.")
-        }
         null
     }
 
@@ -112,18 +102,6 @@ android {
         }
     }
 
-    if (!keystorePropertiesFile.isFile) {
-        val verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
-            doLast {
-                throw GradleException("release 빌드에는 프로젝트 루트의 keystore.properties가 필요합니다.")
-            }
-        }
-
-        tasks.matching { releaseArtifactTaskName.matches(it.name) }.configureEach {
-            dependsOn(verifyReleaseSigning)
-        }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
@@ -132,6 +110,18 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+if (!keystorePropertiesFile.isFile) {
+    val verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
+        doLast {
+            throw GradleException("release 빌드에는 프로젝트 루트의 keystore.properties가 필요합니다.")
+        }
+    }
+
+    tasks.matching { it.name in releaseArtifactTaskNames }.configureEach {
+        dependsOn(verifyReleaseSigning)
     }
 }
 

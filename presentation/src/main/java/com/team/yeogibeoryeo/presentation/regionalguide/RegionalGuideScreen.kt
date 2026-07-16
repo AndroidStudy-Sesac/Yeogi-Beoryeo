@@ -119,11 +119,13 @@ fun RegionalGuideRoute(
         onSidoSelected = viewModel::onSidoSelected,
         onSigunguSelected = viewModel::onSigunguSelected,
         onEupmyeondongSelected = viewModel::onEupmyeondongSelected,
+        onRegionSelectionStarted = viewModel::onRegionSelectionStarted,
         onRegionSelectorDropdownExpanded = viewModel::onRegionSelectorDropdownExpanded,
         onRegionSelectorDropdownDismissed = viewModel::onRegionSelectorDropdownDismissed,
         onRegionSelectionSearchClick = viewModel::onRegionSelectionSearchClick,
         onCandidateClick = viewModel::onRegionCandidateSelected,
         onGuideCandidateClick = viewModel::onRegionalGuideCandidateSelected,
+        onCandidateListScrollPositionChange = viewModel::onCandidateListScrollPositionChanged,
         onRestoreCandidates = viewModel::restoreCandidatesFromDetail,
         onFavoriteClick = viewModel::onFavoriteClick,
         onPublicNoticeClick = {
@@ -151,10 +153,12 @@ fun RegionalGuideScreen(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
+    onRegionSelectionStarted: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier,
+    onCandidateListScrollPositionChange: (String, RegionalGuideCandidateListScrollPosition) -> Unit = { _, _ -> },
     onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
     onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRestoreCandidates: () -> Boolean = { false },
@@ -219,6 +223,7 @@ fun RegionalGuideScreen(
             }
 
             RegionalGuideEmptyActionType.SELECT_REGION -> {
+                onRegionSelectionStarted()
                 isRegionSelectorExpanded = true
                 onRegionSelectorDropdownDismissed()
             }
@@ -311,8 +316,19 @@ fun RegionalGuideScreen(
                     candidateContent = if (hasSearchCandidates) {
                         {
                             if (ambiguousState != null) {
+                                val candidateListScrollKey = ambiguousState.candidateListScrollKey()
+
                                 RegionalGuideAmbiguousResult(
                                     candidates = ambiguousState.candidates,
+                                    scrollStateKey = candidateListScrollKey,
+                                    initialScrollPosition =
+                                        ambiguousState.candidateListScrollPosition,
+                                    onScrollPositionChange = { position ->
+                                        onCandidateListScrollPositionChange(
+                                            candidateListScrollKey,
+                                            position,
+                                        )
+                                    },
                                     onCandidateClick = { candidate ->
                                         clearSearchFocus()
                                         collapseRegionSelector()
@@ -323,8 +339,19 @@ fun RegionalGuideScreen(
                             }
 
                             if (listGuideCandidatesState != null) {
+                                val candidateListScrollKey = listGuideCandidatesState.candidateListScrollKey()
+
                                 RegionalGuideCandidateResult(
                                     candidates = listGuideCandidatesState.candidates,
+                                    scrollStateKey = candidateListScrollKey,
+                                    initialScrollPosition =
+                                        listGuideCandidatesState.candidateListScrollPosition,
+                                    onScrollPositionChange = { position ->
+                                        onCandidateListScrollPositionChange(
+                                            candidateListScrollKey,
+                                            position,
+                                        )
+                                    },
                                     onCandidateClick = { candidate ->
                                         clearSearchFocus()
                                         collapseRegionSelector()
@@ -366,17 +393,32 @@ fun RegionalGuideScreen(
                         uiState = regionSelectorUiState,
                         compact = isRegionSelectorCompact,
                         compactRegionText = compactRegionText,
-                        onSidoSelected = onSidoSelected,
-                        onSigunguSelected = onSigunguSelected,
-                        onEupmyeondongSelected = onEupmyeondongSelected,
-                        onDropdownExpanded = onRegionSelectorDropdownExpanded,
+                        onSidoSelected = { sido ->
+                            clearSearchFocus()
+                            onSidoSelected(sido)
+                        },
+                        onSigunguSelected = { sigungu ->
+                            clearSearchFocus()
+                            onSigunguSelected(sigungu)
+                        },
+                        onEupmyeondongSelected = { eupmyeondong ->
+                            clearSearchFocus()
+                            onEupmyeondongSelected(eupmyeondong)
+                        },
+                        onDropdownExpanded = { dropdown ->
+                            clearSearchFocus()
+                            onRegionSelectorDropdownExpanded(dropdown)
+                        },
                         onDropdownDismissed = onRegionSelectorDropdownDismissed,
                         onSearchClick = {
+                            clearSearchFocus()
                             collapseRegionSelector()
                             onRegionSelectorDropdownDismissed()
                             onRegionSelectionSearchClick()
                         },
                         onChangeClick = {
+                            clearSearchFocus()
+                            onRegionSelectionStarted()
                             isRegionSelectorExpanded = true
                         },
                     )

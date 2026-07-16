@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.presentation.settings.detail
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -24,6 +25,8 @@ import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 internal fun SourcesDetail(
+    onOpenNaverMapLegalNoticeClick: () -> Unit,
+    onOpenNaverMapOpenSourceLicenseClick: () -> Unit,
     onOpenSourceClick: (String) -> Unit,
 ) {
     SettingsDetailContent {
@@ -63,6 +66,16 @@ internal fun SourcesDetail(
             title = stringResource(R.string.settings_sources_usage_title),
             description = stringResource(R.string.settings_sources_usage_description),
         )
+        SettingsSection(
+            title = stringResource(R.string.settings_naver_map_title),
+            description = stringResource(R.string.settings_naver_map_usage_description),
+        )
+        Button(onClick = onOpenNaverMapLegalNoticeClick) {
+            Text(text = stringResource(R.string.settings_naver_map_legal_notice_action))
+        }
+        Button(onClick = onOpenNaverMapOpenSourceLicenseClick) {
+            Text(text = stringResource(R.string.settings_naver_map_open_source_license_action))
+        }
         SettingsSection(
             title = stringResource(R.string.settings_open_source_title),
             description = stringResource(R.string.settings_tabler_usage_description),

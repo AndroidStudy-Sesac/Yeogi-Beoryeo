@@ -2,7 +2,9 @@ package com.team.yeogibeoryeo.data.regionalguide.di
 
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideDataSource
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideRemoteDataSource
+import com.team.yeogibeoryeo.data.regionalguide.repository.DataStoreHomeRegionalGuidePrimaryFavoriteRepository
 import com.team.yeogibeoryeo.data.regionalguide.repository.RegionalDisposalGuideRepositoryImpl
+import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePrimaryFavoriteRepository
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import dagger.Binds
 import dagger.Module
@@ -25,4 +27,10 @@ abstract class RegionalGuideDataModule {
     abstract fun bindRegionalDisposalGuideRepository(
         impl: RegionalDisposalGuideRepositoryImpl
     ): RegionalDisposalGuideRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeRegionalGuidePrimaryFavoriteRepository(
+        impl: DataStoreHomeRegionalGuidePrimaryFavoriteRepository,
+    ): HomeRegionalGuidePrimaryFavoriteRepository
 }
