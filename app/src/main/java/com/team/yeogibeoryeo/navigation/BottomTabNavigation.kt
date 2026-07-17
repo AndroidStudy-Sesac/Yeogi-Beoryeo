@@ -3,19 +3,17 @@ package com.team.yeogibeoryeo.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.toRoute
-import com.team.yeogibeoryeo.R as AppR
-import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.common.navigation.BottomNavigationItem
 import com.team.yeogibeoryeo.common.navigation.navigateBottomTab
+import com.team.yeogibeoryeo.R as AppR
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 internal fun NavHostController.createBottomNavigationItems(
     currentBackStackEntry: NavBackStackEntry?,
-    currentDestination: NavDestination?,
     onMapTabSelected: () -> Unit,
 ): List<BottomNavigationItem> =
     listOf(
@@ -30,7 +28,7 @@ internal fun NavHostController.createBottomNavigationItems(
         BottomNavigationItem(
             label = stringResource(AppR.string.bottom_tab_map),
             iconResId = AppR.drawable.ic_navigation_map,
-            selected = currentDestination?.hasRoute<MapRoute>() == true,
+            selected = currentBackStackEntry.isMapSelected(),
             onClick = {
                 onMapTabSelected()
                 navigateMapRoot(
@@ -67,10 +65,17 @@ private fun NavBackStackEntry?.isItemSearchSelected(): Boolean =
 
 private fun NavBackStackEntry?.isFavoritesSelected(): Boolean =
     this?.destination?.hasRoute<FavoritesRoute>() == true ||
-        isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES)
+        isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES) ||
+        isFavoriteRegionalGuideSelected()
+
+private fun NavBackStackEntry?.isMapSelected(): Boolean =
+    this?.destination?.hasRoute<MapRoute>() == true ||
+        isMapRegionalGuideSelected()
 
 private fun NavBackStackEntry?.isRegionalGuideSelected(): Boolean =
-    this?.destination?.hasRoute<RegionalGuideRoute>() == true
+    this?.destination?.hasRoute<RegionalGuideRoute>() == true &&
+        !isFavoriteRegionalGuideSelected() &&
+        !isMapRegionalGuideSelected()
 
 private fun NavBackStackEntry?.isFavoriteRegionalGuideSelected(): Boolean =
     this != null &&
@@ -128,16 +133,13 @@ private fun NavHostController.navigateRegionalGuideRoot(
         ?.takeIf { entry -> entry.destination.hasRoute<RegionalGuideRoute>() }
         ?.toRoute<RegionalGuideRoute>()
 
-    if (currentRoute == RegionalGuideRoute()) return
+    if (currentRoute != null) {
+        resetBottomTabToRoot(RegionalGuideRoute())
+        return
+    }
 
     popRegionalGuideReentryToSourceRoot(currentBackStackEntry)
-    navigate(RegionalGuideRoute()) {
-        popUpTo<ItemSearchRoute> {
-            saveState = true
-        }
-        launchSingleTop = true
-        restoreState = false
-    }
+    navigateBottomTab<RegionalGuideRoute, ItemSearchRoute>(RegionalGuideRoute())
 }
 
 private fun NavHostController.navigateItemSearchTab() {
@@ -154,18 +156,14 @@ private fun NavHostController.navigateFavoritesRoot(
     currentBackStackEntry: NavBackStackEntry?,
 ) {
     when {
-        currentBackStackEntry?.destination?.hasRoute<FavoritesRoute>() == true -> return
+        currentBackStackEntry?.destination?.hasRoute<FavoritesRoute>() == true -> {
+            resetBottomTabToRoot(FavoritesRoute)
+        }
         currentBackStackEntry.isItemGuideDetailSource(ItemGuideDetailSource.FAVORITES) -> {
             popBackStack<FavoritesRoute>(inclusive = false)
         }
         else -> {
-            navigate(FavoritesRoute) {
-                popUpTo<ItemSearchRoute> {
-                    saveState = true
-                }
-                launchSingleTop = true
-                restoreState = false
-            }
+            navigateBottomTab<FavoritesRoute, ItemSearchRoute>(FavoritesRoute)
         }
     }
 }
@@ -174,18 +172,17 @@ private fun NavHostController.navigateMapRoot(
     currentBackStackEntry: NavBackStackEntry?,
 ) {
     if (currentBackStackEntry.isMapRegionalGuideSelected()) {
-        popBackStack<MapRoute>(inclusive = false)
+        resetBottomTabToRoot(MapRoute())
+        return
+    }
+
+    if (currentBackStackEntry?.destination?.hasRoute<MapRoute>() == true) {
+        resetBottomTabToRoot(MapRoute())
         return
     }
 
     if (currentBackStackEntry.isRegionalGuideSelected()) {
-        navigate(MapRoute()) {
-            popUpTo<ItemSearchRoute> {
-                saveState = true
-            }
-            launchSingleTop = true
-            restoreState = false
-        }
+        navigateBottomTab<MapRoute, ItemSearchRoute>(MapRoute())
         return
     }
 
@@ -199,7 +196,7 @@ private fun NavHostController.navigateFavoritesRootClearingRegionalGuideReentry(
     currentBackStackEntry: NavBackStackEntry?,
 ) {
     if (currentBackStackEntry.isFavoriteRegionalGuideSelected()) {
-        popBackStack<FavoritesRoute>(inclusive = false)
+        resetBottomTabToRoot(FavoritesRoute)
         return
     }
 
@@ -207,6 +204,12 @@ private fun NavHostController.navigateFavoritesRootClearingRegionalGuideReentry(
     navigateFavoritesRoot(
         currentBackStackEntry = currentBackStackEntry,
     )
+}
+
+private inline fun <reified T : Any> NavHostController.resetBottomTabToRoot(route: T) {
+    popBackStack<T>(inclusive = true)
+    clearBackStack<T>()
+    navigateBottomTab<T, ItemSearchRoute>(route)
 }
 
 private fun NavHostController.popRegionalGuideReentryToSourceRoot(

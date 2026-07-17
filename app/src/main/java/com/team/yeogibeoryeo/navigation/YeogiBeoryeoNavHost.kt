@@ -107,7 +107,6 @@ fun YeogiBeoryeoNavHost(
                 AppBottomNavigationBar(
                     items = navController.createBottomNavigationItems(
                         currentBackStackEntry = currentBackStackEntry,
-                        currentDestination = currentDestination,
                         onMapTabSelected = { isBottomBarVisible = true },
                     ),
                 )
