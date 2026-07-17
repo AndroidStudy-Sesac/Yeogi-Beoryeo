@@ -144,6 +144,8 @@ internal class FakeRegionOptionsRepository(
     private val sigunguOptionsBySido: Map<String, List<String>> = emptyMap(),
     private val eupmyeondongOptionsByRegion: Map<String, Map<String, List<String>>> = emptyMap(),
     private val delayedSigunguOptionsBySido: Map<String, CompletableDeferred<List<String>>> = emptyMap(),
+    private val delayedEupmyeondongOptionsByRegion:
+        Map<String, Map<String, CompletableDeferred<List<String>>>> = emptyMap(),
     private val keywordRegions: List<Region> = emptyList(),
     private val adminDongCandidates: List<Region> = emptyList(),
 ) : RegionOptionsRepository {
@@ -161,9 +163,12 @@ internal class FakeRegionOptionsRepository(
         sido: String,
         sigungu: String
     ): List<String> {
-        return eupmyeondongOptionsByRegion[sido]
+        return delayedEupmyeondongOptionsByRegion[sido]
             ?.get(sigungu)
-            .orEmpty()
+            ?.await()
+            ?: eupmyeondongOptionsByRegion[sido]
+                ?.get(sigungu)
+                .orEmpty()
     }
 
     override suspend fun findRegionsByEupmyeondongKeyword(

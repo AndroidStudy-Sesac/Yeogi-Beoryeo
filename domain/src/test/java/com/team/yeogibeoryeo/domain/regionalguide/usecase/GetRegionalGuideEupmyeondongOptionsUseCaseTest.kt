@@ -146,6 +146,24 @@ class GetRegionalGuideEupmyeondongOptionsUseCaseTest {
     }
 
     @Test
+    fun `도로명 대상지역은 다른 권역 정보가 있어도 읍면동 선택지에 유지한다`() = runBlocking {
+        val useCase = createUseCase(
+            options = listOf("부곡동"),
+            candidates = listOf(
+                regionalDisposalGuide(targetRegionName = "부곡중앙북6길"),
+                regionalDisposalGuide(targetRegionName = "읍면지역"),
+            )
+        )
+
+        val result = useCase(
+            sido = "경기도",
+            sigungu = "의왕시",
+        )
+
+        assertEquals(listOf("부곡동"), result)
+    }
+
+    @Test
     fun `출장소가 배출정보 후보에 없으면 읍면동 선택지에서 제외한다`() = runBlocking {
         val useCase = createUseCase(
             options = listOf("구지면", "논공읍", "논공읍공단출장소", "다사읍", "다사읍서재출장소", "옥포읍"),

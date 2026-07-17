@@ -93,13 +93,34 @@ object RegionalGuideEupmyeondongNamePolicy {
             ?.split(REGION_NAME_DELIMITER)
             ?.any { name ->
                 val normalizedName = name.normalizeName() ?: return@any false
-                val followingName = normalizedName.removePrefix(legalDongName)
+                val targetRegionBaseName = normalizedName.removeGuideAreaSuffix()
+                val followingName = targetRegionBaseName.removePrefix(legalDongName)
 
-                normalizedName.startsWith(legalDongName) &&
+                targetRegionBaseName.startsWith(legalDongName) &&
                     followingName.isNotBlank() &&
-                    !followingName.startsWithNumberedDongExpression()
+                    !followingName.startsWithNumberedDongExpression() &&
+                    !followingName.endsWithAdministrativeRegionSuffix()
             }
             ?: false
+    }
+
+    fun matchesManagementZoneOrTargetRegionName(
+        managementZoneName: String?,
+        targetRegionName: String?,
+        eupmyeondong: String,
+    ): Boolean {
+        return containsSameNameOrGuideAreaName(
+            regionName = managementZoneName,
+            eupmyeondong = eupmyeondong,
+        ) ||
+            containsSameNameOrGuideAreaName(
+                regionName = targetRegionName,
+                eupmyeondong = eupmyeondong,
+            ) ||
+            targetRegionStartsWithLegalDongName(
+                targetRegionName = targetRegionName,
+                eupmyeondong = eupmyeondong,
+            )
     }
 
     fun hasEupmyeondongCoverage(regionName: String?): Boolean {
@@ -207,6 +228,16 @@ object RegionalGuideEupmyeondongNamePolicy {
         firstOrNull()?.isDigit() == true ||
             startsWith(NUMBER_MARKER) && getOrNull(1)?.isDigit() == true
 
+    private fun String.endsWithAdministrativeRegionSuffix(): Boolean =
+        lastOrNull() in ADMINISTRATIVE_REGION_SUFFIXES
+
+    private fun String.removeGuideAreaSuffix(): String =
+        GUIDE_AREA_SUFFIXES
+            .firstOrNull { suffix -> endsWith(suffix) }
+            ?.let(::removeSuffix)
+            ?.takeIf(String::isNotBlank)
+            ?: this
+
     private fun String.matchesNumberedEupmyeondongRange(
         eupmyeondong: String?,
     ): Boolean {
@@ -250,4 +281,5 @@ object RegionalGuideEupmyeondongNamePolicy {
     private val GUIDE_AREA_SUFFIXES = listOf("일부지역", "일부", "일원", "전지역", "전체")
     private val GUIDE_AREA_NAMES = setOf("동지역", "읍면지역")
     private val EUPMYEONDONG_SUFFIXES = setOf('읍', '면', '동')
+    private val ADMINISTRATIVE_REGION_SUFFIXES = EUPMYEONDONG_SUFFIXES + '리'
 }

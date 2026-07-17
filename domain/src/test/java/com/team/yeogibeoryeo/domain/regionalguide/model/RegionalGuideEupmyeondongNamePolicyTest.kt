@@ -146,6 +146,23 @@ class RegionalGuideEupmyeondongNamePolicyTest {
     }
 
     @Test
+    fun `법정동 접두어 뒤가 다른 행정구역명이면 일치하지 않는다`() {
+        listOf(
+            "장기본동" to "장기동",
+            "장기본동 일부지역" to "장기동",
+            "고덕면" to "고덕동",
+            "개정면" to "개정동",
+        ).forEach { (targetRegionName, eupmyeondong) ->
+            assertFalse(
+                RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+                    targetRegionName = targetRegionName,
+                    eupmyeondong = eupmyeondong,
+                )
+            )
+        }
+    }
+
+    @Test
     fun `읍면동을 식별할 수 없는 제공 지역명은 읍면동 제공 범위로 판단하지 않는다`() {
         assertTrue(
             RegionalGuideEupmyeondongNamePolicy.hasEupmyeondongCoverage(

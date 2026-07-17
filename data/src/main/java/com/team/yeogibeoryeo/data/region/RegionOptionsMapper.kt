@@ -373,15 +373,13 @@ internal object RegionOptionsMapper {
     private fun RegionalGuideAvailabilityDto.matchesRegionalGuideEupmyeondong(
         eupmyeondong: String
     ): Boolean {
-        return listOf(managementZoneName, targetRegionName).any { regionName ->
-            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
-                regionName = regionName,
-                eupmyeondong = eupmyeondong,
-            ) || regionName.matchesGuideAreaCoverage(eupmyeondong)
-        } || RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+        return RegionalGuideEupmyeondongNamePolicy.matchesManagementZoneOrTargetRegionName(
+            managementZoneName = managementZoneName,
             targetRegionName = targetRegionName,
             eupmyeondong = eupmyeondong,
-        )
+        ) ||
+            listOf(managementZoneName, targetRegionName)
+                .any { regionName -> regionName.matchesGuideAreaCoverage(eupmyeondong) }
     }
 
     private fun List<RegionalGuideAvailabilityDto>.hasNoEupmyeondongCoverage(): Boolean =

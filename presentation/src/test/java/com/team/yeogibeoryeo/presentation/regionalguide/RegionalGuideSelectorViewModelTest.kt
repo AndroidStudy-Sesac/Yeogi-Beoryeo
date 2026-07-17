@@ -150,6 +150,56 @@ class RegionalGuideSelectorViewModelTest {
     }
 
     @Test
+    fun `지연된 읍면동 선택지 반영 후 상세 가이드 관리구역을 동기화한다`() = runTest {
+        val delayedEupmyeondongOptions = CompletableDeferred<List<String>>()
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "경기도" to listOf("수원시")
+                ),
+                delayedEupmyeondongOptionsByRegion = mapOf(
+                    "경기도" to mapOf(
+                        "수원시" to delayedEupmyeondongOptions
+                    )
+                )
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "경기도",
+                        sigungu = "수원시",
+                        targetRegionName = "수원시 전체"
+                    ).copy(managementZoneName = "인계동")
+                )
+            ),
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "경기도",
+                        sigungu = "수원시",
+                        targetRegionName = "인계동"
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("경기도")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("수원시")
+        viewModel.onRegionSelectionSearchClick()
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
+        assertNull(viewModel.regionSelectorUiState.value.selectedEupmyeondong)
+
+        delayedEupmyeondongOptions.complete(listOf("인계동"))
+        advanceUntilIdle()
+
+        assertEquals("인계동", viewModel.regionSelectorUiState.value.selectedEupmyeondong)
+    }
+
+    @Test
     fun `지역 가이드 권역에 맞는 읍면동이 없으면 빈 선택지를 완료 상태로 반영한다`() = runTest {
         val viewModel = createViewModel(
             regionOptionsRepository = FakeRegionOptionsRepository(

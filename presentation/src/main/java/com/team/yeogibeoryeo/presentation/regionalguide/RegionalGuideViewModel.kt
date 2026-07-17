@@ -79,6 +79,7 @@ class RegionalGuideViewModel @Inject constructor(
     private var eupmyeondongOptionsRequestId = 0L
     private var favoriteStateJob: Job? = null
     private var lastRequest: RegionalGuideRequest? = null
+    private var currentRegionalGuideDisplayRegion: Region? = null
     private var currentRegionalGuideFavoriteSnapshot: RegionalGuideFavoriteSnapshot? = null
     private val guideCandidateBackStackEntries = mutableListOf<RegionalGuideCandidateBackStackEntry>()
     private val favoriteToggleJobs = mutableMapOf<String, Job>()
@@ -97,6 +98,7 @@ class RegionalGuideViewModel @Inject constructor(
     fun onSidoSelected(sido: String) {
         onRegionSelectionStarted()
         clearGuideCandidateBackStack()
+        currentRegionalGuideDisplayRegion = null
         sigunguOptionsJob?.cancel()
         eupmyeondongOptionsJob?.cancel()
         eupmyeondongOptionsRequestId += 1
@@ -129,6 +131,7 @@ class RegionalGuideViewModel @Inject constructor(
     fun onSigunguSelected(sigungu: String) {
         onRegionSelectionStarted()
         clearGuideCandidateBackStack()
+        currentRegionalGuideDisplayRegion = null
         eupmyeondongOptionsJob?.cancel()
 
         val selectedSido = regionSelectorUiState.value.selectedSido ?: return
@@ -297,7 +300,9 @@ class RegionalGuideViewModel @Inject constructor(
             pushGuideCandidateBackStackEntry(guideCandidatesState)
         }
 
-        applyRegionSelection(candidate.toRegion())
+        val selectedRegion = candidate.toRegion()
+        applyRegionSelection(selectedRegion)
+        currentRegionalGuideDisplayRegion = selectedRegion
 
         val snapshot = candidate.toFavoriteSnapshot()
         currentRegionalGuideFavoriteSnapshot = snapshot
@@ -391,6 +396,7 @@ class RegionalGuideViewModel @Inject constructor(
         _searchKeyword.value = keyword
         keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
+        currentRegionalGuideDisplayRegion = null
         collapseRegionSelectorDropdowns()
 
         if (trimmedKeyword.isBlank()) {
@@ -460,6 +466,7 @@ class RegionalGuideViewModel @Inject constructor(
         clearGuideCandidateBackStack()
         keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
+        currentRegionalGuideDisplayRegion = null
 
         if (trimmedAddress.isBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
@@ -511,6 +518,7 @@ class RegionalGuideViewModel @Inject constructor(
         clearGuideCandidateBackStack()
         keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
+        currentRegionalGuideDisplayRegion = null
 
         lastRequest = RegionalGuideRequest.Favorite(targetId)
 
@@ -629,6 +637,7 @@ class RegionalGuideViewModel @Inject constructor(
         }
         keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
+        currentRegionalGuideDisplayRegion = null
         collapseRegionSelectorDropdowns()
 
         guideLookupJob = viewModelScope.launch {
@@ -752,6 +761,7 @@ class RegionalGuideViewModel @Inject constructor(
     private fun clearSelectedRegion() {
         sigunguOptionsJob?.cancel()
         eupmyeondongOptionsJob?.cancel()
+        currentRegionalGuideDisplayRegion = null
 
         _regionSelectorUiState.update { state ->
             state.copy(
@@ -851,6 +861,7 @@ class RegionalGuideViewModel @Inject constructor(
                         state
                     }
                 }
+                syncSelectedRegionWithCurrentGuide()
             }
         }
     }
@@ -886,6 +897,7 @@ class RegionalGuideViewModel @Inject constructor(
         return when (this) {
             is RegionalGuideLookupResult.Success -> {
                 val displayGuide = guide.withSelectableEupmyeondongRegion()
+                currentRegionalGuideDisplayRegion = displayGuide.region
                 syncSelectedRegionWithGuide(displayGuide)
 
                 val snapshot = favoriteSnapshotOverride ?: displayGuide.toFavoriteSnapshot()
@@ -1097,15 +1109,25 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     private fun syncSelectedRegionWithGuide(guide: RegionalDisposalGuide) {
-        val selectedEupmyeondong = guide.region.eupmyeondong
+        syncSelectedRegionWithGuideRegion(guide.region)
+    }
+
+    private fun syncSelectedRegionWithCurrentGuide() {
+        if (_uiState.value !is RegionalGuideUiState.Success) return
+
+        currentRegionalGuideDisplayRegion?.let(::syncSelectedRegionWithGuideRegion)
+    }
+
+    private fun syncSelectedRegionWithGuideRegion(guideRegion: Region) {
+        val selectedEupmyeondong = guideRegion.eupmyeondong
             ?.trim()
             ?.takeIf { value -> value.isNotBlank() }
             ?: return
 
         _regionSelectorUiState.update { state ->
             if (
-                state.selectedSido != guide.region.sido ||
-                state.selectedSigungu != guide.region.sigungu ||
+                state.selectedSido != guideRegion.sido ||
+                state.selectedSigungu != guideRegion.sigungu ||
                 state.eupmyeondongOptions.none { option ->
                     RegionalGuideEupmyeondongNamePolicy.isSameName(
                         first = selectedEupmyeondong,
