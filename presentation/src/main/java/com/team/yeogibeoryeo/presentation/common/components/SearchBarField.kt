@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -35,27 +34,30 @@ fun SearchBarField(
     keyword: String,
     onKeywordChange: (String) -> Unit,
     onSearch: (String) -> Unit,
-    placeholder: String,
     modifier: Modifier = Modifier,
+    placeholder: String,
     leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable (Boolean) -> Unit)? = null,
     candidateContent: (@Composable ColumnScope.() -> Unit)? = null,
     minHeight: Dp = 56.dp,
-    shadowElevation: Dp = 0.dp,
     searchEnabled: (String) -> Boolean = { it.isNotBlank() },
 ) {
     val hasCandidates = candidateContent != null
     val searchFieldInteractionSource = remember { MutableInteractionSource() }
     val isSearchFieldFocused by searchFieldInteractionSource.collectIsFocusedAsState()
     val isSearchEnabled = searchEnabled(keyword)
-    val collapsedShape = MaterialTheme.shapes.medium
-    val expandedShape = collapsedShape.copy(
-        bottomStart = CornerSize(0.dp),
-        bottomEnd = CornerSize(0.dp),
+    val collapsedShape = RoundedCornerShape(12.dp)
+    val expandedShape = RoundedCornerShape(
+        topStart = 12.dp,
+        topEnd = 12.dp,
+        bottomStart = 0.dp,
+        bottomEnd = 0.dp,
     )
-    val candidateShape = collapsedShape.copy(
-        topStart = CornerSize(0.dp),
-        topEnd = CornerSize(0.dp),
+    val candidateShape = RoundedCornerShape(
+        topStart = 0.dp,
+        topEnd = 0.dp,
+        bottomStart = 12.dp,
+        bottomEnd = 12.dp,
     )
 
     fun submitSearch() {
@@ -65,13 +67,7 @@ fun SearchBarField(
     }
 
     Column(
-        modifier = modifier
-            .shadow(
-                elevation = shadowElevation,
-                shape = collapsedShape,
-                clip = false,
-            )
-            .fillMaxWidth(),
+        modifier = modifier.fillMaxWidth()
     ) {
         OutlinedTextField(
             modifier = Modifier
@@ -136,4 +132,5 @@ fun SearchBarField(
             }
         }
     }
+
 }

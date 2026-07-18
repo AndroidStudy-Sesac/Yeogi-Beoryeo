@@ -37,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -207,6 +208,7 @@ fun ItemSearchScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         val spacing = ItemSearchLayoutDefaults.spacing
+        val elevation = ItemSearchLayoutDefaults.elevation
         val metrics = itemSearchScreenMetrics(
             maxWidth = maxWidth,
             maxHeight = maxHeight,
@@ -269,7 +271,12 @@ fun ItemSearchScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = searchResultHeaderTopPadding)
-                                    .padding(horizontal = metrics.horizontalPadding),
+                                    .padding(horizontal = metrics.horizontalPadding)
+                                    .shadow(
+                                        elevation = elevation.searchField,
+                                        shape = MaterialTheme.shapes.medium,
+                                        clip = false,
+                                    ),
                                 iconSize = metrics.searchIconSize,
                             )
                         }
@@ -327,7 +334,12 @@ fun ItemSearchScreen(
                     },
                     placeholder = stringResource(R.string.item_search_query_label),
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .shadow(
+                            elevation = elevation.searchField,
+                            shape = MaterialTheme.shapes.medium,
+                            clip = false,
+                        ),
                     iconSize = metrics.searchIconSize,
                 )
 
