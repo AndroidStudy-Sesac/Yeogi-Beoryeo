@@ -29,6 +29,18 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("pixel2Api30") {
+                    device = "Pixel 2"
+                    apiLevel = 30
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
+    }
 }
 
 kotlin {
