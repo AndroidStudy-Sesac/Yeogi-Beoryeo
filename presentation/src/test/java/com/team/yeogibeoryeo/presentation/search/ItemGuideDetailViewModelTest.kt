@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -59,6 +60,27 @@ class ItemGuideDetailViewModelTest {
             val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
             assertEquals(guide, state.guide)
             assertTrue(state.isFavorite)
+        }
+
+    @Test
+    fun `같은 가이드를 다시 로드하면 기존 상태를 유지하고 재조회하지 않는다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val itemRepository = FakeItemRepository(guide = guide)
+            val viewModel =
+                createViewModel(
+                    itemRepository = itemRepository,
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide(guide.id)
+            advanceUntilIdle()
+            val loadedState = viewModel.uiState.value
+
+            viewModel.loadGuide(guide.id)
+
+            assertSame(loadedState, viewModel.uiState.value)
+            assertEquals(listOf(guide.id), itemRepository.requestedGuideIds)
         }
 
     @Test
@@ -228,11 +250,16 @@ class ItemGuideDetailViewModelTest {
     private class FakeItemRepository(
         private val onGetItemGuide: suspend (String) -> DisposalItemGuide?,
     ) : DisposalItemGuideRepository {
+        val requestedGuideIds = mutableListOf<String>()
+
         constructor(guide: DisposalItemGuide?) : this({ guideId -> guide?.takeIf { it.id == guideId } })
 
         override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> = emptyList()
 
-        override suspend fun getItemGuide(guideId: String): DisposalItemGuide? = onGetItemGuide(guideId)
+        override suspend fun getItemGuide(guideId: String): DisposalItemGuide? {
+            requestedGuideIds += guideId
+            return onGetItemGuide(guideId)
+        }
 
         override suspend fun getCategoryGuides(category: DisposalCategory): List<DisposalItemGuide> = emptyList()
 
