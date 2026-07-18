@@ -59,7 +59,7 @@ object FavoriteDatabaseModule {
         database: FavoriteDatabase,
     ): RegionalGuideFavoriteSnapshotDao = database.regionalGuideFavoriteSnapshotDao()
 
-    private val FAVORITE_DATABASE_MIGRATION_1_2 =
+    internal val FAVORITE_DATABASE_MIGRATION_1_2 =
         object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -79,7 +79,7 @@ object FavoriteDatabaseModule {
             }
         }
 
-    private val FAVORITE_DATABASE_MIGRATION_2_3 =
+    internal val FAVORITE_DATABASE_MIGRATION_2_3 =
         object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
