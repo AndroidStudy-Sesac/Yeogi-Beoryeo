@@ -60,6 +60,7 @@ fun ItemSearchBar(
             }
         },
         minHeight = size.searchFieldHeight,
+        shadowElevation = ItemSearchLayoutDefaults.elevation.searchField,
         searchEnabled = { it.isNotBlank() },
     )
 }
