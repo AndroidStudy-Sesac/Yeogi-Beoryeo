@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.FloatingActionButton
@@ -209,6 +208,7 @@ fun ItemSearchScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         val spacing = ItemSearchLayoutDefaults.spacing
+        val elevation = ItemSearchLayoutDefaults.elevation
         val metrics = itemSearchScreenMetrics(
             maxWidth = maxWidth,
             maxHeight = maxHeight,
@@ -273,8 +273,8 @@ fun ItemSearchScreen(
                                     .padding(top = searchResultHeaderTopPadding)
                                     .padding(horizontal = metrics.horizontalPadding)
                                     .shadow(
-                                        elevation = 6.dp,
-                                        shape = RoundedCornerShape(12.dp),
+                                        elevation = elevation.searchField,
+                                        shape = MaterialTheme.shapes.medium,
                                         clip = false,
                                     ),
                                 iconSize = metrics.searchIconSize,
@@ -336,8 +336,8 @@ fun ItemSearchScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(12.dp),
+                            elevation = elevation.searchField,
+                            shape = MaterialTheme.shapes.medium,
                             clip = false,
                         ),
                     iconSize = metrics.searchIconSize,

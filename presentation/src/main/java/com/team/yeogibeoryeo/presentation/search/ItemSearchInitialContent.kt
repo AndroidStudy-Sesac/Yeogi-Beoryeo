@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AssistChip
@@ -36,7 +35,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
@@ -109,6 +107,7 @@ fun ItemSearchInitialContent(
             maxWidth = maxWidth,
             maxHeight = maxHeight,
         )
+        val elevation = ItemSearchLayoutDefaults.elevation
 
         LaunchedEffect(metrics.isCompactLandscape) {
             onItemSearchBottomBarScrollEnabledChanged(metrics.isCompactLandscape)
@@ -189,8 +188,8 @@ fun ItemSearchInitialContent(
                         .fillMaxWidth()
                         .padding(horizontal = metrics.horizontalPadding)
                         .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(12.dp),
+                            elevation = elevation.searchField,
+                            shape = MaterialTheme.shapes.medium,
                             clip = false,
                         ),
                     iconSize = metrics.searchIconSize,
