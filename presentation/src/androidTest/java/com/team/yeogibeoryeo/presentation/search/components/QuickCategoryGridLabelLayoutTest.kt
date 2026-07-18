@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.common.design.theme.YeogiBeoryeoTheme
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -24,7 +25,7 @@ class QuickCategoryGridLabelLayoutTest {
 
         composeTestRule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1f)) {
-                MaterialTheme {
+                YeogiBeoryeoTheme {
                     val spec = quickCategoryGridMetricsSpec(maxWidth = 360.dp, fontScale = 1f)
                     CompositionLocalProvider(
                         LocalQuickCategoryGridMetrics provides spec.toMetrics(),
@@ -51,7 +52,7 @@ class QuickCategoryGridLabelLayoutTest {
 
         composeTestRule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 1f)) {
-                MaterialTheme {
+                YeogiBeoryeoTheme {
                     val spec = quickCategoryGridMetricsSpec(maxWidth = 360.dp, fontScale = 1f)
                     CompositionLocalProvider(
                         LocalQuickCategoryGridMetrics provides spec.toMetrics(),
@@ -92,7 +93,7 @@ class QuickCategoryGridLabelLayoutTest {
         val lineCounts = mutableMapOf<LabelLineCountCase, Int>()
 
         composeTestRule.setContent {
-            MaterialTheme {
+            YeogiBeoryeoTheme {
                 Column {
                     cases.forEach { case ->
                         CompositionLocalProvider(
