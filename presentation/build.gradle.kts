@@ -34,11 +34,11 @@ android {
     testOptions {
         managedDevices {
             localDevices {
-                create("pixel2Api30") {
-                    device = "Pixel 2"
-                    apiLevel = 30
-                    systemImageSource = "aosp-atd"
-                    testedAbi = "x86"
+                create("pixel9ProApi36") {
+                    device = "Pixel 9 Pro"
+                    apiLevel = 36
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
                 }
             }
         }

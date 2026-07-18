@@ -272,8 +272,8 @@ jobs:
       - name: Run instrumented tests
         run: |
           ./gradlew \
-            :data:pixel2Api30DebugAndroidTest \
-            :presentation:pixel2Api30DebugAndroidTest \
+            :data:pixel9ProApi36DebugAndroidTest \
+            :presentation:pixel9ProApi36DebugAndroidTest \
             --no-parallel \
             --no-daemon \
             --stacktrace \
