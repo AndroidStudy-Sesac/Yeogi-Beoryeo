@@ -38,6 +38,7 @@ android {
                     device = "Pixel 2"
                     apiLevel = 30
                     systemImageSource = "aosp-atd"
+                    testedAbi = "x86"
                 }
             }
         }
