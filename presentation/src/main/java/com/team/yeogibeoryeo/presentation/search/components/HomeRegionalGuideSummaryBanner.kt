@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
 import com.team.yeogibeoryeo.common.R as CommonR
 
@@ -40,7 +40,9 @@ fun HomeRegionalGuideSummaryBanner(
         stringResource(id = R.string.home_regional_guide_summary_disposal_days_label)
     val disposalTimeLabel =
         stringResource(id = R.string.home_regional_guide_summary_disposal_time_label)
-    val shape = RoundedCornerShape(8.dp)
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val size = ItemSearchLayoutDefaults.size
+    val shape = MaterialTheme.shapes.small
     Card(
         modifier =
             modifier
@@ -69,7 +71,7 @@ fun HomeRegionalGuideSummaryBanner(
         shape = shape,
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(spacing.lg),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(
@@ -90,7 +92,7 @@ fun HomeRegionalGuideSummaryBanner(
                     Icon(
                         painter = painterResource(id = CommonR.drawable.ic_action_chevron_right),
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(size.iconSmall),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
@@ -159,21 +161,23 @@ private fun HomeRegionalGuideSummaryInfoBlock(
     modifier: Modifier = Modifier,
     notice: String? = null,
 ) {
+    val spacing = ItemSearchLayoutDefaults.spacing
+    val elevation = ItemSearchLayoutDefaults.elevation
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.58f),
             contentColor = MaterialTheme.colorScheme.onSurface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation.none),
     ) {
         Column(
             modifier = Modifier.padding(
-                horizontal = 12.dp,
+                horizontal = spacing.sm,
                 vertical = 10.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing.xxs),
         ) {
             Text(
                 text = label,
@@ -349,7 +353,7 @@ private fun HomeRegionalGuideSummaryBannerSummaryPreview() {
             ),
             onClick = {},
             onRetryClick = {},
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
     }
 }
@@ -369,7 +373,7 @@ private fun HomeRegionalGuideSummaryBannerMixedSchedulePreview() {
             ),
             onClick = {},
             onRetryClick = {},
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
     }
 }
@@ -385,7 +389,7 @@ private fun HomeRegionalGuideSummaryBannerRepresentativeScheduleNeedsConfirmatio
             ),
             onClick = {},
             onRetryClick = {},
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
     }
 }
@@ -398,7 +402,7 @@ private fun HomeRegionalGuideSummaryBannerNoFavoritePreview() {
             state = HomeRegionalGuideSummaryUiState.NoFavorite,
             onClick = {},
             onRetryClick = {},
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
     }
 }
