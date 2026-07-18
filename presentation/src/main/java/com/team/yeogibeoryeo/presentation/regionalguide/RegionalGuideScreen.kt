@@ -86,8 +86,18 @@ fun RegionalGuideRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
     val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
+    var isInitialRouteRequestConsumed by rememberSaveable(
+        initialKeyword,
+        initialAddress,
+        initialFavoriteTargetId,
+    ) {
+        mutableStateOf(false)
+    }
 
     LaunchedEffect(initialKeyword, initialAddress, initialFavoriteTargetId) {
+        if (isInitialRouteRequestConsumed) return@LaunchedEffect
+
+        isInitialRouteRequestConsumed = true
         when {
             !initialFavoriteTargetId.isNullOrBlank() -> viewModel.loadByFavoriteTargetId(initialFavoriteTargetId)
             !initialAddress.isNullOrBlank() -> viewModel.loadByAddress(initialAddress)

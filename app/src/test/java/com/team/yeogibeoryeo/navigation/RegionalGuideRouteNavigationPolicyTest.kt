@@ -11,6 +11,15 @@ class RegionalGuideRouteNavigationPolicyTest {
     fun `즐겨찾기 대상이 없는 지역 가이드 경로는 안내 탭 경로이다`() {
         val route = RegionalGuideRoute()
 
+        assertEquals(BottomTab.REGIONAL_GUIDE, route.bottomTab())
+        assertEquals(
+            BottomTabNavigationAction.RESET_TO_ROOT,
+            route.bottomTab().navigationActionFor(BottomTab.REGIONAL_GUIDE),
+        )
+        assertEquals(
+            BottomTabNavigationAction.RESTORE_STATE,
+            route.bottomTab().navigationActionFor(BottomTab.FAVORITES),
+        )
         assertFalse(route.isFavoriteReentryRoute())
         assertFalse(route.isMapReentryRoute())
     }
@@ -51,8 +60,33 @@ class RegionalGuideRouteNavigationPolicyTest {
             entrySource = RegionalGuideEntrySource.FAVORITES,
         )
 
+        assertEquals(BottomTab.FAVORITES, route.bottomTab())
+        assertEquals(
+            BottomTabNavigationAction.RESET_TO_ROOT,
+            route.bottomTab().navigationActionFor(BottomTab.FAVORITES),
+        )
+        assertEquals(
+            BottomTabNavigationAction.RESTORE_STATE,
+            route.bottomTab().navigationActionFor(BottomTab.REGIONAL_GUIDE),
+        )
         assertTrue(route.isFavoriteReentryRoute())
         assertFalse(route.isMapReentryRoute())
+    }
+
+    @Test
+    fun `지도 탭에서 이동한 지역 가이드 경로는 지도 탭에 속한다`() {
+        val route = RegionalGuideRoute(initialAddress = "서울특별시 중구 퇴계로 63")
+
+        assertEquals(BottomTab.MAP, route.bottomTab())
+        assertEquals(
+            BottomTabNavigationAction.RESET_TO_ROOT,
+            route.bottomTab().navigationActionFor(BottomTab.MAP),
+        )
+        assertEquals(
+            BottomTabNavigationAction.RESTORE_STATE,
+            route.bottomTab().navigationActionFor(BottomTab.REGIONAL_GUIDE),
+        )
+        assertTrue(route.isMapReentryRoute())
     }
 
     @Test
@@ -62,6 +96,7 @@ class RegionalGuideRouteNavigationPolicyTest {
         val route = address.toRegionalGuideAddressRouteOrNull()
 
         assertEquals("서울특별시 중구 퇴계로 63 (남창동, 삼익패션타운)", route?.initialAddress)
+        assertEquals(BottomTab.MAP, route?.bottomTab())
         assertFalse(route!!.isFavoriteReentryRoute())
         assertTrue(route.isMapReentryRoute())
     }
