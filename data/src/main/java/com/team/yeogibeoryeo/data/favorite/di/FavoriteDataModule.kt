@@ -39,8 +39,7 @@ object FavoriteDatabaseModule {
             FavoriteDatabase::class.java,
             "yeogi_beoryeo_favorites.db",
         )
-            .addMigrations(FAVORITE_DATABASE_MIGRATION_1_2)
-            .addMigrations(FAVORITE_DATABASE_MIGRATION_2_3)
+            .addMigrations(*favoriteDatabaseMigrations)
             .build()
 
     @Provides
@@ -97,6 +96,12 @@ object FavoriteDatabaseModule {
                 )
             }
         }
+
+    internal val favoriteDatabaseMigrations =
+        arrayOf(
+            FAVORITE_DATABASE_MIGRATION_1_2,
+            FAVORITE_DATABASE_MIGRATION_2_3,
+        )
 }
 
 @Module

@@ -37,8 +37,7 @@ class FavoriteDatabaseMigrationTest {
             DATABASE_NAME,
             3,
             true,
-            FavoriteDatabaseModule.FAVORITE_DATABASE_MIGRATION_1_2,
-            FavoriteDatabaseModule.FAVORITE_DATABASE_MIGRATION_2_3,
+            *FavoriteDatabaseModule.favoriteDatabaseMigrations,
         ).use { migratedDatabase ->
             migratedDatabase.assertFavorite(
                 expectedType = "ITEM_GUIDE",
@@ -85,7 +84,7 @@ class FavoriteDatabaseMigrationTest {
             DATABASE_NAME,
             3,
             true,
-            FavoriteDatabaseModule.FAVORITE_DATABASE_MIGRATION_2_3,
+            *FavoriteDatabaseModule.favoriteDatabaseMigrations,
         ).use { migratedDatabase ->
             migratedDatabase.assertFavorite(
                 expectedType = "COLLECTION_SPOT",
