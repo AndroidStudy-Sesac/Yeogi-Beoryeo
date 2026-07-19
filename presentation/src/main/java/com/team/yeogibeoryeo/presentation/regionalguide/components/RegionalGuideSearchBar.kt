@@ -13,9 +13,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.SearchBarField
+import com.team.yeogibeoryeo.common.R as CommonR
 
 @Composable
 fun RegionalGuideSearchBar(
@@ -30,7 +30,7 @@ fun RegionalGuideSearchBar(
         keyword = keyword,
         onKeywordChange = onKeywordChange,
         onSearch = { onSearchClick(it) },
-        placeholder = "지역명 또는 주소를 검색해주세요.",
+        placeholder = stringResource(id = R.string.regional_guide_search_placeholder),
         trailingContent = { isFocused ->
             val searchIconColor = when {
                 keyword.isNotBlank() || isFocused -> MaterialTheme.colorScheme.primary

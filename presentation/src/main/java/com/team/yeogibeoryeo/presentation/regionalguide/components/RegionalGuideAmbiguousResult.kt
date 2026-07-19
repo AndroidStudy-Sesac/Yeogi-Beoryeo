@@ -11,8 +11,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
-import com.team.yeogibeoryeo.presentation.regionalguide.regionSearchCandidateListScrollKey
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.regionSearchCandidateListScrollKey
 
 @Composable
 fun RegionalGuideAmbiguousResult(
@@ -39,7 +39,9 @@ fun RegionalGuideAmbiguousResult(
         initialScrollPosition = initialScrollPosition,
         onScrollPositionChange = onScrollPositionChange,
     ) { candidate ->
-        RegionalGuideCandidateRowText(text = candidate.displayText)
+        RegionalGuideCandidateRowText(
+            text = candidate.regionNameParts.toRegionalGuideSelectorText().orEmpty(),
+        )
     }
 }
 

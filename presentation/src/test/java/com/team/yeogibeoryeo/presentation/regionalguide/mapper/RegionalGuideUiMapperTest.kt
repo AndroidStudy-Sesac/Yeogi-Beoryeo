@@ -4,6 +4,8 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
+import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTimeFormat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -11,7 +13,77 @@ import org.junit.Test
 class RegionalGuideUiMapperTest {
 
     @Test
-    fun `관리구역명과 대상지역명이 없음이어도 UI 모델에는 원본 값을 유지한다`() {
+    fun `시작 시간과 종료 시간이 있으면 시간 범위 형식을 전달한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(sido = "서울특별시", sigungu = "중구"),
+            schedules = listOf(
+                RegionalWasteSchedule(
+                    wasteType = RegionalWasteType.GENERAL,
+                    disposalStartTime = "18:00",
+                    disposalEndTime = "23:00",
+                )
+            )
+        )
+
+        val timeFormat = guide.toUiModel().schedules.single().disposalTimeFormat
+
+        assertEquals(
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_range_format,
+                args = listOf("18:00", "23:00"),
+            ),
+            timeFormat,
+        )
+    }
+
+    @Test
+    fun `시작 시간만 있으면 이후 시간 형식을 전달한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(sido = "서울특별시", sigungu = "중구"),
+            schedules = listOf(
+                RegionalWasteSchedule(
+                    wasteType = RegionalWasteType.GENERAL,
+                    disposalStartTime = "18:00",
+                )
+            )
+        )
+
+        val timeFormat = guide.toUiModel().schedules.single().disposalTimeFormat
+
+        assertEquals(
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_after_format,
+                args = listOf("18:00"),
+            ),
+            timeFormat,
+        )
+    }
+
+    @Test
+    fun `종료 시간만 있으면 이전 시간 형식을 전달한다`() {
+        val guide = RegionalDisposalGuide(
+            region = Region(sido = "서울특별시", sigungu = "중구"),
+            schedules = listOf(
+                RegionalWasteSchedule(
+                    wasteType = RegionalWasteType.GENERAL,
+                    disposalEndTime = "23:00",
+                )
+            )
+        )
+
+        val timeFormat = guide.toUiModel().schedules.single().disposalTimeFormat
+
+        assertEquals(
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_before_format,
+                args = listOf("23:00"),
+            ),
+            timeFormat,
+        )
+    }
+
+    @Test
+    fun `관리구역명과 대상지역명이 없음이어도 화면 모델에는 원본 값을 유지한다`() {
         val guide = RegionalDisposalGuide(
             region = Region(sido = "경기도", sigungu = "성남시"),
             managementZoneName = "없음",
@@ -24,12 +96,13 @@ class RegionalGuideUiMapperTest {
         assertEquals("없음", uiModel.managementZoneName)
         assertEquals("없음", uiModel.targetRegionName)
         assertEquals("경기도 성남시", uiModel.regionName)
+        assertEquals(listOf("경기도", "성남시"), uiModel.regionNameParts)
         assertEquals("없음", guide.managementZoneName)
         assertEquals("없음", guide.targetRegionName)
     }
 
     @Test
-    fun `관리구역명과 대상지역명이 공백이어도 UI 모델에는 원본 값을 유지한다`() {
+    fun `관리구역명과 대상지역명이 공백이어도 화면 모델에는 원본 값을 유지한다`() {
         val guide = RegionalDisposalGuide(
             region = Region(sido = "경기도", sigungu = "성남시"),
             managementZoneName = " ",
@@ -45,7 +118,7 @@ class RegionalGuideUiMapperTest {
     }
 
     @Test
-    fun `의미 있는 관리구역명과 대상지역명은 UI 모델에 유지한다`() {
+    fun `의미 있는 관리구역명과 대상지역명은 화면 모델에 유지한다`() {
         val guide = RegionalDisposalGuide(
             region = Region(sido = "대전광역시", sigungu = "유성구"),
             managementZoneName = "노은2동",
@@ -60,7 +133,7 @@ class RegionalGuideUiMapperTest {
     }
 
     @Test
-    fun `대형폐기물 요일이 없으면 UI 일정 요일을 비워 행을 숨길 수 있게 한다`() {
+    fun `대형폐기물 요일이 없으면 화면 일정 요일을 비워 행을 숨길 수 있게 한다`() {
         val guide = RegionalDisposalGuide(
             region = Region(sido = "서울특별시", sigungu = "중구"),
             schedules = listOf(
@@ -81,7 +154,7 @@ class RegionalGuideUiMapperTest {
     }
 
     @Test
-    fun `관리 부서와 연락처는 UI 문의 정보로 합쳐 표시한다`() {
+    fun `관리 부서와 연락처는 화면 문의 정보로 합쳐 표시한다`() {
         val guide = RegionalDisposalGuide(
             region = Region(sido = "서울특별시", sigungu = "중구"),
             schedules = emptyList(),

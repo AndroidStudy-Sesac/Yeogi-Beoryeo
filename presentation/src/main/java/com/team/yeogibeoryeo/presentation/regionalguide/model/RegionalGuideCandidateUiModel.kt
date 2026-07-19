@@ -1,6 +1,8 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.model
 
+import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.domain.region.model.RegionNameNaturalComparator
+import com.team.yeogibeoryeo.presentation.R
 
 data class RegionalGuideCandidateUiModel(
     val guide: RegionalGuideUiModel,
@@ -28,6 +30,12 @@ data class RegionalGuideCandidateUiModel(
             .appendDisambiguation()
             .distinct()
             .joinToString(CANDIDATE_LABEL_SEPARATOR)
+
+    internal val displayTextForRow: RegionalGuideCandidateDisplayText =
+        primaryDisplayParts()
+            .takeIf { parts -> parts.isNotEmpty() }
+            ?.let { RegionalGuideCandidateDisplayText.Plain(displayText) }
+            ?: fallbackDisplayTextForRow()
 
     internal val sortText: String =
         primaryDisplayParts()
@@ -75,10 +83,8 @@ data class RegionalGuideCandidateUiModel(
                 RegionalGuideCandidateDistinguishingLabel.UNCOLLECTED_DAYS
             ),
             guide.schedules.firstNotNullOfOrNull { schedule ->
-                schedule.toCandidateSummary()
-            }?.toDistinguishingText(
-                RegionalGuideCandidateDistinguishingLabel.SCHEDULE
-            ),
+                schedule.toCandidateDistinguishingText()
+            },
             guide.departmentInfo.toDistinguishingText(
                 RegionalGuideCandidateDistinguishingLabel.DEPARTMENT
             ),
@@ -95,16 +101,47 @@ data class RegionalGuideCandidateUiModel(
             .ifEmpty { fallbackDisplayParts() }
 
     private fun fallbackDisplayParts(): List<String> =
-        listOfNotNull(
-            regionalGuideRegionFallbackText(sido, sigungu, eupmyeondong),
+        fallbackRegionDisplayParts() + listOfNotNull(
             candidateDisambiguationText(),
         )
+
+    private fun fallbackRegionDisplayParts(): List<String> =
+        listOfNotNull(
+            regionalGuideRegionFallbackText(sido, sigungu, eupmyeondong)
+                .takeIf { text -> text.isNotBlank() },
+        )
+
+    private fun fallbackDisplayTextForRow(): RegionalGuideCandidateDisplayText {
+        val regionText = listOfNotNull(
+            sido.takeIfRegionalGuideDisplayValue(),
+            sigungu.takeIfRegionalGuideDisplayValue(),
+            eupmyeondong.takeIfRegionalGuideDisplayValue(),
+        ).toRegionalGuideRegionDisplayText()
+            ?: RegionalGuideCandidateDisplayText.Resource(
+                resId = R.string.regional_guide_default_region_name,
+                args = emptyList(),
+            )
+
+        return listOfNotNull(
+            candidateDisambiguationText(),
+            disambiguationText.takeIfRegionalGuideDisplayValue(),
+        )
+            .distinct()
+            .fold(regionText) { displayText, label ->
+                RegionalGuideCandidateDisplayText.Resource(
+                    resId = R.string.regional_guide_candidate_label_format,
+                    args = listOf(displayText, label),
+                )
+            }
+    }
 
     internal fun candidateDisambiguationText(): String? =
         guide.disposalPlaceType.takeIfRegionalGuideDisplayValue()
             ?: guide.disposalPlaceDescription.takeIfRegionalGuideDisplayValue()
             ?: guide.schedules.firstNotNullOfOrNull { schedule ->
-                schedule.toCandidateSummary()
+                schedule
+                    .takeUnless { it.disposalTimeFormat != null }
+                    ?.toCandidateSummary()
             }
 
     private fun List<String>.appendDisambiguation(): List<String> =
@@ -138,6 +175,50 @@ data class RegionalGuideCandidateUiModel(
             .takeIf { summary -> summary.isNotBlank() }
     }
 
+    private fun RegionalWasteScheduleUiModel.toCandidateSummaryDisplayText():
+        RegionalGuideCandidateDisplayText? {
+        val criterion = when {
+            disposalDays.takeIfRegionalGuideDisplayValue() != null ->
+                RegionalGuideCandidateDisplayText.Plain(disposalDays.orEmpty())
+
+            disposalTime.takeIfRegionalGuideDisplayValue() != null ->
+                RegionalGuideCandidateDisplayText.Plain(disposalTime.orEmpty())
+
+            disposalTimeFormat != null ->
+                RegionalGuideCandidateDisplayText.Resource(
+                    resId = disposalTimeFormat.resId,
+                    args = disposalTimeFormat.args,
+                )
+
+            disposalMethod.takeIfRegionalGuideDisplayValue() != null ->
+                RegionalGuideCandidateDisplayText.Plain(disposalMethod.orEmpty())
+
+            disposalPlace.takeIfRegionalGuideDisplayValue() != null ->
+                RegionalGuideCandidateDisplayText.Plain(disposalPlace.orEmpty())
+
+            else -> return null
+        }
+
+        return wasteTypeName.takeIfRegionalGuideDisplayValue()
+            ?.let { wasteTypeName ->
+                RegionalGuideCandidateDisplayText.Resource(
+                    resId = R.string.regional_guide_candidate_schedule_summary_format,
+                    args = listOf(wasteTypeName, criterion),
+                )
+            }
+            ?: criterion
+    }
+
+    private fun RegionalWasteScheduleUiModel.toCandidateDistinguishingText():
+        RegionalGuideCandidateDistinguishingText? {
+        val value = toCandidateSummaryDisplayText() ?: return null
+
+        return RegionalGuideCandidateDistinguishingText(
+            label = RegionalGuideCandidateDistinguishingLabel.SCHEDULE,
+            value = value,
+        )
+    }
+
     private companion object {
         const val CANDIDATE_LABEL_SEPARATOR = " / "
         const val SCHEDULE_SUMMARY_SEPARATOR = " "
@@ -150,8 +231,36 @@ data class RegionalGuideCandidateUiModel(
 
 internal data class RegionalGuideCandidateDistinguishingText(
     val label: RegionalGuideCandidateDistinguishingLabel,
-    val value: String
+    val value: RegionalGuideCandidateDisplayText,
 )
+
+internal sealed interface RegionalGuideCandidateDisplayText {
+    data class Plain(
+        val value: String,
+    ) : RegionalGuideCandidateDisplayText
+
+    data class Resource(
+        @param:StringRes val resId: Int,
+        val args: List<Any>,
+    ) : RegionalGuideCandidateDisplayText
+}
+
+private fun List<String>.toRegionalGuideRegionDisplayText(): RegionalGuideCandidateDisplayText? =
+    when (size) {
+        0 -> null
+        1 -> RegionalGuideCandidateDisplayText.Plain(first())
+        2 -> RegionalGuideCandidateDisplayText.Resource(
+            resId = R.string.regional_guide_region_two_name_format,
+            args = this,
+        )
+
+        3 -> RegionalGuideCandidateDisplayText.Resource(
+            resId = R.string.regional_guide_region_three_name_format,
+            args = this,
+        )
+
+        else -> null
+    }
 
 internal enum class RegionalGuideCandidateDistinguishingLabel {
     DISPOSAL_PLACE,
@@ -170,6 +279,12 @@ private val RegionalWasteScheduleUiModel.stableKey: String
         wasteTypeName.toStableKeyPart(),
         disposalDays.toStableKeyPart(),
         disposalTime.toStableKeyPart(),
+        disposalTimeFormat?.let { timeFormat ->
+            listOf(
+                timeFormat.resId.toString(),
+                timeFormat.args.joinToString(","),
+            ).joinToString(":")
+        }.toStableKeyPart(),
         disposalMethod.toStableKeyPart(),
         disposalPlace.toStableKeyPart(),
     ).joinToString("/")
@@ -187,7 +302,7 @@ private fun String?.toDistinguishingText(
         ?.let { value ->
             RegionalGuideCandidateDistinguishingText(
                 label = label,
-                value = value
+                value = RegionalGuideCandidateDisplayText.Plain(value),
             )
         }
 

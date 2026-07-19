@@ -10,10 +10,10 @@ data class RegionSelectorUiState(
     val selectedEupmyeondong: String? = null,
     val expandedDropdown: RegionSelectorDropdown? = null,
 ) {
-    val selectedRegionText: String?
+    val selectedRegionQuery: String?
         get() = selectedRegionParts
             .takeIf { it.isNotEmpty() }
-            ?.joinToString(" > ")
+            ?.joinToString(" ")
 
     val isSigunguSelectionEnabled: Boolean
         get() = !selectedSido.isNullOrBlank()
@@ -23,19 +23,22 @@ data class RegionSelectorUiState(
                 !isEupmyeondongOptionsLoading &&
                 eupmyeondongOptions.isNotEmpty()
 
-    val eupmyeondongSelectionLabel: String
+    val eupmyeondongSelectionStatus: RegionSelectorEupmyeondongSelectionStatus
         get() = selectedEupmyeondong
+            ?.let { RegionSelectorEupmyeondongSelectionStatus.Selected(it) }
             ?: when {
-                isEupmyeondongOptionsLoading -> "읍면동 불러오는 중"
-                !selectedSigungu.isNullOrBlank() && eupmyeondongOptions.isEmpty() -> "제공되는 읍면동 없음"
-                else -> "읍면동 선택"
+                isEupmyeondongOptionsLoading -> RegionSelectorEupmyeondongSelectionStatus.Loading
+                !selectedSigungu.isNullOrBlank() && eupmyeondongOptions.isEmpty() ->
+                    RegionSelectorEupmyeondongSelectionStatus.Unavailable
+
+                else -> RegionSelectorEupmyeondongSelectionStatus.Default
             }
 
     val canSearchSelectedRegion: Boolean
         get() = !selectedSido.isNullOrBlank() &&
                 !selectedSigungu.isNullOrBlank()
 
-    private val selectedRegionParts: List<String>
+    val selectedRegionParts: List<String>
         get() = listOfNotNull(
             selectedSido,
             selectedSigungu,
@@ -47,4 +50,16 @@ enum class RegionSelectorDropdown {
     SIDO,
     SIGUNGU,
     EUPMYEONDONG,
+}
+
+sealed interface RegionSelectorEupmyeondongSelectionStatus {
+    data class Selected(
+        val name: String,
+    ) : RegionSelectorEupmyeondongSelectionStatus
+
+    data object Loading : RegionSelectorEupmyeondongSelectionStatus
+
+    data object Unavailable : RegionSelectorEupmyeondongSelectionStatus
+
+    data object Default : RegionSelectorEupmyeondongSelectionStatus
 }

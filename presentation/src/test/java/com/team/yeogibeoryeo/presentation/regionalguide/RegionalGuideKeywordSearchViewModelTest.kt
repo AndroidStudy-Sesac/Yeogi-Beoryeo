@@ -26,6 +26,28 @@ class RegionalGuideKeywordSearchViewModelTest {
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
+    fun `키워드 조회 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolveThrowable = IllegalStateException(),
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.searchByKeyword("중구")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Error
+
+        assertEquals(
+            RegionalGuideErrorMessage.Resource(
+                resId = R.string.regional_guide_error_keyword_search_message,
+            ),
+            state.message,
+        )
+    }
+
+    @Test
     fun `모호한 키워드 검색은 지역 후보 목록을 보여준다`() = runTest {
         val viewModel = createViewModel(
             regionOptionsRepository = FakeRegionOptionsRepository(
@@ -53,7 +75,10 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals("온양", state.query)
         assertEquals(2, state.candidates.size)
-        assertEquals("울산광역시 > 울주군 > 온양읍", state.candidates.first().displayText)
+        assertEquals(
+            listOf("울산광역시", "울주군", "온양읍"),
+            state.candidates.first().regionNameParts,
+        )
     }
 
     @Test
@@ -270,7 +295,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         val state = viewModel.uiState.value as RegionalGuideUiState.Success
 
         assertEquals("온양", viewModel.searchKeyword.value)
-        assertEquals(candidate.displayText, state.query)
+        assertEquals(candidate.query, state.query)
         assertEquals("울주군", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {
@@ -848,7 +873,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         assertTrue(viewModel.restoreCandidatesFromDetail())
 
         val restoredGuideCandidatesState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
-        assertEquals("대전광역시 > 중구", restoredGuideCandidatesState.query)
+        assertEquals("대전광역시 중구", restoredGuideCandidatesState.query)
         assertEquals(2, restoredGuideCandidatesState.candidates.size)
         assertTrue(restoredGuideCandidatesState.canRestoreCandidates)
         assertEquals(
@@ -914,7 +939,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         runCurrent()
 
         val loadingState = viewModel.uiState.value as RegionalGuideUiState.Loading
-        assertEquals("대전광역시 > 중구", loadingState.query)
+        assertEquals("대전광역시 중구", loadingState.query)
         assertTrue(loadingState.canRestoreCandidates)
 
         assertTrue(viewModel.restoreCandidatesFromDetail())
@@ -956,7 +981,13 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val errorState = viewModel.uiState.value as RegionalGuideUiState.Error
 
-        assertEquals("대전광역시 > 중구", errorState.query)
+        assertEquals("대전광역시 중구", errorState.query)
+        assertEquals(
+            RegionalGuideErrorMessage.Resource(
+                resId = R.string.regional_guide_error_unknown_message,
+            ),
+            errorState.message,
+        )
         assertTrue(errorState.canRestoreCandidates)
         assertTrue(viewModel.restoreCandidatesFromDetail())
 
@@ -996,7 +1027,11 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val errorState = viewModel.uiState.value as RegionalGuideUiState.Error
 
-        assertEquals("대전광역시 > 중구", errorState.query)
+        assertEquals("대전광역시 중구", errorState.query)
+        assertEquals(
+            RegionalGuideErrorMessage.Dynamic("조회 실패"),
+            errorState.message,
+        )
         assertTrue(errorState.canRestoreCandidates)
         assertTrue(viewModel.restoreCandidatesFromDetail())
 
@@ -1034,7 +1069,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val emptyState = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("대전광역시 > 중구", emptyState.query)
+        assertEquals("대전광역시 중구", emptyState.query)
         assertFalse(viewModel.restoreCandidatesFromDetail())
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
     }
@@ -1076,7 +1111,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val emptyState = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("대전광역시 > 중구", emptyState.query)
+        assertEquals("대전광역시 중구", emptyState.query)
         assertFalse(viewModel.restoreCandidatesFromDetail())
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
     }
@@ -1115,7 +1150,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val state = viewModel.uiState.value as RegionalGuideUiState.Success
 
-        assertEquals("대전광역시 > 중구", state.query)
+        assertEquals("대전광역시 중구", state.query)
         assertEquals("대전광역시 중구", state.guide.regionName)
         assertEquals("없음", state.guide.managementZoneName)
         assertEquals("없음", state.guide.targetRegionName)

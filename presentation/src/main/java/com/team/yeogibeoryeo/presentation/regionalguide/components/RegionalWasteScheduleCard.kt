@@ -27,17 +27,21 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteSched
 @Composable
 fun RegionalWasteScheduleCard(
     schedule: RegionalWasteScheduleUiModel,
+    modifier: Modifier = Modifier,
     disposalPlaces: List<String> = listOfNotNull(schedule.disposalPlace),
-    modifier: Modifier = Modifier
 ) {
     val normalizedDisposalPlaces = disposalPlaces
         .map { disposalPlace -> disposalPlace.trim() }
         .filter { disposalPlace -> disposalPlace.isNotEmpty() }
         .distinct()
+    val disposalTime = schedule.disposalTime
+        ?: schedule.disposalTimeFormat?.let { timeFormat ->
+            stringResource(id = timeFormat.resId, *timeFormat.args.toTypedArray())
+        }
     val disposalPlaceExpansionKey = listOf(
         schedule.wasteTypeName,
         schedule.disposalDays.orEmpty(),
-        schedule.disposalTime.orEmpty(),
+        disposalTime.orEmpty(),
         schedule.disposalMethod.orEmpty(),
         normalizedDisposalPlaces.joinToString(DISPOSAL_PLACE_KEY_DELIMITER),
     ).joinToString(DISPOSAL_PLACE_KEY_DELIMITER)
@@ -72,10 +76,10 @@ fun RegionalWasteScheduleCard(
                 )
             }
 
-            schedule.disposalTime?.let { disposalTime ->
+            disposalTime?.let { displayTime ->
                 RegionalGuideInfoRow(
                     title = stringResource(id = R.string.regional_waste_schedule_time_label),
-                    value = disposalTime
+                    value = displayTime
                 )
             }
 

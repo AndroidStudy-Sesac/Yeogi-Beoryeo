@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.model
 
+import com.team.yeogibeoryeo.presentation.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -151,7 +152,7 @@ class RegionalGuideCandidateUiModelTest {
         assertEquals(
             RegionalGuideCandidateDistinguishingText(
                 label = RegionalGuideCandidateDistinguishingLabel.DISPOSAL_PLACE,
-                value = "지정 거점 장소 배출"
+                value = RegionalGuideCandidateDisplayText.Plain("지정 거점 장소 배출")
             ),
             candidate.collectionTypeDistinguishingText
         )
@@ -169,7 +170,7 @@ class RegionalGuideCandidateUiModelTest {
         assertEquals(
             RegionalGuideCandidateDistinguishingText(
                 label = RegionalGuideCandidateDistinguishingLabel.UNCOLLECTED_DAYS,
-                value = "일요일"
+                value = RegionalGuideCandidateDisplayText.Plain("일요일")
             ),
             candidate.collectionTypeDistinguishingText
         )
@@ -206,6 +207,103 @@ class RegionalGuideCandidateUiModelTest {
         )
 
         assertEquals("대구광역시 > 군위군 / 일반쓰레기 월, 수, 금", candidate.displayText)
+    }
+
+    @Test
+    fun `시간 형식 일정은 후보 구분 정보에 전체 시간 형식을 사용한다`() {
+        listOf(
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_range_format,
+                args = listOf("18:00", "23:00"),
+            ),
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_after_format,
+                args = listOf("18:00"),
+            ),
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_before_format,
+                args = listOf("23:00"),
+            ),
+        ).forEach { timeFormat ->
+            val candidate = candidate(
+                sido = "대구광역시",
+                sigungu = "군위군",
+                managementZoneName = "없음",
+                targetRegionName = "없음",
+                schedules = listOf(
+                    RegionalWasteScheduleUiModel(
+                        wasteTypeName = "일반쓰레기",
+                        disposalTimeFormat = timeFormat,
+                    )
+                ),
+            )
+
+            assertEquals("대구광역시 > 군위군", candidate.displayText)
+            assertEquals(
+                RegionalGuideCandidateDisplayText.Resource(
+                    resId = R.string.regional_guide_candidate_schedule_summary_format,
+                    args = listOf(
+                        "일반쓰레기",
+                        RegionalGuideCandidateDisplayText.Resource(
+                            resId = timeFormat.resId,
+                            args = timeFormat.args,
+                        ),
+                    ),
+                ),
+                candidate.collectionTypeDistinguishingText?.value,
+            )
+        }
+    }
+
+    @Test
+    fun `후보 fallback 지역명은 화면용 리소스로 조합한다`() {
+        val candidate = candidate(
+            sido = "경기도",
+            sigungu = "성남시",
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "문전수거",
+        )
+
+        assertEquals(
+            RegionalGuideCandidateDisplayText.Resource(
+                resId = R.string.regional_guide_candidate_label_format,
+                args = listOf(
+                    RegionalGuideCandidateDisplayText.Resource(
+                        resId = R.string.regional_guide_region_two_name_format,
+                        args = listOf("경기도", "성남시"),
+                    ),
+                    "문전수거",
+                ),
+            ),
+            candidate.displayTextForRow,
+        )
+    }
+
+    @Test
+    fun `후보 지역명이 없으면 기본 지역 리소스를 표시한다`() {
+        val candidate = candidate(
+            sido = null,
+            sigungu = null,
+            eupmyeondong = null,
+            managementZoneName = "없음",
+            targetRegionName = "없음",
+            disposalPlaceType = "문전수거",
+        )
+
+        assertEquals(
+            RegionalGuideCandidateDisplayText.Resource(
+                resId = R.string.regional_guide_candidate_label_format,
+                args = listOf(
+                    RegionalGuideCandidateDisplayText.Resource(
+                        resId = R.string.regional_guide_default_region_name,
+                        args = emptyList(),
+                    ),
+                    "문전수거",
+                ),
+            ),
+            candidate.displayTextForRow,
+        )
     }
 
     @Test
@@ -530,8 +628,9 @@ class RegionalGuideCandidateUiModelTest {
 
     private fun candidate(
         regionName: String = "대전광역시 유성구",
-        sido: String = "대전광역시",
-        sigungu: String = "유성구",
+        sido: String? = "대전광역시",
+        sigungu: String? = "유성구",
+        eupmyeondong: String? = null,
         managementZoneName: String?,
         targetRegionName: String?,
         disposalPlaceType: String? = null,
@@ -553,6 +652,6 @@ class RegionalGuideCandidateUiModelTest {
             ),
             sido = sido,
             sigungu = sigungu,
-            eupmyeondong = null
+            eupmyeondong = eupmyeondong
         )
 }

@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.presentation.R
@@ -273,7 +273,10 @@ class RegionalGuideSelectorViewModelTest {
             assertEquals(emptyList<String>(), eupmyeondongOptions)
             assertFalse(isEupmyeondongOptionsLoading)
             assertFalse(isEupmyeondongSelectionEnabled)
-            assertEquals("제공되는 읍면동 없음", eupmyeondongSelectionLabel)
+            assertEquals(
+                RegionSelectorEupmyeondongSelectionStatus.Unavailable,
+                eupmyeondongSelectionStatus,
+            )
         }
     }
 
@@ -308,7 +311,10 @@ class RegionalGuideSelectorViewModelTest {
         with(viewModel.regionSelectorUiState.value) {
             assertTrue(isEupmyeondongOptionsLoading)
             assertFalse(isEupmyeondongSelectionEnabled)
-            assertEquals("읍면동 불러오는 중", eupmyeondongSelectionLabel)
+            assertEquals(
+                RegionSelectorEupmyeondongSelectionStatus.Loading,
+                eupmyeondongSelectionStatus,
+            )
         }
 
         viewModel.onRegionSelectorDropdownExpanded(RegionSelectorDropdown.EUPMYEONDONG)
@@ -319,7 +325,10 @@ class RegionalGuideSelectorViewModelTest {
         with(viewModel.regionSelectorUiState.value) {
             assertFalse(isEupmyeondongOptionsLoading)
             assertTrue(isEupmyeondongSelectionEnabled)
-            assertEquals("읍면동 선택", eupmyeondongSelectionLabel)
+            assertEquals(
+                RegionSelectorEupmyeondongSelectionStatus.Default,
+                eupmyeondongSelectionStatus,
+            )
         }
     }
 
@@ -384,7 +393,11 @@ class RegionalGuideSelectorViewModelTest {
         viewModel.onRegionSelectionSearchClick()
         advanceUntilIdle()
 
-        assertEquals("광주광역시 > 동구", viewModel.searchKeyword.value)
+        assertEquals("광주광역시 동구", viewModel.searchKeyword.value)
+        assertEquals(
+            listOf("광주광역시", "동구"),
+            viewModel.searchKeywordRegionNameParts.value,
+        )
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
     }
 

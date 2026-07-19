@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.presentation.R
@@ -18,6 +18,28 @@ class RegionalGuideAddressSearchViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
+
+    @Test
+    fun `주소 조회 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                extractThrowable = IllegalStateException(),
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.loadByAddress("서울특별시 중구 세종대로")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Error
+
+        assertEquals(
+            RegionalGuideErrorMessage.Resource(
+                resId = R.string.regional_guide_error_address_search_message,
+            ),
+            state.message,
+        )
+    }
 
     @Test
     fun `주소 조회는 지역 선택 상태와 가이드 조회 전에 행정구역을 정규화한다`() = runTest {

@@ -4,13 +4,16 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTimeFormat
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.takeIfRegionalGuideDisplayValue
 
 fun RegionalDisposalGuide.toUiModel(): RegionalGuideUiModel {
     return RegionalGuideUiModel(
         regionName = displayRegionName(),
+        regionNameParts = displayRegionNameParts(),
         managementZoneName = managementZoneName,
         targetRegionName = targetRegionName,
         disposalPlaceType = disposalPlaceType.takeIfNotBlank(),
@@ -38,26 +41,29 @@ private fun RegionalWasteSchedule.toUiModel(): RegionalWasteScheduleUiModel {
     return RegionalWasteScheduleUiModel(
         wasteTypeName = wasteType.description,
         disposalDays = disposalDays.takeIfNotBlank(),
-        disposalTime = displayTime(),
+        disposalTimeFormat = timeFormat(),
         disposalMethod = disposalMethod.takeIfNotBlank(),
         disposalPlace = disposalPlace.takeIfNotBlank(),
     )
 }
 
 private fun RegionalDisposalGuide.displayRegionName(): String {
-    val regionName = listOfNotNull(
-        region.sido,
-        region.sigungu,
-        displayEupmyeondongName()
-    ).filter { it.isNotBlank() }
+    val regionName = displayRegionNameParts()
         .joinToString(" ")
 
     return regionName.ifBlank {
         targetRegionName.takeIfRegionalGuideDisplayValue()
             ?: managementZoneName.takeIfRegionalGuideDisplayValue()
-            ?: "지역 정보"
+            .orEmpty()
     }
 }
+
+private fun RegionalDisposalGuide.displayRegionNameParts(): List<String> =
+    listOfNotNull(
+        region.sido,
+        region.sigungu,
+        displayEupmyeondongName()
+    ).filter { it.isNotBlank() }
 
 private fun RegionalDisposalGuide.displayEupmyeondongName(): String? {
     val eupmyeondong = region.eupmyeondong?.trim()?.takeIf { it.isNotBlank() }
@@ -82,14 +88,29 @@ private fun RegionalDisposalGuide.displayEupmyeondongName(): String? {
         ?: eupmyeondong
 }
 
-private fun RegionalWasteSchedule.displayTime(): String? {
+private fun RegionalWasteSchedule.timeFormat(): RegionalWasteScheduleTimeFormat? {
     val startTime = disposalStartTime
     val endTime = disposalEndTime
 
     return when {
-        !startTime.isNullOrBlank() && !endTime.isNullOrBlank() -> "$startTime ~ $endTime"
-        !startTime.isNullOrBlank() -> "$startTime 이후"
-        !endTime.isNullOrBlank() -> "$endTime 이전"
+        !startTime.isNullOrBlank() && !endTime.isNullOrBlank() ->
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_range_format,
+                args = listOf(startTime, endTime),
+            )
+
+        !startTime.isNullOrBlank() ->
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_after_format,
+                args = listOf(startTime),
+            )
+
+        !endTime.isNullOrBlank() ->
+            RegionalWasteScheduleTimeFormat(
+                resId = R.string.regional_waste_schedule_time_before_format,
+                args = listOf(endTime),
+            )
+
         else -> null
     }
 }

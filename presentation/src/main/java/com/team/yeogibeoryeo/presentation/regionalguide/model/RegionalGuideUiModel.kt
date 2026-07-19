@@ -8,7 +8,8 @@ data class RegionalGuideUiModel(
     val disposalPlaceDescription: String?,
     val schedules: List<RegionalWasteScheduleUiModel>,
     val uncollectedDays: String?,
-    val departmentInfo: String?
+    val departmentInfo: String?,
+    val regionNameParts: List<String> = emptyList(),
 )
 
 internal fun String?.takeIfRegionalGuideDisplayValue(): String? =
@@ -29,8 +30,6 @@ internal fun regionalGuideRegionFallbackText(
         eupmyeondong.takeIfRegionalGuideDisplayValue(),
     )
         .joinToString(REGION_FALLBACK_SEPARATOR)
-        .ifBlank { DEFAULT_REGION_FALLBACK_TEXT }
 
 private const val NO_REGIONAL_GUIDE_VALUE = "없음"
 private const val REGION_FALLBACK_SEPARATOR = " > "
-private const val DEFAULT_REGION_FALLBACK_TEXT = "지역 정보"

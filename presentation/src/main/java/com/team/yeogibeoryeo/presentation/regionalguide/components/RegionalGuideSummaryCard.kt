@@ -15,12 +15,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.takeIfRegionalGuideDisplayValue
@@ -29,10 +31,15 @@ import com.team.yeogibeoryeo.common.R as CommonR
 @Composable
 fun RegionalGuideSummaryCard(
     guide: RegionalGuideUiModel,
+    modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
     onFavoriteClick: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
+    val displayRegionName = guide.regionNameParts.toRegionalGuideSummaryText()
+        ?: guide.regionName.ifBlank {
+            stringResource(id = R.string.regional_guide_default_region_name)
+        }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -53,7 +60,7 @@ fun RegionalGuideSummaryCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = guide.regionName,
+                    text = displayRegionName,
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -68,11 +75,13 @@ fun RegionalGuideSummaryCard(
                                 CommonR.drawable.ic_favorite
                             },
                         ),
-                        contentDescription = if (isFavorite) {
-                            "즐겨찾기 해제"
-                        } else {
-                            "즐겨찾기 추가"
-                        },
+                        contentDescription = stringResource(
+                            id = if (isFavorite) {
+                                R.string.regional_guide_summary_favorite_remove_action
+                            } else {
+                                R.string.regional_guide_summary_favorite_add_action
+                            }
+                        ),
                         modifier = Modifier.size(22.dp),
                         tint = MaterialTheme.colorScheme.tertiary,
                     )
@@ -81,42 +90,42 @@ fun RegionalGuideSummaryCard(
 
             guide.managementZoneName.takeIfRegionalGuideDisplayValue()?.let { managementZoneName ->
                 RegionalGuideInfoRow(
-                    title = "관리구역",
+                    title = stringResource(id = R.string.regional_guide_summary_management_zone_label),
                     value = managementZoneName
                 )
             }
 
             guide.targetRegionName.takeIfRegionalGuideDisplayValue()?.let { targetRegionName ->
                 RegionalGuideInfoRow(
-                    title = "대상지역",
+                    title = stringResource(id = R.string.regional_guide_summary_target_region_label),
                     value = targetRegionName
                 )
             }
 
             guide.disposalPlaceType?.let { placeType ->
                 RegionalGuideInfoRow(
-                    title = "배출장소",
+                    title = stringResource(id = R.string.regional_guide_summary_disposal_place_label),
                     value = placeType
                 )
             }
 
             guide.disposalPlaceDescription?.let { placeDescription ->
                 RegionalGuideInfoRow(
-                    title = "장소설명",
+                    title = stringResource(id = R.string.regional_guide_summary_place_description_label),
                     value = placeDescription
                 )
             }
 
             guide.uncollectedDays?.let { uncollectedDays ->
                 RegionalGuideInfoRow(
-                    title = "미수거일",
+                    title = stringResource(id = R.string.regional_guide_summary_uncollected_days_label),
                     value = uncollectedDays
                 )
             }
 
             guide.departmentInfo?.let { departmentInfo ->
                 RegionalGuideInfoRow(
-                    title = "문의",
+                    title = stringResource(id = R.string.regional_guide_summary_contact_label),
                     value = departmentInfo
                 )
             }

@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -68,6 +69,10 @@ class RegionalGuideViewModel @Inject constructor(
     private val _searchKeyword = MutableStateFlow("")
     val searchKeyword: StateFlow<String> = _searchKeyword.asStateFlow()
 
+    private val _searchKeywordRegionNameParts = MutableStateFlow<List<String>?>(null)
+    val searchKeywordRegionNameParts: StateFlow<List<String>?> =
+        _searchKeywordRegionNameParts.asStateFlow()
+
     private val _regionSelectorUiState = MutableStateFlow(RegionSelectorUiState())
     val regionSelectorUiState: StateFlow<RegionSelectorUiState> =
         _regionSelectorUiState.asStateFlow()
@@ -90,6 +95,7 @@ class RegionalGuideViewModel @Inject constructor(
 
     fun onSearchKeywordChanged(keyword: String) {
         clearGuideCandidateBackStack()
+        _searchKeywordRegionNameParts.value = null
         _searchKeyword.value = keyword
         clearStaleCandidateState(keyword)
         scheduleKeywordSuggestion(keyword)
@@ -209,7 +215,7 @@ class RegionalGuideViewModel @Inject constructor(
 
         if (selectedSido.isNullOrBlank() || selectedSigungu.isNullOrBlank()) {
             _uiState.value = RegionalGuideUiState.Empty(
-                query = state.selectedRegionText.orEmpty(),
+                query = state.selectedRegionQuery.orEmpty(),
                 titleResId = R.string.regional_guide_empty_select_region_title,
                 messageResId = R.string.regional_guide_empty_select_region_message,
                 action = selectRegionAction()
@@ -222,7 +228,7 @@ class RegionalGuideViewModel @Inject constructor(
             sigungu = selectedSigungu,
             eupmyeondong = state.selectedEupmyeondong
         )
-        val query = state.selectedRegionText ?: "$selectedSido > $selectedSigungu"
+        val query = state.selectedRegionQuery ?: listOf(selectedSido, selectedSigungu).joinToString(" ")
 
         searchBySelectedRegion(
             query = query,
@@ -280,7 +286,7 @@ class RegionalGuideViewModel @Inject constructor(
 
         val region = candidate.toRegion()
         searchBySelectedRegion(
-            query = candidate.displayText,
+            query = candidate.query,
             region = region,
             clearCandidateBackStack = ambiguousState == null,
         )
@@ -391,6 +397,7 @@ class RegionalGuideViewModel @Inject constructor(
         val trimmedKeyword = keyword.trim()
 
         clearGuideCandidateBackStack()
+        _searchKeywordRegionNameParts.value = null
         _searchKeyword.value = keyword
         keywordSuggestionJob?.cancel()
         guideLookupJob?.cancel()
@@ -423,7 +430,6 @@ class RegionalGuideViewModel @Inject constructor(
                     is ResolveRegionFromKeywordResult.Ambiguous -> {
                         _uiState.value = RegionalGuideUiState.Ambiguous(
                             query = trimmedKeyword,
-                            message = AMBIGUOUS_REGION_MESSAGE,
                             candidates = result.candidates
                                 .map { region -> region.toCandidateUiModel() }
                         )
@@ -452,7 +458,9 @@ class RegionalGuideViewModel @Inject constructor(
                 clearGuideCandidateBackStack()
                 _uiState.value = RegionalGuideUiState.Error(
                     query = trimmedKeyword,
-                    message = e.message ?: "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
+                    message = e.toErrorMessage(
+                        fallbackResId = R.string.regional_guide_error_keyword_search_message,
+                    ),
                 )
             }
         }
@@ -506,7 +514,9 @@ class RegionalGuideViewModel @Inject constructor(
                 clearGuideCandidateBackStack()
                 _uiState.value = RegionalGuideUiState.Error(
                     query = trimmedAddress,
-                    message = e.message ?: "주소 기반 지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
+                    message = e.toErrorMessage(
+                        fallbackResId = R.string.regional_guide_error_address_search_message,
+                    ),
                 )
             }
         }
@@ -555,7 +565,9 @@ class RegionalGuideViewModel @Inject constructor(
                 clearGuideCandidateBackStack()
                 _uiState.value = RegionalGuideUiState.Error(
                     query = "",
-                    message = e.message ?: "저장된 지역 가이드를 불러오는 중 오류가 발생했습니다."
+                    message = e.toErrorMessage(
+                        fallbackResId = R.string.regional_guide_error_favorite_restore_message,
+                    ),
                 )
             }
         }
@@ -603,7 +615,6 @@ class RegionalGuideViewModel @Inject constructor(
                         if (searchKeyword.value.trim() == trimmedKeyword) {
                             _uiState.value = RegionalGuideUiState.Ambiguous(
                                 query = trimmedKeyword,
-                                message = AMBIGUOUS_REGION_MESSAGE,
                                 candidates = result.candidates
                                     .map { region -> region.toCandidateUiModel() }
                             )
@@ -631,6 +642,7 @@ class RegionalGuideViewModel @Inject constructor(
             clearGuideCandidateBackStack()
         }
         if (syncSearchKeyword) {
+            _searchKeywordRegionNameParts.value = region.toRegionNameParts()
             _searchKeyword.value = query
         }
         keywordSuggestionJob?.cancel()
@@ -649,6 +661,7 @@ class RegionalGuideViewModel @Inject constructor(
                 _uiState.value = RegionalGuideUiState.Loading(
                     query = query,
                     canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
+                    regionNameParts = region.toRegionNameParts(),
                 )
 
                 loadRegionalGuideForSelection(
@@ -660,7 +673,9 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = RegionalGuideUiState.Error(
                     query = query,
-                    message = e.message ?: "선택한 지역의 배출 가이드를 조회하는 중 오류가 발생했습니다.",
+                    message = e.toErrorMessage(
+                        fallbackResId = R.string.regional_guide_error_selected_region_message,
+                    ),
                     canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
                 )
             }
@@ -723,9 +738,7 @@ class RegionalGuideViewModel @Inject constructor(
         region: Region,
         emptyContext: RegionalGuideEmptyContext = RegionalGuideEmptyContext.DEFAULT,
     ): Boolean {
-        val result = getRegionalDisposalGuideUseCase(region = region)
-
-        return when (result) {
+        return when (val result = getRegionalDisposalGuideUseCase(region = region)) {
             RegionalGuideLookupResult.CandidateNotFound,
             RegionalGuideLookupResult.NotFound -> false
 
@@ -976,7 +989,9 @@ class RegionalGuideViewModel @Inject constructor(
             is RegionalGuideLookupResult.Failure -> {
                 RegionalGuideUiState.Error(
                     query = query,
-                    message = reason.toErrorMessage(),
+                    message = RegionalGuideErrorMessage.Resource(
+                        resId = reason.toErrorMessageResId(),
+                    ),
                     canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
                 )
             }
@@ -1010,18 +1025,21 @@ class RegionalGuideViewModel @Inject constructor(
                 RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
         }
 
-    private fun RegionalGuideFailureReason.toErrorMessage(): String {
-        return when (this) {
-            RegionalGuideFailureReason.NETWORK ->
-                "네트워크 연결을 확인한 뒤 다시 시도해주세요."
-
-            RegionalGuideFailureReason.API ->
-                "지역별 배출 가이드 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
-
-            RegionalGuideFailureReason.UNKNOWN ->
-                "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
+    private fun RegionalGuideFailureReason.toErrorMessageResId(): Int =
+        when (this) {
+            RegionalGuideFailureReason.NETWORK -> R.string.regional_guide_error_network_message
+            RegionalGuideFailureReason.API -> R.string.regional_guide_error_api_message
+            RegionalGuideFailureReason.UNKNOWN -> R.string.regional_guide_error_unknown_message
         }
-    }
+
+    private fun Exception.toErrorMessage(
+        @StringRes fallbackResId: Int,
+    ): RegionalGuideErrorMessage =
+        message
+            ?.trim()
+            ?.takeIf { value -> value.isNotEmpty() }
+            ?.let(RegionalGuideErrorMessage::Dynamic)
+            ?: RegionalGuideErrorMessage.Resource(resId = fallbackResId)
 
     private fun searchAgainAction(): RegionalGuideEmptyActionUiModel =
         RegionalGuideEmptyActionUiModel(
@@ -1171,8 +1189,15 @@ class RegionalGuideViewModel @Inject constructor(
             region.eupmyeondong,
         )
             .filter { regionName -> regionName.isNotBlank() }
-            .joinToString(" > ")
+            .joinToString(" ")
             .ifBlank { targetRegionName ?: managementZoneName ?: "" }
+
+    private fun Region.toRegionNameParts(): List<String> =
+        listOfNotNull(
+            sido,
+            sigungu,
+            eupmyeondong,
+        ).filter { regionName -> regionName.isNotBlank() }
 
     private fun RegionalGuideCandidateListScrollPosition.coerceAtLeastInitial():
         RegionalGuideCandidateListScrollPosition =
@@ -1259,7 +1284,6 @@ class RegionalGuideViewModel @Inject constructor(
 
     private companion object {
         const val KEYWORD_SUGGESTION_DEBOUNCE_MILLIS = 400L
-        const val AMBIGUOUS_REGION_MESSAGE = "여러 지역이 검색됩니다. 원하는 지역을 선택해주세요."
         const val NO_REGION_NAME = "없음"
         const val EUP_SUFFIX = "읍"
         const val MYEON_SUFFIX = "면"

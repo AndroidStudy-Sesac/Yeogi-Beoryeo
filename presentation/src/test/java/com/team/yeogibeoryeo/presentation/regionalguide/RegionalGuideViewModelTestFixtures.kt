@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -120,18 +120,22 @@ internal fun sampleGuide(
 
 internal class FakeRegionRepository(
     private val resolvedRegion: Region? = null,
-    private val extractedRegion: Region? = null
+    private val extractedRegion: Region? = null,
+    private val resolveThrowable: Throwable? = null,
+    private val extractThrowable: Throwable? = null,
 ) : RegionRepository {
     val extractedAddresses = mutableListOf<String>()
     val resolvedKeywords = mutableListOf<String>()
 
     override fun extractRegionFromAddress(address: String): Region? {
         extractedAddresses += address
+        extractThrowable?.let { throwable -> throw throwable }
         return extractedRegion
     }
 
     override suspend fun resolveRegionFromKeyword(keyword: String): Region? {
         resolvedKeywords += keyword
+        resolveThrowable?.let { throwable -> throw throwable }
         return resolvedRegion
     }
 
@@ -303,13 +307,17 @@ internal class FakeFavoriteRepository(
 
 internal class FakeRegionalGuideFavoriteSnapshotRepository(
     snapshots: List<RegionalGuideFavoriteSnapshot> = emptyList(),
+    private val throwable: Throwable? = null,
 ) : RegionalGuideFavoriteSnapshotRepository {
     private val snapshots = MutableStateFlow(snapshots)
 
     override fun observeSnapshots(): Flow<List<RegionalGuideFavoriteSnapshot>> = snapshots
 
-    override suspend fun getSnapshot(targetId: String): RegionalGuideFavoriteSnapshot? =
-        snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+    override suspend fun getSnapshot(targetId: String): RegionalGuideFavoriteSnapshot? {
+        throwable?.let { exception -> throw exception }
+
+        return snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+    }
 
     override suspend fun upsertSnapshot(snapshot: RegionalGuideFavoriteSnapshot) {
         snapshots.value =

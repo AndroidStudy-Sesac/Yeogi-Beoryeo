@@ -14,9 +14,10 @@ class RegionSearchCandidateUiModelTest {
             eupmyeondong = "정자동"
         )
 
-        assertEquals("경기도 > 성남시 > 정자동", candidate.displayText)
+        assertEquals(listOf("경기도", "성남시", "정자동"), candidate.regionNameParts)
+        assertEquals("경기도 성남시 정자동", candidate.query)
         assertEquals("sido=경기도|sigungu=성남시|eupmyeondong=정자동", candidate.stableKey)
-        assertNotEquals(candidate.displayText, candidate.stableKey)
+        assertNotEquals(candidate.query, candidate.stableKey)
     }
 
     @Test
