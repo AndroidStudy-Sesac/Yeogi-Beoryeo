@@ -13,16 +13,20 @@ import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalItemGuideUseCase
 import com.team.yeogibeoryeo.presentation.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -59,6 +63,59 @@ class ItemGuideDetailViewModelTest {
             val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
             assertEquals(guide, state.guide)
             assertTrue(state.isFavorite)
+        }
+
+    @Test
+    fun `같은 가이드를 다시 로드하면 기존 상태를 유지하고 재조회하지 않는다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val itemRepository = FakeItemRepository(guide = guide)
+            val viewModel =
+                createViewModel(
+                    itemRepository = itemRepository,
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide(guide.id)
+            advanceUntilIdle()
+            val loadedState = viewModel.uiState.value
+
+            viewModel.loadGuide(guide.id)
+
+            assertSame(loadedState, viewModel.uiState.value)
+            assertEquals(listOf(guide.id), itemRepository.requestedGuideIds)
+        }
+
+    @Test
+    fun `다른 가이드 로드가 예약된 상태에서 현재 가이드를 다시 요청하면 예약 작업을 취소한다`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val currentGuide = sampleGuide("유리병")
+            val pendingGuide = sampleGuide("종이팩")
+            val itemRepository =
+                FakeItemRepository { guideId ->
+                    when (guideId) {
+                        currentGuide.id -> currentGuide
+                        pendingGuide.id -> pendingGuide
+                        else -> null
+                    }
+                }
+            val viewModel =
+                createViewModel(
+                    itemRepository = itemRepository,
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide(currentGuide.id)
+            advanceUntilIdle()
+            val loadedState = viewModel.uiState.value
+
+            viewModel.loadGuide(pendingGuide.id)
+            viewModel.loadGuide(currentGuide.id)
+            advanceUntilIdle()
+
+            assertSame(loadedState, viewModel.uiState.value)
+            assertEquals(listOf(currentGuide.id), itemRepository.requestedGuideIds)
         }
 
     @Test
@@ -228,11 +285,16 @@ class ItemGuideDetailViewModelTest {
     private class FakeItemRepository(
         private val onGetItemGuide: suspend (String) -> DisposalItemGuide?,
     ) : DisposalItemGuideRepository {
+        val requestedGuideIds = mutableListOf<String>()
+
         constructor(guide: DisposalItemGuide?) : this({ guideId -> guide?.takeIf { it.id == guideId } })
 
         override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> = emptyList()
 
-        override suspend fun getItemGuide(guideId: String): DisposalItemGuide? = onGetItemGuide(guideId)
+        override suspend fun getItemGuide(guideId: String): DisposalItemGuide? {
+            requestedGuideIds += guideId
+            return onGetItemGuide(guideId)
+        }
 
         override suspend fun getCategoryGuides(category: DisposalCategory): List<DisposalItemGuide> = emptyList()
 
