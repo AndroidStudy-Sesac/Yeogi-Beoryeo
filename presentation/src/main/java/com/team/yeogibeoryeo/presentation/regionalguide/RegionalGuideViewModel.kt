@@ -82,9 +82,17 @@ class RegionalGuideViewModel @Inject constructor(
     private var currentRegionalGuideFavoriteSnapshot: RegionalGuideFavoriteSnapshot? = null
     private val guideCandidateBackStackEntries = mutableListOf<RegionalGuideCandidateBackStackEntry>()
     private val favoriteToggleJobs = mutableMapOf<String, Job>()
+    private var isInitialRouteRequestConsumed = false
 
     init {
         loadSidoOptions()
+    }
+
+    internal fun consumeInitialRouteRequest(): Boolean {
+        if (isInitialRouteRequestConsumed) return false
+
+        isInitialRouteRequestConsumed = true
+        return true
     }
 
     fun onSearchKeywordChanged(keyword: String) {

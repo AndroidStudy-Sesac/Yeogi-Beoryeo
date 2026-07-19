@@ -86,19 +86,8 @@ fun RegionalGuideRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
     val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
-    var isInitialRouteRequestHandled by remember(
-        initialKeyword,
-        initialAddress,
-        initialFavoriteTargetId,
-    ) {
-        mutableStateOf(false)
-    }
-
     LaunchedEffect(initialKeyword, initialAddress, initialFavoriteTargetId) {
-        if (isInitialRouteRequestHandled) return@LaunchedEffect
-
-        isInitialRouteRequestHandled = true
-        if (!uiState.shouldProcessInitialRouteRequest()) return@LaunchedEffect
+        if (!viewModel.consumeInitialRouteRequest()) return@LaunchedEffect
 
         when {
             !initialFavoriteTargetId.isNullOrBlank() -> viewModel.loadByFavoriteTargetId(initialFavoriteTargetId)
@@ -151,9 +140,6 @@ fun RegionalGuideRoute(
         modifier = modifier.statusBarsPadding(),
     )
 }
-
-internal fun RegionalGuideUiState.shouldProcessInitialRouteRequest(): Boolean =
-    this is RegionalGuideUiState.Idle
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
