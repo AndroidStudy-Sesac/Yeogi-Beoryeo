@@ -28,7 +28,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
@@ -107,8 +106,6 @@ fun ItemSearchInitialContent(
             maxWidth = maxWidth,
             maxHeight = maxHeight,
         )
-        val elevation = ItemSearchLayoutDefaults.elevation
-
         LaunchedEffect(metrics.isCompactLandscape) {
             onItemSearchBottomBarScrollEnabledChanged(metrics.isCompactLandscape)
             if (!metrics.isCompactLandscape) {
@@ -186,12 +183,7 @@ fun ItemSearchInitialContent(
                     placeholder = stringResource(R.string.item_search_query_label),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = metrics.horizontalPadding)
-                        .shadow(
-                            elevation = elevation.searchField,
-                            shape = MaterialTheme.shapes.medium,
-                            clip = false,
-                        ),
+                        .padding(horizontal = metrics.horizontalPadding),
                     iconSize = metrics.searchIconSize,
                 )
             }
