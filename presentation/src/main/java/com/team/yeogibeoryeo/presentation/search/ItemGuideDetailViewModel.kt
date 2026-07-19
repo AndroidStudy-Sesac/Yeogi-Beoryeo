@@ -41,10 +41,10 @@ constructor(
     private var favoriteJob: Job? = null
 
     fun loadGuide(guideId: String) {
+        loadGuideJob?.cancel()
         val currentState = _uiState.value
         if (currentState is ItemGuideDetailUiState.Success && currentState.guide.id == guideId) return
 
-        loadGuideJob?.cancel()
         loadGuideJob =
             viewModelScope.launch {
                 favoriteJob?.cancel()
