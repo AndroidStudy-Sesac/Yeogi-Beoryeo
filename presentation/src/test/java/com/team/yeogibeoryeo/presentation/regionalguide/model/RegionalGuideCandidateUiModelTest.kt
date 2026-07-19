@@ -8,6 +8,22 @@ import org.junit.Test
 class RegionalGuideCandidateUiModelTest {
 
     @Test
+    fun `관리구역명과 대상지역명이 있으면 후보 행 문구를 리소스로 조합한다`() {
+        val candidate = candidate(
+            managementZoneName = "1구역",
+            targetRegionName = "반석동, 솔마을지역",
+        )
+
+        assertEquals(
+            RegionalGuideCandidateDisplayText.Resource(
+                resId = R.string.regional_guide_candidate_label_format,
+                args = listOf("1구역", "반석동, 솔마을지역"),
+            ),
+            candidate.displayTextForRow,
+        )
+    }
+
+    @Test
     fun `관리구역명과 대상지역명이 다르면 두 값을 함께 표시한다`() {
         val candidate = candidate(
             managementZoneName = "노은2동",

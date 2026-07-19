@@ -33,8 +33,7 @@ data class RegionalGuideCandidateUiModel(
 
     internal val displayTextForRow: RegionalGuideCandidateDisplayText =
         primaryDisplayParts()
-            .takeIf { parts -> parts.isNotEmpty() }
-            ?.let { RegionalGuideCandidateDisplayText.Plain(displayText) }
+            .toCandidateDisplayTextForRow()
             ?: fallbackDisplayTextForRow()
 
     internal val sortText: String =
@@ -134,6 +133,18 @@ data class RegionalGuideCandidateUiModel(
                 )
             }
     }
+
+    private fun List<String>.toCandidateDisplayTextForRow(): RegionalGuideCandidateDisplayText? =
+        when (size) {
+            0 -> null
+            1 -> RegionalGuideCandidateDisplayText.Plain(first())
+            2 -> RegionalGuideCandidateDisplayText.Resource(
+                resId = R.string.regional_guide_candidate_label_format,
+                args = this,
+            )
+
+            else -> null
+        }
 
     internal fun candidateDisambiguationText(): String? =
         guide.disposalPlaceType.takeIfRegionalGuideDisplayValue()
