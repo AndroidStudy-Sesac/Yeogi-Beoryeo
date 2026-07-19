@@ -13,7 +13,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
@@ -189,6 +188,10 @@ class RegionalGuideScreenTest {
             query = "candidate-query",
             reason = RegionalGuideCandidateReason.MULTIPLE_CANDIDATES,
             candidates = candidates,
+            candidateListScrollPosition = RegionalGuideCandidateListScrollPosition(
+                firstVisibleItemIndex = 12,
+                firstVisibleItemScrollOffset = 0,
+            ),
         )
         var uiState by mutableStateOf<RegionalGuideUiState>(candidateState)
         var savedScrollPosition = RegionalGuideCandidateListScrollPosition.Initial
@@ -237,7 +240,6 @@ class RegionalGuideScreenTest {
         }
 
         composeTestRule.onNodeWithText("zone-12")
-            .performScrollTo()
             .performClick()
 
         composeTestRule.runOnIdle {

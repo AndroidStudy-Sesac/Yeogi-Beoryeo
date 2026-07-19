@@ -29,6 +29,19 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("pixel9ProApi36") {
+                    device = "Pixel 9 Pro"
+                    apiLevel = 36
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+            }
+        }
+    }
 }
 
 kotlin {
