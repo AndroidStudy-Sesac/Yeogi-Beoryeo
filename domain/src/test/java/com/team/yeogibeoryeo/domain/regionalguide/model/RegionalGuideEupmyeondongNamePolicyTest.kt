@@ -56,4 +56,128 @@ class RegionalGuideEupmyeondongNamePolicyTest {
             )
         )
     }
+
+    @Test
+    fun `제공 범위 표현이 붙은 대상지역명은 읍면동과 일치한다`() {
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = "반석동 일부지역",
+                eupmyeondong = "반석동",
+            )
+        )
+        assertFalse(
+            RegionalGuideEupmyeondongNamePolicy.containsSameName(
+                regionName = "반석동 일부지역",
+                eupmyeondong = "반석동",
+            )
+        )
+    }
+
+    @Test
+    fun `번호 범위 대상지역명은 제 번호 행정동과 일치한다`() {
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = "괴정 1~3동",
+                eupmyeondong = "괴정제1동",
+            )
+        )
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = "괴정 1~3동",
+                eupmyeondong = "괴정제3동",
+            )
+        )
+        assertFalse(
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = "괴정 1~3동",
+                eupmyeondong = "괴정제4동",
+            )
+        )
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = "괴정4동",
+                eupmyeondong = "괴정제4동",
+            )
+        )
+    }
+
+    @Test
+    fun `접미사가 생략된 대상지역명은 읍면동과 일치한다`() {
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = "범서, 온양, 웅촌",
+                eupmyeondong = "온양읍",
+            )
+        )
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                regionName = "사천",
+                eupmyeondong = "사천면",
+            )
+        )
+    }
+
+    @Test
+    fun `법정동 이름으로 시작하는 상세 대상지역명은 해당 법정동과 일치한다`() {
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+                targetRegionName = "부곡중앙북6길",
+                eupmyeondong = "부곡동",
+            )
+        )
+        assertFalse(
+            RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+                targetRegionName = "가구단지길",
+                eupmyeondong = "부곡동",
+            )
+        )
+        assertFalse(
+            RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+                targetRegionName = "사천로",
+                eupmyeondong = "사천면",
+            )
+        )
+        assertFalse(
+            RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+                targetRegionName = "부곡1,4동",
+                eupmyeondong = "부곡제2동",
+            )
+        )
+    }
+
+    @Test
+    fun `법정동 접두어 뒤가 다른 행정구역명이면 일치하지 않는다`() {
+        listOf(
+            "장기본동" to "장기동",
+            "장기본동 일부지역" to "장기동",
+            "고덕면" to "고덕동",
+            "개정면" to "개정동",
+        ).forEach { (targetRegionName, eupmyeondong) ->
+            assertFalse(
+                RegionalGuideEupmyeondongNamePolicy.targetRegionStartsWithLegalDongName(
+                    targetRegionName = targetRegionName,
+                    eupmyeondong = eupmyeondong,
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `읍면동을 식별할 수 없는 제공 지역명은 읍면동 제공 범위로 판단하지 않는다`() {
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.hasEupmyeondongCoverage(
+                regionName = "반석동 일부지역",
+            )
+        )
+        assertTrue(
+            RegionalGuideEupmyeondongNamePolicy.hasEupmyeondongCoverage(
+                regionName = "반석동 일부",
+            )
+        )
+        assertFalse(
+            RegionalGuideEupmyeondongNamePolicy.hasEupmyeondongCoverage(
+                regionName = "문전수거 지역",
+            )
+        )
+    }
 }

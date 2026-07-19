@@ -226,6 +226,77 @@ class RegionalGuideFavoriteViewModelTest {
     }
 
     @Test
+    fun `선택지에 없는 대상지역명 즐겨찾기는 조회 지역으로 복원하고 저장 스냅샷을 유지한다`() = runTest {
+        val snapshotRegion = Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "대동")
+        val guide =
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "구즉동",
+                targetRegionName = "대동+구룡동+금고동",
+                schedules = emptyList(),
+            )
+        val targetId = RegionalGuideFavoriteKey(
+            sido = snapshotRegion.sido,
+            sigungu = snapshotRegion.sigungu,
+            eupmyeondong = snapshotRegion.eupmyeondong,
+            targetRegionName = guide.targetRegionName,
+            managementZoneName = guide.managementZoneName,
+        ).encode()
+        val snapshot = RegionalGuideFavoriteSnapshot(
+            targetId = targetId,
+            region = snapshotRegion,
+            targetRegionName = guide.targetRegionName,
+            managementZoneName = guide.managementZoneName,
+        )
+        val favoriteRepository =
+            FakeFavoriteRepository(
+                initialFavorites =
+                    listOf(
+                        Favorite(
+                            type = FavoriteTargetType.REGIONAL_GUIDE,
+                            targetId = targetId,
+                            savedAtMillis = 1L,
+                        ),
+                    ),
+            )
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide))
+        val viewModel =
+            createViewModel(
+                regionOptionsRepository = FakeRegionOptionsRepository(
+                    sigunguOptionsBySido = mapOf(
+                        "대전광역시" to listOf("유성구")
+                    ),
+                    eupmyeondongOptionsByRegion = mapOf(
+                        "대전광역시" to mapOf(
+                            "유성구" to listOf("구즉동", "노은1동", "노은2동", "노은3동")
+                        )
+                    )
+                ),
+                regionalGuideRepository = regionalGuideRepository,
+                regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide)),
+                favoriteRepository = favoriteRepository,
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(targetId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertEquals("대전광역시 유성구 구즉동", state.guide.regionName)
+        assertEquals("대동+구룡동+금고동", state.guide.targetRegionName)
+        assertEquals(true, state.isFavorite)
+        assertEquals("대동", regionalGuideRepository.queries.single().displayRegion.eupmyeondong)
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("대전광역시", selectedSido)
+            assertEquals("유성구", selectedSigungu)
+            assertEquals("구즉동", selectedEupmyeondong)
+        }
+    }
+
+    @Test
     fun `즐겨찾기 재진입은 저장된 통합 시도명 키와 현재 시도명 후보를 호환되게 복원한다`() = runTest {
         val snapshotRegion = Region(
             sido = "전남광주통합특별시",

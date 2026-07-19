@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.data.region
 import com.team.yeogibeoryeo.data.region.local.RegionAssetContract
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
+import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertFalse
@@ -172,6 +173,58 @@ class RegionAssetContractTest {
         )
         assertFalse(regions.any { region -> region.sidoName == "광주광역시" })
         assertFalse(regions.any { region -> region.sidoName == "전라남도" })
+    }
+
+    @Test
+    fun `지역 가이드 제공 가능 지역 자료는 실제 배출정보 응답 지역명을 유지한다`() {
+        val regions = decodeAsset<List<RegionalGuideAvailabilityDto>>(
+            assetFilePath(RegionAssetContract.REGIONAL_GUIDE_AVAILABILITY_ASSET_PATH)
+        )
+
+        assertTrue(
+            regions.any { region ->
+                region.sidoName == "대전광역시" &&
+                    region.sigunguName == "유성구" &&
+                    region.managementZoneName == "노은2동" &&
+                    region.targetRegionName == "반석동 일부지역"
+            }
+        )
+        assertTrue(
+            regions.any { region ->
+                region.sidoName == "대구광역시" &&
+                    region.sigunguName == "달성군" &&
+                    region.managementZoneName == "다사읍" &&
+                    region.targetRegionName == "서재리"
+            }
+        )
+        assertFalse(
+            regions.any { region ->
+                region.managementZoneName == "다사읍서재출장소" ||
+                    region.targetRegionName == "다사읍서재출장소"
+            }
+        )
+    }
+
+    @Test
+    fun `지역 가이드 제공 가능 지역 자료는 중복 후보 식별값을 갖지 않는다`() {
+        val regions = decodeAsset<List<RegionalGuideAvailabilityDto>>(
+            assetFilePath(RegionAssetContract.REGIONAL_GUIDE_AVAILABILITY_ASSET_PATH)
+        )
+        val duplicateKeys = regions
+            .groupBy { region ->
+                listOf(
+                    region.sidoName,
+                    region.sigunguName,
+                    region.managementZoneName,
+                    region.targetRegionName
+                )
+            }
+            .filterValues { sameRegions -> sameRegions.size > 1 }
+
+        assertTrue(
+            "지역 가이드 제공 가능 지역 자료에 중복 후보 식별값이 있습니다: ${duplicateKeys.keys}",
+            duplicateKeys.isEmpty()
+        )
     }
 
     private inline fun <reified T> decodeAsset(path: String): T {

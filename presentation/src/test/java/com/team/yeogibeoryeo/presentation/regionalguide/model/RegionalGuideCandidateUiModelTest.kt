@@ -209,7 +209,7 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
-    fun `관리구역명과 대상지역명이 함께 있으면 대상지역명 기준으로 정렬한다`() {
+    fun `동일 관리구역 후보는 대상지역명 기준으로 정렬한다`() {
         val candidates = listOf(
             candidate(managementZoneName = "2권역", targetRegionName = "문덕2리"),
             candidate(managementZoneName = "2권역", targetRegionName = "고산리"),
@@ -227,6 +227,30 @@ class RegionalGuideCandidateUiModelTest {
                 "2권역 / 소성리",
                 "2권역 / 월곡1리",
                 "2권역 / 월곡2리"
+            ),
+            sorted.map { candidate -> candidate.displayText }
+        )
+    }
+
+    @Test
+    fun `관리구역이 다른 후보는 관리구역명 기준으로 먼저 정렬한다`() {
+        val candidates = listOf(
+            candidate(managementZoneName = "노은3동", targetRegionName = "반석동"),
+            candidate(managementZoneName = "노은2동", targetRegionName = "반석동 일부지역"),
+            candidate(managementZoneName = "노은3동", targetRegionName = "반석동 일부지역"),
+            candidate(managementZoneName = "노은2동", targetRegionName = "반석동+하기동"),
+            candidate(managementZoneName = "노은2동", targetRegionName = "수남동+안산동+외삼동")
+        )
+
+        val sorted = candidates.sortedWith(regionalGuideCandidateDisplayComparator)
+
+        assertEquals(
+            listOf(
+                "노은2동 / 반석동 일부지역",
+                "노은2동 / 반석동+하기동",
+                "노은2동 / 수남동+안산동+외삼동",
+                "노은3동 / 반석동",
+                "노은3동 / 반석동 일부지역"
             ),
             sorted.map { candidate -> candidate.displayText }
         )
