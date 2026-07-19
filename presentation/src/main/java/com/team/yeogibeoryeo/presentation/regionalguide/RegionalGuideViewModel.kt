@@ -100,8 +100,7 @@ class RegionalGuideViewModel @Inject constructor(
         clearGuideCandidateBackStack()
         currentRegionalGuideDisplayRegion = null
         sigunguOptionsJob?.cancel()
-        eupmyeondongOptionsJob?.cancel()
-        eupmyeondongOptionsRequestId += 1
+        invalidateEupmyeondongOptionsRequest()
 
         _regionSelectorUiState.update { state ->
             state.copy(
@@ -132,10 +131,9 @@ class RegionalGuideViewModel @Inject constructor(
         onRegionSelectionStarted()
         clearGuideCandidateBackStack()
         currentRegionalGuideDisplayRegion = null
-        eupmyeondongOptionsJob?.cancel()
 
         val selectedSido = regionSelectorUiState.value.selectedSido ?: return
-        val requestId = ++eupmyeondongOptionsRequestId
+        val requestId = invalidateEupmyeondongOptionsRequest()
 
         _regionSelectorUiState.update { state ->
             state.copy(
@@ -760,7 +758,7 @@ class RegionalGuideViewModel @Inject constructor(
 
     private fun clearSelectedRegion() {
         sigunguOptionsJob?.cancel()
-        eupmyeondongOptionsJob?.cancel()
+        invalidateEupmyeondongOptionsRequest()
         currentRegionalGuideDisplayRegion = null
 
         _regionSelectorUiState.update { state ->
@@ -816,7 +814,7 @@ class RegionalGuideViewModel @Inject constructor(
         val selectedSigungu = region.sigungu
 
         sigunguOptionsJob?.cancel()
-        eupmyeondongOptionsJob?.cancel()
+        val requestId = invalidateEupmyeondongOptionsRequest()
 
         _regionSelectorUiState.update { state ->
             state.copy(
@@ -855,15 +853,26 @@ class RegionalGuideViewModel @Inject constructor(
                 )
 
                 _regionSelectorUiState.update { state ->
-                    if (state.selectedSido == selectedSido && state.selectedSigungu == selectedSigungu) {
+                    if (
+                        eupmyeondongOptionsRequestId == requestId &&
+                        state.selectedSido == selectedSido &&
+                        state.selectedSigungu == selectedSigungu
+                    ) {
                         state.copy(eupmyeondongOptions = eupmyeondongOptions)
                     } else {
                         state
                     }
                 }
-                syncSelectedRegionWithCurrentGuide()
+                if (eupmyeondongOptionsRequestId == requestId) {
+                    syncSelectedRegionWithCurrentGuide()
+                }
             }
         }
+    }
+
+    private fun invalidateEupmyeondongOptionsRequest(): Long {
+        eupmyeondongOptionsJob?.cancel()
+        return ++eupmyeondongOptionsRequestId
     }
 
     private suspend fun loadRegionalGuide(

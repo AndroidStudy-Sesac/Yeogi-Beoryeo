@@ -33,6 +33,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCan
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +42,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
@@ -146,6 +148,8 @@ internal class FakeRegionOptionsRepository(
     private val delayedSigunguOptionsBySido: Map<String, CompletableDeferred<List<String>>> = emptyMap(),
     private val delayedEupmyeondongOptionsByRegion:
         Map<String, Map<String, CompletableDeferred<List<String>>>> = emptyMap(),
+    private val nonCancellableDelayedEupmyeondongOptionsByRegion:
+        Map<String, Map<String, CompletableDeferred<List<String>>>> = emptyMap(),
     private val keywordRegions: List<Region> = emptyList(),
     private val adminDongCandidates: List<Region> = emptyList(),
 ) : RegionOptionsRepository {
@@ -163,7 +167,10 @@ internal class FakeRegionOptionsRepository(
         sido: String,
         sigungu: String
     ): List<String> {
-        return delayedEupmyeondongOptionsByRegion[sido]
+        return nonCancellableDelayedEupmyeondongOptionsByRegion[sido]
+            ?.get(sigungu)
+            ?.let { deferred -> withContext(NonCancellable) { deferred.await() } }
+            ?: delayedEupmyeondongOptionsByRegion[sido]
             ?.get(sigungu)
             ?.await()
             ?: eupmyeondongOptionsByRegion[sido]
