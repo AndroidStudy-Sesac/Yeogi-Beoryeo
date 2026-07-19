@@ -10,7 +10,7 @@ import androidx.room.RoomDatabase
         RegionalGuideFavoriteSnapshotEntity::class,
     ],
     version = 3,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class FavoriteDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
