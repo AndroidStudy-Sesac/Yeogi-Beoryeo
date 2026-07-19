@@ -58,4 +58,5 @@ internal object ItemSearchStrokeDefaults {
 
 internal object ItemSearchElevationDefaults {
     val none: Dp = 0.dp
+    val searchField: Dp = 6.dp
 }

@@ -7,6 +7,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.Dp
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.SearchBarField
+import com.team.yeogibeoryeo.presentation.common.components.SearchBarFieldDefaults
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
 @Composable
@@ -21,14 +23,22 @@ fun ItemSearchBar(
     keyword: String,
     onKeywordChange: (String) -> Unit,
     onSearchClick: () -> Unit,
-    modifier: Modifier = Modifier,
     placeholder: String,
+    modifier: Modifier = Modifier,
     iconSize: Dp = ItemSearchLayoutDefaults.size.iconSmall,
 ) {
     val size = ItemSearchLayoutDefaults.size
+    val elevation = ItemSearchLayoutDefaults.elevation
+    val shape = SearchBarFieldDefaults.shape
 
     SearchBarField(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .shadow(
+                elevation = elevation.searchField,
+                shape = shape,
+                clip = false,
+            )
+            .fillMaxWidth(),
         keyword = keyword,
         onKeywordChange = onKeywordChange,
         onSearch = {
