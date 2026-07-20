@@ -28,7 +28,7 @@ class RegionalGuideScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `선택 지역 표시 상태에서 검색 실행은 원본 검색어를 전달한다`() {
+    fun 선택_지역_표시_상태에서_검색_실행은_원본_검색어를_전달한다() {
         var submittedKeyword: String? = null
 
         composeTestRule.setContent {
