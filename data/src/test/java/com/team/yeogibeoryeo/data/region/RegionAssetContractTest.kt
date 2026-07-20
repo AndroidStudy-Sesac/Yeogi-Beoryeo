@@ -96,6 +96,22 @@ class RegionAssetContractTest {
     }
 
     @Test
+    fun `법정동 행정동 매핑 자산은 같은 시군구 코드만 연결한다`() {
+        val mappings = decodeAsset<List<LegalAdminDongMappingDto>>(
+            assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
+        )
+        val invalidMappings = mappings.filter { mapping ->
+            mapping.legalCode.take(SIGUNGU_CODE_LENGTH) !=
+                mapping.adminCode.take(SIGUNGU_CODE_LENGTH)
+        }
+
+        assertTrue(
+            "법정동과 행정동의 시군구 코드가 일치하지 않습니다: $invalidMappings",
+            invalidMappings.isEmpty()
+        )
+    }
+
+    @Test
     fun `지도 검색 안양동 후보는 법정 행정 시군구 코드가 일치하는 후보만 노출한다`() {
         val administrativeRegions =
             decodeAsset<List<AdministrativeRegionDto>>(
@@ -237,5 +253,6 @@ class RegionAssetContractTest {
 
     private companion object {
         val REGION_CODE_REGEX = """\d{10}""".toRegex()
+        const val SIGUNGU_CODE_LENGTH = 5
     }
 }
