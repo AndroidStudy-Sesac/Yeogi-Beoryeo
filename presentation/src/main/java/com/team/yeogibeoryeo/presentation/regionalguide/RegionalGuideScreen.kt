@@ -69,7 +69,7 @@ import com.team.yeogibeoryeo.presentation.regionalguide.components.toRegionalGui
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTimeFormat
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTime
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 import kotlinx.coroutines.launch
 
@@ -325,7 +325,11 @@ fun RegionalGuideScreen(
                         clearSearchFocus()
                         collapseRegionSelector()
                         onRegionSelectorDropdownDismissed()
-                        onSearchClick(submittedKeyword)
+                        onSearchClick(
+                            searchKeywordRegionNameParts
+                                ?.let { searchKeyword }
+                                ?: submittedKeyword,
+                        )
                     },
                     candidateContent = if (hasSearchCandidates) {
                         {
@@ -640,7 +644,6 @@ private fun List<RegionalWasteScheduleUiModel>.groupForDisplay(): List<RegionalW
             wasteTypeName = schedule.wasteTypeName,
             disposalDays = schedule.disposalDays,
             disposalTime = schedule.disposalTime,
-            disposalTimeFormat = schedule.disposalTimeFormat,
             disposalMethod = schedule.disposalMethod,
         )
     }
@@ -657,8 +660,7 @@ private fun List<RegionalWasteScheduleUiModel>.groupForDisplay(): List<RegionalW
 private data class RegionalWasteScheduleDisplayKey(
     val wasteTypeName: String,
     val disposalDays: String?,
-    val disposalTime: String?,
-    val disposalTimeFormat: RegionalWasteScheduleTimeFormat?,
+    val disposalTime: RegionalWasteScheduleTime?,
     val disposalMethod: String?,
 )
 
@@ -776,19 +778,19 @@ private fun RegionalGuideScreenSuccessPreview() {
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "일반쓰레기",
                             disposalDays = "월, 수, 금",
-                            disposalTime = "18:00 ~ 24:00",
+                            disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                             disposalMethod = "종량제 봉투에 담아 배출",
                         ),
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "음식물쓰레기",
                             disposalDays = "화, 목, 일",
-                            disposalTime = "18:00 ~ 24:00",
+                            disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                             disposalMethod = "음식물 전용 용기에 담아 배출",
                         ),
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "재활용품",
                             disposalDays = "목",
-                            disposalTime = "18:00 ~ 24:00",
+                            disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                             disposalMethod = "품목별로 분리하여 배출",
                         ),
                     ),

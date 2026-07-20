@@ -13,9 +13,11 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -24,6 +26,38 @@ class RegionalGuideScreenTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun `선택 지역 표시 상태에서 검색 실행은 원본 검색어를 전달한다`() {
+        var submittedKeyword: String? = null
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalGuideScreen(
+                    uiState = RegionalGuideUiState.Idle,
+                    searchKeyword = "대전광역시 서구",
+                    searchKeywordRegionNameParts = listOf("대전광역시", "서구"),
+                    regionSelectorUiState = RegionSelectorUiState(),
+                    onSearchKeywordChange = {},
+                    onSearchClick = { keyword -> submittedKeyword = keyword },
+                    onRetryClick = {},
+                    onEmptySearchActionClick = {},
+                    onSidoSelected = {},
+                    onSigunguSelected = {},
+                    onEupmyeondongSelected = {},
+                    onRegionSelectionSearchClick = {},
+                    onCandidateClick = {},
+                    onGuideCandidateClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction()).performImeAction()
+
+        composeTestRule.runOnIdle {
+            assertEquals("대전광역시 서구", submittedKeyword)
+        }
+    }
 
     @Test
     fun 같은_폐기물_유형의_다른_장소_일정은_하나로_묶고_상세에서_표시한다() {

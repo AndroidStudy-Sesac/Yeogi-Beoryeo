@@ -359,6 +359,7 @@ class RegionalGuideViewModel @Inject constructor(
                 is RegionalGuideUiState.Ambiguous,
                 is RegionalGuideUiState.GuideCandidates -> {
                     _searchKeyword.value = ""
+                    _searchKeywordRegionNameParts.value = null
                     clearSelectedRegion()
                     _uiState.value = RegionalGuideUiState.Idle
                     true

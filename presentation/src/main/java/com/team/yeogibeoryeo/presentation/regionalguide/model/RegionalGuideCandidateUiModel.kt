@@ -9,7 +9,7 @@ data class RegionalGuideCandidateUiModel(
     val sido: String?,
     val sigungu: String?,
     val eupmyeondong: String?,
-    internal val disambiguationText: String? = null
+    internal val disambiguation: RegionalGuideCandidateDisambiguation? = null,
 ) {
     val stableKey: String =
         listOf(
@@ -33,7 +33,9 @@ data class RegionalGuideCandidateUiModel(
 
     internal val displayTextForRow: RegionalGuideCandidateDisplayText =
         primaryDisplayParts()
+            .distinct()
             .toCandidateDisplayTextForRow()
+            ?.appendDisambiguation(disambiguation, primaryDisplayParts())
             ?: fallbackDisplayTextForRow()
 
     internal val sortText: String =
@@ -101,7 +103,7 @@ data class RegionalGuideCandidateUiModel(
 
     private fun fallbackDisplayParts(): List<String> =
         fallbackRegionDisplayParts() + listOfNotNull(
-            candidateDisambiguationText(),
+            candidateFallbackDisambiguation()?.key,
         )
 
     private fun fallbackRegionDisplayParts(): List<String> =
@@ -122,15 +124,12 @@ data class RegionalGuideCandidateUiModel(
             )
 
         return listOfNotNull(
-            candidateDisambiguationText(),
-            disambiguationText.takeIfRegionalGuideDisplayValue(),
+            candidateFallbackDisambiguation(),
+            disambiguation,
         )
-            .distinct()
-            .fold(regionText) { displayText, label ->
-                RegionalGuideCandidateDisplayText.Resource(
-                    resId = R.string.regional_guide_candidate_label_format,
-                    args = listOf(displayText, label),
-                )
+            .distinctBy { disambiguation -> disambiguation.key }
+            .fold(regionText) { displayText, disambiguation ->
+                displayText.appendDisambiguation(disambiguation)
             }
     }
 
@@ -146,17 +145,23 @@ data class RegionalGuideCandidateUiModel(
             else -> null
         }
 
-    internal fun candidateDisambiguationText(): String? =
-        guide.disposalPlaceType.takeIfRegionalGuideDisplayValue()
-            ?: guide.disposalPlaceDescription.takeIfRegionalGuideDisplayValue()
+    internal fun candidateDisambiguation(): RegionalGuideCandidateDisambiguation? =
+        candidateFallbackDisambiguation()
+            ?: guide.schedules.firstNotNullOfOrNull { schedule ->
+                schedule.toCandidateDisambiguation()
+            }
+
+    private fun candidateFallbackDisambiguation(): RegionalGuideCandidateDisambiguation? =
+        guide.disposalPlaceType.toCandidateDisambiguation()
+            ?: guide.disposalPlaceDescription.toCandidateDisambiguation()
             ?: guide.schedules.firstNotNullOfOrNull { schedule ->
                 schedule
-                    .takeUnless { it.disposalTimeFormat != null }
-                    ?.toCandidateSummary()
+                    .takeUnless { it.disposalTime.isFormattedTime() }
+                    ?.toCandidateDisambiguation()
             }
 
     private fun List<String>.appendDisambiguation(): List<String> =
-        this + listOfNotNull(disambiguationText.takeIfRegionalGuideDisplayValue())
+        this + listOfNotNull(disambiguation?.key)
 
     private fun isNamedCollectionTypeCandidate(): Boolean {
         val disposalPlaceType = guide.disposalPlaceType.takeIfRegionalGuideDisplayValue()
@@ -171,19 +176,29 @@ data class RegionalGuideCandidateUiModel(
         }
     }
 
-    private fun RegionalWasteScheduleUiModel.toCandidateSummary(): String? {
-        val criterion =
-            disposalDays.takeIfRegionalGuideDisplayValue()
-                ?: disposalTime.takeIfRegionalGuideDisplayValue()
-                ?: disposalMethod.takeIfRegionalGuideDisplayValue()
-                ?: disposalPlace.takeIfRegionalGuideDisplayValue()
+    private fun RegionalWasteScheduleUiModel.toCandidateDisambiguation():
+        RegionalGuideCandidateDisambiguation? =
+        toCandidateSummaryDisplayText()
+            ?.let { displayText ->
+                RegionalGuideCandidateDisambiguation(
+                    key = candidateSummaryKey() ?: return null,
+                    displayText = displayText,
+                )
+            }
+
+    private fun RegionalWasteScheduleUiModel.candidateSummaryKey(): String? {
+        val criterion = when {
+            disposalDays.takeIfRegionalGuideDisplayValue() != null -> disposalDays
+            disposalTime != null -> disposalTime.stableKey
+            disposalMethod.takeIfRegionalGuideDisplayValue() != null -> disposalMethod
+            disposalPlace.takeIfRegionalGuideDisplayValue() != null -> disposalPlace
+            else -> null
+        } ?: return null
 
         return listOfNotNull(
             wasteTypeName.takeIfRegionalGuideDisplayValue(),
             criterion,
-        )
-            .joinToString(SCHEDULE_SUMMARY_SEPARATOR)
-            .takeIf { summary -> summary.isNotBlank() }
+        ).joinToString(SCHEDULE_SUMMARY_SEPARATOR)
     }
 
     private fun RegionalWasteScheduleUiModel.toCandidateSummaryDisplayText():
@@ -192,14 +207,7 @@ data class RegionalGuideCandidateUiModel(
             disposalDays.takeIfRegionalGuideDisplayValue() != null ->
                 RegionalGuideCandidateDisplayText.Plain(disposalDays.orEmpty())
 
-            disposalTime.takeIfRegionalGuideDisplayValue() != null ->
-                RegionalGuideCandidateDisplayText.Plain(disposalTime.orEmpty())
-
-            disposalTimeFormat != null ->
-                RegionalGuideCandidateDisplayText.Resource(
-                    resId = disposalTimeFormat.resId,
-                    args = disposalTimeFormat.args,
-                )
+            disposalTime != null -> disposalTime.toCandidateDisplayText()
 
             disposalMethod.takeIfRegionalGuideDisplayValue() != null ->
                 RegionalGuideCandidateDisplayText.Plain(disposalMethod.orEmpty())
@@ -240,12 +248,17 @@ data class RegionalGuideCandidateUiModel(
     }
 }
 
+data class RegionalGuideCandidateDisambiguation(
+    val key: String,
+    val displayText: RegionalGuideCandidateDisplayText,
+)
+
 internal data class RegionalGuideCandidateDistinguishingText(
     val label: RegionalGuideCandidateDistinguishingLabel,
     val value: RegionalGuideCandidateDisplayText,
 )
 
-internal sealed interface RegionalGuideCandidateDisplayText {
+sealed interface RegionalGuideCandidateDisplayText {
     data class Plain(
         val value: String,
     ) : RegionalGuideCandidateDisplayText
@@ -255,6 +268,66 @@ internal sealed interface RegionalGuideCandidateDisplayText {
         val args: List<Any>,
     ) : RegionalGuideCandidateDisplayText
 }
+
+private fun String?.toCandidateDisambiguation(): RegionalGuideCandidateDisambiguation? =
+    takeIfRegionalGuideDisplayValue()
+        ?.let { value ->
+            RegionalGuideCandidateDisambiguation(
+                key = value,
+                displayText = RegionalGuideCandidateDisplayText.Plain(value),
+            )
+        }
+
+private fun RegionalWasteScheduleTime.toCandidateDisplayText(): RegionalGuideCandidateDisplayText =
+    when (this) {
+        is RegionalWasteScheduleTime.Value -> RegionalGuideCandidateDisplayText.Plain(value)
+        is RegionalWasteScheduleTime.Range -> RegionalGuideCandidateDisplayText.Resource(
+            resId = R.string.regional_waste_schedule_time_range_format,
+            args = listOf(startTime, endTime),
+        )
+
+        is RegionalWasteScheduleTime.After -> RegionalGuideCandidateDisplayText.Resource(
+            resId = R.string.regional_waste_schedule_time_after_format,
+            args = listOf(startTime),
+        )
+
+        is RegionalWasteScheduleTime.Before -> RegionalGuideCandidateDisplayText.Resource(
+            resId = R.string.regional_waste_schedule_time_before_format,
+            args = listOf(endTime),
+        )
+    }
+
+private val RegionalWasteScheduleTime.stableKey: String
+    get() = when (this) {
+        is RegionalWasteScheduleTime.Value -> "value:$value"
+        is RegionalWasteScheduleTime.Range -> "range:$startTime:$endTime"
+        is RegionalWasteScheduleTime.After -> "after:$startTime"
+        is RegionalWasteScheduleTime.Before -> "before:$endTime"
+    }
+
+private fun RegionalWasteScheduleTime?.isFormattedTime(): Boolean =
+    this is RegionalWasteScheduleTime.Range ||
+        this is RegionalWasteScheduleTime.After ||
+        this is RegionalWasteScheduleTime.Before
+
+private fun RegionalGuideCandidateDisplayText.appendDisambiguation(
+    disambiguation: RegionalGuideCandidateDisambiguation?,
+    existingLabels: List<String> = emptyList(),
+): RegionalGuideCandidateDisplayText {
+    val label = disambiguation?.takeUnless { value -> value.key in existingLabels }
+        ?: return this
+
+    return RegionalGuideCandidateDisplayText.Resource(
+        resId = R.string.regional_guide_candidate_label_format,
+        args = listOf(this, label.displayText.asResourceArgument()),
+    )
+}
+
+private fun RegionalGuideCandidateDisplayText.asResourceArgument(): Any =
+    when (this) {
+        is RegionalGuideCandidateDisplayText.Plain -> value
+        is RegionalGuideCandidateDisplayText.Resource -> this
+    }
 
 private fun List<String>.toRegionalGuideRegionDisplayText(): RegionalGuideCandidateDisplayText? =
     when (size) {
@@ -289,13 +362,7 @@ private val RegionalWasteScheduleUiModel.stableKey: String
     get() = listOf(
         wasteTypeName.toStableKeyPart(),
         disposalDays.toStableKeyPart(),
-        disposalTime.toStableKeyPart(),
-        disposalTimeFormat?.let { timeFormat ->
-            listOf(
-                timeFormat.resId.toString(),
-                timeFormat.args.joinToString(","),
-            ).joinToString(":")
-        }.toStableKeyPart(),
+        disposalTime?.stableKey.toStableKeyPart(),
         disposalMethod.toStableKeyPart(),
         disposalPlace.toStableKeyPart(),
     ).joinToString("/")
@@ -334,14 +401,14 @@ internal fun List<RegionalGuideCandidateUiModel>.withDuplicateDisplayDisambiguat
         .filterValues { candidates -> candidates.size > 1 }
         .mapValues { (_, candidates) ->
             candidates
-                .mapNotNull { candidate -> candidate.candidateDisambiguationText() }
-                .distinct()
+                .mapNotNull { candidate -> candidate.candidateDisambiguation() }
+                .distinctBy { disambiguation -> disambiguation.key }
         }
-        .filterValues { disambiguationTexts -> disambiguationTexts.size > 1 }
+        .filterValues { disambiguations -> disambiguations.size > 1 }
 
     return map { candidate ->
         if (candidate.displayText in disambiguationByDisplayText) {
-            candidate.copy(disambiguationText = candidate.candidateDisambiguationText())
+            candidate.copy(disambiguation = candidate.candidateDisambiguation())
         } else {
             candidate
         }

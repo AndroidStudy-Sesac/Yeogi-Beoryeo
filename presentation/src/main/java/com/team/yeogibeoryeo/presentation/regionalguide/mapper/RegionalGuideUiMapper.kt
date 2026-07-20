@@ -4,9 +4,8 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
-import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTimeFormat
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTime
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.takeIfRegionalGuideDisplayValue
 
@@ -41,7 +40,7 @@ private fun RegionalWasteSchedule.toUiModel(): RegionalWasteScheduleUiModel {
     return RegionalWasteScheduleUiModel(
         wasteTypeName = wasteType.description,
         disposalDays = disposalDays.takeIfNotBlank(),
-        disposalTimeFormat = timeFormat(),
+        disposalTime = time(),
         disposalMethod = disposalMethod.takeIfNotBlank(),
         disposalPlace = disposalPlace.takeIfNotBlank(),
     )
@@ -88,27 +87,25 @@ private fun RegionalDisposalGuide.displayEupmyeondongName(): String? {
         ?: eupmyeondong
 }
 
-private fun RegionalWasteSchedule.timeFormat(): RegionalWasteScheduleTimeFormat? {
+private fun RegionalWasteSchedule.time(): RegionalWasteScheduleTime? {
     val startTime = disposalStartTime
     val endTime = disposalEndTime
 
     return when {
         !startTime.isNullOrBlank() && !endTime.isNullOrBlank() ->
-            RegionalWasteScheduleTimeFormat(
-                resId = R.string.regional_waste_schedule_time_range_format,
-                args = listOf(startTime, endTime),
+            RegionalWasteScheduleTime.Range(
+                startTime = startTime,
+                endTime = endTime,
             )
 
         !startTime.isNullOrBlank() ->
-            RegionalWasteScheduleTimeFormat(
-                resId = R.string.regional_waste_schedule_time_after_format,
-                args = listOf(startTime),
+            RegionalWasteScheduleTime.After(
+                startTime = startTime,
             )
 
         !endTime.isNullOrBlank() ->
-            RegionalWasteScheduleTimeFormat(
-                resId = R.string.regional_waste_schedule_time_before_format,
-                args = listOf(endTime),
+            RegionalWasteScheduleTime.Before(
+                endTime = endTime,
             )
 
         else -> null

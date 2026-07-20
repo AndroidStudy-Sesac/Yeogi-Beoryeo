@@ -895,6 +895,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         assertTrue(viewModel.restoreCandidatesFromDetail())
         assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
         assertEquals("", viewModel.searchKeyword.value)
+        assertNull(viewModel.searchKeywordRegionNameParts.value)
         with(viewModel.regionSelectorUiState.value) {
             assertNull(selectedSido)
             assertNull(selectedSigungu)

@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTime
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.takeIfRegionalGuideDisplayValue
 import com.team.yeogibeoryeo.common.R as CommonR
@@ -148,7 +149,7 @@ private fun RegionalGuideSummaryCardPreview() {
                     RegionalWasteScheduleUiModel(
                         wasteTypeName = "일반쓰레기",
                         disposalDays = "월, 수, 금",
-                        disposalTime = "18:00 ~ 24:00",
+                        disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                         disposalMethod = "종량제 봉투에 담아 배출",
                     ),
                 ),

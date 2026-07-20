@@ -739,6 +739,57 @@ class RegionalGuideSelectorViewModelTest {
         assertEquals(R.string.regional_guide_empty_candidate_not_found_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
     }
+
+    @Test
+    fun `선택 지역 후보 목록에서 뒤로가면 검색 표시 상태를 함께 초기화한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("서구"),
+                ),
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "대전광역시",
+                        sigungu = "서구",
+                        targetRegionName = "문전수거 지역",
+                    ),
+                    sampleGuide(
+                        sido = "대전광역시",
+                        sigungu = "서구",
+                        targetRegionName = "기타 수거 지역",
+                    ),
+                ),
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("대전광역시")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("서구")
+        advanceUntilIdle()
+        viewModel.onRegionSelectionSearchClick()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.GuideCandidates)
+        assertEquals("대전광역시 서구", viewModel.searchKeyword.value)
+        assertEquals(
+            listOf("대전광역시", "서구"),
+            viewModel.searchKeywordRegionNameParts.value,
+        )
+
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+        assertEquals("", viewModel.searchKeyword.value)
+        assertNull(viewModel.searchKeywordRegionNameParts.value)
+        with(viewModel.regionSelectorUiState.value) {
+            assertNull(selectedSido)
+            assertNull(selectedSigungu)
+            assertNull(selectedEupmyeondong)
+        }
+    }
 }
 
 

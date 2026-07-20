@@ -4,8 +4,7 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
-import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTimeFormat
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -25,14 +24,14 @@ class RegionalGuideUiMapperTest {
             )
         )
 
-        val timeFormat = guide.toUiModel().schedules.single().disposalTimeFormat
+        val disposalTime = guide.toUiModel().schedules.single().disposalTime
 
         assertEquals(
-            RegionalWasteScheduleTimeFormat(
-                resId = R.string.regional_waste_schedule_time_range_format,
-                args = listOf("18:00", "23:00"),
+            RegionalWasteScheduleTime.Range(
+                startTime = "18:00",
+                endTime = "23:00",
             ),
-            timeFormat,
+            disposalTime,
         )
     }
 
@@ -48,14 +47,13 @@ class RegionalGuideUiMapperTest {
             )
         )
 
-        val timeFormat = guide.toUiModel().schedules.single().disposalTimeFormat
+        val disposalTime = guide.toUiModel().schedules.single().disposalTime
 
         assertEquals(
-            RegionalWasteScheduleTimeFormat(
-                resId = R.string.regional_waste_schedule_time_after_format,
-                args = listOf("18:00"),
+            RegionalWasteScheduleTime.After(
+                startTime = "18:00",
             ),
-            timeFormat,
+            disposalTime,
         )
     }
 
@@ -71,14 +69,13 @@ class RegionalGuideUiMapperTest {
             )
         )
 
-        val timeFormat = guide.toUiModel().schedules.single().disposalTimeFormat
+        val disposalTime = guide.toUiModel().schedules.single().disposalTime
 
         assertEquals(
-            RegionalWasteScheduleTimeFormat(
-                resId = R.string.regional_waste_schedule_time_before_format,
-                args = listOf("23:00"),
+            RegionalWasteScheduleTime.Before(
+                endTime = "23:00",
             ),
-            timeFormat,
+            disposalTime,
         )
     }
 
