@@ -659,6 +659,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,

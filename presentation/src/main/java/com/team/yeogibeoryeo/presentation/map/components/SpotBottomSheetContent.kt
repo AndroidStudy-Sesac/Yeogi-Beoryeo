@@ -34,7 +34,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.MapLocationNotice
 import com.team.yeogibeoryeo.presentation.map.MapLocationNoticeAction
 import com.team.yeogibeoryeo.presentation.map.MapSearchMode
-import com.team.yeogibeoryeo.presentation.map.mapper.toFilterEmptyResultDisplayName
+import com.team.yeogibeoryeo.presentation.map.mapper.toFilterEmptyResultDisplayNameResId
 
 @Composable
 fun SpotBottomSheetContent(
@@ -43,15 +43,15 @@ fun SpotBottomSheetContent(
     isLoading: Boolean,
     hasSearched: Boolean,
     selectedTypes: Set<CollectionSpotType>,
-    isFilterResultEmpty: Boolean = false,
-    searchMode: MapSearchMode = MapSearchMode.KEYWORD,
+    isFilterResultEmpty: Boolean,
+    searchMode: MapSearchMode,
     regionSearchCandidates: List<MapRegionSearchCandidate>,
     regionDetailSearchCandidate: MapRegionSearchCandidate?,
     locationNotice: MapLocationNotice?,
     @StringRes errorMessageResId: Int?,
-    @StringRes partialWarningMessageResId: Int? = null,
+    @StringRes partialWarningMessageResId: Int?,
     onTypeClick: (CollectionSpotType) -> Unit,
-    onClearTypeFiltersClick: () -> Unit = {},
+    onClearTypeFiltersClick: () -> Unit,
     onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
     onRegionDetailAllClick: () -> Unit,
     onRegionDetailKeywordClick: (String) -> Unit,
@@ -188,7 +188,7 @@ private fun filterEmptyResultTitle(
 ): String {
     val selectedType = selectedTypes.singleOrNull()
         ?: return stringResource(R.string.map_filter_empty_spot_result_multiple_title)
-    val typeName = selectedType.toFilterEmptyResultDisplayName()
+    val typeName = stringResource(selectedType.toFilterEmptyResultDisplayNameResId())
     val titleResId = when (searchMode) {
         MapSearchMode.CURRENT_LOCATION -> R.string.map_filter_empty_spot_result_current_location_title
         MapSearchMode.MAP_CENTER -> R.string.map_filter_empty_spot_result_map_center_title
@@ -513,11 +513,15 @@ private fun SpotBottomSheetContentPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = setOf(CollectionSpotType.BATTERY_BIN),
+                isFilterResultEmpty = false,
+                searchMode = MapSearchMode.KEYWORD,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 locationNotice = null,
                 errorMessageResId = null,
+                partialWarningMessageResId = null,
                 onTypeClick = {},
+                onClearTypeFiltersClick = {},
                 onRegionCandidateClick = {},
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},
@@ -541,11 +545,15 @@ private fun SpotBottomSheetContentLoadingPreview() {
                 isLoading = true,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                isFilterResultEmpty = false,
+                searchMode = MapSearchMode.KEYWORD,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 locationNotice = null,
                 errorMessageResId = null,
+                partialWarningMessageResId = null,
                 onTypeClick = {},
+                onClearTypeFiltersClick = {},
                 onRegionCandidateClick = {},
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},
@@ -569,11 +577,15 @@ private fun SpotBottomSheetContentEmptyPreview() {
                 isLoading = false,
                 hasSearched = true,
                 selectedTypes = emptySet(),
+                isFilterResultEmpty = false,
+                searchMode = MapSearchMode.KEYWORD,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 locationNotice = null,
                 errorMessageResId = null,
+                partialWarningMessageResId = null,
                 onTypeClick = {},
+                onClearTypeFiltersClick = {},
                 onRegionCandidateClick = {},
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},
@@ -603,6 +615,7 @@ private fun SpotBottomSheetContentFilterEmptyPreview() {
                 regionDetailSearchCandidate = null,
                 locationNotice = null,
                 errorMessageResId = null,
+                partialWarningMessageResId = null,
                 onTypeClick = {},
                 onClearTypeFiltersClick = {},
                 onRegionCandidateClick = {},
@@ -628,6 +641,8 @@ private fun SpotBottomSheetContentRegionCandidatePreview() {
                 isLoading = false,
                 hasSearched = false,
                 selectedTypes = emptySet(),
+                isFilterResultEmpty = false,
+                searchMode = MapSearchMode.KEYWORD,
                 regionSearchCandidates = listOf(
                     MapRegionSearchCandidate(
                         region = Region(
@@ -657,7 +672,9 @@ private fun SpotBottomSheetContentRegionCandidatePreview() {
                 regionDetailSearchCandidate = null,
                 locationNotice = null,
                 errorMessageResId = null,
+                partialWarningMessageResId = null,
                 onTypeClick = {},
+                onClearTypeFiltersClick = {},
                 onRegionCandidateClick = {},
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},
@@ -691,11 +708,15 @@ private fun SpotBottomSheetContentRegionDetailPreview() {
                 isLoading = false,
                 hasSearched = false,
                 selectedTypes = emptySet(),
+                isFilterResultEmpty = false,
+                searchMode = MapSearchMode.KEYWORD,
                 regionSearchCandidates = listOf(candidate),
                 regionDetailSearchCandidate = candidate,
                 locationNotice = null,
                 errorMessageResId = null,
+                partialWarningMessageResId = null,
                 onTypeClick = {},
+                onClearTypeFiltersClick = {},
                 onRegionCandidateClick = {},
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},

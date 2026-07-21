@@ -589,6 +589,26 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `지도 중심 검색 결과가 없어도 검색 기준 좌표와 검색 모드를 유지한다`() =
+        runTest {
+            val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = emptyList(),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.searchByMapCenter(mapCenterCoordinate)
+            advanceUntilIdle()
+
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(mapCenterCoordinate, viewModel.uiState.value.searchFocusCoordinate)
+            assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
     fun `지도 중심 검색 중 검색어를 입력하면 진행 중인 지도 중심 검색을 취소한다`() =
         runTest {
             val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)

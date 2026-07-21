@@ -47,6 +47,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             locationResult.complete(CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE))
             runCurrent()
             assertEquals(listOf(cachedSpot).withDistanceFrom(DEFAULT_CURRENT_COORDINATE), viewModel.uiState.value.spots)
+            assertEquals(DEFAULT_CURRENT_COORDINATE, viewModel.uiState.value.searchFocusCoordinate)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
 
             notifier.notifyCleared()
@@ -56,6 +57,7 @@ class CollectionSpotMapCacheViewModelTest : CollectionSpotMapViewModelTestFixtur
             assertNull(viewModel.uiState.value.selectedSpot)
             assertFalse(viewModel.uiState.value.hasSearched)
             assertFalse(viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.searchFocusCoordinate)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
         }
 
