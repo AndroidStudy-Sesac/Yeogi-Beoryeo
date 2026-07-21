@@ -17,7 +17,6 @@ import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
@@ -691,7 +690,7 @@ class RegionalGuideViewModel @Inject constructor(
         }
     }
 
-    private suspend fun normalizeAndApplyRegionSelection(region: Region): RegionSelectionNormalizationResult {
+    private suspend fun normalizeAndApplyRegionSelection(region: Region): PreparedRegionalGuideRegionSelection {
         val regionalGuideRegion = normalizeRegionalGuideDisplayRegionUseCase(region)
         val selectedSido = regionalGuideRegion.sido
         val selectedSigungu = regionalGuideRegion.sigungu
@@ -709,37 +708,17 @@ class RegionalGuideViewModel @Inject constructor(
             } else {
                 null
             }
-        val selectableRegion =
-            if (
-                selectedEupmyeondong != null &&
-                !eupmyeondongOptions.isNullOrEmpty() &&
-                eupmyeondongOptions.none { option ->
-                    RegionalGuideEupmyeondongNamePolicy.isSameName(
-                        first = selectedEupmyeondong,
-                        second = option,
-                    )
-                }
-            ) {
-                regionalGuideRegion.copy(eupmyeondong = null)
-            } else {
-                regionalGuideRegion
-            }
-        val removedEupmyeondong =
-            if (selectableRegion.eupmyeondong != selectedEupmyeondong) {
-                selectedEupmyeondong
-            } else {
-                null
-            }
+        val selection = RegionalGuideRegionSelectionPolicy.prepare(
+            lookupRegion = regionalGuideRegion,
+            eupmyeondongOptions = eupmyeondongOptions,
+        )
 
         applyRegionSelection(
-            region = selectableRegion,
+            region = selection.selectorRegion,
             preloadedEupmyeondongOptions = eupmyeondongOptions
         )
 
-        return RegionSelectionNormalizationResult(
-            lookupRegion = regionalGuideRegion,
-            removedEupmyeondong = removedEupmyeondong,
-        )
+        return selection
     }
 
     private suspend fun loadRegionalGuideIfAvailable(
@@ -763,7 +742,7 @@ class RegionalGuideViewModel @Inject constructor(
 
     private suspend fun loadRegionalGuideForSelection(
         query: String,
-        selectionResult: RegionSelectionNormalizationResult,
+        selectionResult: PreparedRegionalGuideRegionSelection,
     ) {
         if (selectionResult.removedEupmyeondong != null) {
             if (loadRegionalGuideIfAvailable(query, selectionResult.lookupRegion)) return
@@ -927,7 +906,8 @@ class RegionalGuideViewModel @Inject constructor(
     ): RegionalGuideUiState {
         return when (this) {
             is RegionalGuideLookupResult.Success -> {
-                val displayGuide = guide.withSelectableEupmyeondongRegion()
+                val displayGuide =
+                    RegionalGuideRegionSelectionPolicy.guideWithSelectableEupmyeondong(guide)
                 currentRegionalGuideDisplayRegion = displayGuide.region
                 syncSelectedRegionWithGuide(displayGuide)
 
@@ -950,7 +930,8 @@ class RegionalGuideViewModel @Inject constructor(
                 ),
                 canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
                 candidates = guides.map { guide ->
-                    val displayGuide = guide.withSelectableEupmyeondongRegion()
+                    val displayGuide =
+                        RegionalGuideRegionSelectionPolicy.guideWithSelectableEupmyeondong(guide)
 
                     RegionalGuideCandidateUiModel(
                         guide = displayGuide.toUiModel(),
@@ -1133,17 +1114,6 @@ class RegionalGuideViewModel @Inject constructor(
         )
     }
 
-    private fun RegionalDisposalGuide.withSelectableEupmyeondongRegion(): RegionalDisposalGuide {
-        val selectableEupmyeondong = managementZoneName.toSelectableEupmyeondongNameOrNull()
-            ?: return this
-
-        if (region.eupmyeondong == selectableEupmyeondong) return this
-
-        return copy(
-            region = region.copy(eupmyeondong = selectableEupmyeondong)
-        )
-    }
-
     private fun syncSelectedRegionWithGuide(guide: RegionalDisposalGuide) {
         syncSelectedRegionWithGuideRegion(guide.region)
     }
@@ -1155,39 +1125,11 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     private fun syncSelectedRegionWithGuideRegion(guideRegion: Region) {
-        val selectedEupmyeondong = guideRegion.eupmyeondong
-            ?.trim()
-            ?.takeIf { value -> value.isNotBlank() }
-            ?: return
-
         _regionSelectorUiState.update { state ->
-            if (
-                state.selectedSido != guideRegion.sido ||
-                state.selectedSigungu != guideRegion.sigungu ||
-                state.eupmyeondongOptions.none { option ->
-                    RegionalGuideEupmyeondongNamePolicy.isSameName(
-                        first = selectedEupmyeondong,
-                        second = option,
-                    )
-                }
-            ) {
-                state
-            } else {
-                state.copy(selectedEupmyeondong = selectedEupmyeondong)
-            }
-        }
-    }
-
-    private fun String?.toSelectableEupmyeondongNameOrNull(): String? {
-        val value = this
-            ?.trim()
-            ?.takeIf { text -> text.isNotBlank() && text != NO_REGION_NAME }
-            ?: return null
-
-        return value.takeIf { text ->
-            text.endsWith(EUP_SUFFIX) ||
-                text.endsWith(MYEON_SUFFIX) ||
-                text.endsWith(DONG_SUFFIX)
+            RegionalGuideRegionSelectionPolicy.synchronizeSelectedEupmyeondong(
+                state = state,
+                guideRegion = guideRegion,
+            )
         }
     }
 
@@ -1279,11 +1221,6 @@ class RegionalGuideViewModel @Inject constructor(
         FAVORITE_RESTORE,
     }
 
-    private data class RegionSelectionNormalizationResult(
-        val lookupRegion: Region,
-        val removedEupmyeondong: String?,
-    )
-
     private data class RegionalGuideCandidateBackStackEntry(
         val uiState: RegionalGuideUiState,
         val searchKeyword: String,
@@ -1293,10 +1230,6 @@ class RegionalGuideViewModel @Inject constructor(
 
     private companion object {
         const val KEYWORD_SUGGESTION_DEBOUNCE_MILLIS = 400L
-        const val NO_REGION_NAME = "없음"
-        const val EUP_SUFFIX = "읍"
-        const val MYEON_SUFFIX = "면"
-        const val DONG_SUFFIX = "동"
     }
 }
 
