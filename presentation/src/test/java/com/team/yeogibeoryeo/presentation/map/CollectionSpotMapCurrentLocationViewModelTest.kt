@@ -216,6 +216,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(currentCoordinate, repository.lastLocationCoordinate)
             assertEquals(500, repository.lastRadiusMeter)
             assertEquals(expectedSpots.withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(currentCoordinate, viewModel.uiState.value.searchFocusCoordinate)
             assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
             assertNull(viewModel.uiState.value.errorMessageResId)
             assertFalse(viewModel.uiState.value.isLoading)

@@ -8,6 +8,7 @@ import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -36,6 +37,53 @@ class CollectionSpotMapSelectionViewModelTest : CollectionSpotMapViewModelTestFi
                 listOf(recyclingCenterSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
                 viewModel.uiState.value.spots,
             )
+        }
+
+    @Test
+    fun `필터 결과만 비어 있으면 필터 빈 결과 상태로 구분하고 필터 해제 시 전체 결과를 표시한다`() =
+        runTest {
+            val standardBagSpot = sampleSpot("1", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(standardBagSpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(
+                    Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                ),
+            )
+
+            viewModel.searchByCurrentLocation()
+            viewModel.onSpotTypeClick(CollectionSpotType.FLUORESCENT_LAMP_BIN)
+
+            assertEquals(setOf(CollectionSpotType.FLUORESCENT_LAMP_BIN), viewModel.uiState.value.selectedTypes)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(true, viewModel.uiState.value.isFilterResultEmpty)
+            assertEquals(
+                Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                viewModel.uiState.value.searchFocusCoordinate,
+            )
+
+            viewModel.onSearchKeywordChanged("문래동")
+
+            assertEquals(true, viewModel.uiState.value.isFilterResultEmpty)
+            assertEquals(
+                Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                viewModel.uiState.value.searchFocusCoordinate,
+            )
+
+            viewModel.clearSpotTypeFilters()
+
+            assertEquals(emptySet<CollectionSpotType>(), viewModel.uiState.value.selectedTypes)
+            assertEquals(
+                listOf(standardBagSpot).withDistanceFrom(Coordinate(latitude = 37.5666102, longitude = 126.9783881)),
+                viewModel.uiState.value.spots,
+            )
+            assertEquals(
+                Coordinate(latitude = 37.5666102, longitude = 126.9783881),
+                viewModel.uiState.value.searchFocusCoordinate,
+            )
+            assertFalse(viewModel.uiState.value.isFilterResultEmpty)
         }
 
     @Test

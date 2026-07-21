@@ -207,6 +207,30 @@ class CollectionSpotMapInitialEntryViewModelTest : CollectionSpotMapViewModelTes
         }
 
     @Test
+    fun `초기 타입 지도 진입 시 현재 위치 결과는 있지만 해당 타입 결과가 없으면 필터 빈 결과 상태로 구분한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val batterySpot = sampleSpot("battery", CollectionSpotType.BATTERY_BIN)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(batterySpot),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted(CollectionSpotType.FLUORESCENT_LAMP_BIN)
+
+            assertEquals(setOf(CollectionSpotType.FLUORESCENT_LAMP_BIN), viewModel.uiState.value.selectedTypes)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertEquals(true, viewModel.uiState.value.isFilterResultEmpty)
+            assertEquals(currentCoordinate, viewModel.uiState.value.searchFocusCoordinate)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+        }
+
+    @Test
     fun `초기 타입으로 지도 진입 시 위치 권한이 없으면 타입을 선택하고 권한 안내를 표시한다`() =
         runTest {
             val repository = FakeCollectionSpotRepository()
