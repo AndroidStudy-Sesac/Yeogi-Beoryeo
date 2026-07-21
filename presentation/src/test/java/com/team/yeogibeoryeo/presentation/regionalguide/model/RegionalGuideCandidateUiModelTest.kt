@@ -133,6 +133,82 @@ class RegionalGuideCandidateUiModelTest {
     }
 
     @Test
+    fun `수거 유형이 같고 시간이 다른 후보는 시간으로 구분한다`() {
+        val candidates = listOf(
+            candidate(
+                managementZoneName = "양평읍",
+                targetRegionName = "양근5리",
+                disposalPlaceType = "거점수거",
+                uncollectedDays = "없음",
+                schedules = listOf(
+                    RegionalWasteScheduleUiModel(
+                        wasteTypeName = "일반쓰레기",
+                        disposalDays = "월, 수, 금",
+                        disposalTime = RegionalWasteScheduleTime.Range("09:00", "18:00"),
+                    ),
+                ),
+            ),
+            candidate(
+                managementZoneName = "양평읍",
+                targetRegionName = "양근5리",
+                disposalPlaceType = "거점수거",
+                uncollectedDays = "화, 금, 토",
+                schedules = listOf(
+                    RegionalWasteScheduleUiModel(
+                        wasteTypeName = "일반쓰레기",
+                        disposalDays = "월, 수, 금",
+                        disposalTime = RegionalWasteScheduleTime.Range("20:00", "06:00"),
+                    ),
+                ),
+            ),
+        ).withDuplicateDisplayDisambiguation()
+
+        assertEquals(
+            listOf(
+                RegionalGuideCandidateDisplayText.Resource(
+                    resId = R.string.regional_guide_candidate_label_format,
+                    args = listOf(
+                        RegionalGuideCandidateDisplayText.Resource(
+                            resId = R.string.regional_guide_candidate_label_format,
+                            args = listOf("양평읍", "양근5리"),
+                        ),
+                        RegionalGuideCandidateDisplayText.Resource(
+                            resId = R.string.regional_guide_candidate_schedule_summary_format,
+                            args = listOf(
+                                "일반쓰레기",
+                                RegionalGuideCandidateDisplayText.Resource(
+                                    resId = R.string.regional_waste_schedule_time_range_format,
+                                    args = listOf("09:00", "18:00"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                RegionalGuideCandidateDisplayText.Resource(
+                    resId = R.string.regional_guide_candidate_label_format,
+                    args = listOf(
+                        RegionalGuideCandidateDisplayText.Resource(
+                            resId = R.string.regional_guide_candidate_label_format,
+                            args = listOf("양평읍", "양근5리"),
+                        ),
+                        RegionalGuideCandidateDisplayText.Resource(
+                            resId = R.string.regional_guide_candidate_schedule_summary_format,
+                            args = listOf(
+                                "일반쓰레기",
+                                RegionalGuideCandidateDisplayText.Resource(
+                                    resId = R.string.regional_waste_schedule_time_range_format,
+                                    args = listOf("20:00", "06:00"),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            candidates.map { candidate -> candidate.displayTextForRow },
+        )
+    }
+
+    @Test
     fun `관리구역명과 대상지역명이 있으면 후보 행 문구를 리소스로 조합한다`() {
         val candidate = candidate(
             managementZoneName = "1구역",
