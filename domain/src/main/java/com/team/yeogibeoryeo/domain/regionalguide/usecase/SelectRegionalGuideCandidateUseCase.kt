@@ -193,10 +193,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         if (exactMatches.isNotEmpty()) {
             if (mappedTargetRegionMatches.size > exactMatches.size) {
-                return mappedTargetRegionMatches.mergeLegacyDuplicateCandidateRows()
+                return mappedTargetRegionMatches.mergeFilteredDuplicateCandidateRows()
             }
 
-            return exactMatches.mergeLegacyDuplicateCandidateRows()
+            return exactMatches.mergeFilteredDuplicateCandidateRows()
         }
 
         val managementZoneMatches = filter { guide ->
@@ -209,11 +209,11 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         if (hasNumberedManagementZoneAliasMatch) {
-            return managementZoneMatches.mergeLegacyDuplicateCandidateRows()
+            return managementZoneMatches.mergeFilteredDuplicateCandidateRows()
         }
 
         if (mappedTargetRegionMatches.isNotEmpty()) {
-            return mappedTargetRegionMatches.mergeLegacyDuplicateCandidateRows()
+            return mappedTargetRegionMatches.mergeFilteredDuplicateCandidateRows()
         }
 
         val targetRegionMatches = filter { guide ->
@@ -224,7 +224,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return (managementZoneMatches + targetRegionMatches)
-            .mergeLegacyDuplicateCandidateRows()
+            .mergeFilteredDuplicateCandidateRows()
     }
 
     private fun List<RegionalDisposalGuide>.filterByMappedAdminDongs(
@@ -240,7 +240,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             guide.managementZoneName.matchesExactMappedAdminDong(adminDongNames) ||
                 guide.targetRegionName.matchesExactMappedAdminDong(adminDongNames)
         }
-            .mergeLegacyDuplicateCandidateRows()
+            .mergeFilteredDuplicateCandidateRows()
     }
 
     private fun List<RegionalDisposalGuide>.selectOverallCandidates(
@@ -343,7 +343,8 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             .flatMap { guides ->
                 when (val selection = guides.selectLatestGuide()) {
                     is LatestGuideSelection.Unique -> listOf(selection.guide)
-                    LatestGuideSelection.Tie -> guides.mergeEquivalentCandidateRows()
+                    is LatestGuideSelection.Tie ->
+                        selection.latestGuides.mergeEquivalentCandidateRows()
                     LatestGuideSelection.NotDetermined -> guides.mergeLegacyDuplicateCandidateRows()
                 }
             }
@@ -369,14 +370,23 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         val latestDatePoint = datePoints.maxOf { (_, datePoint) -> checkNotNull(datePoint) }
-        return datePoints
-            .singleOrNull { (_, datePoint) -> datePoint == latestDatePoint }
-            ?.first
+        val latestGuides = datePoints
+            .filter { (_, datePoint) -> datePoint == latestDatePoint }
+            .map { (guide, _) -> guide }
+
+        return latestGuides
+            .singleOrNull()
             ?.let { guide -> LatestGuideSelection.Unique(guide) }
-            ?: LatestGuideSelection.Tie
+            ?: LatestGuideSelection.Tie(latestGuides)
     }
 
     private fun List<RegionalDisposalGuide>.mergeLegacyDuplicateCandidateRows(): List<RegionalDisposalGuide> =
+        groupBy { guide -> guide.toLegacyCandidateKey() }
+            .values
+            .flatMap { guides -> guides.mergeSchedules() }
+
+    private fun List<RegionalDisposalGuide>.mergeFilteredDuplicateCandidateRows():
+        List<RegionalDisposalGuide> =
         groupBy { guide -> guide.toLegacyCandidateKey() }
             .values
             .flatMap { guides ->
@@ -393,7 +403,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             .map { guides ->
                 when (val selection = guides.selectLatestGuide()) {
                     is LatestGuideSelection.Unique -> selection.guide
-                    LatestGuideSelection.Tie,
+                    is LatestGuideSelection.Tie,
                     LatestGuideSelection.NotDetermined,
                     -> guides.first()
                 }
@@ -905,7 +915,9 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             val guide: RegionalDisposalGuide,
         ) : LatestGuideSelection
 
-        data object Tie : LatestGuideSelection
+        data class Tie(
+            val latestGuides: List<RegionalDisposalGuide>,
+        ) : LatestGuideSelection
 
         data object NotDetermined : LatestGuideSelection
     }
