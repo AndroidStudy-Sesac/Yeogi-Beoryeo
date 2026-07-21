@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSnapshotUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleRegionalGuideFavoriteUseCase
@@ -909,7 +910,7 @@ class RegionalGuideViewModel @Inject constructor(
                 syncSelectedRegionWithGuide(displayGuide)
 
                 val snapshot =
-                    favoriteSnapshotOverride ?: RegionalGuideFavoriteSnapshotFactory.from(displayGuide)
+                    favoriteSnapshotOverride ?: displayGuide.toFavoriteSnapshot()
                 currentRegionalGuideFavoriteSnapshot = snapshot
                 observeRegionalGuideFavoriteState(snapshot)
 

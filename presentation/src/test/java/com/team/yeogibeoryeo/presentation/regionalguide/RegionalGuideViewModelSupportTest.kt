@@ -1,27 +1,37 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RegionalGuideViewModelSupportTest {
 
     @Test
-    fun `가이드 즐겨찾기 스냅샷은 빈 관리구역과 대상지역명을 정규화한다`() {
-        val guide = RegionalDisposalGuide(
-            region = Region(sido = "경기도", sigungu = "수원시"),
-            targetRegionName = "  ",
-            managementZoneName = " 장안동 ",
-            schedules = emptyList(),
+    fun `후보 즐겨찾기 스냅샷은 후보 지역과 관리구역을 사용한다`() {
+        val candidate = RegionalGuideCandidateUiModel(
+            guide = RegionalGuideUiModel(
+                regionName = "경기도 수원시 장안동",
+                managementZoneName = "장안동",
+                targetRegionName = "정자동",
+                disposalPlaceType = null,
+                disposalPlaceDescription = null,
+                schedules = emptyList(),
+                uncollectedDays = null,
+                departmentInfo = null,
+            ),
+            sido = "경기도",
+            sigungu = "수원시",
+            eupmyeondong = "장안동",
         )
 
-        val snapshot = RegionalGuideFavoriteSnapshotFactory.from(guide)
+        val snapshot = RegionalGuideFavoriteSnapshotFactory.from(candidate)
 
-        assertNull(snapshot.targetRegionName)
+        assertEquals(Region(sido = "경기도", sigungu = "수원시", eupmyeondong = "장안동"), snapshot.region)
+        assertEquals("정자동", snapshot.targetRegionName)
         assertEquals("장안동", snapshot.managementZoneName)
     }
 
