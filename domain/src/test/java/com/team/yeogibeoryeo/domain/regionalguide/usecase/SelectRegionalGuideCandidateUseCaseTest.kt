@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.domain.regionalguide.usecase
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideSourceMetadata
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
@@ -2409,14 +2410,18 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
     }
 
     @Test
-    fun `날짜가 같으면 첫 행을 임의 선택하지 않고 기존 병합 정책을 유지한다`() {
+    fun `데이터 기준일이 같고 일정이 다르면 별도 후보로 유지한다`() {
         val firstSchedule = RegionalWasteSchedule(
             wasteType = RegionalWasteType.GENERAL,
-            disposalDays = "월"
+            disposalDays = "일, 월, 수",
+            disposalStartTime = "09:00",
+            disposalEndTime = "18:00",
         )
         val secondSchedule = RegionalWasteSchedule(
-            wasteType = RegionalWasteType.FOOD,
-            disposalDays = "화"
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "일, 월, 수",
+            disposalStartTime = "20:00",
+            disposalEndTime = "06:00",
         )
 
         val result = useCase(
@@ -2429,8 +2434,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     disposalPlaceType = "거점수거",
                     schedules = listOf(firstSchedule),
                     sourceMetadata = RegionalGuideSourceMetadata(
-                        lastModifiedPoint = "20240709000000",
-                        dataCriteriaDate = "20240101"
+                        dataCriteriaDate = "20240709",
                     )
                 ),
                 regionalDisposalGuide(
@@ -2441,8 +2445,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     disposalPlaceType = "거점수거",
                     schedules = listOf(secondSchedule),
                     sourceMetadata = RegionalGuideSourceMetadata(
-                        lastModifiedPoint = "20240709000000",
-                        dataCriteriaDate = "20240709"
+                        dataCriteriaDate = "20240709",
                     )
                 )
             ),
@@ -2456,9 +2459,124 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             )
         )
 
+        val guides = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf(listOf(firstSchedule), listOf(secondSchedule)),
+            guides.map { guide -> guide.schedules },
+        )
+    }
+
+    @Test
+    fun `최종수정일이 같고 일정이 같으면 하나의 후보로 정리한다`() {
+        val schedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "월, 수, 금",
+            disposalStartTime = "09:00",
+            disposalEndTime = "18:00",
+        )
+
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    managementZoneName = "양평읍",
+                    targetRegionName = "양근5리",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(schedule),
+                    uncollectedDays = "없음",
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        managementNumber = "202541700000400153",
+                        lastModifiedPoint = "20240709105039",
+                    ),
+                ),
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    managementZoneName = "양평읍",
+                    targetRegionName = "양근5리",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(schedule),
+                    uncollectedDays = "화, 금, 토",
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        managementNumber = "202541700000400121",
+                        lastModifiedPoint = "20240709105039",
+                    ),
+                ),
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    eupmyeondong = "양평읍",
+                ),
+                sigunguQuery = "양평군",
+            ),
+        )
+
         val guide = (result as RegionalGuideLookupResult.Success).guide
 
-        assertEquals(listOf(firstSchedule, secondSchedule), guide.schedules)
+        assertEquals(listOf(schedule), guide.schedules)
+    }
+
+    @Test
+    fun `동률인 최신 일정 묶음에서 같은 일정만 하나로 정리한다`() {
+        val daytimeSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "일, 월, 수",
+            disposalStartTime = "09:00",
+            disposalEndTime = "18:00",
+        )
+        val nighttimeSchedule = daytimeSchedule.copy(
+            disposalStartTime = "20:00",
+            disposalEndTime = "06:00",
+        )
+
+        fun 후보행(
+            schedule: RegionalWasteSchedule,
+            managementNumber: String,
+            lastModifiedPoint: String,
+        ): RegionalDisposalGuide =
+            regionalDisposalGuide(
+                sido = "경기도",
+                sigungu = "양평군",
+                managementZoneName = "양평읍",
+                targetRegionName = "양근5리",
+                disposalPlaceType = "거점수거",
+                schedules = listOf(schedule),
+                sourceMetadata = RegionalGuideSourceMetadata(
+                    managementNumber = managementNumber,
+                    lastModifiedPoint = lastModifiedPoint,
+                ),
+            )
+
+        val result = useCase(
+            candidates = listOf(
+                후보행(daytimeSchedule, "202541700000400153", "20240709105039"),
+                후보행(daytimeSchedule, "202541700000400121", "20240709104936"),
+                후보행(nighttimeSchedule, "202541700000400147", "20240709105039"),
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    eupmyeondong = "양평읍",
+                ),
+                sigunguQuery = "양평군",
+            ),
+        )
+
+        val guides = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf(listOf(daytimeSchedule), listOf(nighttimeSchedule)),
+            guides.map { guide -> guide.schedules },
+        )
+        assertEquals(
+            listOf("202541700000400153", "202541700000400147"),
+            guides.map { guide -> guide.sourceMetadata?.managementNumber },
+        )
     }
 
     @Test
