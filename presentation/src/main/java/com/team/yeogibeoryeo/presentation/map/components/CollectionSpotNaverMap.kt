@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.drop
 fun CollectionSpotNaverMap(
     spots: List<CollectionSpot>,
     selectedSpot: CollectionSpot?,
+    searchFocusCoordinate: Coordinate?,
     isLocationPermissionGranted: Boolean,
     locationTrackingMode: LocationTrackingMode,
     onSpotClick: (CollectionSpot) -> Unit,
@@ -95,13 +96,25 @@ fun CollectionSpotNaverMap(
             }
     }
 
-    LaunchedEffect(spots) {
+    LaunchedEffect(spots, searchFocusCoordinate) {
         if (selectedSpot != null) return@LaunchedEffect
 
         val coordinates = spots.mapNotNull { spot -> spot.coordinate }
 
         when (coordinates.size) {
-            0 -> Unit
+            0 -> {
+                val coordinate = searchFocusCoordinate ?: return@LaunchedEffect
+                moveCamera(
+                    CameraUpdate.scrollAndZoomTo(
+                        LatLng(
+                            coordinate.latitude,
+                            coordinate.longitude,
+                        ),
+                        SEARCH_RESULT_ZOOM,
+                    ),
+                )
+            }
+
             1 -> {
                 val coordinate = coordinates.single()
                 moveCamera(

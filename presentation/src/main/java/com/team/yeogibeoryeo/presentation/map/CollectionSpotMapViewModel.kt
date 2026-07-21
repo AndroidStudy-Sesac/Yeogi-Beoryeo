@@ -127,6 +127,16 @@ class CollectionSpotMapViewModel @Inject constructor(
                 },
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = if (shouldCancelSpotSearch) {
+                    false
+                } else {
+                    it.isFilterResultEmpty
+                },
+                searchFocusCoordinate = if (shouldCancelSpotSearch) {
+                    null
+                } else {
+                    it.searchFocusCoordinate
+                },
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = if (shouldCancelSpotSearch) {
@@ -155,6 +165,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                     hasSearched = false,
                     errorMessageResId = R.string.map_search_blank_keyword_message,
                     partialWarningMessageResId = null,
+                    isFilterResultEmpty = false,
+                    searchFocusCoordinate = null,
                     locationNotice = null,
                     regionSearchCandidates = emptyList(),
                     regionDetailSearchCandidate = null,
@@ -298,6 +310,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = true,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -355,6 +369,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = false,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
@@ -378,6 +394,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = false,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
@@ -424,6 +442,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     searchKeyword = EMPTY_SEARCH_KEYWORD,
                     errorMessageResId = null,
                     partialWarningMessageResId = null,
+                    isFilterResultEmpty = false,
                     locationNotice = null,
                     regionSearchCandidates = emptyList(),
                     regionDetailSearchCandidate = null,
@@ -443,6 +462,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 updateSpotResult(
                     result = CollectionSpotSearchResult(spots = spots),
                     searchStartedAtNanos = searchStartedAtNanos,
+                    searchFocusCoordinate = coordinate,
                 )
             }.onFailure { throwable ->
                 if (throwable is CancellationException) throw throwable
@@ -478,6 +498,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             updateSpotResult(
                 result = CollectionSpotSearchResult(spots = spotsWithDistance),
                 searchStartedAtNanos = searchStartedAtNanos,
+                searchFocusCoordinate = coordinate,
             )
             saveRecentCurrentLocationSpotsUseCase(
                 spots = spotsWithDistance,
@@ -513,6 +534,26 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedTypes = updatedTypes,
                 spots = filteredSpots,
                 selectedSpot = null,
+                isFilterResultEmpty = isFilterResultEmpty(
+                    filteredSpots = filteredSpots,
+                    selectedTypes = updatedTypes,
+                ),
+            )
+        }
+    }
+
+    fun clearSpotTypeFilters() {
+        val filteredSpots = filterCollectionSpotsUseCase(
+            spots = originalSpots,
+            selectedTypes = emptySet(),
+        )
+
+        _uiState.update {
+            it.copy(
+                selectedTypes = emptySet(),
+                spots = filteredSpots,
+                selectedSpot = null,
+                isFilterResultEmpty = false,
             )
         }
     }
@@ -549,6 +590,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -615,6 +658,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -642,6 +686,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = MapLocationNotices.PermissionDenied,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -707,6 +753,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedTypes = selectedTypes,
                 spots = filteredSpots,
                 selectedSpot = null,
+                isFilterResultEmpty = isFilterResultEmpty(
+                    filteredSpots = filteredSpots,
+                    selectedTypes = selectedTypes,
+                ),
             )
         }
     }
@@ -724,6 +774,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = MapLocationNotices.CurrentLocationUnavailable,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -746,6 +798,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = MapLocationNotices.LocationServiceDisabled,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -758,6 +812,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private fun updateSpotResult(
         result: CollectionSpotSearchResult,
         searchStartedAtNanos: Long? = null,
+        searchFocusCoordinate: Coordinate? = null,
     ) {
         currentLocationLoadingJob?.cancel()
         originalSpots = result.spots.withFavoriteState()
@@ -786,6 +841,11 @@ class CollectionSpotMapViewModel @Inject constructor(
                 } else {
                     null
                 },
+                isFilterResultEmpty = isFilterResultEmpty(
+                    filteredSpots = filteredSpots,
+                    selectedTypes = it.selectedTypes,
+                ),
+                searchFocusCoordinate = searchFocusCoordinate,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -830,6 +890,11 @@ class CollectionSpotMapViewModel @Inject constructor(
                         hasSearched = true,
                         errorMessageResId = null,
                         partialWarningMessageResId = null,
+                        isFilterResultEmpty = isFilterResultEmpty(
+                            filteredSpots = filteredSpots,
+                            selectedTypes = it.selectedTypes,
+                        ),
+                        searchFocusCoordinate = request.coordinate,
                         locationNotice = null,
                         regionSearchCandidates = emptyList(),
                         regionDetailSearchCandidate = null,
@@ -858,6 +923,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 hasSearched = true,
                 errorMessageResId = messageResId,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -909,7 +976,10 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    private fun showCachedCurrentLocationSpots(spots: List<CollectionSpot>) {
+    private fun showCachedCurrentLocationSpots(
+        spots: List<CollectionSpot>,
+        searchFocusCoordinate: Coordinate,
+    ) {
         currentLocationLoadingJob?.cancel()
         originalSpots = spots.withFavoriteState()
 
@@ -927,6 +997,11 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = isFilterResultEmpty(
+                    filteredSpots = filteredSpots,
+                    selectedTypes = it.selectedTypes,
+                ),
+                searchFocusCoordinate = searchFocusCoordinate,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -949,7 +1024,10 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             if (cachedEntry != null) {
                 if (cachedEntry.isWithinDistanceFrom(coordinate)) {
-                    showCachedCurrentLocationSpots(cachedEntry.spots.withDistanceFrom(coordinate))
+                    showCachedCurrentLocationSpots(
+                        spots = cachedEntry.spots.withDistanceFrom(coordinate),
+                        searchFocusCoordinate = coordinate,
+                    )
                     refreshCurrentLocationSilently(
                         coordinate = coordinate,
                         searchGeneration = searchGeneration,
@@ -1003,6 +1081,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
                 locationNotice = null,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
@@ -1083,9 +1163,21 @@ class CollectionSpotMapViewModel @Inject constructor(
             it.copy(
                 spots = filteredSpots,
                 selectedSpot = updatedSelectedSpot,
+                isFilterResultEmpty = isFilterResultEmpty(
+                    filteredSpots = filteredSpots,
+                    selectedTypes = it.selectedTypes,
+                ),
             )
         }
     }
+
+    private fun isFilterResultEmpty(
+        filteredSpots: List<CollectionSpot>,
+        selectedTypes: Set<CollectionSpotType>,
+    ): Boolean =
+        originalSpots.isNotEmpty() &&
+            selectedTypes.isNotEmpty() &&
+            filteredSpots.isEmpty()
 
     private fun List<CollectionSpot>.withFavoriteState(): List<CollectionSpot> =
         map { spot ->

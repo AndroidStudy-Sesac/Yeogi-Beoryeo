@@ -581,6 +581,7 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertEquals(mapCenterCoordinate, repository.lastLocationCoordinate)
             assertEquals(500, repository.lastRadiusMeter)
             assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(mapCenterCoordinate, viewModel.uiState.value.searchFocusCoordinate)
             assertEquals("", viewModel.uiState.value.searchKeyword)
             assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
             assertNull(viewModel.uiState.value.selectedSpot)
@@ -614,6 +615,7 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
 
             assertEquals("문래동", viewModel.uiState.value.searchKeyword)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertNull(viewModel.uiState.value.searchFocusCoordinate)
             assertEquals(false, viewModel.uiState.value.isLoading)
             assertEquals(false, viewModel.uiState.value.hasSearched)
             assertEquals(MapSearchMode.KEYWORD, viewModel.uiState.value.searchMode)
@@ -641,6 +643,7 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             advanceUntilIdle()
 
             assertEquals(mapCenterCoordinate, repository.lastLocationCoordinate)
+            assertEquals(mapCenterCoordinate, viewModel.uiState.value.searchFocusCoordinate)
             assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
         }
 
