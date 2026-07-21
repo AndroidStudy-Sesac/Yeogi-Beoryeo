@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.presentation.R
@@ -273,7 +273,10 @@ class RegionalGuideSelectorViewModelTest {
             assertEquals(emptyList<String>(), eupmyeondongOptions)
             assertFalse(isEupmyeondongOptionsLoading)
             assertFalse(isEupmyeondongSelectionEnabled)
-            assertEquals("제공되는 읍면동 없음", eupmyeondongSelectionLabel)
+            assertEquals(
+                RegionSelectorEupmyeondongSelectionStatus.Unavailable,
+                eupmyeondongSelectionStatus,
+            )
         }
     }
 
@@ -308,7 +311,10 @@ class RegionalGuideSelectorViewModelTest {
         with(viewModel.regionSelectorUiState.value) {
             assertTrue(isEupmyeondongOptionsLoading)
             assertFalse(isEupmyeondongSelectionEnabled)
-            assertEquals("읍면동 불러오는 중", eupmyeondongSelectionLabel)
+            assertEquals(
+                RegionSelectorEupmyeondongSelectionStatus.Loading,
+                eupmyeondongSelectionStatus,
+            )
         }
 
         viewModel.onRegionSelectorDropdownExpanded(RegionSelectorDropdown.EUPMYEONDONG)
@@ -319,7 +325,10 @@ class RegionalGuideSelectorViewModelTest {
         with(viewModel.regionSelectorUiState.value) {
             assertFalse(isEupmyeondongOptionsLoading)
             assertTrue(isEupmyeondongSelectionEnabled)
-            assertEquals("읍면동 선택", eupmyeondongSelectionLabel)
+            assertEquals(
+                RegionSelectorEupmyeondongSelectionStatus.Default,
+                eupmyeondongSelectionStatus,
+            )
         }
     }
 
@@ -384,7 +393,11 @@ class RegionalGuideSelectorViewModelTest {
         viewModel.onRegionSelectionSearchClick()
         advanceUntilIdle()
 
-        assertEquals("광주광역시 > 동구", viewModel.searchKeyword.value)
+        assertEquals("광주광역시 동구", viewModel.searchKeyword.value)
+        assertEquals(
+            listOf("광주광역시", "동구"),
+            viewModel.searchKeywordRegionNameParts.value,
+        )
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Success)
     }
 
@@ -725,6 +738,57 @@ class RegionalGuideSelectorViewModelTest {
         assertEquals(R.string.regional_guide_empty_candidate_not_found_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_candidate_not_found_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+    }
+
+    @Test
+    fun `선택 지역 후보 목록에서 뒤로가면 검색 표시 상태를 함께 초기화한다`() = runTest {
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("서구"),
+                ),
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+                candidates = listOf(
+                    sampleGuide(
+                        sido = "대전광역시",
+                        sigungu = "서구",
+                        targetRegionName = "문전수거 지역",
+                    ),
+                    sampleGuide(
+                        sido = "대전광역시",
+                        sigungu = "서구",
+                        targetRegionName = "기타 수거 지역",
+                    ),
+                ),
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.onSidoSelected("대전광역시")
+        advanceUntilIdle()
+        viewModel.onSigunguSelected("서구")
+        advanceUntilIdle()
+        viewModel.onRegionSelectionSearchClick()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is RegionalGuideUiState.GuideCandidates)
+        assertEquals("대전광역시 서구", viewModel.searchKeyword.value)
+        assertEquals(
+            listOf("대전광역시", "서구"),
+            viewModel.searchKeywordRegionNameParts.value,
+        )
+
+        assertTrue(viewModel.restoreCandidatesFromDetail())
+
+        assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
+        assertEquals("", viewModel.searchKeyword.value)
+        assertNull(viewModel.searchKeywordRegionNameParts.value)
+        with(viewModel.regionSelectorUiState.value) {
+            assertNull(selectedSido)
+            assertNull(selectedSigungu)
+            assertNull(selectedEupmyeondong)
+        }
     }
 }
 

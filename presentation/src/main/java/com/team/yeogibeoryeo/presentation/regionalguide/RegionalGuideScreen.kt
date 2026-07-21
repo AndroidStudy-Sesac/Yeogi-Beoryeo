@@ -65,9 +65,11 @@ import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuide
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSearchBar
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
 import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalWasteScheduleCard
+import com.team.yeogibeoryeo.presentation.regionalguide.components.toRegionalGuideSelectorText
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTime
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 import kotlinx.coroutines.launch
 
@@ -81,6 +83,7 @@ fun RegionalGuideRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
+    val searchKeywordRegionNameParts by viewModel.searchKeywordRegionNameParts.collectAsStateWithLifecycle()
     val regionSelectorUiState by viewModel.regionSelectorUiState.collectAsStateWithLifecycle()
     val currentContext by rememberUpdatedState(LocalContext.current)
     val snackbarHostState = remember { SnackbarHostState() }
@@ -112,6 +115,7 @@ fun RegionalGuideRoute(
     RegionalGuideScreen(
         uiState = uiState,
         searchKeyword = searchKeyword,
+        searchKeywordRegionNameParts = searchKeywordRegionNameParts,
         regionSelectorUiState = regionSelectorUiState,
         onSearchKeywordChange = viewModel::onSearchKeywordChanged,
         onSearchClick = viewModel::searchByKeyword,
@@ -147,6 +151,7 @@ fun RegionalGuideScreen(
     uiState: RegionalGuideUiState,
     searchKeyword: String,
     regionSelectorUiState: RegionSelectorUiState,
+    searchKeywordRegionNameParts: List<String>? = null,
     onSearchKeywordChange: (String) -> Unit,
     onSearchClick: (String) -> Unit,
     onRetryClick: () -> Unit,
@@ -154,11 +159,11 @@ fun RegionalGuideScreen(
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
-    onRegionSelectionStarted: () -> Unit = {},
     onRegionSelectionSearchClick: () -> Unit,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     onGuideCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier,
+    onRegionSelectionStarted: () -> Unit = {},
     onCandidateListScrollPositionChange: (String, RegionalGuideCandidateListScrollPosition) -> Unit = { _, _ -> },
     onRegionSelectorDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
     onRegionSelectorDropdownDismissed: () -> Unit = {},
@@ -172,6 +177,10 @@ fun RegionalGuideScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
     val publicNoticeOpenFailedMessage = stringResource(R.string.item_guide_action_open_failed_message)
+    val selectedRegionText = regionSelectorUiState.selectedRegionParts.toRegionalGuideSelectorText()
+    val displayedSearchKeyword = searchKeywordRegionNameParts
+        ?.toRegionalGuideSelectorText()
+        ?: searchKeyword
     val ambiguousState = uiState as? RegionalGuideUiState.Ambiguous
     val guideCandidatesState = uiState as? RegionalGuideUiState.GuideCandidates
     val collectionTypeGuideCandidatesState = guideCandidatesState
@@ -181,7 +190,12 @@ fun RegionalGuideScreen(
     val hasSearchCandidates = ambiguousState != null || listGuideCandidatesState != null
     val compactRegionText = when (uiState) {
         is RegionalGuideUiState.Success ->
-            regionSelectorUiState.selectedRegionText ?: uiState.query
+            selectedRegionText ?: uiState.query
+
+        is RegionalGuideUiState.Loading ->
+            uiState.regionNameParts?.toRegionalGuideSelectorText()
+                ?: selectedRegionText
+                ?: uiState.query
 
         else -> uiState.queryOrNull()
     }
@@ -289,7 +303,7 @@ fun RegionalGuideScreen(
                 modifier = headerModifier
             ) {
                 Text(
-                    text = "지역별 배출 가이드",
+                    text = stringResource(id = R.string.regional_guide_screen_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -298,7 +312,7 @@ fun RegionalGuideScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "지역명을 입력하면 생활쓰레기, 음식물쓰레기, 재활용품 배출 정보를 확인할 수 있어요.",
+                    text = stringResource(id = R.string.regional_guide_screen_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -306,13 +320,17 @@ fun RegionalGuideScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 RegionalGuideSearchBar(
-                    keyword = searchKeyword,
+                    keyword = displayedSearchKeyword,
                     onKeywordChange = onSearchKeywordChange,
                     onSearchClick = { submittedKeyword ->
                         clearSearchFocus()
                         collapseRegionSelector()
                         onRegionSelectorDropdownDismissed()
-                        onSearchClick(submittedKeyword)
+                        onSearchClick(
+                            searchKeywordRegionNameParts
+                                ?.let { searchKeyword }
+                                ?: submittedKeyword,
+                        )
                     },
                     candidateContent = if (hasSearchCandidates) {
                         {
@@ -377,8 +395,10 @@ fun RegionalGuideScreen(
                         message = candidateMessageSpec.title(),
                         messageDescription = candidateMessageSpec.description(),
                         sectionTitle = candidateMessageSpec.sectionTitle(),
-                        selectedRegionText = regionSelectorUiState.selectedRegionText
-                            ?: collectionTypeGuideCandidatesState.selectedRegionText(),
+                        selectedRegionText = selectedRegionText
+                            ?: collectionTypeGuideCandidatesState
+                                .selectedRegionParts()
+                                ?.toRegionalGuideSelectorText(),
                         candidates = collectionTypeGuideCandidatesState.candidates,
                         onCandidateClick = { candidate ->
                             clearSearchFocus()
@@ -459,7 +479,7 @@ private fun RegionalGuideUiState.queryOrNull(): String? =
         is RegionalGuideUiState.Error -> query
     }?.takeIf { query -> query.isNotBlank() }
 
-private fun RegionalGuideUiState.GuideCandidates.selectedRegionText(): String? =
+private fun RegionalGuideUiState.GuideCandidates.selectedRegionParts(): List<String>? =
     candidates.firstNotNullOfOrNull { candidate ->
         listOfNotNull(
             candidate.sido.takeIfNotBlank(),
@@ -467,7 +487,6 @@ private fun RegionalGuideUiState.GuideCandidates.selectedRegionText(): String? =
             candidate.eupmyeondong.takeIfNotBlank(),
         )
             .takeIf { parts -> parts.isNotEmpty() }
-            ?.joinToString(" > ")
     }
 
 private fun String?.takeIfNotBlank(): String? =
@@ -489,7 +508,9 @@ private fun RegionalGuideContent(
 
         is RegionalGuideUiState.Loading -> {
             RegionalGuideLoadingContent(
-                query = uiState.query,
+                query = uiState.regionNameParts
+                    ?.toRegionalGuideSelectorText()
+                    ?: uiState.query,
                 modifier = modifier
             )
         }
@@ -527,13 +548,20 @@ private fun RegionalGuideContent(
 
         is RegionalGuideUiState.Error -> {
             RegionalGuideErrorContent(
-                message = uiState.message,
+                message = uiState.message.displayText(),
                 onRetryClick = onRetryClick,
                 modifier = modifier
             )
         }
     }
 }
+
+@Composable
+private fun RegionalGuideErrorMessage.displayText(): String =
+    when (this) {
+        is RegionalGuideErrorMessage.Dynamic -> value
+        is RegionalGuideErrorMessage.Resource -> stringResource(id = resId)
+    }
 
 @Composable
 private fun RegionalGuideLoadingContent(
@@ -595,7 +623,7 @@ private fun RegionalGuideSuccessContent(
 
         item {
             Text(
-                text = "배출 요일 및 시간",
+                text = stringResource(id = R.string.regional_guide_schedule_section_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
@@ -633,7 +661,7 @@ private fun List<RegionalWasteScheduleUiModel>.groupForDisplay(): List<RegionalW
 private data class RegionalWasteScheduleDisplayKey(
     val wasteTypeName: String,
     val disposalDays: String?,
-    val disposalTime: String?,
+    val disposalTime: RegionalWasteScheduleTime?,
     val disposalMethod: String?,
 )
 
@@ -663,7 +691,7 @@ private fun RegionalGuideErrorContent(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "오류가 발생했습니다",
+                text = stringResource(id = R.string.regional_guide_error_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onErrorContainer
@@ -678,7 +706,7 @@ private fun RegionalGuideErrorContent(
             TextButton(
                 onClick = onRetryClick
             ) {
-                Text(text = "다시 시도")
+                Text(text = stringResource(id = R.string.regional_guide_error_retry_action))
             }
         }
     }
@@ -751,19 +779,19 @@ private fun RegionalGuideScreenSuccessPreview() {
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "일반쓰레기",
                             disposalDays = "월, 수, 금",
-                            disposalTime = "18:00 ~ 24:00",
+                            disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                             disposalMethod = "종량제 봉투에 담아 배출",
                         ),
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "음식물쓰레기",
                             disposalDays = "화, 목, 일",
-                            disposalTime = "18:00 ~ 24:00",
+                            disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                             disposalMethod = "음식물 전용 용기에 담아 배출",
                         ),
                         RegionalWasteScheduleUiModel(
                             wasteTypeName = "재활용품",
                             disposalDays = "목",
-                            disposalTime = "18:00 ~ 24:00",
+                            disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                             disposalMethod = "품목별로 분리하여 배출",
                         ),
                     ),
@@ -829,7 +857,6 @@ private fun RegionalGuideScreenAmbiguousPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.Ambiguous(
                 query = "신흥동",
-                message = "여러 지역이 검색됩니다. 원하는 지역을 선택해주세요.",
                 candidates = listOf(
                     RegionSearchCandidateUiModel(
                         sido = "인천광역시",
@@ -967,7 +994,9 @@ private fun RegionalGuideScreenErrorPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.Error(
                 query = "영등포구",
-                message = "지역별 배출 가이드를 조회하는 중 오류가 발생했습니다."
+                message = RegionalGuideErrorMessage.Resource(
+                    resId = R.string.regional_guide_error_keyword_search_message,
+                ),
             ),
             searchKeyword = "영등포구",
             regionSelectorUiState = RegionSelectorUiState(

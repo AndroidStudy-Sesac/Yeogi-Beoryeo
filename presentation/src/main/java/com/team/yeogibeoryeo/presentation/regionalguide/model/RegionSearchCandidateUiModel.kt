@@ -12,17 +12,20 @@ data class RegionSearchCandidateUiModel(
             "eupmyeondong=${eupmyeondong.toStableKeyPart()}"
         ).joinToString(STABLE_KEY_SEPARATOR)
 
-    val displayText: String =
+    val regionNameParts: List<String> =
         listOfNotNull(
             sido,
             sigungu,
             eupmyeondong
         )
             .filter { regionName -> regionName.isNotBlank() }
-            .joinToString(" > ")
+
+    val query: String =
+        regionNameParts
+            .joinToString(" ")
 
     val isValid: Boolean
-        get() = displayText.isNotBlank()
+        get() = regionNameParts.isNotEmpty()
 }
 
 private fun String?.toStableKeyPart(): String =

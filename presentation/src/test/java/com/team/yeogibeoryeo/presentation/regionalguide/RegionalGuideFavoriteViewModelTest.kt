@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -28,6 +28,28 @@ class RegionalGuideFavoriteViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
+
+    @Test
+    fun `즐겨찾기 복원 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+        val viewModel = createViewModel(
+            regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(
+                throwable = IllegalStateException(),
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId("regional-guide-target")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Error
+
+        assertEquals(
+            RegionalGuideErrorMessage.Resource(
+                resId = R.string.regional_guide_error_favorite_restore_message,
+            ),
+            state.message,
+        )
+    }
 
     @Test
     fun `즐겨찾기 클릭은 지역 가이드 즐겨찾기를 저장하고 상태를 관찰한다`() = runTest {
