@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -115,6 +116,7 @@ fun SpotBottomSheetContent(
                     onAllClick = onRegionDetailAllClick,
                     onKeywordClick = onRegionDetailKeywordClick,
                     onBackClick = onRegionDetailBackClick,
+                    bottomContentPadding = bottomContentPadding,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -125,6 +127,7 @@ fun SpotBottomSheetContent(
                 MapRegionCandidateSelection(
                     candidates = regionSearchCandidates,
                     onCandidateClick = onRegionCandidateClick,
+                    bottomContentPadding = bottomContentPadding,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -206,6 +209,7 @@ private fun MapRegionDetailSelection(
     onKeywordClick: (String) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     val detailKeywords = candidate.searchKeywords
         .filterNot { keyword -> keyword == candidate.searchKeyword }
@@ -248,6 +252,9 @@ private fun MapRegionDetailSelection(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f, fill = false),
+            contentPadding = PaddingValues(
+                bottom = bottomContentPadding + RegionSelectionLazyColumnBottomExtraPadding,
+            ),
         ) {
             items(
                 items = detailKeywords,
@@ -334,6 +341,7 @@ private fun MapRegionCandidateSelection(
     candidates: List<MapRegionSearchCandidate>,
     onCandidateClick: (MapRegionSearchCandidate) -> Unit,
     modifier: Modifier = Modifier,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     Column(
         modifier = modifier
@@ -357,6 +365,9 @@ private fun MapRegionCandidateSelection(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f, fill = false),
+            contentPadding = PaddingValues(
+                bottom = bottomContentPadding + RegionSelectionLazyColumnBottomExtraPadding,
+            ),
         ) {
             items(
                 items = candidates,
@@ -790,6 +801,8 @@ private fun sampleSpotBottomSheetSpots(): List<CollectionSpot> {
         ),
     )
 }
+
+private val RegionSelectionLazyColumnBottomExtraPadding = 16.dp
 
 @StringRes
 private fun MapLocationNoticeAction.toActionLabelResId(): Int {
