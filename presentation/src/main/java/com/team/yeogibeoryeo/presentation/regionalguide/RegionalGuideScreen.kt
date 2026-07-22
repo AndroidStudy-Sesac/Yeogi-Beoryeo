@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -279,16 +280,24 @@ fun RegionalGuideScreen(
             }
         },
     ) { innerPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
         ) {
+            val metrics = regionalGuideScreenMetricsSpec(
+                maxWidth = maxWidth,
+                maxHeight = maxHeight,
+            )
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+            ) {
             val headerModifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(top = 20.dp)
+                .padding(horizontal = metrics.horizontalPadding)
+                .padding(top = metrics.topPadding)
                 .then(
                     if (collectionTypeGuideCandidatesState != null) {
                         Modifier
@@ -302,22 +311,24 @@ fun RegionalGuideScreen(
             Column(
                 modifier = headerModifier
             ) {
-                Text(
-                    text = stringResource(id = R.string.regional_guide_screen_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                if (!metrics.isCompactLandscape) {
+                    Text(
+                        text = stringResource(id = R.string.regional_guide_screen_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = stringResource(id = R.string.regional_guide_screen_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    Text(
+                        text = stringResource(id = R.string.regional_guide_screen_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(metrics.headerVerticalSpace))
+                }
 
                 RegionalGuideSearchBar(
                     keyword = displayedSearchKeyword,
@@ -339,6 +350,7 @@ fun RegionalGuideScreen(
 
                                 RegionalGuideAmbiguousResult(
                                     candidates = ambiguousState.candidates,
+                                    candidateListMaxHeight = metrics.candidateListMaxHeight,
                                     scrollStateKey = candidateListScrollKey,
                                     initialScrollPosition =
                                         ambiguousState.candidateListScrollPosition,
@@ -362,6 +374,7 @@ fun RegionalGuideScreen(
 
                                 RegionalGuideCandidateResult(
                                     candidates = listGuideCandidatesState.candidates,
+                                    candidateListMaxHeight = metrics.candidateListMaxHeight,
                                     scrollStateKey = candidateListScrollKey,
                                     initialScrollPosition =
                                         listGuideCandidatesState.candidateListScrollPosition,
@@ -385,7 +398,7 @@ fun RegionalGuideScreen(
                     },
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(metrics.headerVerticalSpace))
 
                 if (collectionTypeGuideCandidatesState != null) {
                     val candidateMessageSpec =
@@ -413,6 +426,7 @@ fun RegionalGuideScreen(
                     RegionSelectorSection(
                         uiState = regionSelectorUiState,
                         compact = isRegionSelectorCompact,
+                        compactLandscape = metrics.isCompactLandscape,
                         compactRegionText = compactRegionText,
                         onSidoSelected = { sido ->
                             clearSearchFocus()
@@ -445,7 +459,7 @@ fun RegionalGuideScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(metrics.contentTopSpace))
             }
 
             if (collectionTypeGuideCandidatesState == null) {
@@ -453,7 +467,7 @@ fun RegionalGuideScreen(
                     uiState = uiState,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = metrics.horizontalPadding),
                     onRetryClick = onRetryClick,
                     onEmptyActionClick = ::handleEmptyAction,
                     onFavoriteClick = onFavoriteClick,
@@ -463,6 +477,7 @@ fun RegionalGuideScreen(
                         }
                     },
                 )
+            }
             }
         }
     }
