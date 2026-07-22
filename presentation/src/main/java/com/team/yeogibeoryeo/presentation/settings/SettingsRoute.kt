@@ -10,11 +10,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun SettingsRoute(
     onBackClick: () -> Unit,
     onDetailClick: (SettingsDetailType) -> Unit,
+    onAppGuideClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SettingsScreen(
         onBackClick = onBackClick,
         onDetailClick = onDetailClick,
+        onAppGuideClick = onAppGuideClick,
         modifier = modifier,
     )
 }

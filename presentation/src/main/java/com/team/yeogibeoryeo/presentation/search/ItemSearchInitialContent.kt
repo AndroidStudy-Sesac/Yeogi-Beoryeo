@@ -74,12 +74,18 @@ fun ItemSearchInitialContent(
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    appGuideTarget: ItemSearchGuideTarget? = null,
+    searchGuideModifier: Modifier = Modifier,
+    quickCategoryGuideModifier: Modifier = Modifier,
+    usefulGuideModifier: Modifier = Modifier,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
     var handledScrollRestoreVersion by rememberSaveable {
         mutableIntStateOf(quickCategoryScrollRestoreVersion)
     }
+    var appGuideScrollIndex by rememberSaveable { mutableIntStateOf(NO_APP_GUIDE_SCROLL_INDEX) }
+    var appGuideScrollOffset by rememberSaveable { mutableIntStateOf(0) }
 
     LaunchedEffect(
         isQuickCategoryExpanded,
@@ -94,6 +100,44 @@ fun ItemSearchInitialContent(
                 scrollOffset = quickCategoryScrollRestoreOffset,
             )
             handledScrollRestoreVersion = quickCategoryScrollRestoreVersion
+        }
+    }
+
+    LaunchedEffect(appGuideTarget) {
+        if (appGuideTarget != null && appGuideScrollIndex == NO_APP_GUIDE_SCROLL_INDEX) {
+            appGuideScrollIndex = listState.firstVisibleItemIndex
+            appGuideScrollOffset = listState.firstVisibleItemScrollOffset
+        }
+
+        when (appGuideTarget) {
+            ItemSearchGuideTarget.SEARCH -> {
+                val isSearchVisible =
+                    listState.layoutInfo.visibleItemsInfo.any { item ->
+                        item.index == SEARCH_GUIDE_ITEM_INDEX
+                    }
+                if (!isSearchVisible) {
+                    listState.scrollToItem(SEARCH_GUIDE_ITEM_INDEX)
+                }
+            }
+
+            ItemSearchGuideTarget.QUICK_CATEGORY -> {
+                listState.scrollToItem(QUICK_CATEGORY_GUIDE_ITEM_INDEX)
+            }
+
+            ItemSearchGuideTarget.USEFUL_GUIDE -> {
+                listState.scrollToItem(USEFUL_GUIDE_GUIDE_ITEM_INDEX)
+            }
+
+            null -> {
+                if (appGuideScrollIndex != NO_APP_GUIDE_SCROLL_INDEX) {
+                    listState.scrollToItem(
+                        index = appGuideScrollIndex,
+                        scrollOffset = appGuideScrollOffset,
+                    )
+                    appGuideScrollIndex = NO_APP_GUIDE_SCROLL_INDEX
+                    appGuideScrollOffset = 0
+                }
+            }
         }
     }
 
@@ -160,6 +204,7 @@ fun ItemSearchInitialContent(
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
                         onGuideClick = onUsefulGuideClick,
+                        modifier = usefulGuideModifier,
                         contentPadding = PaddingValues(horizontal = metrics.horizontalPadding),
                         itemWidthFraction = metrics.usefulGuideBannerWidthFraction,
                     )
@@ -183,7 +228,8 @@ fun ItemSearchInitialContent(
                     placeholder = stringResource(R.string.item_search_query_label),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = metrics.horizontalPadding),
+                        .padding(horizontal = metrics.horizontalPadding)
+                        .then(searchGuideModifier),
                     iconSize = metrics.searchIconSize,
                 )
             }
@@ -226,6 +272,7 @@ fun ItemSearchInitialContent(
                         )
                     }
                     QuickCategoryGrid(
+                        modifier = quickCategoryGuideModifier,
                         categories = quickCategories,
                         selectedCategories = selectedQuickCategories,
                         onCategoryClick = onQuickCategoryClick,
@@ -248,6 +295,11 @@ fun ItemSearchInitialContent(
         }
     }
 }
+
+private const val USEFUL_GUIDE_GUIDE_ITEM_INDEX = 1
+private const val SEARCH_GUIDE_ITEM_INDEX = 3
+private const val QUICK_CATEGORY_GUIDE_ITEM_INDEX = 4
+private const val NO_APP_GUIDE_SCROLL_INDEX = -1
 
 @Composable
 fun ItemSearchHeader(
