@@ -71,10 +71,20 @@ constructor(
 
     fun onQueryChange(query: String) {
         searchJob?.cancel()
-        _uiState.update {
-            it.copy(
+        searchJob = null
+        _uiState.update { state ->
+            val keepCompletedResult =
+                state.hasSearched &&
+                    !state.isLoading &&
+                    state.errorMessageResId == null &&
+                    state.submittedQuery != null
+
+            state.copy(
                 query = query,
+                submittedQuery = if (keepCompletedResult) state.submittedQuery else null,
+                guides = if (keepCompletedResult) state.guides else emptyList(),
                 isLoading = false,
+                hasSearched = keepCompletedResult,
                 errorMessageResId = null,
             )
         }
@@ -82,10 +92,13 @@ constructor(
 
     fun clearSearch() {
         searchJob?.cancel()
+        searchJob = null
         _uiState.update {
             it.copy(
                 query = "",
+                submittedQuery = null,
                 guides = emptyList(),
+                isLoading = false,
                 hasSearched = false,
                 errorMessageResId = null,
             )
@@ -98,12 +111,16 @@ constructor(
     }
 
     fun search(query: String) {
-        _uiState.update { it.copy(query = query) }
         val trimmedQuery = query.trim()
+        searchJob?.cancel()
+        searchJob = null
         if (trimmedQuery.isBlank()) {
             _uiState.update {
                 it.copy(
+                    query = query,
+                    submittedQuery = null,
                     guides = emptyList(),
+                    isLoading = false,
                     hasSearched = false,
                     errorMessageResId = null,
                 )
@@ -111,17 +128,18 @@ constructor(
             return
         }
 
-        searchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                query = trimmedQuery,
+                submittedQuery = trimmedQuery,
+                guides = emptyList(),
+                isLoading = true,
+                hasSearched = true,
+                errorMessageResId = null,
+            )
+        }
         searchJob =
             viewModelScope.launch {
-                _uiState.update {
-                    it.copy(
-                        isLoading = true,
-                        hasSearched = true,
-                        errorMessageResId = null,
-                    )
-                }
-
                 runCatchingCancellable { searchDisposalItemGuidesUseCase(trimmedQuery) }
                     .onSuccess { guides ->
                         _uiState.update {

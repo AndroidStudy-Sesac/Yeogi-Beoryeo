@@ -7,6 +7,7 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 
 data class ItemSearchUiState(
     val query: String = "",
+    val submittedQuery: String? = null,
     val guides: List<DisposalItemGuide> = emptyList(),
     val favoriteGuideIds: Set<String> = emptySet(),
     val searchResultVersion: Int = 0,

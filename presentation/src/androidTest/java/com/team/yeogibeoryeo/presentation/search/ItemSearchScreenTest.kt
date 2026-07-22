@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -181,6 +183,30 @@ class ItemSearchScreenTest {
     }
 
     @Test
+    fun 검색어를_수정해도_화면에_제출된_검색어를_표시한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState =
+                        ItemSearchUiState(
+                            query = "비닐",
+                            submittedQuery = "유리",
+                            hasSearched = true,
+                            guides = listOf(sampleGuide("유리병")),
+                        ),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("‘유리’ 검색 결과").assertIsDisplayed()
+        composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
+    }
+
+    @Test
     fun 검색_결과에서_초기_상태로_돌아오면_하단_네비게이션을_다시_보이게_요청한다() {
         var uiState by mutableStateOf(
             ItemSearchUiState(
@@ -254,20 +280,32 @@ class ItemSearchScreenTest {
 
     @Test
     fun 에러_상태에서는_에러_리소스_문구를_보여준다() {
+        var backClickCount = 0
+
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchScreen(
-                    uiState = ItemSearchUiState(errorMessageResId = R.string.search_load_failed_message),
+                    uiState =
+                        ItemSearchUiState(
+                            query = "PMP",
+                            submittedQuery = "PMP",
+                            hasSearched = true,
+                            errorMessageResId = R.string.search_load_failed_message,
+                        ),
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
                     onQuickCategoryClick = {},
+                    onBackClick = { backClickCount += 1 },
                 )
             }
         }
 
         composeTestRule.onNodeWithText("검색 결과를 불러오지 못했어요.").assertIsDisplayed()
         composeTestRule.onNodeWithText("잠시 후 다시 시도해주세요.").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
+
+        assertEquals(1, backClickCount)
     }
 
     @Test
@@ -346,9 +384,13 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNode(hasImeAction(ImeAction.Search)).performImeAction()
+        val searchField = composeTestRule.onNode(hasImeAction(ImeAction.Search))
+        searchField.performClick()
+        searchField.assertIsFocused()
+        searchField.performImeAction()
 
         assertEquals(1, searchClickCount)
+        searchField.assertIsNotFocused()
     }
 
     @Test
