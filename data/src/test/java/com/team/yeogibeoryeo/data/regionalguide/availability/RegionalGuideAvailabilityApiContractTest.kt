@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.data.region.local.RegionAssetContract
 import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideApiService
+import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideHeaderDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideRootDto
 import kotlinx.coroutines.runBlocking
@@ -24,6 +25,12 @@ class RegionalGuideAvailabilityApiContractTest {
     private val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
+    }
+
+    @Test
+    fun `API 성공 코드는 앞자리 0 개수와 관계없이 0이면 성공으로 판단한다`() {
+        assertTrue(RegionalGuideHeaderDto(resultCode = "0").isSuccessful())
+        assertTrue(RegionalGuideHeaderDto(resultCode = "00").isSuccessful())
     }
 
     @Test
@@ -226,7 +233,7 @@ class RegionalGuideAvailabilityApiContractTest {
         val header = checkNotNull(apiResponse.header) {
             "/info API 응답에 header가 없습니다."
         }
-        check(header.resultCode == SUCCESS_RESULT_CODE) {
+        check(header.isSuccessful()) {
             "/info API 오류: 코드=${header.resultCode}, 메시지=${header.resultMessage}"
         }
         val body = checkNotNull(apiResponse.body) {
@@ -281,6 +288,10 @@ class RegionalGuideAvailabilityApiContractTest {
             parentFile?.mkdirs()
             writeText("$report\n", Charsets.UTF_8)
         }
+    }
+
+    private fun RegionalGuideHeaderDto.isSuccessful(): Boolean {
+        return resultCode?.toIntOrNull() == SUCCESS_RESULT_CODE
     }
 
     private fun RegionalGuideAvailabilityDto.toRegionKey(): RegionalGuideRegionKey {
@@ -386,12 +397,12 @@ class RegionalGuideAvailabilityApiContractTest {
     }
 
     private companion object {
-        const val API_BASE_URL = "https://apis.data.go.kr/"
+        const val API_BASE_URL = "https://apis.data.go.kr/1741000/household_waste_info/"
         const val FIRST_PAGE_NO = 1
         const val MAX_REPORTED_DIFFERENCES = 20
         const val PAGE_SIZE = 100
         const val SERVICE_KEY_ENVIRONMENT = "PUBLIC_DATA_SERVICE_KEY"
-        const val SUCCESS_RESULT_CODE = "00"
+        const val SUCCESS_RESULT_CODE = 0
         const val TARGET_SIGUNGU_NAMES_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_TARGET_SIGUNGU_NAMES"
         const val TARGETED_VERIFICATION_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_TARGETED"
         const val VERIFICATION_ENABLED_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_VERIFICATION"
