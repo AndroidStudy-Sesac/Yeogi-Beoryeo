@@ -162,7 +162,7 @@ class RegionalGuideAvailabilityApiContractTest {
 
         val items = mutableListOf<RegionalGuideItemDto>()
         for (sigunguName in sigunguNames) {
-            items += fetchApiPages { pageNo ->
+            items += fetchApiPages(sigunguName) { pageNo ->
                 apiService.getRegionalGuides(
                     serviceKey = serviceKey,
                     pageNo = pageNo,
@@ -183,14 +183,21 @@ class RegionalGuideAvailabilityApiContractTest {
     }
 
     private suspend fun fetchApiPages(
+        sigunguName: String,
         requestPage: suspend (pageNo: Int) -> Response<RegionalGuideRootDto>,
     ): List<RegionalGuideItemDto> {
-        val firstPage = fetchApiPage(requestPage(FIRST_PAGE_NO))
+        val firstPage = fetchApiPage(
+            sigunguName = sigunguName,
+            response = requestPage(FIRST_PAGE_NO),
+        )
         val items = firstPage.items.toMutableList()
         val totalPages = (firstPage.totalCount + PAGE_SIZE - 1) / PAGE_SIZE
 
         for (pageNo in (FIRST_PAGE_NO + 1)..totalPages) {
-            val page = fetchApiPage(requestPage(pageNo))
+            val page = fetchApiPage(
+                sigunguName = sigunguName,
+                response = requestPage(pageNo),
+            )
             check(page.totalCount == firstPage.totalCount) {
                 "/info API totalCount가 페이지마다 다릅니다."
             }
@@ -206,10 +213,11 @@ class RegionalGuideAvailabilityApiContractTest {
     }
 
     private fun fetchApiPage(
+        sigunguName: String,
         response: Response<RegionalGuideRootDto>,
     ): ApiPage {
         check(response.isSuccessful) {
-            "/info API HTTP 오류: ${response.code()}"
+            "/info API HTTP 오류: ${response.code()}, 시군구=$sigunguName"
         }
 
         val apiResponse = checkNotNull(response.body()?.response) {
