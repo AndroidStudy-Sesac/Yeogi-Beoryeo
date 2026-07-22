@@ -50,10 +50,13 @@ class AppGuideViewModelTest {
         assertEquals(AppGuideStep.QUICK_CATEGORY, viewModel.uiState.value.currentStep)
 
         viewModel.showNextStep()
+        assertEquals(AppGuideStep.USEFUL_GUIDE, viewModel.uiState.value.currentStep)
+
+        viewModel.showNextStep()
         assertEquals(AppGuideStep.MAP, viewModel.uiState.value.currentStep)
 
         viewModel.showPreviousStep()
-        assertEquals(AppGuideStep.QUICK_CATEGORY, viewModel.uiState.value.currentStep)
+        assertEquals(AppGuideStep.USEFUL_GUIDE, viewModel.uiState.value.currentStep)
     }
 
     @Test

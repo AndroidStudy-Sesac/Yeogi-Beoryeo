@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.appguide
 enum class AppGuideStep {
     ITEM_SEARCH,
     QUICK_CATEGORY,
+    USEFUL_GUIDE,
     MAP,
     REGIONAL_GUIDE,
     FAVORITES,

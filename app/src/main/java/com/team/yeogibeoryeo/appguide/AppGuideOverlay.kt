@@ -302,6 +302,11 @@ private fun AppGuideStep.content(): AppGuideContent =
             description = stringResource(R.string.app_guide_quick_category_description),
         )
 
+        AppGuideStep.USEFUL_GUIDE -> AppGuideContent(
+            title = stringResource(R.string.app_guide_useful_guide_title),
+            description = stringResource(R.string.app_guide_useful_guide_description),
+        )
+
         AppGuideStep.MAP -> AppGuideContent(
             title = stringResource(R.string.app_guide_map_title),
             description = stringResource(R.string.app_guide_map_description),

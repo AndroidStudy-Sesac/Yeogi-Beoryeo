@@ -73,6 +73,7 @@ fun ItemSearchRoute(
     appGuideTarget: ItemSearchGuideTarget? = null,
     searchGuideModifier: Modifier = Modifier,
     quickCategoryGuideModifier: Modifier = Modifier,
+    usefulGuideModifier: Modifier = Modifier,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -137,6 +138,7 @@ fun ItemSearchRoute(
         appGuideTarget = appGuideTarget,
         searchGuideModifier = searchGuideModifier,
         quickCategoryGuideModifier = quickCategoryGuideModifier,
+        usefulGuideModifier = usefulGuideModifier,
         modifier = modifier,
     )
 }
@@ -168,6 +170,7 @@ fun ItemSearchScreen(
     appGuideTarget: ItemSearchGuideTarget? = null,
     searchGuideModifier: Modifier = Modifier,
     quickCategoryGuideModifier: Modifier = Modifier,
+    usefulGuideModifier: Modifier = Modifier,
 ) {
     val showsInitialContent =
         isAppGuideActive ||
@@ -213,6 +216,7 @@ fun ItemSearchScreen(
             appGuideTarget = appGuideTarget,
             searchGuideModifier = searchGuideModifier,
             quickCategoryGuideModifier = quickCategoryGuideModifier,
+            usefulGuideModifier = usefulGuideModifier,
         )
         return
     }

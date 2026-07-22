@@ -77,6 +77,7 @@ fun ItemSearchInitialContent(
     appGuideTarget: ItemSearchGuideTarget? = null,
     searchGuideModifier: Modifier = Modifier,
     quickCategoryGuideModifier: Modifier = Modifier,
+    usefulGuideModifier: Modifier = Modifier,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
@@ -121,6 +122,10 @@ fun ItemSearchInitialContent(
 
             ItemSearchGuideTarget.QUICK_CATEGORY -> {
                 listState.scrollToItem(QUICK_CATEGORY_GUIDE_ITEM_INDEX)
+            }
+
+            ItemSearchGuideTarget.USEFUL_GUIDE -> {
+                listState.scrollToItem(USEFUL_GUIDE_GUIDE_ITEM_INDEX)
             }
 
             null -> {
@@ -199,6 +204,7 @@ fun ItemSearchInitialContent(
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
                         onGuideClick = onUsefulGuideClick,
+                        modifier = usefulGuideModifier,
                         contentPadding = PaddingValues(horizontal = metrics.horizontalPadding),
                         itemWidthFraction = metrics.usefulGuideBannerWidthFraction,
                     )
@@ -290,6 +296,7 @@ fun ItemSearchInitialContent(
     }
 }
 
+private const val USEFUL_GUIDE_GUIDE_ITEM_INDEX = 1
 private const val SEARCH_GUIDE_ITEM_INDEX = 3
 private const val QUICK_CATEGORY_GUIDE_ITEM_INDEX = 4
 private const val NO_APP_GUIDE_SCROLL_INDEX = -1

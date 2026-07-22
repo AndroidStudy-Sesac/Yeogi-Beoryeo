@@ -101,6 +101,7 @@ fun YeogiBeoryeoNavHost(
             when (appGuideUiState.currentStep) {
                 AppGuideStep.ITEM_SEARCH -> ItemSearchGuideTarget.SEARCH
                 AppGuideStep.QUICK_CATEGORY -> ItemSearchGuideTarget.QUICK_CATEGORY
+                AppGuideStep.USEFUL_GUIDE -> ItemSearchGuideTarget.USEFUL_GUIDE
                 else -> null
             }
         } else {
@@ -110,6 +111,7 @@ fun YeogiBeoryeoNavHost(
         when (appGuideUiState.currentStep) {
             AppGuideStep.ITEM_SEARCH,
             AppGuideStep.QUICK_CATEGORY,
+            AppGuideStep.USEFUL_GUIDE,
             -> appGuideTargetBounds[appGuideUiState.currentStep]
 
             AppGuideStep.MAP,
@@ -323,6 +325,14 @@ fun YeogiBeoryeoNavHost(
                                 }
                             },
                         ),
+                        usefulGuideModifier = Modifier.appGuideTarget(
+                            step = AppGuideStep.USEFUL_GUIDE,
+                            onBoundsChanged = { step, bounds ->
+                                if (appGuideTargetBounds[step] != bounds) {
+                                    appGuideTargetBounds = appGuideTargetBounds + (step to bounds)
+                                }
+                            },
+                        ),
                     )
                 }
 
@@ -468,6 +478,7 @@ private fun AppGuideStep.bottomTabIndex(): Int =
         AppGuideStep.FAVORITES -> FAVORITES_BOTTOM_TAB_INDEX
         AppGuideStep.ITEM_SEARCH,
         AppGuideStep.QUICK_CATEGORY,
+        AppGuideStep.USEFUL_GUIDE,
         -> error("홈 가이드 단계에는 하단 탭 인덱스가 없습니다.")
     }
 
