@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -106,6 +107,49 @@ class ItemSearchScreenTest {
         }
 
         composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
+    }
+
+    @Test
+    fun 검색_결과가_남아_있어도_앱_사용_가이드를_재실행하면_초기_홈을_보여준다() {
+        var isAppGuideActive by mutableStateOf(false)
+        var appGuideTarget by mutableStateOf<ItemSearchGuideTarget?>(null)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState =
+                        ItemSearchUiState(
+                            query = "유리",
+                            hasSearched = true,
+                            guides = listOf(sampleGuide("유리병")),
+                        ),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    isAppGuideActive = isAppGuideActive,
+                    appGuideTarget = appGuideTarget,
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("뒤로가기").assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            isAppGuideActive = true
+            appGuideTarget = ItemSearchGuideTarget.SEARCH
+        }
+
+        composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
+        composeTestRule.onAllNodesWithContentDescription("뒤로가기").assertCountEquals(0)
+
+        composeTestRule.runOnIdle {
+            appGuideTarget = null
+        }
+
+        composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
+        composeTestRule.onAllNodesWithContentDescription("뒤로가기").assertCountEquals(0)
     }
 
     @Test

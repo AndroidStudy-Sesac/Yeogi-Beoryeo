@@ -69,6 +69,7 @@ fun ItemSearchRoute(
     initialQuery: String? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    isAppGuideActive: Boolean = false,
     appGuideTarget: ItemSearchGuideTarget? = null,
     searchGuideModifier: Modifier = Modifier,
     quickCategoryGuideModifier: Modifier = Modifier,
@@ -132,6 +133,7 @@ fun ItemSearchRoute(
         categoryListState = categoryListState,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
         onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
+        isAppGuideActive = isAppGuideActive,
         appGuideTarget = appGuideTarget,
         searchGuideModifier = searchGuideModifier,
         quickCategoryGuideModifier = quickCategoryGuideModifier,
@@ -162,12 +164,14 @@ fun ItemSearchScreen(
     categoryListState: LazyListState = rememberLazyListState(),
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    isAppGuideActive: Boolean = false,
     appGuideTarget: ItemSearchGuideTarget? = null,
     searchGuideModifier: Modifier = Modifier,
     quickCategoryGuideModifier: Modifier = Modifier,
 ) {
     val showsInitialContent =
-        !uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null
+        isAppGuideActive ||
+            (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null)
     val showsSearchResults = uiState.guides.isNotEmpty()
 
     LaunchedEffect(showsInitialContent, showsSearchResults) {

@@ -81,17 +81,7 @@ fun AppGuideOverlay(
 
     Box(
         modifier = modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Main)
-                        event.changes
-                            .filterNot { change -> change.isConsumed }
-                            .forEach { change -> change.consume() }
-                    }
-                }
-            },
+            .fillMaxSize(),
     ) {
         val animatedBounds by animateRectAsState(
             targetValue = targetBounds,
@@ -101,7 +91,20 @@ fun AppGuideOverlay(
         val scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = SCRIM_ALPHA)
         val outlineColor = MaterialTheme.colorScheme.primary
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Main)
+                            event.changes
+                                .filterNot { change -> change.isConsumed }
+                                .forEach { change -> change.consume() }
+                        }
+                    }
+                },
+        ) {
             val spotlightBounds = expandedSpotlightBounds(
                 targetBounds = animatedBounds,
                 paddingPx = SPOTLIGHT_PADDING.toPx(),

@@ -305,6 +305,7 @@ fun YeogiBeoryeoNavHost(
                                 isItemSearchBottomBarScrollEnabled = isEnabled
                             }
                         },
+                        isAppGuideActive = isAppGuideRunningOnHome,
                         appGuideTarget = itemSearchGuideTarget,
                         searchGuideModifier = Modifier.appGuideTarget(
                             step = AppGuideStep.ITEM_SEARCH,
