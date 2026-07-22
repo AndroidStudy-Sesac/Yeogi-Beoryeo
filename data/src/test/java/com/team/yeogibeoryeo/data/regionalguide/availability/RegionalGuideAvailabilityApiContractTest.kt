@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.data.region.local.RegionAssetContract
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideApiService
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
+import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideRootDto
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -13,6 +14,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
+import retrofit2.Response
 import retrofit2.Retrofit
 import java.io.File
 
@@ -44,12 +46,44 @@ class RegionalGuideAvailabilityApiContractTest {
                 keys = setOf(apiOnlyKey),
                 rowCount = 1,
             ),
+            verificationTarget = VerificationTarget(
+                isFull = true,
+                sigunguNames = emptySet(),
+            ),
         ).toMarkdown()
 
         assertTrue(report.contains("| /info API 응답 행 | 1 |"))
         assertTrue(report.contains("| asset에만 존재 | 1 |"))
         assertTrue(report.contains(assetOnlyKey.displayName()))
         assertTrue(report.contains(apiOnlyKey.displayName()))
+    }
+
+    @Test
+    fun `변경 시군구 범위에서는 대상 지역만 보고서에 포함한다`() {
+        val targetKey = RegionalGuideRegionKey(
+            sidoName = "서울특별시",
+            sigunguName = "종로구",
+            managementZoneName = "청운효자동",
+            targetRegionName = "청운동",
+        )
+        val verificationTarget = VerificationTarget(
+            isFull = false,
+            sigunguNames = setOf(targetKey.sigunguName),
+        )
+
+        val report = RegionalGuideAvailabilityReport(
+            assetKeys = setOf(targetKey),
+            apiRegions = ApiRegions(
+                keys = setOf(targetKey),
+                rowCount = 1,
+            ),
+            verificationTarget = verificationTarget,
+        ).toMarkdown()
+
+        assertTrue(verificationTarget.includes("종로구"))
+        assertTrue(!verificationTarget.includes("중구"))
+        assertTrue(report.contains("검증 범위: 변경 시군구 종로구"))
+        assertTrue(report.contains("| availability asset 지역 | 1 |"))
     }
 
     @Test
@@ -63,28 +97,36 @@ class RegionalGuideAvailabilityApiContractTest {
             val serviceKey = checkNotNull(System.getenv(SERVICE_KEY_ENVIRONMENT)?.takeIf(String::isNotBlank)) {
                 "PUBLIC_DATA_SERVICE_KEY가 필요합니다."
             }
-            val assetKeys = loadAssetKeys()
-            val apiRegions = fetchApiRegions(serviceKey)
+            val verificationTarget = verificationTarget()
+            val assetKeys = loadAssetKeys(verificationTarget)
+            val apiRegions = fetchApiRegions(
+                serviceKey = serviceKey,
+                verificationTarget = verificationTarget,
+            )
             val report = RegionalGuideAvailabilityReport(
                 assetKeys = assetKeys,
                 apiRegions = apiRegions,
+                verificationTarget = verificationTarget,
             ).toMarkdown()
 
             appendGitHubStepSummary(report)
             println(report)
         } catch (failure: Throwable) {
+            val failureMessage = failure.message ?: "원인을 확인할 수 없습니다."
+            println("지역 가이드 availability 검증 실패: $failureMessage")
             appendGitHubStepSummary(
                 """
                 ## 지역 가이드 availability 검증 실패
 
-                API 인증, 통신 또는 응답 형식을 확인하세요. 상세 원인은 Actions 로그에서 확인할 수 있습니다.
+                - 원인: $failureMessage
+                - API 인증, 통신 또는 응답 형식을 확인하세요.
                 """.trimIndent()
             )
             throw failure
         }
     }
 
-    private fun loadAssetKeys(): Set<RegionalGuideRegionKey> {
+    private fun loadAssetKeys(verificationTarget: VerificationTarget): Set<RegionalGuideRegionKey> {
         val availabilityRegions = json.decodeFromString<List<RegionalGuideAvailabilityDto>>(
             File(assetFilePath()).readText(Charsets.UTF_8)
         )
@@ -96,25 +138,57 @@ class RegionalGuideAvailabilityApiContractTest {
             keys.toSet().size,
         )
 
-        return keys.toSet()
+        return keys
+            .filter { verificationTarget.includes(it.sigunguName) }
+            .toSet()
     }
 
-    private suspend fun fetchApiRegions(serviceKey: String): ApiRegions {
+    private suspend fun fetchApiRegions(
+        serviceKey: String,
+        verificationTarget: VerificationTarget,
+    ): ApiRegions {
         val apiService = regionalGuideApiService()
-        val firstPage = fetchApiPage(
-            apiService = apiService,
-            serviceKey = serviceKey,
-            pageNo = FIRST_PAGE_NO,
+        val items = if (verificationTarget.isFull) {
+            fetchApiPages { pageNo ->
+                apiService.getAllRegionalGuides(
+                    serviceKey = serviceKey,
+                    pageNo = pageNo,
+                    numOfRows = PAGE_SIZE,
+                )
+            }
+        } else {
+            val targetItems = mutableListOf<RegionalGuideItemDto>()
+            for (sigunguName in verificationTarget.sigunguNames) {
+                targetItems += fetchApiPages { pageNo ->
+                    apiService.getRegionalGuides(
+                        serviceKey = serviceKey,
+                        pageNo = pageNo,
+                        numOfRows = PAGE_SIZE,
+                        sigunguName = sigunguName,
+                    )
+                }
+            }
+            targetItems
+        }
+        val scopedItems = items.filter { item ->
+            verificationTarget.includes(item.sigunguName)
+        }
+
+        return ApiRegions(
+            keys = scopedItems.map { item -> item.toRegionKey() }.toSet(),
+            rowCount = scopedItems.size,
         )
+    }
+
+    private suspend fun fetchApiPages(
+        requestPage: suspend (pageNo: Int) -> Response<RegionalGuideRootDto>,
+    ): List<RegionalGuideItemDto> {
+        val firstPage = fetchApiPage(requestPage(FIRST_PAGE_NO))
         val items = firstPage.items.toMutableList()
         val totalPages = (firstPage.totalCount + PAGE_SIZE - 1) / PAGE_SIZE
 
         for (pageNo in (FIRST_PAGE_NO + 1)..totalPages) {
-            val page = fetchApiPage(
-                apiService = apiService,
-                serviceKey = serviceKey,
-                pageNo = pageNo,
-            )
+            val page = fetchApiPage(requestPage(pageNo))
             check(page.totalCount == firstPage.totalCount) {
                 "/info API totalCount가 페이지마다 다릅니다."
             }
@@ -126,22 +200,12 @@ class RegionalGuideAvailabilityApiContractTest {
                 "expected=${firstPage.totalCount}, actual=${items.size}"
         }
 
-        return ApiRegions(
-            keys = items.map { item -> item.toRegionKey() }.toSet(),
-            rowCount = items.size,
-        )
+        return items
     }
 
-    private suspend fun fetchApiPage(
-        apiService: RegionalGuideApiService,
-        serviceKey: String,
-        pageNo: Int,
+    private fun fetchApiPage(
+        response: Response<RegionalGuideRootDto>,
     ): ApiPage {
-        val response = apiService.getAllRegionalGuides(
-            serviceKey = serviceKey,
-            pageNo = pageNo,
-            numOfRows = PAGE_SIZE,
-        )
         check(response.isSuccessful) {
             "/info API HTTP 오류: ${response.code()}"
         }
@@ -179,6 +243,20 @@ class RegionalGuideAvailabilityApiContractTest {
 
     private fun assetFilePath(): String {
         return "src/main/assets/${RegionAssetContract.REGIONAL_GUIDE_AVAILABILITY_ASSET_PATH}"
+    }
+
+    private fun verificationTarget(): VerificationTarget {
+        val sigunguNames = System.getenv(TARGET_SIGUNGU_NAMES_ENVIRONMENT)
+            ?.lineSequence()
+            ?.map(String::trim)
+            ?.filter(String::isNotBlank)
+            ?.toSet()
+            .orEmpty()
+
+        return VerificationTarget(
+            isFull = System.getenv(TARGETED_VERIFICATION_ENVIRONMENT) != "true",
+            sigunguNames = sigunguNames,
+        )
     }
 
     private fun appendGitHubStepSummary(report: String) {
@@ -225,6 +303,7 @@ class RegionalGuideAvailabilityApiContractTest {
     private data class RegionalGuideAvailabilityReport(
         val assetKeys: Set<RegionalGuideRegionKey>,
         val apiRegions: ApiRegions,
+        val verificationTarget: VerificationTarget,
     ) {
         private val assetOnlyKeys = assetKeys - apiRegions.keys
         private val apiOnlyKeys = apiRegions.keys - assetKeys
@@ -232,6 +311,14 @@ class RegionalGuideAvailabilityApiContractTest {
         fun toMarkdown(): String {
             return buildList {
                 add("## 지역 가이드 availability 검증 결과")
+                add("")
+                if (verificationTarget.isFull) {
+                    add("- 검증 범위: 전체 지역")
+                } else if (verificationTarget.sigunguNames.isEmpty()) {
+                    add("- 검증 범위: 변경 지역 없음")
+                } else {
+                    add("- 검증 범위: 변경 시군구 ${verificationTarget.sigunguNames.sorted().joinToString()}")
+                }
                 add("")
                 add("| 구분 | 건수 |")
                 add("| --- | ---: |")
@@ -270,6 +357,15 @@ class RegionalGuideAvailabilityApiContractTest {
         val rowCount: Int,
     )
 
+    private data class VerificationTarget(
+        val isFull: Boolean,
+        val sigunguNames: Set<String>,
+    ) {
+        fun includes(sigunguName: String?): Boolean {
+            return isFull || sigunguName in sigunguNames
+        }
+    }
+
     private companion object {
         const val API_BASE_URL = "https://apis.data.go.kr/"
         const val FIRST_PAGE_NO = 1
@@ -278,6 +374,8 @@ class RegionalGuideAvailabilityApiContractTest {
         const val PAGE_SIZE = 100
         const val SERVICE_KEY_ENVIRONMENT = "PUBLIC_DATA_SERVICE_KEY"
         const val SUCCESS_RESULT_CODE = "00"
+        const val TARGET_SIGUNGU_NAMES_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_TARGET_SIGUNGU_NAMES"
+        const val TARGETED_VERIFICATION_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_TARGETED"
         const val VERIFICATION_ENABLED_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_VERIFICATION"
     }
 }

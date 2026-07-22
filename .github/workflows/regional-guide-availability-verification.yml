@@ -11,11 +11,7 @@ on:
       - develop
       - main
     paths:
-      - '.github/workflows/regional-guide-availability-verification.yml'
       - 'data/src/main/assets/region/regional_guide_availability.*.json'
-      - 'data/src/main/java/**/RegionalGuideApiService.kt'
-      - 'data/src/main/java/**/RegionalGuideResponseDto.kt'
-      - 'data/src/test/java/**/RegionalGuideAvailabilityApiContractTest.kt'
 
 permissions:
   contents: read
@@ -36,6 +32,41 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Find changed sigungu names
+        id: changed-sigungu
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          contract_path='data/src/main/java/com/team/yeogibeoryeo/data/region/local/RegionAssetContract.kt'
+          base_version="$(git show "${{ github.event.pull_request.base.sha }}:$contract_path" | sed -nE 's/.*REGIONAL_GUIDE_AVAILABILITY_VERSION = "([^"]+)".*/\1/p')"
+          head_version="$(sed -nE 's/.*REGIONAL_GUIDE_AVAILABILITY_VERSION = "([^"]+)".*/\1/p' "$contract_path")"
+          base_asset_path="data/src/main/assets/region/regional_guide_availability.$base_version.json"
+          head_asset_path="data/src/main/assets/region/regional_guide_availability.$head_version.json"
+
+          base_asset_file="$(mktemp)"
+          head_asset_file="$(mktemp)"
+          git show "${{ github.event.pull_request.base.sha }}:$base_asset_path" > "$base_asset_file" || echo '[]' > "$base_asset_file"
+          if [[ -f "$head_asset_path" ]]; then
+            cp "$head_asset_path" "$head_asset_file"
+          else
+            echo '[]' > "$head_asset_file"
+          fi
+
+          base_keys_file="$(mktemp)"
+          head_keys_file="$(mktemp)"
+          jq -r '.[] | [.sidoName, .sigunguName, .managementZoneName, .targetRegionName] | @tsv' "$base_asset_file" \
+            | LC_ALL=C sort -u > "$base_keys_file"
+          jq -r '.[] | [.sidoName, .sigunguName, .managementZoneName, .targetRegionName] | @tsv' "$head_asset_file" \
+            | LC_ALL=C sort -u > "$head_keys_file"
+          sigungu_names="$(LC_ALL=C comm -3 "$base_keys_file" "$head_keys_file" | awk -F '\t' '{ print $1 == "" ? $3 : $2 }' | LC_ALL=C sort -u)"
+
+          {
+            echo "names<<EOF"
+            echo "$sigungu_names"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -65,6 +96,8 @@ jobs:
       - name: Verify asset against /info API
         env:
           REGIONAL_GUIDE_AVAILABILITY_VERIFICATION: 'true'
+          REGIONAL_GUIDE_AVAILABILITY_TARGETED: ${{ github.event_name == 'pull_request' }}
+          REGIONAL_GUIDE_AVAILABILITY_TARGET_SIGUNGU_NAMES: ${{ steps.changed-sigungu.outputs.names }}
         run: |
           ./gradlew :data:testDebugUnitTest \
             --tests com.team.yeogibeoryeo.data.regionalguide.availability.RegionalGuideAvailabilityApiContractTest \
