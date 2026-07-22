@@ -69,6 +69,9 @@ fun ItemSearchRoute(
     initialQuery: String? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    appGuideTarget: ItemSearchGuideTarget? = null,
+    searchGuideModifier: Modifier = Modifier,
+    quickCategoryGuideModifier: Modifier = Modifier,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -129,6 +132,9 @@ fun ItemSearchRoute(
         categoryListState = categoryListState,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
         onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
+        appGuideTarget = appGuideTarget,
+        searchGuideModifier = searchGuideModifier,
+        quickCategoryGuideModifier = quickCategoryGuideModifier,
         modifier = modifier,
     )
 }
@@ -156,6 +162,9 @@ fun ItemSearchScreen(
     categoryListState: LazyListState = rememberLazyListState(),
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    appGuideTarget: ItemSearchGuideTarget? = null,
+    searchGuideModifier: Modifier = Modifier,
+    quickCategoryGuideModifier: Modifier = Modifier,
 ) {
     val showsInitialContent =
         !uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null
@@ -197,6 +206,9 @@ fun ItemSearchScreen(
             modifier = modifier.statusBarsPadding(),
             onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
             onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
+            appGuideTarget = appGuideTarget,
+            searchGuideModifier = searchGuideModifier,
+            quickCategoryGuideModifier = quickCategoryGuideModifier,
         )
         return
     }

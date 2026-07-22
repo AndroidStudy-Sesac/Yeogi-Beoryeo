@@ -227,6 +227,7 @@
     <string name="quick_category_click_action">배출 방법 보기</string>
     <string name="settings_action">설정</string>
     <string name="settings_title">설정</string>
+    <string name="settings_app_guide_title">앱 사용 가이드</string>
     <string name="settings_notice_title">공지사항</string>
     <string name="settings_contact_title">문의하기</string>
     <string name="settings_app_info_title">앱 정보</string>
