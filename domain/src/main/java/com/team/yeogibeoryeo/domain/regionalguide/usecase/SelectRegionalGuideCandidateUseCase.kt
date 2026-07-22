@@ -10,6 +10,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFavoriteCom
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -192,10 +193,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         if (exactMatches.isNotEmpty()) {
             if (mappedTargetRegionMatches.size > exactMatches.size) {
-                return mappedTargetRegionMatches.mergeLegacyDuplicateCandidateRows()
+                return mappedTargetRegionMatches.mergeFilteredDuplicateCandidateRows()
             }
 
-            return exactMatches.mergeLegacyDuplicateCandidateRows()
+            return exactMatches.mergeFilteredDuplicateCandidateRows()
         }
 
         val managementZoneMatches = filter { guide ->
@@ -208,11 +209,11 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         if (hasNumberedManagementZoneAliasMatch) {
-            return managementZoneMatches.mergeLegacyDuplicateCandidateRows()
+            return managementZoneMatches.mergeFilteredDuplicateCandidateRows()
         }
 
         if (mappedTargetRegionMatches.isNotEmpty()) {
-            return mappedTargetRegionMatches.mergeLegacyDuplicateCandidateRows()
+            return mappedTargetRegionMatches.mergeFilteredDuplicateCandidateRows()
         }
 
         val targetRegionMatches = filter { guide ->
@@ -223,7 +224,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return (managementZoneMatches + targetRegionMatches)
-            .mergeLegacyDuplicateCandidateRows()
+            .mergeFilteredDuplicateCandidateRows()
     }
 
     private fun List<RegionalDisposalGuide>.filterByMappedAdminDongs(
@@ -239,7 +240,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             guide.managementZoneName.matchesExactMappedAdminDong(adminDongNames) ||
                 guide.targetRegionName.matchesExactMappedAdminDong(adminDongNames)
         }
-            .mergeLegacyDuplicateCandidateRows()
+            .mergeFilteredDuplicateCandidateRows()
     }
 
     private fun List<RegionalDisposalGuide>.selectOverallCandidates(
@@ -340,46 +341,90 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         groupBy { guide -> guide.toLatestCandidateKey() }
             .values
             .flatMap { guides ->
-                guides.selectUniqueLatestGuide()
-                    ?.let(::listOf)
-                    ?: guides.mergeLegacyDuplicateCandidateRows()
+                when (val selection = guides.selectLatestGuide()) {
+                    is LatestGuideSelection.Unique -> listOf(selection.guide)
+                    is LatestGuideSelection.Tie ->
+                        selection.latestGuides.mergeEquivalentCandidateRows()
+                    LatestGuideSelection.NotDetermined -> guides.mergeLegacyDuplicateCandidateRows()
+                }
             }
 
-    private fun List<RegionalDisposalGuide>.selectUniqueLatestGuide(): RegionalDisposalGuide? {
+    private fun List<RegionalDisposalGuide>.selectLatestGuide(): LatestGuideSelection {
         if (any { guide -> !guide.sourceMetadata?.lastModifiedPoint.isNullOrBlank() }) {
-            return selectUniqueLatestGuideBy { guide ->
+            return selectLatestGuideBy { guide ->
                 guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull()
             }
         }
 
-        return selectUniqueLatestGuideBy { guide ->
+        return selectLatestGuideBy { guide ->
             guide.sourceMetadata?.dataCriteriaDate.toComparableDatePointOrNull()
         }
     }
 
-    private fun List<RegionalDisposalGuide>.selectUniqueLatestGuideBy(
+    private fun List<RegionalDisposalGuide>.selectLatestGuideBy(
         datePointSelector: (RegionalDisposalGuide) -> Long?
-    ): RegionalDisposalGuide? {
+    ): LatestGuideSelection {
         val datePoints = map { guide -> guide to datePointSelector(guide) }
-        if (datePoints.any { (_, datePoint) -> datePoint == null }) return null
+        if (datePoints.any { (_, datePoint) -> datePoint == null }) {
+            return LatestGuideSelection.NotDetermined
+        }
 
         val latestDatePoint = datePoints.maxOf { (_, datePoint) -> checkNotNull(datePoint) }
-        return datePoints
-            .singleOrNull { (_, datePoint) -> datePoint == latestDatePoint }
-            ?.first
+        val latestGuides = datePoints
+            .filter { (_, datePoint) -> datePoint == latestDatePoint }
+            .map { (guide, _) -> guide }
+
+        return latestGuides
+            .singleOrNull()
+            ?.let { guide -> LatestGuideSelection.Unique(guide) }
+            ?: LatestGuideSelection.Tie(latestGuides)
     }
 
     private fun List<RegionalDisposalGuide>.mergeLegacyDuplicateCandidateRows(): List<RegionalDisposalGuide> =
         groupBy { guide -> guide.toLegacyCandidateKey() }
             .values
-            .map { guides ->
-                val firstGuide = guides.first()
-                firstGuide.copy(
-                    schedules = guides
-                        .flatMap { guide -> guide.schedules }
-                        .distinct()
-                )
+            .flatMap { guides -> guides.mergeSchedules() }
+
+    private fun List<RegionalDisposalGuide>.mergeFilteredDuplicateCandidateRows():
+        List<RegionalDisposalGuide> =
+        groupBy { guide -> guide.toLegacyCandidateKey() }
+            .values
+            .flatMap { guides ->
+                if (guides.hasSameComparableLatestDate()) {
+                    guides.mergeEquivalentCandidateRows()
+                } else {
+                    guides.mergeSchedules()
+                }
             }
+
+    private fun List<RegionalDisposalGuide>.mergeEquivalentCandidateRows(): List<RegionalDisposalGuide> =
+        groupBy { guide -> guide.toContentCandidateKey() }
+            .values
+            .map { guides ->
+                when (val selection = guides.selectLatestGuide()) {
+                    is LatestGuideSelection.Unique -> selection.guide
+                    is LatestGuideSelection.Tie,
+                    LatestGuideSelection.NotDetermined,
+                    -> guides.first()
+                }
+            }
+
+    private fun List<RegionalDisposalGuide>.mergeSchedules(): List<RegionalDisposalGuide> =
+        listOf(
+            first().copy(
+                schedules = flatMap { guide -> guide.schedules }.distinct(),
+            )
+        )
+
+    private fun List<RegionalDisposalGuide>.hasSameComparableLatestDate(): Boolean {
+        val datePoints = if (any { guide -> !guide.sourceMetadata?.lastModifiedPoint.isNullOrBlank() }) {
+            map { guide -> guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull() }
+        } else {
+            map { guide -> guide.sourceMetadata?.dataCriteriaDate.toComparableDatePointOrNull() }
+        }
+
+        return datePoints.all { datePoint -> datePoint != null } && datePoints.distinct().size == 1
+    }
 
     private fun RegionalDisposalGuide.toLatestCandidateKey(): LatestCandidateKey =
         LatestCandidateKey(
@@ -401,6 +446,13 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             uncollectedDays = uncollectedDays.normalizeRegionName(),
             departmentName = departmentName.normalizeRegionName(),
             departmentPhoneNumber = departmentPhoneNumber.normalizeRegionName(),
+        )
+
+    private fun RegionalDisposalGuide.toContentCandidateKey(): ContentCandidateKey =
+        ContentCandidateKey(
+            latestCandidateKey = toLatestCandidateKey(),
+            disposalPlaceDescription = disposalPlaceDescription.normalizeRegionName(),
+            schedules = schedules.toSet(),
         )
 
     private fun String?.toComparableDatePointOrNull(): Long? {
@@ -851,6 +903,24 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         val departmentName: String?,
         val departmentPhoneNumber: String?,
     )
+
+    private data class ContentCandidateKey(
+        val latestCandidateKey: LatestCandidateKey,
+        val disposalPlaceDescription: String?,
+        val schedules: Set<RegionalWasteSchedule>,
+    )
+
+    private sealed interface LatestGuideSelection {
+        data class Unique(
+            val guide: RegionalDisposalGuide,
+        ) : LatestGuideSelection
+
+        data class Tie(
+            val latestGuides: List<RegionalDisposalGuide>,
+        ) : LatestGuideSelection
+
+        data object NotDetermined : LatestGuideSelection
+    }
 
     private companion object {
         const val SEJONG_SIGUNGU_QUERY = "없음"
