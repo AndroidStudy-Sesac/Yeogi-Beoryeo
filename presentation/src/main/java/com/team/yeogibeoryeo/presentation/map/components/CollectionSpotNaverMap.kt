@@ -6,11 +6,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.naver.maps.geometry.LatLng
@@ -28,6 +31,7 @@ import com.naver.maps.map.compose.rememberCameraPositionState
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.map.location.rememberMapLocationSource
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
 
 @OptIn(ExperimentalNaverMapApi::class)
@@ -47,10 +51,15 @@ fun CollectionSpotNaverMap(
 ) {
     val defaultMarkerColor = MaterialTheme.colorScheme.primary
     val selectedMarkerColor = MaterialTheme.colorScheme.tertiary
-    val markerSpots =
-        (spots + listOfNotNull(selectedSpot))
-            .distinctBy { spot -> spot.id }
-            .filter { spot -> spot.coordinate != null }
+    val defaultMarkerColorArgb = defaultMarkerColor.toArgb()
+    val markerRenderState = remember(spots, selectedSpot) {
+        buildCollectionSpotMarkerRenderState(
+            spots = spots,
+            selectedSpot = selectedSpot,
+        )
+    }
+    val currentOnSpotClick by rememberUpdatedState(onSpotClick)
+    val coroutineScope = rememberCoroutineScope()
     val locationSource = rememberMapLocationSource()
     val mapProperties = MapProperties(
         locationTrackingMode = if (isLocationPermissionGranted) {
@@ -167,7 +176,28 @@ fun CollectionSpotNaverMap(
             onMapClick()
         },
     ) {
-        markerSpots.forEach { spot ->
+        if (markerRenderState.useClustering) {
+            CollectionSpotClusterOverlay(
+                spots = markerRenderState.clusterMarkerSpots,
+                markerColor = defaultMarkerColorArgb,
+                onSpotClick = { spot ->
+                    currentOnSpotClick(spot)
+                },
+                onClusterClick = { clusterPosition, clusterMaxZoom, mapMaxZoom ->
+                    coroutineScope.launch {
+                        moveCamera(
+                            CameraUpdate.scrollAndZoomTo(
+                                clusterPosition,
+                                (clusterMaxZoom + 1).toDouble()
+                                    .coerceAtMost(mapMaxZoom),
+                            ),
+                        )
+                    }
+                },
+            )
+        }
+
+        markerRenderState.composeMarkerSpots.forEach { spot ->
             val coordinate = spot.coordinate ?: return@forEach
             val isSelected = selectedSpot?.id == spot.id
 
