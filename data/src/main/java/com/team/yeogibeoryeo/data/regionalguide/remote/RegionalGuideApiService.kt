@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.data.regionalguide.remote
 
-import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideResponseDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideRootDto
 import retrofit2.Response
 import retrofit2.http.GET
@@ -11,6 +10,19 @@ import retrofit2.http.Query
  * Base URL: https://apis.data.go.kr/
  */
 interface RegionalGuideApiService {
+
+    /**
+     * 전체 지역의 배출 가이드 정보를 페이지 단위로 조회합니다.
+     *
+     * 지역 가이드 availability asset과 API 제공 지역을 비교하는 검증에 사용합니다.
+     */
+    @GET("info")
+    suspend fun getAllRegionalGuides(
+        @Query("serviceKey") serviceKey: String,
+        @Query("pageNo") pageNo: Int = 1,
+        @Query("numOfRows") numOfRows: Int = 100,
+        @Query("returnType") returnType: String = "json",
+    ): Response<RegionalGuideRootDto>
 
     /**
      * 특정 시군구(SGG_NM)의 배출 가이드 정보를 필터링하여 조회합니다.

@@ -17,7 +17,14 @@ data class RegionalGuideRootDto(
 
 @Serializable
 data class RegionalGuideResponseDto(
+    @SerialName("header") val header: RegionalGuideHeaderDto? = null,
     @SerialName("body") val body: RegionalGuideBodyDto? = null
+)
+
+@Serializable
+data class RegionalGuideHeaderDto(
+    @SerialName("resultCode") val resultCode: String? = null,
+    @SerialName("resultMsg") val resultMessage: String? = null,
 )
 
 @Serializable
