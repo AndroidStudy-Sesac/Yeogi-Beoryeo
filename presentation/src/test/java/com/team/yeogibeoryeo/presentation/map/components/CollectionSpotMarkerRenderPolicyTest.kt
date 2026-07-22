@@ -10,7 +10,7 @@ import org.junit.Test
 
 class CollectionSpotMarkerRenderPolicyTest {
     @Test
-    fun `uses compose markers below clustering threshold`() {
+    fun `클러스터링 기준 미만이면 Compose 마커를 사용한다`() {
         val spots = spots(count = 99)
 
         val state = buildCollectionSpotMarkerRenderState(
@@ -24,7 +24,7 @@ class CollectionSpotMarkerRenderPolicyTest {
     }
 
     @Test
-    fun `uses cluster markers at clustering threshold`() {
+    fun `클러스터링 기준 이상이면 클러스터 마커를 사용한다`() {
         val spots = spots(count = MARKER_CLUSTERING_THRESHOLD)
 
         val state = buildCollectionSpotMarkerRenderState(
@@ -38,7 +38,7 @@ class CollectionSpotMarkerRenderPolicyTest {
     }
 
     @Test
-    fun `excludes selected spot from cluster markers and keeps it as compose marker`() {
+    fun `선택한 스팟은 클러스터에서 제외하고 Compose 마커로 유지한다`() {
         val selectedSpot = spot(id = "spot-42")
         val spots = spots(count = MARKER_CLUSTERING_THRESHOLD)
             .map { spot ->
@@ -57,7 +57,7 @@ class CollectionSpotMarkerRenderPolicyTest {
     }
 
     @Test
-    fun `does not exclude matching cluster spot when selected spot has no coordinate`() {
+    fun `선택한 스팟에 좌표가 없으면 같은 ID의 클러스터 스팟을 제외하지 않는다`() {
         val selectedSpot = spot(id = "spot-42", coordinate = null)
         val spots = spots(count = MARKER_CLUSTERING_THRESHOLD)
 
@@ -72,7 +72,7 @@ class CollectionSpotMarkerRenderPolicyTest {
     }
 
     @Test
-    fun `excludes spots without coordinates before applying clustering threshold`() {
+    fun `클러스터링 기준을 적용하기 전에 좌표 없는 스팟을 제외한다`() {
         val spots = spots(count = MARKER_CLUSTERING_THRESHOLD - 1) +
             spot(id = "no-coordinate", coordinate = null)
 
@@ -88,7 +88,7 @@ class CollectionSpotMarkerRenderPolicyTest {
     }
 
     @Test
-    fun `deduplicates compose markers by spot id`() {
+    fun `Compose 마커는 스팟 ID를 기준으로 중복을 제거한다`() {
         val duplicate = spot(id = "duplicate")
         val spots = listOf(duplicate, duplicate.copy(name = "updated"))
 
@@ -102,7 +102,7 @@ class CollectionSpotMarkerRenderPolicyTest {
     }
 
     @Test
-    fun `cluster key uses spot id and coordinate`() {
+    fun `클러스터 키는 스팟 ID와 좌표를 사용한다`() {
         val spot = spot(
             id = "spot-key",
             coordinate = Coordinate(
@@ -116,6 +116,26 @@ class CollectionSpotMarkerRenderPolicyTest {
         assertEquals("spot-key", key.id)
         assertEquals(37.5, key.latitude, 0.0)
         assertEquals(126.9, key.longitude, 0.0)
+    }
+
+    @Test
+    fun `클러스터 마커도 스팟 ID를 기준으로 중복을 제거한다`() {
+        val originalSpots = spots(count = MARKER_CLUSTERING_THRESHOLD)
+        val duplicate = originalSpots.first().copy(
+            coordinate = Coordinate(
+                latitude = 35.0,
+                longitude = 129.0,
+            ),
+        )
+
+        val state = buildCollectionSpotMarkerRenderState(
+            spots = originalSpots + duplicate,
+            selectedSpot = null,
+        )
+
+        assertTrue(state.useClustering)
+        assertEquals(MARKER_CLUSTERING_THRESHOLD, state.clusterMarkerSpots.size)
+        assertEquals(originalSpots.first(), state.clusterMarkerSpots.first())
     }
 
     private fun spots(count: Int): List<CollectionSpot> =

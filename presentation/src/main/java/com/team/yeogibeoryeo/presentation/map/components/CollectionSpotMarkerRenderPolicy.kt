@@ -46,17 +46,15 @@ internal fun buildCollectionSpotMarkerRenderState(
     return CollectionSpotMarkerRenderState(
         composeMarkerSpots = listOfNotNull(selectedSpot)
             .filter { spot -> spot.coordinate != null },
-        clusterMarkerSpots = spots
-            .filter { spot -> spot.coordinate != null }
-            .filter { spot -> spot.id != selectedClusterExclusionId }
-            .distinctBy { spot -> spot.toClusterKey() },
+        clusterMarkerSpots = markerSpots
+            .filter { spot -> spot.id != selectedClusterExclusionId },
         useClustering = true,
     )
 }
 
 internal fun CollectionSpot.toClusterKey(): CollectionSpotClusterKey {
     val coordinate = requireNotNull(coordinate) {
-        "Cluster key requires a coordinate."
+        "클러스터 키 생성에는 좌표가 필요합니다."
     }
 
     return CollectionSpotClusterKey(
