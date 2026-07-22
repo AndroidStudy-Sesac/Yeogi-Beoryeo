@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.data.regionalguide.remote.dto
 
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -52,5 +51,22 @@ class RegionalGuideItemDtoTest {
         assertEquals("20240709", dto.dataCriteriaDate)
         assertEquals("20240710000000", dto.dataUpdatedPoint)
         assertEquals("U", dto.dataUpdateType)
+    }
+
+    @Test
+    fun `대형폐기물 배출 요일 없이도 나머지 필드를 파싱한다`() {
+        val dto = json.decodeFromString<RegionalGuideItemDto>(
+            """
+            {
+              "TMPRY_BULK_WASTE_EMSN_PLC": "대형폐기물 지정 장소",
+              "TMPRY_BULK_WASTE_EMSN_BGNG_TM": "1800",
+              "TMPRY_BULK_WASTE_EMSN_MTHD": "사전 신청 후 배출"
+            }
+            """.trimIndent()
+        )
+
+        assertEquals("대형폐기물 지정 장소", dto.largeItemDisposalPlace)
+        assertEquals("1800", dto.largeItemStartTime)
+        assertEquals("사전 신청 후 배출", dto.largeItemMethod)
     }
 }

@@ -209,13 +209,18 @@ class RegionalGuideMapperTest {
             baseRegion = Region(sido = "서울특별시", sigungu = "중구"),
             dto = RegionalGuideItemDto(
                 largeItemDisposalPlace = "대형폐기물 지정 장소",
+                largeItemStartTime = "1800",
+                largeItemEndTime = "2100",
+                largeItemMethod = "사전 신청 후 배출",
             )
         )
 
         val schedule = result.schedules.single()
         assertEquals(RegionalWasteType.LARGE_ITEM, schedule.wasteType)
         assertNull(schedule.disposalDays)
-        assertNull(schedule.disposalMethod)
+        assertEquals("18:00", schedule.disposalStartTime)
+        assertEquals("21:00", schedule.disposalEndTime)
+        assertEquals("사전 신청 후 배출", schedule.disposalMethod)
         assertEquals("대형폐기물 지정 장소", schedule.disposalPlace)
     }
 
