@@ -106,4 +106,10 @@ jobs:
 
       - name: Print verification summary
         if: always()
-        run: cat "$GITHUB_STEP_SUMMARY"
+        run: |
+          report_path='data/build/reports/regional-guide-availability-summary.md'
+          if [[ -f "$report_path" ]]; then
+            tee -a "$GITHUB_STEP_SUMMARY" < "$report_path"
+          else
+            echo "지역 가이드 availability 검증 보고서를 생성하지 못했습니다." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi

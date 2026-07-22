@@ -109,12 +109,12 @@ class RegionalGuideAvailabilityApiContractTest {
                 verificationTarget = verificationTarget,
             ).toMarkdown()
 
-            appendGitHubStepSummary(report)
+            writeVerificationReport(report)
             println(report)
         } catch (failure: Throwable) {
             val failureMessage = failure.message ?: "원인을 확인할 수 없습니다."
             println("지역 가이드 availability 검증 실패: $failureMessage")
-            appendGitHubStepSummary(
+            writeVerificationReport(
                 """
                 ## 지역 가이드 availability 검증 실패
 
@@ -259,10 +259,11 @@ class RegionalGuideAvailabilityApiContractTest {
         )
     }
 
-    private fun appendGitHubStepSummary(report: String) {
-        val summaryPath = System.getenv(GITHUB_STEP_SUMMARY_ENVIRONMENT) ?: return
-
-        File(summaryPath).appendText("$report\n", Charsets.UTF_8)
+    private fun writeVerificationReport(report: String) {
+        File(VERIFICATION_REPORT_PATH).apply {
+            parentFile?.mkdirs()
+            writeText("$report\n", Charsets.UTF_8)
+        }
     }
 
     private fun RegionalGuideAvailabilityDto.toRegionKey(): RegionalGuideRegionKey {
@@ -369,7 +370,6 @@ class RegionalGuideAvailabilityApiContractTest {
     private companion object {
         const val API_BASE_URL = "https://apis.data.go.kr/"
         const val FIRST_PAGE_NO = 1
-        const val GITHUB_STEP_SUMMARY_ENVIRONMENT = "GITHUB_STEP_SUMMARY"
         const val MAX_REPORTED_DIFFERENCES = 20
         const val PAGE_SIZE = 100
         const val SERVICE_KEY_ENVIRONMENT = "PUBLIC_DATA_SERVICE_KEY"
@@ -377,5 +377,6 @@ class RegionalGuideAvailabilityApiContractTest {
         const val TARGET_SIGUNGU_NAMES_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_TARGET_SIGUNGU_NAMES"
         const val TARGETED_VERIFICATION_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_TARGETED"
         const val VERIFICATION_ENABLED_ENVIRONMENT = "REGIONAL_GUIDE_AVAILABILITY_VERIFICATION"
+        const val VERIFICATION_REPORT_PATH = "build/reports/regional-guide-availability-summary.md"
     }
 }
