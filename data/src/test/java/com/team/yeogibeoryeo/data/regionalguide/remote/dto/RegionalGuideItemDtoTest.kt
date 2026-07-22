@@ -60,6 +60,7 @@ class RegionalGuideItemDtoTest {
             {
               "TMPRY_BULK_WASTE_EMSN_PLC": "대형폐기물 지정 장소",
               "TMPRY_BULK_WASTE_EMSN_BGNG_TM": "1800",
+              "TMPRY_BULK_WASTE_EMSN_END_TM": "2100",
               "TMPRY_BULK_WASTE_EMSN_MTHD": "사전 신청 후 배출"
             }
             """.trimIndent()
@@ -67,6 +68,7 @@ class RegionalGuideItemDtoTest {
 
         assertEquals("대형폐기물 지정 장소", dto.largeItemDisposalPlace)
         assertEquals("1800", dto.largeItemStartTime)
+        assertEquals("2100", dto.largeItemEndTime)
         assertEquals("사전 신청 후 배출", dto.largeItemMethod)
     }
 }
