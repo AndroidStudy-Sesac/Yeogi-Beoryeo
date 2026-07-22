@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteSnapshot
+import com.team.yeogibeoryeo.domain.favorite.model.toFavoriteSnapshot
 import com.team.yeogibeoryeo.domain.favorite.usecase.GetRegionalGuideFavoriteSnapshotUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ObserveFavoriteUseCase
 import com.team.yeogibeoryeo.domain.favorite.usecase.ToggleRegionalGuideFavoriteUseCase
@@ -16,8 +17,6 @@ import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.RegionSearchInputType
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
-import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
@@ -29,8 +28,6 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
-import com.team.yeogibeoryeo.presentation.regionalguide.model.regionalGuideCandidateDisplayComparator
-import com.team.yeogibeoryeo.presentation.regionalguide.model.withDuplicateDisplayDisambiguation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -86,7 +83,7 @@ class RegionalGuideViewModel @Inject constructor(
     private var lastRequest: RegionalGuideRequest? = null
     private var currentRegionalGuideDisplayRegion: Region? = null
     private var currentRegionalGuideFavoriteSnapshot: RegionalGuideFavoriteSnapshot? = null
-    private val guideCandidateBackStackEntries = mutableListOf<RegionalGuideCandidateBackStackEntry>()
+    private val guideCandidateBackStack = RegionalGuideCandidateBackStack()
     private val favoriteToggleJobs = mutableMapOf<String, Job>()
     private var isInitialRouteRequestConsumed = false
 
@@ -316,14 +313,14 @@ class RegionalGuideViewModel @Inject constructor(
         applyRegionSelection(selectedRegion)
         currentRegionalGuideDisplayRegion = selectedRegion
 
-        val snapshot = candidate.toFavoriteSnapshot()
+        val snapshot = RegionalGuideFavoriteSnapshotFactory.from(candidate)
         currentRegionalGuideFavoriteSnapshot = snapshot
         observeRegionalGuideFavoriteState(snapshot)
 
         _uiState.value = RegionalGuideUiState.Success(
             query = query,
             guide = candidate.guide,
-            canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
+            canRestoreCandidates = guideCandidateBackStack.canRestore,
         )
     }
 
@@ -355,7 +352,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     fun restoreCandidatesFromDetail(): Boolean {
-        val entry = guideCandidateBackStackEntries.removeLastOrNull()
+        val entry = guideCandidateBackStack.pop()
 
         guideLookupJob?.cancel()
         keywordSuggestionJob?.cancel()
@@ -669,7 +666,7 @@ class RegionalGuideViewModel @Inject constructor(
 
                 _uiState.value = RegionalGuideUiState.Loading(
                     query = query,
-                    canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
+                    canRestoreCandidates = guideCandidateBackStack.canRestore,
                     regionNameParts = region.toRegionNameParts(),
                 )
 
@@ -685,13 +682,13 @@ class RegionalGuideViewModel @Inject constructor(
                     message = e.toErrorMessage(
                         fallbackResId = R.string.regional_guide_error_selected_region_message,
                     ),
-                    canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
+                    canRestoreCandidates = guideCandidateBackStack.canRestore,
                 )
             }
         }
     }
 
-    private suspend fun normalizeAndApplyRegionSelection(region: Region): RegionSelectionNormalizationResult {
+    private suspend fun normalizeAndApplyRegionSelection(region: Region): PreparedRegionalGuideRegionSelection {
         val regionalGuideRegion = normalizeRegionalGuideDisplayRegionUseCase(region)
         val selectedSido = regionalGuideRegion.sido
         val selectedSigungu = regionalGuideRegion.sigungu
@@ -709,37 +706,17 @@ class RegionalGuideViewModel @Inject constructor(
             } else {
                 null
             }
-        val selectableRegion =
-            if (
-                selectedEupmyeondong != null &&
-                !eupmyeondongOptions.isNullOrEmpty() &&
-                eupmyeondongOptions.none { option ->
-                    RegionalGuideEupmyeondongNamePolicy.isSameName(
-                        first = selectedEupmyeondong,
-                        second = option,
-                    )
-                }
-            ) {
-                regionalGuideRegion.copy(eupmyeondong = null)
-            } else {
-                regionalGuideRegion
-            }
-        val removedEupmyeondong =
-            if (selectableRegion.eupmyeondong != selectedEupmyeondong) {
-                selectedEupmyeondong
-            } else {
-                null
-            }
+        val selection = RegionalGuideRegionSelectionPolicy.prepare(
+            lookupRegion = regionalGuideRegion,
+            eupmyeondongOptions = eupmyeondongOptions,
+        )
 
         applyRegionSelection(
-            region = selectableRegion,
+            region = selection.selectorRegion,
             preloadedEupmyeondongOptions = eupmyeondongOptions
         )
 
-        return RegionSelectionNormalizationResult(
-            lookupRegion = regionalGuideRegion,
-            removedEupmyeondong = removedEupmyeondong,
-        )
+        return selection
     }
 
     private suspend fun loadRegionalGuideIfAvailable(
@@ -763,7 +740,7 @@ class RegionalGuideViewModel @Inject constructor(
 
     private suspend fun loadRegionalGuideForSelection(
         query: String,
-        selectionResult: RegionSelectionNormalizationResult,
+        selectionResult: PreparedRegionalGuideRegionSelection,
     ) {
         if (selectionResult.removedEupmyeondong != null) {
             if (loadRegionalGuideIfAvailable(query, selectionResult.lookupRegion)) return
@@ -927,41 +904,31 @@ class RegionalGuideViewModel @Inject constructor(
     ): RegionalGuideUiState {
         return when (this) {
             is RegionalGuideLookupResult.Success -> {
-                val displayGuide = guide.withSelectableEupmyeondongRegion()
+                val displayGuide =
+                    RegionalGuideRegionSelectionPolicy.guideWithSelectableEupmyeondong(guide)
                 currentRegionalGuideDisplayRegion = displayGuide.region
                 syncSelectedRegionWithGuide(displayGuide)
 
-                val snapshot = favoriteSnapshotOverride ?: displayGuide.toFavoriteSnapshot()
+                val snapshot =
+                    favoriteSnapshotOverride ?: displayGuide.toFavoriteSnapshot()
                 currentRegionalGuideFavoriteSnapshot = snapshot
                 observeRegionalGuideFavoriteState(snapshot)
 
                 RegionalGuideUiState.Success(
                     query = query,
                     guide = displayGuide.toUiModel(),
-                    canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
+                    canRestoreCandidates = guideCandidateBackStack.canRestore,
                 )
             }
 
-            is RegionalGuideLookupResult.Candidates -> RegionalGuideUiState.GuideCandidates(
-                query = query,
-                reason = toUiCandidateReason(
+            is RegionalGuideLookupResult.Candidates ->
+                RegionalGuideCandidatePresentationPolicy.toUiState(
+                    query = query,
+                    guides = guides,
                     lookupReason = reason,
-                    emptyContext = emptyContext,
-                ),
-                canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
-                candidates = guides.map { guide ->
-                    val displayGuide = guide.withSelectableEupmyeondongRegion()
-
-                    RegionalGuideCandidateUiModel(
-                        guide = displayGuide.toUiModel(),
-                        sido = displayGuide.region.sido,
-                        sigungu = displayGuide.region.sigungu,
-                        eupmyeondong = displayGuide.region.eupmyeondong
-                    )
-                }
-                    .withDuplicateDisplayDisambiguation()
-                    .sortedWith(regionalGuideCandidateDisplayComparator)
-            )
+                    isFavoriteRestore = emptyContext == RegionalGuideEmptyContext.FAVORITE_RESTORE,
+                    canRestoreCandidates = guideCandidateBackStack.canRestore,
+                )
 
             RegionalGuideLookupResult.NotFound -> {
                 clearGuideCandidateBackStack()
@@ -1001,38 +968,11 @@ class RegionalGuideViewModel @Inject constructor(
                     message = RegionalGuideErrorMessage.Resource(
                         resId = reason.toErrorMessageResId(),
                     ),
-                    canRestoreCandidates = guideCandidateBackStackEntries.isNotEmpty(),
+                    canRestoreCandidates = guideCandidateBackStack.canRestore,
                 )
             }
         }
     }
-
-    private fun toUiCandidateReason(
-        lookupReason: RegionalGuideCandidateLookupReason,
-        emptyContext: RegionalGuideEmptyContext,
-    ): RegionalGuideCandidateReason =
-        emptyContext.favoriteRestoreCandidateReason()
-            ?: lookupReason.toDefaultUiCandidateReason()
-
-    private fun RegionalGuideEmptyContext.favoriteRestoreCandidateReason(): RegionalGuideCandidateReason? =
-        when (this) {
-            RegionalGuideEmptyContext.FAVORITE_RESTORE ->
-                RegionalGuideCandidateReason.FAVORITE_RESTORE_AMBIGUOUS
-
-            RegionalGuideEmptyContext.DEFAULT -> null
-        }
-
-    private fun RegionalGuideCandidateLookupReason.toDefaultUiCandidateReason(): RegionalGuideCandidateReason =
-        when (this) {
-            RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES ->
-                RegionalGuideCandidateReason.MULTIPLE_CANDIDATES
-
-            RegionalGuideCandidateLookupReason.MULTIPLE_EXACT_MATCHES ->
-                RegionalGuideCandidateReason.MULTIPLE_EXACT_MATCHES
-
-            RegionalGuideCandidateLookupReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND ->
-                RegionalGuideCandidateReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
-        }
 
     private fun RegionalGuideFailureReason.toErrorMessageResId(): Int =
         when (this) {
@@ -1101,49 +1041,6 @@ class RegionalGuideViewModel @Inject constructor(
             eupmyeondong = eupmyeondong
         )
 
-    private fun RegionalGuideCandidateUiModel.toFavoriteSnapshot(): RegionalGuideFavoriteSnapshot {
-        val region = toRegion()
-
-        return RegionalGuideFavoriteSnapshot(
-            targetId = RegionalGuideFavoriteKey(
-                sido = region.sido,
-                sigungu = region.sigungu,
-                eupmyeondong = region.eupmyeondong,
-                targetRegionName = guide.targetRegionName,
-                managementZoneName = guide.managementZoneName,
-            ).encode(),
-            region = region,
-            targetRegionName = guide.targetRegionName,
-            managementZoneName = guide.managementZoneName,
-        )
-    }
-
-    private fun RegionalDisposalGuide.toFavoriteSnapshot(): RegionalGuideFavoriteSnapshot {
-        return RegionalGuideFavoriteSnapshot(
-            targetId = RegionalGuideFavoriteKey(
-                sido = region.sido,
-                sigungu = region.sigungu,
-                eupmyeondong = region.eupmyeondong,
-                targetRegionName = targetRegionName,
-                managementZoneName = managementZoneName,
-            ).encode(),
-            region = region,
-            targetRegionName = targetRegionName?.trim()?.takeIf { it.isNotBlank() },
-            managementZoneName = managementZoneName?.trim()?.takeIf { it.isNotBlank() },
-        )
-    }
-
-    private fun RegionalDisposalGuide.withSelectableEupmyeondongRegion(): RegionalDisposalGuide {
-        val selectableEupmyeondong = managementZoneName.toSelectableEupmyeondongNameOrNull()
-            ?: return this
-
-        if (region.eupmyeondong == selectableEupmyeondong) return this
-
-        return copy(
-            region = region.copy(eupmyeondong = selectableEupmyeondong)
-        )
-    }
-
     private fun syncSelectedRegionWithGuide(guide: RegionalDisposalGuide) {
         syncSelectedRegionWithGuideRegion(guide.region)
     }
@@ -1155,39 +1052,11 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     private fun syncSelectedRegionWithGuideRegion(guideRegion: Region) {
-        val selectedEupmyeondong = guideRegion.eupmyeondong
-            ?.trim()
-            ?.takeIf { value -> value.isNotBlank() }
-            ?: return
-
         _regionSelectorUiState.update { state ->
-            if (
-                state.selectedSido != guideRegion.sido ||
-                state.selectedSigungu != guideRegion.sigungu ||
-                state.eupmyeondongOptions.none { option ->
-                    RegionalGuideEupmyeondongNamePolicy.isSameName(
-                        first = selectedEupmyeondong,
-                        second = option,
-                    )
-                }
-            ) {
-                state
-            } else {
-                state.copy(selectedEupmyeondong = selectedEupmyeondong)
-            }
-        }
-    }
-
-    private fun String?.toSelectableEupmyeondongNameOrNull(): String? {
-        val value = this
-            ?.trim()
-            ?.takeIf { text -> text.isNotBlank() && text != NO_REGION_NAME }
-            ?: return null
-
-        return value.takeIf { text ->
-            text.endsWith(EUP_SUFFIX) ||
-                text.endsWith(MYEON_SUFFIX) ||
-                text.endsWith(DONG_SUFFIX)
+            RegionalGuideRegionSelectionPolicy.synchronizeSelectedEupmyeondong(
+                state = state,
+                guideRegion = guideRegion,
+            )
         }
     }
 
@@ -1226,7 +1095,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     private fun clearGuideCandidateBackStack() {
-        guideCandidateBackStackEntries.clear()
+        guideCandidateBackStack.clear()
         _uiState.update { state ->
             when (state) {
                 is RegionalGuideUiState.Success ->
@@ -1247,7 +1116,7 @@ class RegionalGuideViewModel @Inject constructor(
     }
 
     private fun pushGuideCandidateBackStackEntry(uiState: RegionalGuideUiState) {
-        guideCandidateBackStackEntries += RegionalGuideCandidateBackStackEntry(
+        guideCandidateBackStack.push(
             uiState = uiState,
             searchKeyword = searchKeyword.value,
             regionSelectorUiState = regionSelectorUiState.value,
@@ -1255,48 +1124,13 @@ class RegionalGuideViewModel @Inject constructor(
         )
     }
 
-    private sealed interface RegionalGuideRequest {
-        data class Keyword(
-            val keyword: String
-        ) : RegionalGuideRequest
-
-        data class Address(
-            val address: String
-        ) : RegionalGuideRequest
-
-        data class Favorite(
-            val targetId: String
-        ) : RegionalGuideRequest
-
-        data class SelectedRegion(
-            val query: String,
-            val region: Region
-        ) : RegionalGuideRequest
-    }
-
     private enum class RegionalGuideEmptyContext {
         DEFAULT,
         FAVORITE_RESTORE,
     }
 
-    private data class RegionSelectionNormalizationResult(
-        val lookupRegion: Region,
-        val removedEupmyeondong: String?,
-    )
-
-    private data class RegionalGuideCandidateBackStackEntry(
-        val uiState: RegionalGuideUiState,
-        val searchKeyword: String,
-        val regionSelectorUiState: RegionSelectorUiState,
-        val lastRequest: RegionalGuideRequest?,
-    )
-
     private companion object {
         const val KEYWORD_SUGGESTION_DEBOUNCE_MILLIS = 400L
-        const val NO_REGION_NAME = "없음"
-        const val EUP_SUFFIX = "읍"
-        const val MYEON_SUFFIX = "면"
-        const val DONG_SUFFIX = "동"
     }
 }
 
