@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
@@ -241,7 +242,8 @@ private fun CollectionSpotMapContent(
     var visibleSheetHeight by remember { mutableStateOf(0.dp) }
     val selectedSpot = uiState.selectedSpot
     val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
-    val hasNoticeOrError = uiState.locationNotice != null ||
+    val hasLocationNotice = uiState.locationNotice != null
+    val hasNoticeOrError = hasLocationNotice ||
         uiState.errorMessageResId != null
     val hasRegionCandidates = uiState.regionSearchCandidates.isNotEmpty()
     val hasRegionDetailSelection = uiState.regionDetailSearchCandidate != null
@@ -324,10 +326,10 @@ private fun CollectionSpotMapContent(
 
             uiState.isLoading || hasNoticeOrError -> {
                 mapUiMode = MapUiMode.ResultList
-                sheetLevel = if (hasNoticeOrError) {
-                    MapSheetLevel.Expanded
-                } else {
-                    MapSheetLevel.Peek
+                sheetLevel = when {
+                    hasLocationNotice -> MapSheetLevel.Medium
+                    hasNoticeOrError -> MapSheetLevel.Expanded
+                    else -> MapSheetLevel.Peek
                 }
             }
 
@@ -380,12 +382,19 @@ private fun CollectionSpotMapContent(
         val navigationBarBottomPadding = with(density) {
             WindowInsets.navigationBars.getBottom(density).toDp()
         }
+        val safeDrawingBottomPadding = with(density) {
+            WindowInsets.safeDrawing.getBottom(density).toDp()
+        }
+        val bottomContentPadding = maxOf(
+            navigationBarBottomPadding,
+            safeDrawingBottomPadding,
+        )
         val bottomSheetMaxExpandedHeight = bottomSheetMaxExpandedHeight(
             mapUiMode = mapUiMode,
             hasRegionSelection = hasRegionSelection,
             hasStateMessageContent = hasStateMessageContent,
             maxHeight = maxHeight,
-            bottomContentPadding = navigationBarBottomPadding,
+            bottomContentPadding = bottomContentPadding,
             regionCandidateCount = uiState.regionSearchCandidates.size,
             regionDetailCandidate = uiState.regionDetailSearchCandidate,
             canNavigateBackToRegionCandidates = hasRegionCandidates,
@@ -399,6 +408,7 @@ private fun CollectionSpotMapContent(
         )
         val shouldShowMapOverlayControls = shouldShowMapOverlayControls(
             mapUiMode = mapUiMode,
+            hasRegionSelection = hasRegionSelection,
             maxHeight = maxHeight,
             searchBarTopPadding = searchBarTopPadding,
             naverLogoBottomPadding = naverLogoBottomPadding,
@@ -466,6 +476,7 @@ private fun CollectionSpotMapContent(
         if (
             shouldShowMapCenterSearchButton &&
             mapUiMode != MapUiMode.SpotDetail &&
+            !hasRegionSelection &&
             !uiState.isLoading
         ) {
             MapCenterSearchButton(
@@ -541,7 +552,7 @@ private fun CollectionSpotMapContent(
                                     mapUiMode = MapUiMode.ResultList
                                     sheetLevel = MapSheetLevel.Peek
                                 },
-                                bottomContentPadding = navigationBarBottomPadding,
+                                bottomContentPadding = bottomContentPadding,
                             )
                         }
                     }
@@ -575,7 +586,7 @@ private fun CollectionSpotMapContent(
                                 sheetRevealRequest += 1
                                 onSpotClick(spot)
                             },
-                            bottomContentPadding = navigationBarBottomPadding,
+                            bottomContentPadding = bottomContentPadding,
                         )
                     }
 
@@ -691,11 +702,13 @@ private fun naverLogoBottomPadding(
 
 private fun shouldShowMapOverlayControls(
     mapUiMode: MapUiMode,
+    hasRegionSelection: Boolean,
     maxHeight: Dp,
     searchBarTopPadding: Dp,
     naverLogoBottomPadding: Dp,
 ): Boolean {
     if (mapUiMode == MapUiMode.SpotDetail) return false
+    if (hasRegionSelection) return false
 
     val naverLogoTop = maxHeight - naverLogoBottomPadding - NaverLogoEstimatedHeight
     val searchOverlayBottom =
@@ -757,7 +770,7 @@ private val MapSearchOverlayLogoGap = 8.dp
 private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
 private val FavoriteSnackbarIconSize = 20.dp
-private const val MapRegionSelectionMaxExpandedRatio = 0.72f
+private const val MapRegionSelectionMaxExpandedRatio = 0.88f
 private val MapBottomSheetHeaderEstimatedHeight = 57.dp
 private val MapRegionSelectionDescriptionEstimatedHeight = 92.dp
 private val MapRegionDetailDescriptionEstimatedHeight = 150.dp

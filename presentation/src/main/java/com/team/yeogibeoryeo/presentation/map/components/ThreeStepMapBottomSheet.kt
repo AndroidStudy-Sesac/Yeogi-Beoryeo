@@ -17,10 +17,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -86,6 +91,68 @@ fun ThreeStepMapBottomSheet(
                 }
         }
 
+        fun snapSheetBy(delta: Float): Float {
+            val currentOffset = sheetOffset.value
+            val nextOffset = (currentOffset + delta).coerceIn(
+                expandedOffset,
+                hiddenOffset,
+            )
+            val consumed = nextOffset - currentOffset
+            if (consumed != 0f) {
+                coroutineScope.launch {
+                    sheetOffset.snapTo(nextOffset)
+                }
+            }
+            return consumed
+        }
+
+        fun settleSheet() {
+            val nearestLevel = MapSheetLevel.entries.minBy { level ->
+                kotlin.math.abs(offsetFor(level) - sheetOffset.value)
+            }
+
+            onSheetLevelChanged(nearestLevel)
+            coroutineScope.launch {
+                sheetOffset.animateTo(offsetFor(nearestLevel))
+            }
+        }
+
+        val sheetNestedScrollConnection = remember(
+            sheetHeightPx,
+            hiddenOffset,
+            expandedOffset,
+        ) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (source != NestedScrollSource.UserInput) return Offset.Zero
+
+                    val delta = available.y
+                    if (delta >= 0f || sheetOffset.value <= expandedOffset) {
+                        return Offset.Zero
+                    }
+
+                    return Offset(x = 0f, y = snapSheetBy(delta))
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (source != NestedScrollSource.UserInput || available.y == 0f) {
+                        return Offset.Zero
+                    }
+
+                    return Offset(x = 0f, y = snapSheetBy(available.y))
+                }
+
+                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                    settleSheet()
+                    return Velocity.Zero
+                }
+            }
+        }
+
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -94,31 +161,7 @@ fun ThreeStepMapBottomSheet(
                 .offset {
                     IntOffset(x = 0, y = sheetOffset.value.roundToInt())
                 }
-                .pointerInput(sheetHeightPx, hiddenOffset, peekOffset, mediumOffset, halfOffset, expandedOffset) {
-                    detectVerticalDragGestures(
-                        onVerticalDrag = { change, dragAmount ->
-                            change.consume()
-                            coroutineScope.launch {
-                                sheetOffset.snapTo(
-                                    (sheetOffset.value + dragAmount).coerceIn(
-                                        expandedOffset,
-                                        hiddenOffset,
-                                    ),
-                                )
-                            }
-                        },
-                        onDragEnd = {
-                            val nearestLevel = MapSheetLevel.entries.minBy { level ->
-                                kotlin.math.abs(offsetFor(level) - sheetOffset.value)
-                            }
-
-                            onSheetLevelChanged(nearestLevel)
-                            coroutineScope.launch {
-                                sheetOffset.animateTo(offsetFor(nearestLevel))
-                            }
-                        },
-                    )
-                },
+                .nestedScroll(sheetNestedScrollConnection),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 4.dp,
@@ -129,6 +172,29 @@ fun ThreeStepMapBottomSheet(
                     .height(expandedVisibleHeight),
             ) {
                 content()
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(MapSheetDragHandleTouchHeight)
+                        .pointerInput(
+                            sheetHeightPx,
+                            hiddenOffset,
+                            peekOffset,
+                            mediumOffset,
+                            halfOffset,
+                            expandedOffset,
+                        ) {
+                            detectVerticalDragGestures(
+                                onVerticalDrag = { change, dragAmount ->
+                                    if (snapSheetBy(dragAmount) != 0f) {
+                                        change.consume()
+                                    }
+                                },
+                                onDragEnd = { settleSheet() },
+                            )
+                        },
+                )
             }
         }
     }
@@ -143,6 +209,7 @@ enum class MapSheetLevel {
 }
 
 private val MapSheetTopMargin = 72.dp
+private val MapSheetDragHandleTouchHeight = 56.dp
 private const val MAP_SHEET_HALF_VISIBLE_RATIO = 0.55f
 val MapResultBottomSheetPeekHeight = 144.dp
 val MapSpotDetailBottomSheetPeekHeight = 220.dp

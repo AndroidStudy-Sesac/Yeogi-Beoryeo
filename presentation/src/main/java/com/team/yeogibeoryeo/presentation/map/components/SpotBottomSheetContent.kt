@@ -143,6 +143,7 @@ fun SpotBottomSheetContent(
                         { onLocationNoticeActionClick(action) }
                     },
                     bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -151,6 +152,7 @@ fun SpotBottomSheetContent(
                     title = stringResource(R.string.map_search_failed_title),
                     description = stringResource(errorMessageResId),
                     bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -164,12 +166,14 @@ fun SpotBottomSheetContent(
                     actionLabel = stringResource(R.string.map_filter_empty_spot_result_clear_action),
                     onActionClick = onClearTypeFiltersClick,
                     bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.weight(1f),
                 )
             }
 
             hasSearched && spots.isEmpty() -> {
                 EmptySpotResult(
                     bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -220,63 +224,61 @@ private fun MapRegionDetailSelection(
         .filterNot { keyword -> keyword == candidate.searchKeyword }
         .distinct()
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .padding(top = 18.dp, bottom = 8.dp),
+            .padding(horizontal = 20.dp),
+        contentPadding = PaddingValues(
+            top = 18.dp,
+            bottom = bottomContentPadding + RegionSelectionLazyColumnBottomExtraPadding,
+        ),
     ) {
         if (canNavigateBack) {
-            FilledTonalButton(
-                onClick = onBackClick,
-                modifier = Modifier.padding(bottom = 12.dp),
-            ) {
-                Text(text = stringResource(R.string.map_region_detail_back_to_candidates))
+            item(key = "back") {
+                FilledTonalButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                ) {
+                    Text(text = stringResource(R.string.map_region_detail_back_to_candidates))
+                }
             }
         }
 
-        Text(
-            text = stringResource(R.string.map_region_detail_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = candidate.displayName,
-            modifier = Modifier.padding(top = 6.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(R.string.map_region_detail_description),
-            modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        item(key = "description") {
+            Text(
+                text = stringResource(R.string.map_region_detail_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = candidate.displayName,
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.map_region_detail_description),
+                modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false),
-            contentPadding = PaddingValues(
-                bottom = bottomContentPadding + RegionSelectionLazyColumnBottomExtraPadding,
-            ),
-        ) {
-            items(
-                items = detailKeywords,
-                key = { keyword -> keyword },
-            ) { keyword ->
-                RegionDetailKeywordRow(
-                    keyword = keyword,
-                    onClick = { onKeywordClick(keyword) },
-                )
-            }
+        items(
+            items = detailKeywords,
+            key = { keyword -> keyword },
+        ) { keyword ->
+            RegionDetailKeywordRow(
+                keyword = keyword,
+                onClick = { onKeywordClick(keyword) },
+            )
+        }
 
-            item(key = "all") {
-                RegionDetailAllRow(
-                    label = stringResource(R.string.map_region_detail_all_label, candidate.searchKeyword),
-                    onClick = onAllClick,
-                )
-            }
+        item(key = "all") {
+            RegionDetailAllRow(
+                label = stringResource(R.string.map_region_detail_all_label, candidate.searchKeyword),
+                onClick = onAllClick,
+            )
         }
     }
 }
@@ -369,7 +371,7 @@ private fun MapRegionCandidateSelection(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f, fill = false),
+                .weight(1f),
             contentPadding = PaddingValues(
                 bottom = bottomContentPadding + RegionSelectionLazyColumnBottomExtraPadding,
             ),
@@ -807,7 +809,7 @@ private fun sampleSpotBottomSheetSpots(): List<CollectionSpot> {
     )
 }
 
-private val RegionSelectionLazyColumnBottomExtraPadding = 16.dp
+private val RegionSelectionLazyColumnBottomExtraPadding = 96.dp
 
 @StringRes
 private fun MapLocationNoticeAction.toActionLabelResId(): Int {

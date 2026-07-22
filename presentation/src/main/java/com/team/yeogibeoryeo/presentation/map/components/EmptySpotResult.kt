@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -43,7 +42,6 @@ fun EmptySpotResult(
                 bottom = EmptySpotResultVerticalPadding + bottomContentPadding,
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = displayTitle,
