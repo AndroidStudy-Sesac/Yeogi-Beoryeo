@@ -333,15 +333,6 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         val requestedPageNos = mutableListOf<Int>()
 
-        override suspend fun getAllRegionalGuides(
-            serviceKey: String,
-            pageNo: Int,
-            numOfRows: Int,
-            returnType: String,
-        ): Response<RegionalGuideRootDto> {
-            error("전체 지역 조회는 이 테스트에서 사용하지 않습니다.")
-        }
-
         override suspend fun getRegionalGuides(
             serviceKey: String,
             pageNo: Int,

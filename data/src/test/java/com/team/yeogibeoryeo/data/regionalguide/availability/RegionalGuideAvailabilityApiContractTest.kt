@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.data.regionalguide.availability
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.team.yeogibeoryeo.data.region.local.RegionAssetContract
+import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideApiService
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
@@ -45,6 +46,7 @@ class RegionalGuideAvailabilityApiContractTest {
             apiRegions = ApiRegions(
                 keys = setOf(apiOnlyKey),
                 rowCount = 1,
+                queriedSigunguCount = 1,
             ),
             verificationTarget = VerificationTarget(
                 isFull = true,
@@ -76,6 +78,7 @@ class RegionalGuideAvailabilityApiContractTest {
             apiRegions = ApiRegions(
                 keys = setOf(targetKey),
                 rowCount = 1,
+                queriedSigunguCount = 1,
             ),
             verificationTarget = verificationTarget,
         ).toMarkdown()
@@ -148,27 +151,25 @@ class RegionalGuideAvailabilityApiContractTest {
         verificationTarget: VerificationTarget,
     ): ApiRegions {
         val apiService = regionalGuideApiService()
-        val items = if (verificationTarget.isFull) {
-            fetchApiPages { pageNo ->
-                apiService.getAllRegionalGuides(
+        val sigunguNames = if (verificationTarget.isFull) {
+            loadAllSigunguNames()
+        } else {
+            verificationTarget.sigunguNames
+        }
+        check(sigunguNames.isNotEmpty()) {
+            "검증할 시군구명이 없습니다."
+        }
+
+        val items = mutableListOf<RegionalGuideItemDto>()
+        for (sigunguName in sigunguNames) {
+            items += fetchApiPages { pageNo ->
+                apiService.getRegionalGuides(
                     serviceKey = serviceKey,
                     pageNo = pageNo,
                     numOfRows = PAGE_SIZE,
+                    sigunguName = sigunguName,
                 )
             }
-        } else {
-            val targetItems = mutableListOf<RegionalGuideItemDto>()
-            for (sigunguName in verificationTarget.sigunguNames) {
-                targetItems += fetchApiPages { pageNo ->
-                    apiService.getRegionalGuides(
-                        serviceKey = serviceKey,
-                        pageNo = pageNo,
-                        numOfRows = PAGE_SIZE,
-                        sigunguName = sigunguName,
-                    )
-                }
-            }
-            targetItems
         }
         val scopedItems = items.filter { item ->
             verificationTarget.includes(item.sigunguName)
@@ -177,6 +178,7 @@ class RegionalGuideAvailabilityApiContractTest {
         return ApiRegions(
             keys = scopedItems.map { item -> item.toRegionKey() }.toSet(),
             rowCount = scopedItems.size,
+            queriedSigunguCount = sigunguNames.size,
         )
     }
 
@@ -243,6 +245,13 @@ class RegionalGuideAvailabilityApiContractTest {
 
     private fun assetFilePath(): String {
         return "src/main/assets/${RegionAssetContract.REGIONAL_GUIDE_AVAILABILITY_ASSET_PATH}"
+    }
+
+    private fun loadAllSigunguNames(): Set<String> {
+        return json.decodeFromString<List<AdministrativeRegionDto>>(
+            File("src/main/assets/${RegionAssetContract.ADMINISTRATIVE_REGION_ASSET_PATH}").readText(Charsets.UTF_8)
+        ).map(AdministrativeRegionDto::sigunguName)
+            .toSet()
     }
 
     private fun verificationTarget(): VerificationTarget {
@@ -314,7 +323,7 @@ class RegionalGuideAvailabilityApiContractTest {
                 add("## 지역 가이드 availability 검증 결과")
                 add("")
                 if (verificationTarget.isFull) {
-                    add("- 검증 범위: 전체 지역")
+                    add("- 검증 범위: 전국 시군구 ${apiRegions.queriedSigunguCount}곳")
                 } else if (verificationTarget.sigunguNames.isEmpty()) {
                     add("- 검증 범위: 변경 지역 없음")
                 } else {
@@ -356,6 +365,7 @@ class RegionalGuideAvailabilityApiContractTest {
     private data class ApiRegions(
         val keys: Set<RegionalGuideRegionKey>,
         val rowCount: Int,
+        val queriedSigunguCount: Int,
     )
 
     private data class VerificationTarget(
