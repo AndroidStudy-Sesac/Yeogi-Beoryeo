@@ -325,15 +325,15 @@ private fun CollectionSpotMapContent(
             uiState.isLoading || hasNoticeOrError -> {
                 mapUiMode = MapUiMode.ResultList
                 sheetLevel = if (hasNoticeOrError) {
-                    MapSheetLevel.Medium
+                    MapSheetLevel.Expanded
                 } else {
                     MapSheetLevel.Peek
                 }
             }
 
-            hasEmptyResult && mapUiMode == MapUiMode.Browsing -> {
+            hasEmptyResult && mapUiMode != MapUiMode.SpotDetail -> {
                 mapUiMode = MapUiMode.ResultList
-                sheetLevel = MapSheetLevel.Medium
+                sheetLevel = MapSheetLevel.Expanded
             }
 
             uiState.hasSearched && mapUiMode == MapUiMode.Browsing -> {

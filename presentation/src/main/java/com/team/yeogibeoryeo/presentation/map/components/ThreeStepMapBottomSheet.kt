@@ -38,9 +38,10 @@ fun ThreeStepMapBottomSheet(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val coroutineScope = rememberCoroutineScope()
-        val sheetHeight = maxHeight - MapSheetTopMargin
+        val sheetHeight = (maxHeight - MapSheetTopMargin).coerceAtLeast(0.dp)
+        val minVisibleHeight = MapResultBottomSheetPeekHeight.coerceAtMost(sheetHeight)
         val expandedVisibleHeight = maxExpandedVisibleHeight
-            ?.coerceIn(MapResultBottomSheetPeekHeight, sheetHeight)
+            ?.coerceIn(minVisibleHeight, sheetHeight)
             ?: sheetHeight
         val sheetHeightPx = with(density) {
             sheetHeight.toPx()

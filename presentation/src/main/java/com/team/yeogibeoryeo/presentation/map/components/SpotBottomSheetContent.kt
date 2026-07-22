@@ -142,6 +142,7 @@ fun SpotBottomSheetContent(
                     onActionClick = locationNotice.action?.let { action ->
                         { onLocationNoticeActionClick(action) }
                     },
+                    bottomContentPadding = bottomContentPadding,
                 )
             }
 
@@ -149,6 +150,7 @@ fun SpotBottomSheetContent(
                 EmptySpotResult(
                     title = stringResource(R.string.map_search_failed_title),
                     description = stringResource(errorMessageResId),
+                    bottomContentPadding = bottomContentPadding,
                 )
             }
 
@@ -161,11 +163,14 @@ fun SpotBottomSheetContent(
                     description = stringResource(R.string.map_filter_empty_spot_result_description),
                     actionLabel = stringResource(R.string.map_filter_empty_spot_result_clear_action),
                     onActionClick = onClearTypeFiltersClick,
+                    bottomContentPadding = bottomContentPadding,
                 )
             }
 
             hasSearched && spots.isEmpty() -> {
-                EmptySpotResult()
+                EmptySpotResult(
+                    bottomContentPadding = bottomContentPadding,
+                )
             }
 
             spots.isNotEmpty() -> {
