@@ -34,7 +34,7 @@ internal object ItemSearchSizeDefaults {
     val categorySelectionBadge: Dp = 18.dp
     val categorySelectionBadgeIcon: Dp = 12.dp
     val categorySelectionBadgeOffset: Dp = 4.dp
-    val usefulGuideBannerCardHeight: Dp = 136.dp
+    val usefulGuideBannerCardMinHeight: Dp = 136.dp
     val usefulGuidePageIndicatorActiveWidth: Dp = 24.dp
     val usefulGuidePageIndicatorInactiveSize: Dp = 8.dp
     val usefulGuidePageIndicatorHeight: Dp = 8.dp
