@@ -12,6 +12,7 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemsDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideResponseDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideRootDto
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -23,6 +24,8 @@ import org.junit.Test
 import retrofit2.Response
 import retrofit2.Retrofit
 import java.io.File
+import java.io.IOException
+import java.net.SocketTimeoutException
 
 class RegionalGuideAvailabilityApiContractTest {
 
@@ -177,6 +180,46 @@ class RegionalGuideAvailabilityApiContractTest {
         }
     }
 
+    @Test
+    fun `통신 오류는 재시도 후 응답을 반환한다`() = runBlocking {
+        var requestCount = 0
+
+        val page = fetchApiPageWithRetry(
+            sigunguName = "종로구",
+            requestedPageNo = 1,
+            requestPage = {
+                requestCount += 1
+                if (requestCount < 3) throw SocketTimeoutException("timeout")
+                successfulResponse(pageNo = 1)
+            },
+            waitBeforeRetry = {},
+        )
+
+        assertEquals(3, requestCount)
+        assertEquals(1, page.pageNo)
+    }
+
+    @Test
+    fun `통신 오류에는 시군구와 페이지를 포함한다`() = runBlocking {
+        var requestCount = 0
+
+        val failure = runCatching {
+            fetchApiPageWithRetry(
+                sigunguName = "종로구",
+                requestedPageNo = 2,
+                requestPage = {
+                    requestCount += 1
+                    throw SocketTimeoutException("timeout")
+                },
+                waitBeforeRetry = {},
+            )
+        }.exceptionOrNull()
+
+        assertEquals(API_REQUEST_MAX_ATTEMPTS, requestCount)
+        assertTrue(failure?.message?.contains("시군구=종로구, 페이지=2") == true)
+        assertTrue(failure?.message?.contains("SocketTimeoutException") == true)
+    }
+
     private fun loadAssetKeys(target: VerificationTarget): Set<RegionalGuideRegionKey> {
         val keys = json.decodeFromString<List<RegionalGuideAvailabilityDto>>(
             File(assetFilePath()).readText(Charsets.UTF_8),
@@ -219,7 +262,7 @@ class RegionalGuideAvailabilityApiContractTest {
         sigunguName: String,
         requestPage: suspend (Int) -> Response<RegionalGuideRootDto>,
     ): List<ApiPageItem> {
-        val firstPage = fetchApiPage(sigunguName, FIRST_PAGE_NO, requestPage(FIRST_PAGE_NO))
+        val firstPage = fetchApiPageWithRetry(sigunguName, FIRST_PAGE_NO, requestPage)
         val items = firstPage.items.map { item -> ApiPageItem(FIRST_PAGE_NO, item) }.toMutableList()
         val seenItems = firstPage.items.toMutableSet()
         check(seenItems.size == firstPage.items.size) {
@@ -228,7 +271,7 @@ class RegionalGuideAvailabilityApiContractTest {
         val totalPages = (firstPage.totalCount + PAGE_SIZE - 1) / PAGE_SIZE
 
         for (pageNo in (FIRST_PAGE_NO + 1)..totalPages) {
-            val page = fetchApiPage(sigunguName, pageNo, requestPage(pageNo))
+            val page = fetchApiPageWithRetry(sigunguName, pageNo, requestPage)
             check(page.totalCount == firstPage.totalCount) {
                 "/info API totalCount가 페이지마다 다릅니다: ${requestContext(sigunguName, pageNo)}"
             }
@@ -263,9 +306,35 @@ class RegionalGuideAvailabilityApiContractTest {
             "/info API 응답 페이지 번호가 요청과 다릅니다: $context, 응답 페이지=${body.pageNo}"
         }
         return ApiPage(
+            pageNo = body.pageNo,
             items = body.items?.item.orEmpty(),
             totalCount = checkNotNull(body.totalCount) { "/info API 응답에 totalCount가 없습니다: $context" },
         )
+    }
+
+    private suspend fun fetchApiPageWithRetry(
+        sigunguName: String,
+        requestedPageNo: Int,
+        requestPage: suspend (Int) -> Response<RegionalGuideRootDto>,
+        waitBeforeRetry: suspend (Long) -> Unit = ::delay,
+    ): ApiPage {
+        repeat(API_REQUEST_MAX_ATTEMPTS) { attemptIndex ->
+            try {
+                return fetchApiPage(sigunguName, requestedPageNo, requestPage(requestedPageNo))
+            } catch (failure: IOException) {
+                val attemptCount = attemptIndex + 1
+                if (attemptCount == API_REQUEST_MAX_ATTEMPTS) {
+                    throw AssertionError(
+                        "/info API 통신 오류: ${requestContext(sigunguName, requestedPageNo)}, " +
+                            "시도=$attemptCount/$API_REQUEST_MAX_ATTEMPTS, " +
+                            "원인=${failure::class.simpleName}: ${failure.message}",
+                        failure,
+                    )
+                }
+                waitBeforeRetry(API_REQUEST_RETRY_DELAY_MILLIS * attemptCount)
+            }
+        }
+        error("재시도 횟수 계산 오류")
     }
 
     private fun regionalGuideApiService(): RegionalGuideApiService {
@@ -379,7 +448,11 @@ class RegionalGuideAvailabilityApiContractTest {
         fun displayName(): String = "$sidoName $sigunguName"
     }
 
-    private data class ApiPage(val items: List<RegionalGuideItemDto>, val totalCount: Int)
+    private data class ApiPage(
+        val pageNo: Int,
+        val items: List<RegionalGuideItemDto>,
+        val totalCount: Int,
+    )
 
     private data class ApiPageItem(val pageNo: Int, val item: RegionalGuideItemDto)
 
@@ -444,6 +517,8 @@ class RegionalGuideAvailabilityApiContractTest {
     }
 
     private companion object {
+        const val API_REQUEST_MAX_ATTEMPTS = 3
+        const val API_REQUEST_RETRY_DELAY_MILLIS = 1_000L
         const val FIRST_PAGE_NO = 1
         const val MAX_REPORTED_DIFFERENCES = 20
         const val PAGE_SIZE = 100

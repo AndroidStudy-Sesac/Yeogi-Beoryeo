@@ -15,7 +15,11 @@ on:
       - 'data/src/main/java/com/team/yeogibeoryeo/data/region/local/RegionAssetContract.kt'
       - 'data/src/main/java/com/team/yeogibeoryeo/data/network/di/HouseholdWasteInfoNetworkModule.kt'
       - 'data/src/main/java/com/team/yeogibeoryeo/data/regionalguide/remote/RegionalGuideApiService.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/regionalguide/remote/dto/RegionalGuideItemDto.kt'
       - 'data/src/main/java/com/team/yeogibeoryeo/data/regionalguide/remote/dto/RegionalGuideResponseDto.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/region/local/dto/AdministrativeRegionDto.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/region/local/dto/RegionalGuideAvailabilityDto.kt'
+      - 'data/src/main/assets/region/administrative_regions.*.json'
       - 'data/src/test/java/com/team/yeogibeoryeo/data/regionalguide/availability/RegionalGuideAvailabilityApiContractTest.kt'
       - '.github/workflows/regional-guide-availability-verification.yml'
 
