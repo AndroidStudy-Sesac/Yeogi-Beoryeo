@@ -97,6 +97,16 @@ private class FakeAppGuideRepository(
     override fun observeCompletedMapLocationGuideVersion(): Flow<Int> = MutableStateFlow(0)
 
     override suspend fun markMapLocationGuideCompleted(version: Int) = Unit
+
+    override fun observeHasRequestedMapLocationPermission(): Flow<Boolean> = MutableStateFlow(false)
+
+    override suspend fun markMapLocationPermissionRequested() = Unit
+
+    override fun observeIsMapLocationPermissionBlocked(): Flow<Boolean> = MutableStateFlow(false)
+
+    override suspend fun markMapLocationPermissionBlocked() = Unit
+
+    override suspend fun clearMapLocationPermissionBlocked() = Unit
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

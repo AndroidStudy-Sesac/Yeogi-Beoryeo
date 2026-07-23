@@ -20,6 +20,7 @@ data class BottomNavigationItem(
 fun AppBottomNavigationBar(
     items: List<BottomNavigationItem>,
     modifier: Modifier = Modifier,
+    itemEnabled: (Int) -> Boolean = { true },
     itemModifier: (Int) -> Modifier = { Modifier },
 ) {
     NavigationBar(modifier = modifier) {
@@ -27,6 +28,7 @@ fun AppBottomNavigationBar(
             NavigationBarItem(
                 selected = item.selected,
                 onClick = item.onClick,
+                enabled = itemEnabled(index),
                 modifier = itemModifier(index),
                 icon = {
                     Icon(

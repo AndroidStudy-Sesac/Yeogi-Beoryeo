@@ -65,6 +65,41 @@ class DataStoreAppGuideRepositoryTest {
         }
     }
 
+    @Test
+    fun `지도 위치 권한 요청 이력이 없으면 false를 반환한다`() = runBlocking {
+        withRepository { repository ->
+            assertEquals(false, repository.observeHasRequestedMapLocationPermission().first())
+        }
+    }
+
+    @Test
+    fun `지도 위치 권한을 요청하면 요청 이력을 저장한다`() = runBlocking {
+        withRepository { repository ->
+            repository.markMapLocationPermissionRequested()
+
+            assertEquals(true, repository.observeHasRequestedMapLocationPermission().first())
+        }
+    }
+
+    @Test
+    fun `지도 위치 권한 blocked 상태가 없으면 false를 반환한다`() = runBlocking {
+        withRepository { repository ->
+            assertEquals(false, repository.observeIsMapLocationPermissionBlocked().first())
+        }
+    }
+
+    @Test
+    fun `지도 위치 권한 blocked 상태를 저장하고 해제한다`() = runBlocking {
+        withRepository { repository ->
+            repository.markMapLocationPermissionBlocked()
+            assertEquals(true, repository.observeIsMapLocationPermissionBlocked().first())
+
+            repository.clearMapLocationPermissionBlocked()
+
+            assertEquals(false, repository.observeIsMapLocationPermissionBlocked().first())
+        }
+    }
+
     private suspend fun withRepository(
         block: suspend (DataStoreAppGuideRepository) -> Unit,
     ) {

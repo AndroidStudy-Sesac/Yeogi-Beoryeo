@@ -39,6 +39,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -76,6 +77,7 @@ fun CollectionSpotMapScreen(
     initialSpotType: CollectionSpotType? = null,
     favoriteSpotMoveRequest: FavoriteSpotMapMoveRequest? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    onBottomBarInputEnabledChanged: (Boolean) -> Unit = {},
     onRegionalGuideClick: (String) -> Unit = {},
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
     mapLocationGuideViewModel: MapLocationGuideViewModel = hiltViewModel(),
@@ -94,15 +96,27 @@ fun CollectionSpotMapScreen(
     var previousFineLocationPermission by rememberSaveable {
         mutableStateOf(hasFineLocationPermission)
     }
-    var isLocationPermissionRequestBlocked by rememberSaveable {
-        mutableStateOf(false)
-    }
     val isLocationPermissionGranted =
         hasFineLocationPermission || hasGrantedLocationPermissionInSession
     val currentLocationNotice by rememberUpdatedState(uiState.locationNotice)
     val currentHasFineLocationPermission by rememberUpdatedState(hasFineLocationPermission)
     var locationTrackingMode by remember {
         mutableStateOf(LocationTrackingMode.None)
+    }
+    val showCurrentLocationGuide = mapLocationGuideUiState.isReady &&
+        mapLocationGuideUiState.isVisible
+
+    LaunchedEffect(showCurrentLocationGuide) {
+        if (showCurrentLocationGuide) {
+            onBottomBarVisibilityChanged(true)
+        }
+        onBottomBarInputEnabledChanged(!showCurrentLocationGuide)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            onBottomBarInputEnabledChanged(true)
+        }
     }
 
     LaunchedEffect(hasFineLocationPermission) {
@@ -112,7 +126,7 @@ fun CollectionSpotMapScreen(
                 viewModel.onLocationPermissionRevoked()
             }
         } else if (!previousFineLocationPermission) {
-            isLocationPermissionRequestBlocked = false
+            mapLocationGuideViewModel.clearLocationPermissionBlocked()
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.searchByCurrentLocation()
         }
@@ -139,18 +153,20 @@ fun CollectionSpotMapScreen(
     }
 
     val requestCurrentLocationSearch = rememberCurrentLocationSearchRequester(
+        hasRequestedFineLocationPermission = mapLocationGuideUiState.hasRequestedLocationPermission,
+        onRequestLaunched = mapLocationGuideViewModel::markLocationPermissionRequested,
         onGranted = {
             hasGrantedLocationPermissionInSession = true
             previousFineLocationPermission = true
+            mapLocationGuideViewModel.clearLocationPermissionBlocked()
             locationTrackingMode = LocationTrackingMode.NoFollow
             viewModel.searchByCurrentLocation()
         },
         onDenied = {
-            isLocationPermissionRequestBlocked = false
             viewModel.onLocationPermissionDenied()
         },
         onBlocked = {
-            isLocationPermissionRequestBlocked = true
+            mapLocationGuideViewModel.markLocationPermissionBlocked()
             viewModel.onLocationPermissionDenied()
         },
     )
@@ -177,8 +193,10 @@ fun CollectionSpotMapScreen(
         CollectionSpotMapContent(
             uiState = uiState,
             isLocationPermissionGranted = isLocationPermissionGranted,
-            isLocationPermissionRequestBlocked = isLocationPermissionRequestBlocked,
-            showCurrentLocationGuide = mapLocationGuideUiState.isVisible,
+            isLocationPermissionRequestBlocked =
+                mapLocationGuideUiState.isLocationPermissionRequestBlocked,
+            isCurrentLocationGuideReady = mapLocationGuideUiState.isReady,
+            showCurrentLocationGuide = showCurrentLocationGuide,
             locationTrackingMode = locationTrackingMode,
             onLocationTrackingModeChange = { mode ->
                 locationTrackingMode = mode
@@ -190,6 +208,7 @@ fun CollectionSpotMapScreen(
             onRegionDetailKeywordClick = viewModel::onRegionDetailSearchKeywordClick,
             onRegionDetailBackClick = viewModel::onRegionDetailSearchBack,
             onCurrentLocationClick = requestCurrentLocationSearch,
+            onBlockedCurrentLocationClick = viewModel::onLocationPermissionDenied,
             onMapCenterSearchClick = viewModel::searchByMapCenter,
             onLocationNoticeActionClick = { action ->
                 when (action) {
@@ -233,6 +252,7 @@ private fun CollectionSpotMapContent(
     uiState: CollectionSpotMapUiState,
     isLocationPermissionGranted: Boolean,
     isLocationPermissionRequestBlocked: Boolean,
+    isCurrentLocationGuideReady: Boolean,
     showCurrentLocationGuide: Boolean,
     locationTrackingMode: LocationTrackingMode,
     onLocationTrackingModeChange: (LocationTrackingMode) -> Unit,
@@ -243,6 +263,7 @@ private fun CollectionSpotMapContent(
     onRegionDetailKeywordClick: (String) -> Unit,
     onRegionDetailBackClick: () -> Unit,
     onCurrentLocationClick: () -> Unit,
+    onBlockedCurrentLocationClick: () -> Unit,
     onMapCenterSearchClick: (Coordinate) -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
     onCurrentLocationGuideDismiss: () -> Unit,
@@ -268,7 +289,7 @@ private fun CollectionSpotMapContent(
     var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
     var currentLocationButtonBounds by remember { mutableStateOf<Rect?>(null) }
     var visibleSheetHeight by remember { mutableStateOf(0.dp) }
-    val shouldDeferBottomSheetForGuide = showCurrentLocationGuide &&
+    val shouldDeferBottomSheetForGuide = (!isCurrentLocationGuideReady || showCurrentLocationGuide) &&
         mapUiMode != MapUiMode.SpotDetail
     val shouldShowBottomSheet = uiState.shouldShowBottomSheet &&
         !isSpotSearchLoading &&
@@ -344,6 +365,7 @@ private fun CollectionSpotMapContent(
         uiState.locationNotice,
         uiState.regionSearchCandidates,
         uiState.regionDetailSearchCandidate,
+        isCurrentLocationGuideReady,
         showCurrentLocationGuide,
     ) {
         if (shouldDeferBottomSheetForGuide) return@LaunchedEffect
@@ -462,196 +484,215 @@ private fun CollectionSpotMapContent(
             naverLogoBottomPadding = naverLogoBottomPadding,
         )
 
-        CollectionSpotNaverMap(
-            spots = uiState.spots,
-            selectedSpot = uiState.selectedSpot,
-            searchFocusCoordinate = uiState.searchFocusCoordinate,
-            isLocationPermissionGranted = isLocationPermissionGranted,
-            locationTrackingMode = mapLocationTrackingMode,
-            onSpotClick = { spot ->
-                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                mapUiMode = MapUiMode.SpotDetail
-                sheetLevel = MapSheetLevel.Medium
-                sheetRevealRequest += 1
-                onSpotClick(spot)
-            },
-            onMapClick = {
-                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                when (mapUiMode) {
-                    MapUiMode.Browsing -> {
-                        mapUiMode = MapUiMode.ResultList.takeIf { shouldShowBottomSheet } ?: MapUiMode.Browsing
-                        sheetLevel = MapSheetLevel.Peek.takeIf { shouldShowBottomSheet } ?: MapSheetLevel.Hidden
-                    }
-
-                    MapUiMode.ResultList,
-                    MapUiMode.SpotDetail,
-                    -> {
-                        mapUiMode = MapUiMode.Browsing
-                        sheetLevel = MapSheetLevel.Hidden
-                        onBottomBarVisibilityChanged(true)
-                    }
-                }
-            },
-            onCameraCenterChanged = { coordinate ->
-                mapCenterCoordinate = coordinate
-            },
-            onUserCameraMove = {
-                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                if (!uiState.isLoading && mapUiMode != MapUiMode.SpotDetail) {
-                    shouldShowMapCenterSearchButton = true
-                }
-            },
-            naverLogoBottomPadding = naverLogoBottomPadding,
+        Box(
             modifier = Modifier
-                .fillMaxSize(),
-        )
-
-        if (shouldShowMapOverlayControls) {
-            MapOverlayControls(
-                keyword = uiState.searchKeyword,
-                onKeywordChanged = onKeywordChanged,
-                onSearchClick = {
-                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                    shouldShowMapCenterSearchButton = false
-                    mapUiMode = MapUiMode.ResultList
-                    sheetLevel = MapSheetLevel.Peek
-                    onSearchClick()
-                },
-                topPadding = searchBarTopPadding,
-            )
-        }
-
-        if (
-            shouldShowMapCenterSearchButton &&
-            mapUiMode != MapUiMode.SpotDetail &&
-            !hasRegionSelection &&
-            !uiState.isLoading
-        ) {
-            MapCenterSearchButton(
-                onClick = {
-                    val coordinate = mapCenterCoordinate ?: return@MapCenterSearchButton
-                    shouldShowMapCenterSearchButton = false
-                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                    mapUiMode = MapUiMode.ResultList
-                    sheetLevel = MapSheetLevel.Peek
-                    onMapCenterSearchClick(coordinate)
-                },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = MapCenterSearchButtonTopPadding),
-            )
-        }
-
-        if (mapUiMode != MapUiMode.SpotDetail) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(
-                        end = MyLocationButtonHorizontalPadding,
-                        bottom = myLocationButtonBottomPadding(
-                            sheetLevel = sheetLevel,
-                            shouldShowBottomSheet = shouldRenderBottomSheet,
-                            visibleSheetHeight = visibleSheetHeight,
-                            mediumVisibleHeight = bottomSheetMediumVisibleHeight,
-                            bottomContentPadding = bottomContentPadding,
-                        ),
-                    ),
-            ) {
-                MyLocationButton(
-                    isTracking = mapLocationTrackingMode == LocationTrackingMode.Follow,
-                    onClick = {
-                        if (isLocationPermissionGranted) {
-                            onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                            shouldShowMapCenterSearchButton = false
-                            mapUiMode = MapUiMode.ResultList
-                            sheetLevel = MapSheetLevel.Peek
-                            onCurrentLocationClick()
-                        } else {
-                            onCurrentLocationClick()
-                        }
+                .fillMaxSize()
+                .then(
+                    if (showCurrentLocationGuide) {
+                        Modifier.clearAndSetSemantics { }
+                    } else {
+                        Modifier
                     },
-                    modifier = Modifier
-                        .onGloballyPositioned { coordinates ->
-                            currentLocationButtonBounds = coordinates.boundsInRoot()
-                        },
+                ),
+        ) {
+            CollectionSpotNaverMap(
+                spots = uiState.spots,
+                selectedSpot = uiState.selectedSpot,
+                searchFocusCoordinate = uiState.searchFocusCoordinate,
+                isLocationPermissionGranted = isLocationPermissionGranted,
+                locationTrackingMode = mapLocationTrackingMode,
+                onSpotClick = { spot ->
+                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                    mapUiMode = MapUiMode.SpotDetail
+                    sheetLevel = MapSheetLevel.Medium
+                    sheetRevealRequest += 1
+                    onSpotClick(spot)
+                },
+                onMapClick = {
+                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                    when (mapUiMode) {
+                        MapUiMode.Browsing -> {
+                            mapUiMode = MapUiMode.ResultList.takeIf { shouldShowBottomSheet } ?: MapUiMode.Browsing
+                            sheetLevel = MapSheetLevel.Peek.takeIf { shouldShowBottomSheet } ?: MapSheetLevel.Hidden
+                        }
+
+                        MapUiMode.ResultList,
+                        MapUiMode.SpotDetail,
+                        -> {
+                            mapUiMode = MapUiMode.Browsing
+                            sheetLevel = MapSheetLevel.Hidden
+                            onBottomBarVisibilityChanged(true)
+                        }
+                    }
+                },
+                onCameraCenterChanged = { coordinate ->
+                    mapCenterCoordinate = coordinate
+                },
+                onUserCameraMove = {
+                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                    if (!uiState.isLoading && mapUiMode != MapUiMode.SpotDetail) {
+                        shouldShowMapCenterSearchButton = true
+                    }
+                },
+                naverLogoBottomPadding = naverLogoBottomPadding,
+                modifier = Modifier
+                    .fillMaxSize(),
+            )
+
+            if (shouldShowMapOverlayControls) {
+                MapOverlayControls(
+                    keyword = uiState.searchKeyword,
+                    onKeywordChanged = onKeywordChanged,
+                    onSearchClick = {
+                        onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                        shouldShowMapCenterSearchButton = false
+                        mapUiMode = MapUiMode.ResultList
+                        sheetLevel = MapSheetLevel.Peek
+                        onSearchClick()
+                    },
+                    topPadding = searchBarTopPadding,
                 )
             }
-        }
 
-        if (isSpotSearchLoading) {
-            MapSearchLoadingOverlay(
-                description = stringResource(uiState.searchMode.toLoadingDescriptionResId()),
-            )
-        }
-
-        if (shouldRenderBottomSheet) {
-            ThreeStepMapBottomSheet(
-                sheetLevel = sheetLevel,
-                revealKey = "$mapUiMode-${selectedSpot?.id}-$sheetRevealRequest",
-                onSheetLevelChanged = { level ->
-                    sheetLevel = level
-                },
-                modifier = Modifier.align(Alignment.BottomCenter),
-                mediumVisibleHeight = bottomSheetMediumVisibleHeight,
-                maxExpandedVisibleHeight = bottomSheetMaxExpandedHeight,
-                onVisibleHeightChanged = { height ->
-                    visibleSheetHeight = height
-                },
+            if (
+                shouldShowMapCenterSearchButton &&
+                mapUiMode != MapUiMode.SpotDetail &&
+                !hasRegionSelection &&
+                !uiState.isLoading
             ) {
-                when (mapUiMode) {
-                    MapUiMode.SpotDetail -> {
-                        if (selectedSpot != null) {
-                            SpotDetailBottomSheetContent(
-                                spot = selectedSpot,
-                                isNearbyLoading = uiState.isFavoriteSpotNearbyLoading,
-                                onFavoriteClick = onSpotFavoriteClick,
-                                onRegionalGuideClick = onRegionalGuideClick,
-                                onCloseClick = {
-                                    onSpotDetailDismiss()
+                MapCenterSearchButton(
+                    onClick = {
+                        val coordinate = mapCenterCoordinate ?: return@MapCenterSearchButton
+                        shouldShowMapCenterSearchButton = false
+                        onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                        mapUiMode = MapUiMode.ResultList
+                        sheetLevel = MapSheetLevel.Peek
+                        onMapCenterSearchClick(coordinate)
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = MapCenterSearchButtonTopPadding),
+                )
+            }
+
+            if (mapUiMode != MapUiMode.SpotDetail) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            end = MyLocationButtonHorizontalPadding,
+                            bottom = myLocationButtonBottomPadding(
+                                sheetLevel = sheetLevel,
+                                shouldShowBottomSheet = shouldRenderBottomSheet,
+                                visibleSheetHeight = visibleSheetHeight,
+                                mediumVisibleHeight = bottomSheetMediumVisibleHeight,
+                                bottomContentPadding = bottomContentPadding,
+                            ),
+                        ),
+                ) {
+                    MyLocationButton(
+                        isTracking = mapLocationTrackingMode == LocationTrackingMode.Follow,
+                        onClick = {
+                            if (isLocationPermissionGranted) {
+                                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                                shouldShowMapCenterSearchButton = false
+                                mapUiMode = MapUiMode.ResultList
+                                sheetLevel = MapSheetLevel.Peek
+                                onCurrentLocationClick()
+                            } else {
+                                if (isLocationPermissionRequestBlocked) {
                                     mapUiMode = MapUiMode.ResultList
-                                    sheetLevel = MapSheetLevel.Peek
+                                    sheetLevel = MapSheetLevel.Medium
+                                    sheetRevealRequest += 1
+                                    onBlockedCurrentLocationClick()
+                                } else {
+                                    onCurrentLocationClick()
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .onGloballyPositioned { coordinates ->
+                                currentLocationButtonBounds = coordinates.boundsInRoot()
+                            },
+                    )
+                }
+            }
+
+            if (isSpotSearchLoading) {
+                MapSearchLoadingOverlay(
+                    description = stringResource(uiState.searchMode.toLoadingDescriptionResId()),
+                )
+            }
+
+            if (shouldRenderBottomSheet) {
+                ThreeStepMapBottomSheet(
+                    sheetLevel = sheetLevel,
+                    revealKey = "$mapUiMode-${selectedSpot?.id}-$sheetRevealRequest",
+                    onSheetLevelChanged = { level ->
+                        sheetLevel = level
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    mediumVisibleHeight = bottomSheetMediumVisibleHeight,
+                    maxExpandedVisibleHeight = bottomSheetMaxExpandedHeight,
+                    onVisibleHeightChanged = { height ->
+                        visibleSheetHeight = height
+                    },
+                ) {
+                    when (mapUiMode) {
+                        MapUiMode.SpotDetail -> {
+                            if (selectedSpot != null) {
+                                SpotDetailBottomSheetContent(
+                                    spot = selectedSpot,
+                                    isNearbyLoading = uiState.isFavoriteSpotNearbyLoading,
+                                    onFavoriteClick = onSpotFavoriteClick,
+                                    onRegionalGuideClick = onRegionalGuideClick,
+                                    onCloseClick = {
+                                        onSpotDetailDismiss()
+                                        mapUiMode = MapUiMode.ResultList
+                                        sheetLevel = MapSheetLevel.Peek
+                                    },
+                                    bottomContentPadding = bottomContentPadding,
+                                )
+                            }
+                        }
+
+                        MapUiMode.ResultList -> {
+                            SpotBottomSheetContent(
+                                spots = uiState.spots,
+                                selectedSpot = selectedSpot,
+                                isLoading = uiState.isLoading || uiState.isFavoriteSpotNearbyLoading,
+                                hasSearched = uiState.hasSearched,
+                                selectedTypes = uiState.selectedTypes,
+                                isFilterResultEmpty = uiState.isFilterResultEmpty,
+                                searchMode = uiState.searchMode,
+                                regionSearchCandidates = uiState.regionSearchCandidates,
+                                regionDetailSearchCandidate = uiState.regionDetailSearchCandidate,
+                                locationNotice = uiState.locationNotice.withLocationPermissionActionFallback(
+                                    isLocationPermissionRequestBlocked = isLocationPermissionRequestBlocked,
+                                ),
+                                errorMessageResId = uiState.errorMessageResId,
+                                partialWarningMessageResId = uiState.partialWarningMessageResId,
+                                onTypeClick = onTypeClick,
+                                onClearTypeFiltersClick = onClearTypeFiltersClick,
+                                onRegionCandidateClick = onRegionCandidateClick,
+                                onRegionDetailAllClick = onRegionDetailAllClick,
+                                onRegionDetailKeywordClick = onRegionDetailKeywordClick,
+                                onRegionDetailBackClick = onRegionDetailBackClick,
+                                onLocationNoticeActionClick = onLocationNoticeActionClick,
+                                onSpotFavoriteClick = onSpotFavoriteClick,
+                                onSpotClick = { spot ->
+                                    onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                                    mapUiMode = MapUiMode.SpotDetail
+                                    sheetLevel = MapSheetLevel.Medium
+                                    sheetRevealRequest += 1
+                                    onSpotClick(spot)
                                 },
                                 bottomContentPadding = bottomContentPadding,
                             )
                         }
-                    }
 
-                    MapUiMode.ResultList -> {
-                        SpotBottomSheetContent(
-                            spots = uiState.spots,
-                            selectedSpot = selectedSpot,
-                            isLoading = uiState.isLoading || uiState.isFavoriteSpotNearbyLoading,
-                            hasSearched = uiState.hasSearched,
-                            selectedTypes = uiState.selectedTypes,
-                            isFilterResultEmpty = uiState.isFilterResultEmpty,
-                            searchMode = uiState.searchMode,
-                            regionSearchCandidates = uiState.regionSearchCandidates,
-                            regionDetailSearchCandidate = uiState.regionDetailSearchCandidate,
-                            locationNotice = uiState.locationNotice.withLocationPermissionActionFallback(
-                                isLocationPermissionRequestBlocked = isLocationPermissionRequestBlocked,
-                            ),
-                            errorMessageResId = uiState.errorMessageResId,
-                            partialWarningMessageResId = uiState.partialWarningMessageResId,
-                            onTypeClick = onTypeClick,
-                            onClearTypeFiltersClick = onClearTypeFiltersClick,
-                            onRegionCandidateClick = onRegionCandidateClick,
-                            onRegionDetailAllClick = onRegionDetailAllClick,
-                            onRegionDetailKeywordClick = onRegionDetailKeywordClick,
-                            onRegionDetailBackClick = onRegionDetailBackClick,
-                            onLocationNoticeActionClick = onLocationNoticeActionClick,
-                            onSpotFavoriteClick = onSpotFavoriteClick,
-                            onSpotClick = { spot ->
-                                onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
-                                mapUiMode = MapUiMode.SpotDetail
-                                sheetLevel = MapSheetLevel.Medium
-                                sheetRevealRequest += 1
-                                onSpotClick(spot)
-                            },
-                            bottomContentPadding = bottomContentPadding,
-                        )
+                        MapUiMode.Browsing -> Unit
                     }
-
-                    MapUiMode.Browsing -> Unit
                 }
             }
         }
@@ -859,6 +900,7 @@ private fun CollectionSpotMapContentPreview() {
                 ),
                 isLocationPermissionGranted = true,
                 isLocationPermissionRequestBlocked = false,
+                isCurrentLocationGuideReady = true,
                 showCurrentLocationGuide = false,
                 locationTrackingMode = LocationTrackingMode.NoFollow,
                 onLocationTrackingModeChange = {},
@@ -869,6 +911,7 @@ private fun CollectionSpotMapContentPreview() {
                 onRegionDetailKeywordClick = {},
                 onRegionDetailBackClick = {},
                 onCurrentLocationClick = {},
+                onBlockedCurrentLocationClick = {},
                 onMapCenterSearchClick = {},
                 onLocationNoticeActionClick = {},
                 onCurrentLocationGuideDismiss = {},

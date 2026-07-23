@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -24,16 +23,19 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 fun rememberCurrentLocationSearchRequester(
+    hasRequestedFineLocationPermission: Boolean,
+    onRequestLaunched: () -> Unit,
     onGranted: () -> Unit,
     onDenied: () -> Unit,
     onBlocked: () -> Unit = onDenied,
 ): () -> Unit {
     val context = LocalContext.current
+    val currentOnRequestLaunched by rememberUpdatedState(onRequestLaunched)
     val currentOnGranted by rememberUpdatedState(onGranted)
     val currentOnDenied by rememberUpdatedState(onDenied)
     val currentOnBlocked by rememberUpdatedState(onBlocked)
-    var permissionRequestCount by remember {
-        mutableIntStateOf(0)
+    var hadRequestedPermissionBeforeLaunch by remember {
+        mutableStateOf(false)
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -43,7 +45,7 @@ fun rememberCurrentLocationSearchRequester(
             currentOnGranted()
         } else {
             val canShowRuntimePrompt = context.canShowFineLocationPermissionPrompt()
-            if (permissionRequestCount > 0 && !canShowRuntimePrompt) {
+            if (hadRequestedPermissionBeforeLaunch && !canShowRuntimePrompt) {
                 currentOnBlocked()
             } else {
                 currentOnDenied()
@@ -51,12 +53,13 @@ fun rememberCurrentLocationSearchRequester(
         }
     }
 
-    return remember(launcher) {
+    return remember(launcher, hasRequestedFineLocationPermission) {
         {
             if (context.hasFineLocationPermission()) {
                 currentOnGranted()
             } else {
-                permissionRequestCount += 1
+                hadRequestedPermissionBeforeLaunch = hasRequestedFineLocationPermission
+                currentOnRequestLaunched()
                 launcher.launch(LOCATION_PERMISSIONS)
             }
         }
