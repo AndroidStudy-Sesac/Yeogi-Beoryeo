@@ -26,11 +26,18 @@ fun RegionalGuideEmptyResult(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null,
+    scrollable: Boolean = true,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+            .then(
+                if (scrollable) {
+                    Modifier.verticalScroll(rememberScrollState())
+                } else {
+                    Modifier
+                }
+            ),
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
