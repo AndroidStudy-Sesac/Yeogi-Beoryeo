@@ -10,4 +10,14 @@ interface AppGuideRepository {
     fun observeCompletedMapLocationGuideVersion(): Flow<Int>
 
     suspend fun markMapLocationGuideCompleted(version: Int)
+
+    fun observeHasRequestedMapLocationPermission(): Flow<Boolean>
+
+    suspend fun markMapLocationPermissionRequested()
+
+    fun observeIsMapLocationPermissionBlocked(): Flow<Boolean>
+
+    suspend fun markMapLocationPermissionBlocked()
+
+    suspend fun clearMapLocationPermissionBlocked()
 }

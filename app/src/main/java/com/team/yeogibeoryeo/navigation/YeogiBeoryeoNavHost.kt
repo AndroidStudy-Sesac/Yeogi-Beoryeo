@@ -89,6 +89,7 @@ fun YeogiBeoryeoNavHost(
             isUsefulGuideScreen ||
             isSettingsDetailScreen
     var isBottomBarVisible by remember { mutableStateOf(true) }
+    var isBottomBarInputEnabled by remember { mutableStateOf(true) }
     var appGuideTargetBounds by remember {
         mutableStateOf<Map<AppGuideStep, Rect>>(emptyMap())
     }
@@ -124,6 +125,7 @@ fun YeogiBeoryeoNavHost(
 
     LaunchedEffect(currentBackStackEntry) {
         isBottomBarVisible = true
+        isBottomBarInputEnabled = true
         if (!isItemSearchScreen && isItemSearchBottomBarScrollEnabled) {
             isItemSearchBottomBarScrollEnabled = false
         }
@@ -174,6 +176,7 @@ fun YeogiBeoryeoNavHost(
                             currentBackStackEntry = currentBackStackEntry,
                             onMapTabSelected = { isBottomBarVisible = true },
                         ),
+                        itemEnabled = { isBottomBarInputEnabled },
                         itemModifier = { index ->
                             Modifier.onGloballyPositioned { coordinates ->
                                 val bounds = coordinates.boundsInRoot()
@@ -212,6 +215,11 @@ fun YeogiBeoryeoNavHost(
                         onBottomBarVisibilityChanged = { isVisible ->
                             if (isMapScreen) {
                                 isBottomBarVisible = isVisible
+                            }
+                        },
+                        onBottomBarInputEnabledChanged = { isEnabled ->
+                            if (isMapScreen) {
+                                isBottomBarInputEnabled = isEnabled
                             }
                         },
                         onRegionalGuideClick = { address ->
