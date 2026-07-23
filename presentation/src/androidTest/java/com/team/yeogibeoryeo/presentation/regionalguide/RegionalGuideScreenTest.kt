@@ -1,9 +1,12 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -14,6 +17,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
@@ -284,6 +289,47 @@ class RegionalGuideScreenTest {
         }
 
         composeTestRule.onNodeWithText("zone-12").assertIsDisplayed()
+    }
+
+    @Test
+    fun `800x360 가로 오류 화면에서 다시 시도 버튼을 스크롤해 실행할 수 있다`() {
+        var retryCount = 0
+        val errorMessage = List(10) { "네트워크 연결을 확인한 뒤 다시 시도해 주세요." }
+            .joinToString(separator = "\n")
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                Box(modifier = Modifier.requiredSize(width = 800.dp, height = 360.dp)) {
+                    RegionalGuideScreen(
+                        uiState = RegionalGuideUiState.Error(
+                            query = "서구",
+                            message = RegionalGuideErrorMessage.Dynamic(errorMessage),
+                        ),
+                        searchKeyword = "서구",
+                        regionSelectorUiState = RegionSelectorUiState(),
+                        onSearchKeywordChange = {},
+                        onSearchClick = {},
+                        onRetryClick = { retryCount += 1 },
+                        onEmptySearchActionClick = {},
+                        onSidoSelected = {},
+                        onSigunguSelected = {},
+                        onEupmyeondongSelected = {},
+                        onRegionSelectionSearchClick = {},
+                        onCandidateClick = {},
+                        onGuideCandidateClick = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("다시 시도")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+
+        composeTestRule.runOnIdle {
+            assertEquals(1, retryCount)
+        }
     }
 }
 
