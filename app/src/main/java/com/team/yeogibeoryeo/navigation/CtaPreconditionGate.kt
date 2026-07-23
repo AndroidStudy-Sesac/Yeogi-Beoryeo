@@ -19,11 +19,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -94,6 +97,7 @@ internal fun CtaPreconditionDialogHost(state: CtaPreconditionState) {
     AlertDialog(
         onDismissRequest = state::cancelPendingRequest,
         title = {
+            CtaPreconditionDialogDim()
             Text(text = stringResource(spec.titleResId))
         },
         text = {
@@ -134,6 +138,17 @@ internal fun CtaPreconditionDialogHost(state: CtaPreconditionState) {
             }
         },
     )
+}
+
+@Composable
+private fun CtaPreconditionDialogDim() {
+    val view = LocalView.current
+
+    SideEffect {
+        (view.parent as? DialogWindowProvider)
+            ?.window
+            ?.setDimAmount(CTA_DIALOG_DIM_AMOUNT)
+    }
 }
 
 private fun CtaPreconditionDialog.toSpec(): CtaPreconditionDialogSpec = when (this) {
@@ -261,3 +276,5 @@ private val LOCATION_PERMISSIONS = arrayOf(
     Manifest.permission.ACCESS_FINE_LOCATION,
     Manifest.permission.ACCESS_COARSE_LOCATION,
 )
+
+private const val CTA_DIALOG_DIM_AMOUNT = 0.40f
