@@ -15,9 +15,11 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
@@ -322,8 +324,10 @@ class RegionalGuideScreenTest {
             }
         }
 
+        composeTestRule.onRoot()
+            .performTouchInput { swipeUp() }
+
         composeTestRule.onNodeWithText("다시 시도")
-            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
 
