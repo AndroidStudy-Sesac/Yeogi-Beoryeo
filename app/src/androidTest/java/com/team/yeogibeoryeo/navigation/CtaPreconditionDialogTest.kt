@@ -35,4 +35,29 @@ class CtaPreconditionDialogTest {
         composeTestRule.onNodeWithText("계속하기").assertIsDisplayed()
         composeTestRule.onNodeWithText("위치 권한 허용").assertDoesNotExist()
     }
+
+    @Test
+    fun 외부_URL_실행_실패는_공통_안내를_표시한다() {
+        val state = CtaPreconditionState(
+            isInternetAvailable = { true },
+            hasFineLocationPermission = { false },
+            hasCoarseLocationPermission = { false },
+            isLocationServiceEnabled = { true },
+            onOpenMap = {},
+            onOpenExternalUrl = { false },
+        ).apply {
+            requestExternalUrl("https://example.com/guide")
+        }
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                CtaPreconditionDialogHost(state = state)
+            }
+        }
+
+        composeTestRule.onNodeWithText("페이지를 열 수 없어요").assertIsDisplayed()
+        composeTestRule.onNodeWithText(
+            "브라우저 앱을 설치하거나 활성화한 뒤 다시 시도해 주세요.",
+        ).assertIsDisplayed()
+    }
 }

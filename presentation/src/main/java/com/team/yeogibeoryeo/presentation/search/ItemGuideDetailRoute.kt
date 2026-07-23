@@ -41,7 +41,7 @@ fun ItemGuideDetailRoute(
     guideId: String,
     onBackClick: () -> Unit,
     onCollectionSpotTypeClick: (CollectionSpotType) -> Unit,
-    onOpenExternalUrl: (String) -> Boolean,
+    onOpenExternalUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     viewModel: ItemGuideDetailViewModel = hiltViewModel(),
@@ -95,11 +95,7 @@ fun ItemGuideDetailRoute(
                     onBackClick = onBackClick,
                     onFavoriteClick = viewModel::toggleFavorite,
                     onCollectionSpotTypeClick = onCollectionSpotTypeClick,
-                    onOfficialGuideClick = { url ->
-                        if (!onOpenExternalUrl(url)) {
-                            viewModel.showOfficialGuideOpenFailedMessage()
-                        }
-                    },
+                    onOfficialGuideClick = onOpenExternalUrl,
                     onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
                     modifier = Modifier.padding(innerPadding),
                 )

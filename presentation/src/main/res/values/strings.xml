@@ -205,7 +205,6 @@
     <string name="item_guide_action_find_hazardous_waste_bin_description">전용수거함 위치를 확인할 수 있습니다.</string>
     <string name="item_guide_action_free_pickup">무상방문수거 안내 보기</string>
     <string name="item_guide_action_free_pickup_description">방문수거는 지도 장소가 아니라 예약 안내로 확인합니다.</string>
-    <string name="item_guide_action_open_failed_message">공식 안내를 열 수 있는 앱이 없습니다. 브라우저 앱을 설치하거나 활성화한 뒤 다시 시도해주세요.</string>
     <string name="back_action">뒤로가기</string>
     <string name="favorite_add_action">즐겨찾기 추가</string>
     <string name="favorite_remove_action">즐겨찾기 해제</string>

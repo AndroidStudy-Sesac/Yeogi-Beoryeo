@@ -213,7 +213,7 @@ class CtaPreconditionStateTest {
         isInternetAvailable = false
         val url = "https://example.com/guide"
 
-        assertTrue(state.requestExternalUrl(url))
+        state.requestExternalUrl(url)
         assertEquals(CtaPreconditionDialog.ExternalUrlInternetRequired, state.dialog)
 
         isInternetAvailable = true
@@ -221,6 +221,17 @@ class CtaPreconditionStateTest {
 
         assertEquals(listOf(url), openedUrls)
         assertNull(state.dialog)
+    }
+
+    @Test
+    fun `외부 URL 실행 실패는 공통 안내를 표시한다`() {
+        canOpenExternalUrl = false
+        val url = "https://example.com/guide"
+
+        state.requestExternalUrl(url)
+
+        assertEquals(listOf(url), openedUrls)
+        assertEquals(CtaPreconditionDialog.ExternalUrlOpenFailed, state.dialog)
     }
 
     @Test

@@ -487,8 +487,8 @@ class ItemSearchScreenTest {
                     guideType = ItemUsefulGuideType.SMALL_E_WASTE,
                     onBackClick = {},
                     onSmallEWasteClick = {},
-                    onFreePickupGuideClick = { true },
-                    onOfficialSiteClick = { true },
+                    onFreePickupGuideClick = {},
+                    onOfficialSiteClick = {},
                     onRegionalGuideClick = {},
                     onItemSearchClick = {},
                     onBottomBarVisibilityChanged = {},
@@ -513,15 +513,17 @@ class ItemSearchScreenTest {
     }
 
     @Test
-    fun small_e_waste_안내_상세에서_외부_링크_실패_시_스낵바를_보여준다() {
+    fun small_e_waste_안내_상세에서_외부_링크_CTA를_전달한다() {
+        var clickCount = 0
+
         composeTestRule.setContent {
             MaterialTheme {
                 ItemUsefulGuideRoute(
                     guideType = ItemUsefulGuideType.SMALL_E_WASTE,
                     onBackClick = {},
                     onSmallEWasteClick = {},
-                    onFreePickupGuideClick = { false },
-                    onOfficialSiteClick = { true },
+                    onFreePickupGuideClick = { clickCount += 1 },
+                    onOfficialSiteClick = {},
                     onRegionalGuideClick = {},
                     onItemSearchClick = {},
                     onBottomBarVisibilityChanged = {},
@@ -533,8 +535,7 @@ class ItemSearchScreenTest {
             .performScrollTo()
             .performClick()
 
-        composeTestRule.onNodeWithText("공식 안내를 열 수 있는 앱이 없습니다. 브라우저 앱을 설치하거나 활성화한 뒤 다시 시도해주세요.")
-            .assertIsDisplayed()
+        assertEquals(1, clickCount)
     }
 
     private fun sampleGuide(name: String): DisposalItemGuide =

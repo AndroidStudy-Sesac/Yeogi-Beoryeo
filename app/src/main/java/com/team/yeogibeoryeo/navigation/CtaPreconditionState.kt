@@ -28,9 +28,9 @@ internal class CtaPreconditionState(
         proceed()
     }
 
-    fun requestExternalUrl(url: String): Boolean {
+    fun requestExternalUrl(url: String) {
         pendingRequest = PendingCtaRequest.ExternalUrl(url)
-        return proceed()
+        proceed()
     }
 
     fun confirmDialog(): CtaPreconditionEffect? = when (dialog) {
@@ -38,9 +38,7 @@ internal class CtaPreconditionState(
         CtaPreconditionDialog.ExternalUrlInternetRequired,
         -> {
             dialog = null
-            if (!proceed()) {
-                dialog = CtaPreconditionDialog.ExternalUrlOpenFailed
-            }
+            proceed()
             null
         }
 
@@ -147,8 +145,8 @@ internal class CtaPreconditionState(
         preciseUpgradeRequested = false
     }
 
-    private fun proceed(): Boolean {
-        val request = pendingRequest ?: return true
+    private fun proceed() {
+        val request = pendingRequest ?: return
 
         if (!isInternetAvailable()) {
             dialog = when (request) {
@@ -156,41 +154,44 @@ internal class CtaPreconditionState(
                 is PendingCtaRequest.ExternalUrl ->
                     CtaPreconditionDialog.ExternalUrlInternetRequired
             }
-            return true
+            return
         }
 
-        return when (request) {
+        when (request) {
             is PendingCtaRequest.Map -> proceedToMap(request)
             is PendingCtaRequest.ExternalUrl -> proceedToExternalUrl(request)
         }
     }
 
-    private fun proceedToMap(request: PendingCtaRequest.Map): Boolean {
+    private fun proceedToMap(request: PendingCtaRequest.Map) {
         if (!hasFineLocationPermission()) {
             dialog = when {
                 hasCoarseLocationPermission() -> CtaPreconditionDialog.PreciseLocationRationale
                 requiresAppSettings -> CtaPreconditionDialog.LocationPermissionSettings
                 else -> CtaPreconditionDialog.LocationPermissionRationale
             }
-            return true
+            return
         }
 
         if (!isLocationServiceEnabled()) {
             dialog = CtaPreconditionDialog.LocationServiceDisabled
-            return true
+            return
         }
 
         pendingRequest = null
         dialog = null
         onOpenMap(request.type)
-        return true
     }
 
-    private fun proceedToExternalUrl(request: PendingCtaRequest.ExternalUrl): Boolean {
+    private fun proceedToExternalUrl(request: PendingCtaRequest.ExternalUrl) {
         val opened = onOpenExternalUrl(request.url)
         pendingRequest = null
-        dialog = null
-        return opened
+        dialog =
+            if (opened) {
+                null
+            } else {
+                CtaPreconditionDialog.ExternalUrlOpenFailed
+            }
     }
 }
 
