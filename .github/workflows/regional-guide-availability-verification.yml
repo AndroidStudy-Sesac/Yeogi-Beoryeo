@@ -1,0 +1,162 @@
+name: Regional Guide Availability Verification
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: '17 0 * * 0'
+
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'data/src/main/assets/region/regional_guide_availability.*.json'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/region/local/RegionAssetContract.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/network/di/HouseholdWasteInfoNetworkModule.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/regionalguide/remote/RegionalGuideApiService.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/regionalguide/remote/dto/RegionalGuideItemDto.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/regionalguide/remote/dto/RegionalGuideResponseDto.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/region/local/dto/AdministrativeRegionDto.kt'
+      - 'data/src/main/java/com/team/yeogibeoryeo/data/region/local/dto/RegionalGuideAvailabilityDto.kt'
+      - 'data/src/main/assets/region/administrative_regions.*.json'
+      - 'data/src/test/java/com/team/yeogibeoryeo/data/regionalguide/availability/RegionalGuideAvailabilityApiContractTest.kt'
+      - '.github/workflows/regional-guide-availability-verification.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regional-guide-availability-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-pull-request-contract:
+    name: Verify Regional Guide Availability Contract
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.0.0
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "NAVER_CLIENT_ID=ci_dummy_naver_client_id" >> local.properties
+          echo "PUBLIC_DATA_SERVICE_KEY=ci_dummy_public_data_service_key" >> local.properties
+
+      - name: Find changed regional scopes
+        id: changed-regions
+        run: |
+          contract_path='data/src/main/java/com/team/yeogibeoryeo/data/region/local/RegionAssetContract.kt'
+          base_version="$(git show "${{ github.event.pull_request.base.sha }}:$contract_path" | sed -nE 's/.*REGIONAL_GUIDE_AVAILABILITY_VERSION = "([^"]+)".*/\1/p')"
+          head_version="$(sed -nE 's/.*REGIONAL_GUIDE_AVAILABILITY_VERSION = "([^"]+)".*/\1/p' "$contract_path")"
+          base_asset_path="data/src/main/assets/region/regional_guide_availability.$base_version.json"
+          head_asset_path="data/src/main/assets/region/regional_guide_availability.$head_version.json"
+
+          base_asset_file="$(mktemp)"
+          head_asset_file="$(mktemp)"
+          git show "${{ github.event.pull_request.base.sha }}:$base_asset_path" > "$base_asset_file" || echo '[]' > "$base_asset_file"
+          [[ -f "$head_asset_path" ]] && cp "$head_asset_path" "$head_asset_file" || echo '[]' > "$head_asset_file"
+
+          base_keys_file="$(mktemp)"
+          head_keys_file="$(mktemp)"
+          jq -r '.[] | [.sidoName, .sigunguName, .managementZoneName, .targetRegionName] | @tsv' "$base_asset_file" | LC_ALL=C sort -u > "$base_keys_file"
+          jq -r '.[] | [.sidoName, .sigunguName, .managementZoneName, .targetRegionName] | @tsv' "$head_asset_file" | LC_ALL=C sort -u > "$head_keys_file"
+          regions="$(LC_ALL=C comm -3 "$base_keys_file" "$head_keys_file" | awk -F '\t' '{ print $1 == "" ? $2 "\t" $3 : $1 "\t" $2 }' | LC_ALL=C sort -u)"
+
+          {
+            echo "regions<<EOF"
+            echo "$regions"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Verify availability validator contract
+        env:
+          REGIONAL_GUIDE_AVAILABILITY_TARGETED: 'true'
+          REGIONAL_GUIDE_AVAILABILITY_TARGET_REGIONS: ${{ steps.changed-regions.outputs.regions }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :data:testDebugUnitTest \
+            --tests com.team.yeogibeoryeo.data.regionalguide.availability.RegionalGuideAvailabilityApiContractTest \
+            --no-daemon
+
+      - name: Print pull request verification summary
+        if: always()
+        run: |
+          {
+            echo "## 지역 가이드 availability PR 검증"
+            echo
+            echo "- PR에서는 GitHub Secret과 실제 /info API를 사용하지 않습니다."
+            echo "- validator 계약 테스트와 시도·시군구 단위의 변경 대상 선택 경로만 검증합니다."
+            echo "- 실제 API 비교는 보호 환경의 수동·주기 실행에서 기본 브랜치 코드로 수행합니다."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  verify-live-availability:
+    name: Verify Regional Guide Availability
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: regional-guide-availability-verification
+
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.0.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.0.0
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "NAVER_CLIENT_ID=ci_dummy_naver_client_id" >> local.properties
+          echo "PUBLIC_DATA_SERVICE_KEY=ci_dummy_public_data_service_key" >> local.properties
+
+      - name: Verify asset against /info API
+        env:
+          PUBLIC_DATA_SERVICE_KEY: ${{ secrets.PUBLIC_DATA_SERVICE_KEY }}
+          REGIONAL_GUIDE_AVAILABILITY_VERIFICATION: 'true'
+          REGIONAL_GUIDE_AVAILABILITY_TARGETED: 'false'
+        run: |
+          if [[ -z "$PUBLIC_DATA_SERVICE_KEY" ]]; then
+            echo "PUBLIC_DATA_SERVICE_KEY GitHub Secret이 필요합니다." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          chmod +x ./gradlew
+          ./gradlew :data:testDebugUnitTest \
+            --tests com.team.yeogibeoryeo.data.regionalguide.availability.RegionalGuideAvailabilityApiContractTest \
+            --rerun-tasks \
+            --no-daemon \
+            --stacktrace
+
+      - name: Print verification summary
+        if: always()
+        run: |
+          report_path='data/build/reports/regional-guide-availability-summary.md'
+          if [[ -f "$report_path" ]]; then
+            tee -a "$GITHUB_STEP_SUMMARY" < "$report_path"
+          else
+            echo "지역 가이드 availability 검증 보고서를 생성하지 못했습니다." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
