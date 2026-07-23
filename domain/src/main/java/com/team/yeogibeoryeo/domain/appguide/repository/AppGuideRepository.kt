@@ -6,4 +6,8 @@ interface AppGuideRepository {
     fun observeCompletedVersion(): Flow<Int>
 
     suspend fun markCompleted(version: Int)
+
+    fun observeCompletedMapLocationGuideVersion(): Flow<Int>
+
+    suspend fun markMapLocationGuideCompleted(version: Int)
 }

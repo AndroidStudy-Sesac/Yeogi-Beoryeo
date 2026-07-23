@@ -93,6 +93,10 @@ private class FakeAppGuideRepository(
     override suspend fun markCompleted(version: Int) {
         completedVersion.value = maxOf(completedVersion.value, version)
     }
+
+    override fun observeCompletedMapLocationGuideVersion(): Flow<Int> = MutableStateFlow(0)
+
+    override suspend fun markMapLocationGuideCompleted(version: Int) = Unit
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

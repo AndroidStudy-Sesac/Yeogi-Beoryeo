@@ -41,8 +41,34 @@ class DataStoreAppGuideRepository
             }
         }
 
+        override fun observeCompletedMapLocationGuideVersion(): Flow<Int> =
+            dataStore.data
+                .catch { exception ->
+                    if (exception is IOException) {
+                        emit(emptyPreferences())
+                    } else {
+                        throw exception
+                    }
+                }.map { preferences ->
+                    preferences[COMPLETED_MAP_LOCATION_GUIDE_VERSION_KEY] ?: NOT_COMPLETED_VERSION
+                }
+
+        override suspend fun markMapLocationGuideCompleted(version: Int) {
+            try {
+                dataStore.edit { preferences ->
+                    val completedVersion =
+                        preferences[COMPLETED_MAP_LOCATION_GUIDE_VERSION_KEY] ?: NOT_COMPLETED_VERSION
+                    preferences[COMPLETED_MAP_LOCATION_GUIDE_VERSION_KEY] = maxOf(completedVersion, version)
+                }
+            } catch (_: IOException) {
+                // 저장 실패 시 다음 실행에서 가이드를 다시 보여줍니다.
+            }
+        }
+
         private companion object {
             const val NOT_COMPLETED_VERSION = 0
             val COMPLETED_VERSION_KEY = intPreferencesKey("completed_app_guide_version")
+            val COMPLETED_MAP_LOCATION_GUIDE_VERSION_KEY =
+                intPreferencesKey("completed_map_location_guide_version")
         }
     }

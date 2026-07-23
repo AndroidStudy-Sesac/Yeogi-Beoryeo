@@ -9,6 +9,7 @@ data class MapLocationNotice(
 )
 
 enum class MapLocationNoticeAction {
+    RequestLocationPermission,
     OpenAppSettings,
     OpenLocationSettings,
 }

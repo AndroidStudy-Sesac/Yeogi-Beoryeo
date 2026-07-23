@@ -39,6 +39,32 @@ class DataStoreAppGuideRepositoryTest {
         }
     }
 
+    @Test
+    fun `지도 현재위치 가이드 완료 버전이 없으면 영을 반환한다`() = runBlocking {
+        withRepository { repository ->
+            assertEquals(0, repository.observeCompletedMapLocationGuideVersion().first())
+        }
+    }
+
+    @Test
+    fun `지도 현재위치 가이드를 완료하면 완료 버전을 저장한다`() = runBlocking {
+        withRepository { repository ->
+            repository.markMapLocationGuideCompleted(version = 1)
+
+            assertEquals(1, repository.observeCompletedMapLocationGuideVersion().first())
+        }
+    }
+
+    @Test
+    fun `지도 현재위치 가이드를 낮은 버전으로 다시 완료해도 저장된 버전을 낮추지 않는다`() = runBlocking {
+        withRepository { repository ->
+            repository.markMapLocationGuideCompleted(version = 2)
+            repository.markMapLocationGuideCompleted(version = 1)
+
+            assertEquals(2, repository.observeCompletedMapLocationGuideVersion().first())
+        }
+    }
+
     private suspend fun withRepository(
         block: suspend (DataStoreAppGuideRepository) -> Unit,
     ) {
