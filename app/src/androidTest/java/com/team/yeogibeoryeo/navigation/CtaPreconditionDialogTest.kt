@@ -17,6 +17,7 @@ class CtaPreconditionDialogTest {
         val state = CtaPreconditionState(
             isInternetAvailable = { true },
             hasFineLocationPermission = { false },
+            hasCoarseLocationPermission = { false },
             isLocationServiceEnabled = { true },
             onOpenMap = {},
             onOpenExternalUrl = { true },
@@ -30,7 +31,7 @@ class CtaPreconditionDialogTest {
             }
         }
 
-        composeTestRule.onNodeWithText("위치 권한이 필요해요").assertIsDisplayed()
+        composeTestRule.onNodeWithText("정확한 위치가 필요해요").assertIsDisplayed()
         composeTestRule.onNodeWithText("계속하기").assertIsDisplayed()
         composeTestRule.onNodeWithText("위치 권한 허용").assertDoesNotExist()
     }

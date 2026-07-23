@@ -10,6 +10,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 internal class CtaPreconditionState(
     private val isInternetAvailable: () -> Boolean,
     private val hasFineLocationPermission: () -> Boolean,
+    private val hasCoarseLocationPermission: () -> Boolean,
     private val isLocationServiceEnabled: () -> Boolean,
     private val onOpenMap: (CollectionSpotType) -> Unit,
     private val onOpenExternalUrl: (String) -> Boolean,
@@ -20,6 +21,7 @@ internal class CtaPreconditionState(
     private var pendingRequest: PendingCtaRequest? = null
     private var waitingForSettings: SettingsDestination? = null
     private var requiresAppSettings = false
+    private var preciseUpgradeRequested = false
 
     fun requestMap(type: CollectionSpotType) {
         pendingRequest = PendingCtaRequest.Map(type)
@@ -44,8 +46,15 @@ internal class CtaPreconditionState(
 
         CtaPreconditionDialog.LocationPermissionRationale,
         CtaPreconditionDialog.LocationPermissionDenied,
+        CtaPreconditionDialog.PreciseLocationDenied,
         -> {
             dialog = null
+            CtaPreconditionEffect.RequestLocationPermission
+        }
+
+        CtaPreconditionDialog.PreciseLocationRationale -> {
+            dialog = null
+            preciseUpgradeRequested = true
             CtaPreconditionEffect.RequestLocationPermission
         }
 
@@ -79,12 +88,16 @@ internal class CtaPreconditionState(
         when {
             isFineLocationGranted -> {
                 requiresAppSettings = false
+                preciseUpgradeRequested = false
                 proceed()
             }
 
             isCoarseLocationGranted -> {
-                requiresAppSettings = true
-                dialog = CtaPreconditionDialog.PreciseLocationSettings
+                dialog = when {
+                    !preciseUpgradeRequested -> CtaPreconditionDialog.PreciseLocationRationale
+                    canRequestAgain -> CtaPreconditionDialog.PreciseLocationDenied
+                    else -> CtaPreconditionDialog.PreciseLocationSettings
+                }
             }
 
             canRequestAgain -> {
@@ -131,6 +144,7 @@ internal class CtaPreconditionState(
         pendingRequest = null
         waitingForSettings = null
         dialog = null
+        preciseUpgradeRequested = false
     }
 
     private fun proceed(): Boolean {
@@ -153,10 +167,10 @@ internal class CtaPreconditionState(
 
     private fun proceedToMap(request: PendingCtaRequest.Map): Boolean {
         if (!hasFineLocationPermission()) {
-            dialog = if (requiresAppSettings) {
-                CtaPreconditionDialog.LocationPermissionSettings
-            } else {
-                CtaPreconditionDialog.LocationPermissionRationale
+            dialog = when {
+                hasCoarseLocationPermission() -> CtaPreconditionDialog.PreciseLocationRationale
+                requiresAppSettings -> CtaPreconditionDialog.LocationPermissionSettings
+                else -> CtaPreconditionDialog.LocationPermissionRationale
             }
             return true
         }
@@ -186,6 +200,8 @@ internal enum class CtaPreconditionDialog {
     LocationPermissionRationale,
     LocationPermissionDenied,
     LocationPermissionSettings,
+    PreciseLocationRationale,
+    PreciseLocationDenied,
     PreciseLocationSettings,
     LocationServiceDisabled,
     ExternalUrlOpenFailed,

@@ -10,6 +10,7 @@ import org.junit.Test
 class CtaPreconditionStateTest {
     private var isInternetAvailable = true
     private var hasFineLocationPermission = false
+    private var hasCoarseLocationPermission = false
     private var isLocationServiceEnabled = true
     private var canOpenExternalUrl = true
     private val openedMapTypes = mutableListOf<CollectionSpotType>()
@@ -21,6 +22,7 @@ class CtaPreconditionStateTest {
         state = CtaPreconditionState(
             isInternetAvailable = { isInternetAvailable },
             hasFineLocationPermission = { hasFineLocationPermission },
+            hasCoarseLocationPermission = { hasCoarseLocationPermission },
             isLocationServiceEnabled = { isLocationServiceEnabled },
             onOpenMap = openedMapTypes::add,
             onOpenExternalUrl = { url ->
@@ -69,7 +71,7 @@ class CtaPreconditionStateTest {
     }
 
     @Test
-    fun `대략적 위치만 허용하면 정확한 위치 설정 안내를 표시한다`() {
+    fun `대략적 위치만 허용하면 정확한 위치 업그레이드 안내 뒤 시스템 권한을 요청한다`() {
         state.requestMap(CollectionSpotType.SMALL_E_WASTE_BIN)
         state.confirmDialog()
 
@@ -77,6 +79,48 @@ class CtaPreconditionStateTest {
             isFineLocationGranted = false,
             isCoarseLocationGranted = true,
             canRequestAgain = true,
+        )
+
+        assertEquals(CtaPreconditionDialog.PreciseLocationRationale, state.dialog)
+        assertEquals(CtaPreconditionEffect.RequestLocationPermission, state.confirmDialog())
+    }
+
+    @Test
+    fun `이미 대략적 위치만 허용된 상태도 업그레이드 안내 뒤 시스템 권한을 요청한다`() {
+        hasCoarseLocationPermission = true
+
+        state.requestMap(CollectionSpotType.SMALL_E_WASTE_BIN)
+
+        assertEquals(CtaPreconditionDialog.PreciseLocationRationale, state.dialog)
+        assertEquals(CtaPreconditionEffect.RequestLocationPermission, state.confirmDialog())
+    }
+
+    @Test
+    fun `정확한 위치 업그레이드 거절 뒤 다시 요청할 수 있다`() {
+        hasCoarseLocationPermission = true
+        state.requestMap(CollectionSpotType.SMALL_E_WASTE_BIN)
+        state.confirmDialog()
+
+        state.onLocationPermissionResult(
+            isFineLocationGranted = false,
+            isCoarseLocationGranted = true,
+            canRequestAgain = true,
+        )
+
+        assertEquals(CtaPreconditionDialog.PreciseLocationDenied, state.dialog)
+        assertEquals(CtaPreconditionEffect.RequestLocationPermission, state.confirmDialog())
+    }
+
+    @Test
+    fun `정확한 위치 업그레이드를 다시 요청할 수 없으면 앱 설정을 안내한다`() {
+        hasCoarseLocationPermission = true
+        state.requestMap(CollectionSpotType.SMALL_E_WASTE_BIN)
+        state.confirmDialog()
+
+        state.onLocationPermissionResult(
+            isFineLocationGranted = false,
+            isCoarseLocationGranted = true,
+            canRequestAgain = false,
         )
 
         assertEquals(CtaPreconditionDialog.PreciseLocationSettings, state.dialog)

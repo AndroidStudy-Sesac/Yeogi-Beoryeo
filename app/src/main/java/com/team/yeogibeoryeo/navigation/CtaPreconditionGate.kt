@@ -46,6 +46,7 @@ internal fun rememberCtaPreconditionState(
         CtaPreconditionState(
             isInternetAvailable = applicationContext::hasValidatedInternetConnection,
             hasFineLocationPermission = applicationContext::hasFineLocationPermission,
+            hasCoarseLocationPermission = applicationContext::hasCoarseLocationPermission,
             isLocationServiceEnabled = applicationContext::isLocationServiceEnabled,
             onOpenMap = { type -> currentOnOpenMap(type) },
             onOpenExternalUrl = { url -> currentOnOpenExternalUrl(url) },
@@ -173,8 +174,22 @@ private fun CtaPreconditionDialog.toSpec(): CtaPreconditionDialogSpec = when (th
 
     CtaPreconditionDialog.PreciseLocationSettings -> CtaPreconditionDialogSpec(
         titleResId = R.string.cta_precondition_precise_location_title,
-        messageResId = R.string.cta_precondition_precise_location_message,
+        messageResId = R.string.cta_precondition_precise_location_settings_message,
         confirmResId = R.string.cta_precondition_open_app_settings,
+        dismissResId = R.string.cta_precondition_cancel,
+    )
+
+    CtaPreconditionDialog.PreciseLocationRationale -> CtaPreconditionDialogSpec(
+        titleResId = R.string.cta_precondition_precise_location_title,
+        messageResId = R.string.cta_precondition_precise_location_message,
+        confirmResId = R.string.cta_precondition_continue,
+        dismissResId = R.string.cta_precondition_cancel,
+    )
+
+    CtaPreconditionDialog.PreciseLocationDenied -> CtaPreconditionDialogSpec(
+        titleResId = R.string.cta_precondition_precise_location_title,
+        messageResId = R.string.cta_precondition_precise_location_denied_message,
+        confirmResId = R.string.cta_precondition_request_again,
         dismissResId = R.string.cta_precondition_cancel,
     )
 
@@ -212,6 +227,12 @@ private fun Context.hasFineLocationPermission(): Boolean =
     ContextCompat.checkSelfPermission(
         this,
         Manifest.permission.ACCESS_FINE_LOCATION,
+    ) == PackageManager.PERMISSION_GRANTED
+
+private fun Context.hasCoarseLocationPermission(): Boolean =
+    ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED
 
 private fun Context.isLocationServiceEnabled(): Boolean =
