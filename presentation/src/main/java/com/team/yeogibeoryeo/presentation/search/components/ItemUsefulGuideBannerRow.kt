@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideContent
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
@@ -86,7 +85,7 @@ fun ItemUsefulGuideBannerRow(
                     onClick = { onGuideClick(guide) },
                     modifier = Modifier
                         .fillParentMaxWidth(itemWidthFraction)
-                        .height(size.usefulGuideBannerCardHeight),
+                        .heightIn(min = size.usefulGuideBannerCardMinHeight),
                 )
             }
         }
@@ -154,15 +153,11 @@ private fun ItemUsefulGuideBannerCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = stringResource(guide.descriptionResId),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
