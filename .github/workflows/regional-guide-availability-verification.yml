@@ -147,6 +147,7 @@ jobs:
           chmod +x ./gradlew
           ./gradlew :data:testDebugUnitTest \
             --tests com.team.yeogibeoryeo.data.regionalguide.availability.RegionalGuideAvailabilityApiContractTest \
+            --rerun-tasks \
             --no-daemon \
             --stacktrace
 
