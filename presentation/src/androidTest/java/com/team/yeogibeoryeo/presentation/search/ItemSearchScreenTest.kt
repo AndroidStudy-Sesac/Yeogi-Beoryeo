@@ -6,8 +6,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -109,6 +112,49 @@ class ItemSearchScreenTest {
     }
 
     @Test
+    fun 검색_결과가_남아_있어도_앱_사용_가이드를_재실행하면_초기_홈을_보여준다() {
+        var isAppGuideActive by mutableStateOf(false)
+        var appGuideTarget by mutableStateOf<ItemSearchGuideTarget?>(null)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState =
+                        ItemSearchUiState(
+                            query = "유리",
+                            hasSearched = true,
+                            guides = listOf(sampleGuide("유리병")),
+                        ),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    isAppGuideActive = isAppGuideActive,
+                    appGuideTarget = appGuideTarget,
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("뒤로가기").assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            isAppGuideActive = true
+            appGuideTarget = ItemSearchGuideTarget.SEARCH
+        }
+
+        composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
+        composeTestRule.onAllNodesWithContentDescription("뒤로가기").assertCountEquals(0)
+
+        composeTestRule.runOnIdle {
+            appGuideTarget = null
+        }
+
+        composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
+        composeTestRule.onAllNodesWithContentDescription("뒤로가기").assertCountEquals(0)
+    }
+
+    @Test
     fun 검색_결과_화면에서_뒤로가기_버튼을_누르면_검색을_초기화한다() {
         var backClickCount = 0
 
@@ -134,6 +180,30 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
 
         assertEquals(1, backClickCount)
+    }
+
+    @Test
+    fun 검색어를_수정해도_화면에_제출된_검색어를_표시한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState =
+                        ItemSearchUiState(
+                            query = "비닐",
+                            submittedQuery = "유리",
+                            hasSearched = true,
+                            guides = listOf(sampleGuide("유리병")),
+                        ),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("‘유리’ 검색 결과").assertIsDisplayed()
+        composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
     }
 
     @Test
@@ -210,20 +280,32 @@ class ItemSearchScreenTest {
 
     @Test
     fun 에러_상태에서는_에러_리소스_문구를_보여준다() {
+        var backClickCount = 0
+
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchScreen(
-                    uiState = ItemSearchUiState(errorMessageResId = R.string.search_load_failed_message),
+                    uiState =
+                        ItemSearchUiState(
+                            query = "PMP",
+                            submittedQuery = "PMP",
+                            hasSearched = true,
+                            errorMessageResId = R.string.search_load_failed_message,
+                        ),
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
                     onQuickCategoryClick = {},
+                    onBackClick = { backClickCount += 1 },
                 )
             }
         }
 
         composeTestRule.onNodeWithText("검색 결과를 불러오지 못했어요.").assertIsDisplayed()
         composeTestRule.onNodeWithText("잠시 후 다시 시도해주세요.").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
+
+        assertEquals(1, backClickCount)
     }
 
     @Test
@@ -302,9 +384,13 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNode(hasImeAction(ImeAction.Search)).performImeAction()
+        val searchField = composeTestRule.onNode(hasImeAction(ImeAction.Search))
+        searchField.performClick()
+        searchField.assertIsFocused()
+        searchField.performImeAction()
 
         assertEquals(1, searchClickCount)
+        searchField.assertIsNotFocused()
     }
 
     @Test
@@ -443,8 +529,8 @@ class ItemSearchScreenTest {
                     guideType = ItemUsefulGuideType.SMALL_E_WASTE,
                     onBackClick = {},
                     onSmallEWasteClick = {},
-                    onFreePickupGuideClick = { true },
-                    onOfficialSiteClick = { true },
+                    onFreePickupGuideClick = {},
+                    onOfficialSiteClick = {},
                     onRegionalGuideClick = {},
                     onItemSearchClick = {},
                     onBottomBarVisibilityChanged = {},
@@ -469,15 +555,17 @@ class ItemSearchScreenTest {
     }
 
     @Test
-    fun small_e_waste_안내_상세에서_외부_링크_실패_시_스낵바를_보여준다() {
+    fun small_e_waste_안내_상세에서_외부_링크_CTA를_전달한다() {
+        var clickCount = 0
+
         composeTestRule.setContent {
             MaterialTheme {
                 ItemUsefulGuideRoute(
                     guideType = ItemUsefulGuideType.SMALL_E_WASTE,
                     onBackClick = {},
                     onSmallEWasteClick = {},
-                    onFreePickupGuideClick = { false },
-                    onOfficialSiteClick = { true },
+                    onFreePickupGuideClick = { clickCount += 1 },
+                    onOfficialSiteClick = {},
                     onRegionalGuideClick = {},
                     onItemSearchClick = {},
                     onBottomBarVisibilityChanged = {},
@@ -489,8 +577,7 @@ class ItemSearchScreenTest {
             .performScrollTo()
             .performClick()
 
-        composeTestRule.onNodeWithText("공식 안내를 열 수 있는 앱이 없습니다. 브라우저 앱을 설치하거나 활성화한 뒤 다시 시도해주세요.")
-            .assertIsDisplayed()
+        assertEquals(1, clickCount)
     }
 
     private fun sampleGuide(name: String): DisposalItemGuide =

@@ -18,6 +18,7 @@ import com.team.yeogibeoryeo.presentation.settings.components.SettingsScaffold
 internal fun SettingsScreen(
     onBackClick: () -> Unit,
     onDetailClick: (SettingsDetailType) -> Unit,
+    onAppGuideClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(
@@ -37,6 +38,12 @@ internal fun SettingsScreen(
                 bottom = SettingsLayoutDefaults.listVerticalPadding,
             ),
         ) {
+            item {
+                SettingsListItem(
+                    title = stringResource(R.string.settings_app_guide_title),
+                    onClick = onAppGuideClick,
+                )
+            }
             items(SettingsMenuItems) { item ->
                 SettingsListItem(
                     title = stringResource(item.titleResId),

@@ -28,6 +28,7 @@ class SettingsPrivacyPolicyTest {
                 SettingsScreen(
                     onBackClick = {},
                     onDetailClick = { selectedType = it },
+                    onAppGuideClick = {},
                 )
             }
         }
@@ -38,6 +39,29 @@ class SettingsPrivacyPolicyTest {
             .performClick()
 
         assertEquals(SettingsDetailType.PrivacyPolicy, selectedType)
+    }
+
+    @Test
+    fun 앱_사용_가이드를_선택하면_콜백을_호출한다() {
+        var clickCount = 0
+        val title = InstrumentationRegistry.getInstrumentation().targetContext
+            .getString(R.string.settings_app_guide_title)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                SettingsScreen(
+                    onBackClick = {},
+                    onDetailClick = {},
+                    onAppGuideClick = { clickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule
+            .onNodeWithText(title)
+            .performClick()
+
+        assertEquals(1, clickCount)
     }
 
     @Test

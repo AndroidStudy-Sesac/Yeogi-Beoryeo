@@ -205,27 +205,6 @@ class ItemGuideDetailViewModelTest {
         }
 
     @Test
-    fun `공식 안내 실행 실패 메시지 이벤트를 보낸다`() =
-        runTest {
-            val viewModel =
-                createViewModel(
-                    itemRepository = FakeItemRepository(guide = sampleGuide("전기밥솥")),
-                    favoriteRepository = FakeFavoriteRepository(),
-                )
-
-            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
-            viewModel.showOfficialGuideOpenFailedMessage()
-            advanceUntilIdle()
-
-            val messageEvent = event.await() as ItemGuideDetailEvent.ShowMessage
-            assertEquals(
-                R.string.item_guide_action_open_failed_message,
-                messageEvent.messageResId,
-            )
-            assertEquals(ItemGuideDetailMessageIcon.Warning, messageEvent.icon)
-        }
-
-    @Test
     fun `새 가이드를 로드하면 이전 로드 결과는 반영하지 않는다`() =
         runTest {
             val oldGuide = sampleGuide("유리병")

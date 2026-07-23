@@ -16,7 +16,7 @@ object RegionalWasteScheduleMapper {
             createSchedule(RegionalWasteType.RECYCLABLE, dto.recycleDisposalDays, dto.recycleStartTime, dto.recycleEndTime, dto.recycleMethod),
             createSchedule(
                 type = RegionalWasteType.LARGE_ITEM,
-                days = dto.largeItemDisposalDays,
+                days = null,
                 start = dto.largeItemStartTime,
                 end = dto.largeItemEndTime,
                 method = dto.largeItemMethod,

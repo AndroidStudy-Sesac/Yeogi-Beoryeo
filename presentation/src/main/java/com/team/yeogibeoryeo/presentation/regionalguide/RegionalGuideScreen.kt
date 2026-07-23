@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
-import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -37,21 +36,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.presentation.R
@@ -72,7 +68,6 @@ import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandi
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTime
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun RegionalGuideRoute(
@@ -80,13 +75,13 @@ fun RegionalGuideRoute(
     initialKeyword: String? = null,
     initialAddress: String? = null,
     initialFavoriteTargetId: String? = null,
+    onOpenExternalUrl: (String) -> Unit = {},
     viewModel: RegionalGuideViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val searchKeywordRegionNameParts by viewModel.searchKeywordRegionNameParts.collectAsStateWithLifecycle()
     val regionSelectorUiState by viewModel.regionSelectorUiState.collectAsStateWithLifecycle()
-    val currentContext by rememberUpdatedState(LocalContext.current)
     val snackbarHostState = remember { SnackbarHostState() }
     val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
     val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
@@ -134,13 +129,7 @@ fun RegionalGuideRoute(
         onCandidateListScrollPositionChange = viewModel::onCandidateListScrollPositionChanged,
         onRestoreCandidates = viewModel::restoreCandidatesFromDetail,
         onFavoriteClick = viewModel::onFavoriteClick,
-        onPublicNoticeClick = {
-            runCatching {
-                currentContext.startActivity(
-                    Intent(Intent.ACTION_VIEW, REGIONAL_GUIDE_LINKS_URL.toUri()),
-                )
-            }.isSuccess
-        },
+        onPublicNoticeClick = { onOpenExternalUrl(REGIONAL_GUIDE_LINKS_URL) },
         snackbarHostState = snackbarHostState,
         modifier = modifier.statusBarsPadding(),
     )
@@ -170,14 +159,12 @@ fun RegionalGuideScreen(
     onRegionSelectorDropdownDismissed: () -> Unit = {},
     onRestoreCandidates: () -> Boolean = { false },
     onFavoriteClick: () -> Unit = {},
-    onPublicNoticeClick: () -> Boolean = { true },
+    onPublicNoticeClick: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var isRegionSelectorExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val coroutineScope = rememberCoroutineScope()
-    val publicNoticeOpenFailedMessage = stringResource(R.string.item_guide_action_open_failed_message)
     val selectedRegionText = regionSelectorUiState.selectedRegionParts.toRegionalGuideSelectorText()
     val displayedSearchKeyword = searchKeywordRegionNameParts
         ?.toRegionalGuideSelectorText()
@@ -215,12 +202,6 @@ fun RegionalGuideScreen(
     fun collapseRegionSelector() {
         if (isRegionSelectorExpanded) {
             isRegionSelectorExpanded = false
-        }
-    }
-
-    fun showPublicNoticeOpenFailedMessage() {
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar(publicNoticeOpenFailedMessage)
         }
     }
 
@@ -489,11 +470,7 @@ fun RegionalGuideScreen(
                         onRetryClick = onRetryClick,
                         onEmptyActionClick = ::handleEmptyAction,
                         onFavoriteClick = onFavoriteClick,
-                        onPublicNoticeClick = {
-                            if (!onPublicNoticeClick()) {
-                                showPublicNoticeOpenFailedMessage()
-                            }
-                        },
+                        onPublicNoticeClick = onPublicNoticeClick,
                     )
 
                     if (shouldScrollWholeScreen) {

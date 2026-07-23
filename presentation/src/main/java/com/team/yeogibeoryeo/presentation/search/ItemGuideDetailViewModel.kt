@@ -115,17 +115,6 @@ constructor(
         }
     }
 
-    fun showOfficialGuideOpenFailedMessage() {
-        viewModelScope.launch {
-            _events.emit(
-                ItemGuideDetailEvent.ShowMessage(
-                    messageResId = R.string.item_guide_action_open_failed_message,
-                    icon = ItemGuideDetailMessageIcon.Warning,
-                ),
-            )
-        }
-    }
-
     private fun observeFavorite(guide: DisposalItemGuide) {
         favoriteJob =
             viewModelScope.launch {

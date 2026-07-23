@@ -14,7 +14,7 @@ object MapLocationNotices {
     val PermissionDenied = MapLocationNotice(
         titleResId = R.string.map_location_permission_denied_title,
         messageResId = R.string.map_location_permission_denied_message,
-        action = MapLocationNoticeAction.OpenAppSettings,
+        action = MapLocationNoticeAction.RequestLocationPermission,
     )
 
     val LocationServiceDisabled = MapLocationNotice(

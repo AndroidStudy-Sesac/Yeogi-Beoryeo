@@ -1,11 +1,9 @@
 package com.team.yeogibeoryeo.presentation.search
 
-import android.content.Intent
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.core.net.toUri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Button
@@ -43,6 +41,7 @@ fun ItemGuideDetailRoute(
     guideId: String,
     onBackClick: () -> Unit,
     onCollectionSpotTypeClick: (CollectionSpotType) -> Unit,
+    onOpenExternalUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     viewModel: ItemGuideDetailViewModel = hiltViewModel(),
@@ -96,15 +95,7 @@ fun ItemGuideDetailRoute(
                     onBackClick = onBackClick,
                     onFavoriteClick = viewModel::toggleFavorite,
                     onCollectionSpotTypeClick = onCollectionSpotTypeClick,
-                    onOfficialGuideClick = { url ->
-                        runCatching {
-                            currentContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, url.toUri()),
-                            )
-                        }.onFailure {
-                            viewModel.showOfficialGuideOpenFailedMessage()
-                        }
-                    },
+                    onOfficialGuideClick = onOpenExternalUrl,
                     onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
                     modifier = Modifier.padding(innerPadding),
                 )

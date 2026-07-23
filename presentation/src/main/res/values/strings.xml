@@ -1,6 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="item_search_query_label">무엇을 버리시나요?</string>
     <string name="item_search_screen_title">품목 검색</string>
+    <string name="item_search_result_query">‘%1$s’ 검색 결과</string>
     <string name="item_search_title">여기 버려</string>
     <string name="item_search_description">품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.</string>
     <string name="item_search_greeting">어서오세요!</string>
@@ -205,7 +206,6 @@
     <string name="item_guide_action_find_hazardous_waste_bin_description">전용수거함 위치를 확인할 수 있습니다.</string>
     <string name="item_guide_action_free_pickup">무상방문수거 안내 보기</string>
     <string name="item_guide_action_free_pickup_description">방문수거는 지도 장소가 아니라 예약 안내로 확인합니다.</string>
-    <string name="item_guide_action_open_failed_message">공식 안내를 열 수 있는 앱이 없습니다. 브라우저 앱을 설치하거나 활성화한 뒤 다시 시도해주세요.</string>
     <string name="back_action">뒤로가기</string>
     <string name="favorite_add_action">즐겨찾기 추가</string>
     <string name="favorite_remove_action">즐겨찾기 해제</string>
@@ -227,6 +227,7 @@
     <string name="quick_category_click_action">배출 방법 보기</string>
     <string name="settings_action">설정</string>
     <string name="settings_title">설정</string>
+    <string name="settings_app_guide_title">앱 사용 가이드</string>
     <string name="settings_notice_title">공지사항</string>
     <string name="settings_contact_title">문의하기</string>
     <string name="settings_app_info_title">앱 정보</string>
@@ -452,14 +453,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.]]></string>
     <string name="map_filter_empty_spot_type_hazardous_waste_bin">생활계 유해폐기물 수거함</string>
     <string name="map_filter_empty_spot_type_other">기타 수거 장소</string>
     <string name="map_location_permission_denied_title">위치 권한이 필요합니다.</string>
-    <string name="map_location_permission_denied_message">현재 위치 검색은 정확한 위치 권한을 허용하면 사용할 수 있어요. 직접 동/읍/면을 검색할 수도 있습니다.</string>
+    <string name="map_location_permission_denied_message">현재 위치 주변을 찾으려면 위치 권한이 필요해요. 권한을 허용하지 않아도 동/읍/면을 직접 검색해서 수거 장소를 찾을 수 있습니다.</string>
     <string name="map_location_service_disabled_title">위치 서비스가 꺼져 있습니다.</string>
     <string name="map_location_service_disabled_message">기기의 위치 서비스가 꺼져 있어 현재 위치를 확인할 수 없어요. 위치 서비스를 켠 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
     <string name="map_current_location_unavailable_title">현재 위치를 확인하지 못했습니다.</string>
     <string name="map_current_location_unavailable_message">현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
     <string name="map_search_failed_title">검색에 실패했습니다.</string>
+    <string name="map_location_notice_request_permission">위치 권한 허용</string>
     <string name="map_location_notice_open_app_settings">앱 설정 열기</string>
     <string name="map_location_notice_open_location_settings">위치 설정 열기</string>
+    <string name="map_current_location_guide_title">현재 위치 버튼으로 주변 수거 장소를 찾을 수 있어요</string>
+    <string name="map_current_location_guide_description">이 버튼을 누르면 위치 권한을 허용하고 현재 위치 주변의 수거 장소를 검색할 수 있어요. 권한을 허용하지 않아도 동/읍/면을 직접 검색해서 사용할 수 있습니다.</string>
+    <string name="map_current_location_guide_confirm">확인</string>
     <string name="map_regional_guide_action">이 지역 배출 정보 보기</string>
     <string name="map_nearby_list_loading">주변 목록 준비 중</string>
     <string name="map_spot_detail_back_to_list">목록으로</string>

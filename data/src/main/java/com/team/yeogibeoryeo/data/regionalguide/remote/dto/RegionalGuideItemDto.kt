@@ -41,7 +41,6 @@ data class RegionalGuideItemDto(
     @SerialName("RCYCL_EMSN_MTHD") val recycleMethod: String? = null,
 
     // 대형 폐기물
-    @SerialName("TMPRY_BULK_WASTE_EMSN_DOW") val largeItemDisposalDays: String? = null,
     @SerialName("TMPRY_BULK_WASTE_EMSN_PLC") val largeItemDisposalPlace: String? = null,
     @SerialName("TMPRY_BULK_WASTE_EMSN_BGNG_TM") val largeItemStartTime: String? = null,
     @SerialName("TMPRY_BULK_WASTE_EMSN_END_TM") val largeItemEndTime: String? = null,
