@@ -7,20 +7,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,21 +22,19 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
-import com.team.yeogibeoryeo.presentation.common.components.MessageSnackbar
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import com.team.yeogibeoryeo.presentation.search.model.toUsefulGuideContent
-import kotlinx.coroutines.launch
 
 @Composable
 fun ItemUsefulGuideRoute(
     guideType: ItemUsefulGuideType,
     onBackClick: () -> Unit,
     onSmallEWasteClick: (CollectionSpotType) -> Unit,
-    onFreePickupGuideClick: () -> Boolean,
-    onOfficialSiteClick: (String) -> Boolean,
+    onFreePickupGuideClick: () -> Unit,
+    onOfficialSiteClick: (String) -> Unit,
     onRegionalGuideClick: () -> Unit,
     onItemSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -53,14 +43,6 @@ fun ItemUsefulGuideRoute(
     val content = guideType.toUsefulGuideContent()
     val spacing = ItemSearchLayoutDefaults.spacing
     val listState = rememberLazyListState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    val openFailedMessage = stringResource(R.string.item_guide_action_open_failed_message)
-    fun showOpenFailedMessage() {
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar(openFailedMessage)
-        }
-    }
     val detailTitle =
         if (guideType == ItemUsefulGuideType.SMALL_E_WASTE) {
             stringResource(R.string.item_useful_guide_small_e_waste_method_title)
@@ -98,21 +80,6 @@ fun ItemUsefulGuideRoute(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0.dp),
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { snackbarData ->
-                MessageSnackbar(
-                    message = snackbarData.visuals.message,
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Filled.ErrorOutline,
-                            contentDescription = null,
-                            modifier = Modifier.size(SnackbarIconSize),
-                            tint = MaterialTheme.colorScheme.tertiary,
-                        )
-                    },
-                )
-            }
-        },
         topBar = {
             AppTopBar(
                 navigationIcon = {
@@ -184,11 +151,7 @@ fun ItemUsefulGuideRoute(
                         ItemGuideActionButton(
                             label = stringResource(R.string.item_guide_action_free_pickup),
                             iconResId = R.drawable.ic_disposal_route_report,
-                            onClick = {
-                                if (!onFreePickupGuideClick()) {
-                                    showOpenFailedMessage()
-                                }
-                            },
+                            onClick = onFreePickupGuideClick,
                             prominent = false,
                         )
                     }
@@ -208,11 +171,7 @@ fun ItemUsefulGuideRoute(
                             ItemGuideActionButton(
                                 label = stringResource(site.labelResId),
                                 iconResId = CommonR.drawable.ic_action_search,
-                                onClick = {
-                                    if (!onOfficialSiteClick(site.url)) {
-                                        showOpenFailedMessage()
-                                    }
-                                },
+                                onClick = { onOfficialSiteClick(site.url) },
                                 prominent = false,
                             )
                         }
@@ -222,5 +181,3 @@ fun ItemUsefulGuideRoute(
         }
     }
 }
-
-private val SnackbarIconSize = 20.dp

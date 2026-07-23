@@ -73,6 +73,15 @@ fun YeogiBeoryeoNavHost(
     appGuideViewModel: AppGuideViewModel = hiltViewModel(),
 ) {
     val currentContext by rememberUpdatedState(LocalContext.current)
+    val ctaPreconditionState = rememberCtaPreconditionState(
+        onOpenMap = { type ->
+            navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
+                launchSingleTop = true
+                restoreState = false
+            }
+        },
+        onOpenExternalUrl = currentContext::tryOpenExternalUrl,
+    )
     val layoutDirection = LocalLayoutDirection.current
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentDestination = currentBackStackEntry?.destination
@@ -239,6 +248,7 @@ fun YeogiBeoryeoNavHost(
                         initialKeyword = route.initialKeyword,
                         initialAddress = route.initialAddress,
                         initialFavoriteTargetId = route.initialFavoriteTargetId,
+                        onOpenExternalUrl = ctaPreconditionState::requestExternalUrl,
                     )
                 }
 
@@ -382,7 +392,7 @@ fun YeogiBeoryeoNavHost(
                             currentContext.openAppSettings()
                         },
                         onOpenPrivacyPolicyClick = {
-                            currentContext.openUrl(PRIVACY_POLICY_URL)
+                            ctaPreconditionState.requestExternalUrl(PRIVACY_POLICY_URL)
                         },
                         onOpenNaverMapLegalNoticeClick = {
                             currentContext.openNaverMapLegalNotice()
@@ -390,7 +400,9 @@ fun YeogiBeoryeoNavHost(
                         onOpenNaverMapOpenSourceLicenseClick = {
                             currentContext.openNaverMapOpenSourceLicense()
                         },
-                        onOpenSourceClick = currentContext::openUrl,
+                        onOpenSourceClick = { url ->
+                            ctaPreconditionState.requestExternalUrl(url)
+                        },
                         onBottomBarVisibilityChanged = { isVisible ->
                             if (isSettingsDetailScreen) {
                                 isBottomBarVisible = isVisible
@@ -404,26 +416,11 @@ fun YeogiBeoryeoNavHost(
                     ItemUsefulGuideScreenRoute(
                         guideType = route.guideType.toItemUsefulGuideType(),
                         onBackClick = navController::popBackStack,
-                        onSmallEWasteClick = { type ->
-                            navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
+                        onSmallEWasteClick = ctaPreconditionState::requestMap,
                         onFreePickupGuideClick = {
-                            runCatching {
-                                currentContext.startActivity(
-                                    Intent(Intent.ACTION_VIEW, FreePickupGuideUrl.toUri()),
-                                )
-                            }.isSuccess
+                            ctaPreconditionState.requestExternalUrl(FREE_PICKUP_GUIDE_URL)
                         },
-                        onOfficialSiteClick = { url ->
-                            runCatching {
-                                currentContext.startActivity(
-                                    Intent(Intent.ACTION_VIEW, url.toUri()),
-                                )
-                            }.isSuccess
-                        },
+                        onOfficialSiteClick = ctaPreconditionState::requestExternalUrl,
                         onRegionalGuideClick = {
                             navController.navigate(RegionalGuideRoute()) {
                                 launchSingleTop = true
@@ -444,12 +441,8 @@ fun YeogiBeoryeoNavHost(
                     ItemGuideDetailScreenRoute(
                         guideId = route.guideId,
                         onBackClick = navController::popBackStack,
-                        onCollectionSpotTypeClick = { type ->
-                            navController.navigate(MapRoute(initialSpotType = type.toRouteType())) {
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
+                        onCollectionSpotTypeClick = ctaPreconditionState::requestMap,
+                        onOpenExternalUrl = ctaPreconditionState::requestExternalUrl,
                         onBottomBarVisibilityChanged = { isVisible ->
                             if (isItemDetailScreen) {
                                 isBottomBarVisible = isVisible
@@ -469,6 +462,8 @@ fun YeogiBeoryeoNavHost(
                 onSkip = appGuideViewModel::skipGuide,
             )
         }
+
+        CtaPreconditionDialogHost(state = ctaPreconditionState)
     }
 }
 
@@ -494,15 +489,14 @@ private const val MAP_BOTTOM_TAB_INDEX = 1
 private const val REGIONAL_GUIDE_BOTTOM_TAB_INDEX = 2
 private const val FAVORITES_BOTTOM_TAB_INDEX = 3
 
-private const val FreePickupGuideUrl = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
+private const val FREE_PICKUP_GUIDE_URL = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
 private const val PRIVACY_POLICY_URL =
     "https://androidstudy-sesac.github.io/Yeogi-Beoryeo/privacy-policy/"
 
-private fun android.content.Context.openUrl(url: String) {
+private fun android.content.Context.tryOpenExternalUrl(url: String): Boolean =
     runCatching {
         startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-    }
-}
+    }.isSuccess
 
 private fun android.content.Context.openAppSettings() {
     val uri = Uri.fromParts("package", packageName, null)
