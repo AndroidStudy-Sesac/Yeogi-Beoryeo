@@ -35,7 +35,7 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
                 MapLocationNotices.PermissionDenied.messageResId,
                 viewModel.uiState.value.locationNotice?.messageResId,
             )
-            assertEquals(MapLocationNoticeAction.OpenAppSettings, viewModel.uiState.value.locationNotice?.action)
+            assertEquals(MapLocationNoticeAction.RequestLocationPermission, viewModel.uiState.value.locationNotice?.action)
         }
 
     @Test

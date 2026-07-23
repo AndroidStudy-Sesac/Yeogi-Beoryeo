@@ -63,9 +63,7 @@ fun ThreeStepMapBottomSheet(
         val sheetHeightPx = with(density) {
             sheetHeight.toPx()
         }
-        val hiddenOffset = with(density) {
-            (sheetHeight - Dp.Hairline).toPx().coerceIn(0f, sheetHeightPx)
-        }
+        val hiddenOffset = sheetHeightPx
         val expandedOffset = with(density) {
             (sheetHeight - expandedVisibleHeight).toPx().coerceIn(0f, hiddenOffset)
         }

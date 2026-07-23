@@ -814,6 +814,7 @@ private val RegionSelectionLazyColumnBottomExtraPadding = 96.dp
 @StringRes
 private fun MapLocationNoticeAction.toActionLabelResId(): Int {
     return when (this) {
+        MapLocationNoticeAction.RequestLocationPermission -> R.string.map_location_notice_request_permission
         MapLocationNoticeAction.OpenAppSettings -> R.string.map_location_notice_open_app_settings
         MapLocationNoticeAction.OpenLocationSettings -> R.string.map_location_notice_open_location_settings
     }
