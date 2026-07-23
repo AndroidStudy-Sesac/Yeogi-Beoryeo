@@ -766,7 +766,7 @@ private fun regionSelectionContentFitHeight(
     canNavigateBackToRegionCandidates: Boolean,
     fontScale: Float,
 ): Dp {
-    val heightScale = fontScale.coerceIn(1f, MapBottomSheetMaxHeightFontScale)
+    val heightScale = fontScale.coerceIn(1f, MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE)
     val contentHeight = if (detailCandidate == null) {
         MapBottomSheetHeaderEstimatedHeight +
             MapRegionSelectionDescriptionEstimatedHeight * heightScale +
@@ -804,10 +804,10 @@ private fun stateMessageContentFitHeight(
     bottomContentPadding: Dp,
     fontScale: Float,
 ): Dp {
-    val fontScaleProgress = ((fontScale - 1f) / (MapBottomSheetMaxHeightFontScale - 1f))
+    val fontScaleProgress = ((fontScale - 1f) / (MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE - 1f))
         .coerceIn(0f, 1f)
-    val maxExpandedRatio = MapStateMessageBaseMaxExpandedRatio +
-        (MapStateMessageLargeFontMaxExpandedRatio - MapStateMessageBaseMaxExpandedRatio) *
+    val maxExpandedRatio = MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO +
+        (MAP_STATE_MESSAGE_LARGE_FONT_MAX_EXPANDED_RATIO - MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO) *
         fontScaleProgress
     val contentHeight = MapStateMessageBaseExpandedHeight +
         MapStateMessageLargeFontExtraExpandedHeight * fontScaleProgress +
@@ -954,9 +954,9 @@ private val MapRegionDetailBackButtonEstimatedHeight = 60.dp
 private val MapRegionSelectionRowEstimatedHeight = 68.dp
 private val MapRegionDetailAllRowEstimatedHeight = 92.dp
 private val MapRegionSelectionBottomExtraPadding = 24.dp
-private const val MapBottomSheetMaxHeightFontScale = 2f
-private const val MapStateMessageBaseMaxExpandedRatio = 0.52f
-private const val MapStateMessageLargeFontMaxExpandedRatio = 0.72f
+private const val MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE = 2f
+private const val MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO = 0.52f
+private const val MAP_STATE_MESSAGE_LARGE_FONT_MAX_EXPANDED_RATIO = 0.72f
 private val MapStateMessageBaseExpandedHeight = 360.dp
 private val MapStateMessageLargeFontExtraExpandedHeight = 160.dp
 
