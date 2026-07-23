@@ -291,9 +291,6 @@ private fun CollectionSpotMapContent(
     val hasStateMessageContent = hasNoticeOrError ||
         hasEmptyResult ||
         (uiState.isLoading && !isSpotSearchLoading)
-    val isNoticeOrErrorOnly = hasNoticeOrError &&
-        uiState.spots.isEmpty() &&
-        selectedSpot == null
     val mapLocationTrackingMode = when {
         !isLocationPermissionGranted -> LocationTrackingMode.None
         locationTrackingMode == LocationTrackingMode.None -> LocationTrackingMode.NoFollow
@@ -403,12 +400,11 @@ private fun CollectionSpotMapContent(
         }
     }
 
-    LaunchedEffect(shouldRenderBottomSheet, sheetLevel, mapUiMode, isNoticeOrErrorOnly) {
+    LaunchedEffect(shouldRenderBottomSheet, sheetLevel, mapUiMode) {
         val shouldHideBottomBar =
             shouldRenderBottomSheet &&
                 sheetLevel != MapSheetLevel.Hidden &&
-                mapUiMode != MapUiMode.Browsing &&
-                !isNoticeOrErrorOnly
+                mapUiMode != MapUiMode.Browsing
 
         onBottomBarVisibilityChanged(!shouldHideBottomBar)
     }
@@ -442,6 +438,13 @@ private fun CollectionSpotMapContent(
             regionCandidateCount = uiState.regionSearchCandidates.size,
             regionDetailCandidate = uiState.regionDetailSearchCandidate,
             canNavigateBackToRegionCandidates = hasRegionCandidates,
+            fontScale = density.fontScale,
+        )
+        val bottomSheetMediumVisibleHeight = bottomSheetMediumVisibleHeight(
+            hasStateMessageContent = hasStateMessageContent,
+            maxHeight = maxHeight,
+            bottomContentPadding = bottomContentPadding,
+            fontScale = density.fontScale,
         )
         val searchBarTopPadding = with(density) {
             WindowInsets.statusBars.getTop(density).toDp()
@@ -449,6 +452,7 @@ private fun CollectionSpotMapContent(
         val naverLogoBottomPadding = naverLogoBottomPadding(
             shouldShowBottomSheet = shouldRenderBottomSheet,
             visibleSheetHeight = visibleSheetHeight,
+            bottomContentPadding = bottomContentPadding,
         )
         val shouldShowMapOverlayControls = shouldShowMapOverlayControls(
             mapUiMode = mapUiMode,
@@ -548,6 +552,8 @@ private fun CollectionSpotMapContent(
                             sheetLevel = sheetLevel,
                             shouldShowBottomSheet = shouldRenderBottomSheet,
                             visibleSheetHeight = visibleSheetHeight,
+                            mediumVisibleHeight = bottomSheetMediumVisibleHeight,
+                            bottomContentPadding = bottomContentPadding,
                         ),
                     ),
             ) {
@@ -586,6 +592,7 @@ private fun CollectionSpotMapContent(
                     sheetLevel = level
                 },
                 modifier = Modifier.align(Alignment.BottomCenter),
+                mediumVisibleHeight = bottomSheetMediumVisibleHeight,
                 maxExpandedVisibleHeight = bottomSheetMaxExpandedHeight,
                 onVisibleHeightChanged = { height ->
                     visibleSheetHeight = height
@@ -689,6 +696,7 @@ private fun bottomSheetMaxExpandedHeight(
     regionCandidateCount: Int,
     regionDetailCandidate: MapRegionSearchCandidate?,
     canNavigateBackToRegionCandidates: Boolean,
+    fontScale: Float,
 ): Dp? {
     return when {
         mapUiMode == MapUiMode.SpotDetail -> null
@@ -698,8 +706,13 @@ private fun bottomSheetMaxExpandedHeight(
             candidateCount = regionCandidateCount,
             detailCandidate = regionDetailCandidate,
             canNavigateBackToRegionCandidates = canNavigateBackToRegionCandidates,
+            fontScale = fontScale,
         )
-        hasStateMessageContent -> MapStateMessageBottomSheetMaxExpandedHeight
+        hasStateMessageContent -> stateMessageContentFitHeight(
+            maxHeight = maxHeight,
+            bottomContentPadding = bottomContentPadding,
+            fontScale = fontScale,
+        )
         else -> null
     }
 }
@@ -710,11 +723,13 @@ private fun regionSelectionContentFitHeight(
     candidateCount: Int,
     detailCandidate: MapRegionSearchCandidate?,
     canNavigateBackToRegionCandidates: Boolean,
+    fontScale: Float,
 ): Dp {
+    val heightScale = fontScale.coerceIn(1f, MapBottomSheetMaxHeightFontScale)
     val contentHeight = if (detailCandidate == null) {
         MapBottomSheetHeaderEstimatedHeight +
-            MapRegionSelectionDescriptionEstimatedHeight +
-            MapRegionSelectionRowEstimatedHeight * candidateCount.toFloat() +
+            MapRegionSelectionDescriptionEstimatedHeight * heightScale +
+            MapRegionSelectionRowEstimatedHeight * candidateCount.toFloat() * heightScale +
             bottomContentPadding +
             MapRegionSelectionBottomExtraPadding
     } else {
@@ -729,10 +744,10 @@ private fun regionSelectionContentFitHeight(
         }
 
         MapBottomSheetHeaderEstimatedHeight +
-            backButtonHeight +
-            MapRegionDetailDescriptionEstimatedHeight +
-            MapRegionSelectionRowEstimatedHeight * detailKeywordCount.toFloat() +
-            MapRegionDetailAllRowEstimatedHeight +
+            backButtonHeight * heightScale +
+            MapRegionDetailDescriptionEstimatedHeight * heightScale +
+            MapRegionSelectionRowEstimatedHeight * detailKeywordCount.toFloat() * heightScale +
+            MapRegionDetailAllRowEstimatedHeight * heightScale +
             bottomContentPadding +
             MapRegionSelectionBottomExtraPadding
     }
@@ -743,23 +758,63 @@ private fun regionSelectionContentFitHeight(
         .coerceAtMost(maxContentFitHeight)
 }
 
+private fun stateMessageContentFitHeight(
+    maxHeight: Dp,
+    bottomContentPadding: Dp,
+    fontScale: Float,
+): Dp {
+    val fontScaleProgress = ((fontScale - 1f) / (MapBottomSheetMaxHeightFontScale - 1f))
+        .coerceIn(0f, 1f)
+    val maxExpandedRatio = MapStateMessageBaseMaxExpandedRatio +
+        (MapStateMessageLargeFontMaxExpandedRatio - MapStateMessageBaseMaxExpandedRatio) *
+        fontScaleProgress
+    val contentHeight = MapStateMessageBaseExpandedHeight +
+        MapStateMessageLargeFontExtraExpandedHeight * fontScaleProgress +
+        bottomContentPadding
+
+    return contentHeight
+        .coerceAtLeast(MapResultBottomSheetPeekHeight)
+        .coerceAtMost(maxHeight * maxExpandedRatio)
+}
+
+private fun bottomSheetMediumVisibleHeight(
+    hasStateMessageContent: Boolean,
+    maxHeight: Dp,
+    bottomContentPadding: Dp,
+    fontScale: Float,
+): Dp {
+    return if (hasStateMessageContent) {
+        stateMessageContentFitHeight(
+            maxHeight = maxHeight,
+            bottomContentPadding = bottomContentPadding,
+            fontScale = fontScale,
+        )
+    } else {
+        MapSpotDetailBottomSheetPeekHeight
+    }
+}
+
 private fun myLocationButtonBottomPadding(
     sheetLevel: MapSheetLevel,
     shouldShowBottomSheet: Boolean,
     visibleSheetHeight: Dp,
+    mediumVisibleHeight: Dp,
+    bottomContentPadding: Dp,
 ) = if (!shouldShowBottomSheet) {
     MyLocationButtonBottomPadding
 } else {
+    val sheetBottomPadding = bottomContentPadding + MyLocationButtonBottomPadding
+
     when (sheetLevel) {
         MapSheetLevel.Hidden -> MyLocationButtonBottomPadding
         MapSheetLevel.Peek -> maxOf(
             visibleSheetHeight,
             MapResultBottomSheetPeekHeight,
-        ) + MyLocationButtonBottomPadding
+        ) + sheetBottomPadding
         MapSheetLevel.Medium -> maxOf(
             visibleSheetHeight,
-            MapSpotDetailBottomSheetPeekHeight,
-        ) + MyLocationButtonBottomPadding
+            mediumVisibleHeight,
+        ) + sheetBottomPadding
         MapSheetLevel.Half,
         MapSheetLevel.Expanded -> MyLocationButtonBottomPadding
     }
@@ -768,10 +823,11 @@ private fun myLocationButtonBottomPadding(
 private fun naverLogoBottomPadding(
     shouldShowBottomSheet: Boolean,
     visibleSheetHeight: Dp,
+    bottomContentPadding: Dp,
 ) = if (!shouldShowBottomSheet) {
     NaverLogoBottomPadding
 } else {
-    visibleSheetHeight + NaverLogoBottomPadding
+    visibleSheetHeight + bottomContentPadding + NaverLogoBottomPadding
 }
 
 private fun shouldShowMapOverlayControls(
@@ -855,7 +911,11 @@ private val MapRegionDetailBackButtonEstimatedHeight = 60.dp
 private val MapRegionSelectionRowEstimatedHeight = 68.dp
 private val MapRegionDetailAllRowEstimatedHeight = 92.dp
 private val MapRegionSelectionBottomExtraPadding = 24.dp
-private val MapStateMessageBottomSheetMaxExpandedHeight = 360.dp
+private const val MapBottomSheetMaxHeightFontScale = 2f
+private const val MapStateMessageBaseMaxExpandedRatio = 0.52f
+private const val MapStateMessageLargeFontMaxExpandedRatio = 0.72f
+private val MapStateMessageBaseExpandedHeight = 360.dp
+private val MapStateMessageLargeFontExtraExpandedHeight = 160.dp
 
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
     return when (this) {
