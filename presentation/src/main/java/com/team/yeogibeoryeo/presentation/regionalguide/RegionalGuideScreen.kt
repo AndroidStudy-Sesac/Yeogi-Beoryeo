@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
-import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -43,14 +42,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.presentation.R
@@ -79,13 +76,13 @@ fun RegionalGuideRoute(
     initialKeyword: String? = null,
     initialAddress: String? = null,
     initialFavoriteTargetId: String? = null,
+    onOpenExternalUrl: (String) -> Boolean = { true },
     viewModel: RegionalGuideViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val searchKeywordRegionNameParts by viewModel.searchKeywordRegionNameParts.collectAsStateWithLifecycle()
     val regionSelectorUiState by viewModel.regionSelectorUiState.collectAsStateWithLifecycle()
-    val currentContext by rememberUpdatedState(LocalContext.current)
     val snackbarHostState = remember { SnackbarHostState() }
     val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
     val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
@@ -133,13 +130,7 @@ fun RegionalGuideRoute(
         onCandidateListScrollPositionChange = viewModel::onCandidateListScrollPositionChanged,
         onRestoreCandidates = viewModel::restoreCandidatesFromDetail,
         onFavoriteClick = viewModel::onFavoriteClick,
-        onPublicNoticeClick = {
-            runCatching {
-                currentContext.startActivity(
-                    Intent(Intent.ACTION_VIEW, REGIONAL_GUIDE_LINKS_URL.toUri()),
-                )
-            }.isSuccess
-        },
+        onPublicNoticeClick = { onOpenExternalUrl(REGIONAL_GUIDE_LINKS_URL) },
         snackbarHostState = snackbarHostState,
         modifier = modifier.statusBarsPadding(),
     )
