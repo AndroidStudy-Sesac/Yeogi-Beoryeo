@@ -106,19 +106,6 @@ fun CollectionSpotMapScreen(
     val showCurrentLocationGuide = mapLocationGuideUiState.isReady &&
         mapLocationGuideUiState.isVisible
 
-    LaunchedEffect(showCurrentLocationGuide) {
-        if (showCurrentLocationGuide) {
-            onBottomBarVisibilityChanged(true)
-        }
-        onBottomBarInputEnabledChanged(!showCurrentLocationGuide)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            onBottomBarInputEnabledChanged(true)
-        }
-    }
-
     LaunchedEffect(hasFineLocationPermission) {
         if (!hasFineLocationPermission) {
             hasGrantedLocationPermissionInSession = false
@@ -225,6 +212,7 @@ fun CollectionSpotMapScreen(
             onSpotDetailDismiss = viewModel::clearSelectedSpot,
             onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
             onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
+            onBottomBarInputEnabledChanged = onBottomBarInputEnabledChanged,
             onRegionalGuideClick = onRegionalGuideClick,
             modifier = Modifier.fillMaxSize(),
         )
@@ -273,6 +261,7 @@ private fun CollectionSpotMapContent(
     onSpotDetailDismiss: () -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
     onBottomBarVisibilityChanged: (Boolean) -> Unit,
+    onBottomBarInputEnabledChanged: (Boolean) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -289,6 +278,15 @@ private fun CollectionSpotMapContent(
     var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
     var currentLocationButtonBounds by remember { mutableStateOf<Rect?>(null) }
     var visibleSheetHeight by remember { mutableStateOf(0.dp) }
+    val currentLocationGuideTargetBounds = if (
+        showCurrentLocationGuide &&
+        mapUiMode != MapUiMode.SpotDetail
+    ) {
+        currentLocationButtonBounds
+    } else {
+        null
+    }
+    val shouldShowCurrentLocationGuideOverlay = currentLocationGuideTargetBounds != null
     val shouldDeferBottomSheetForGuide = (!isCurrentLocationGuideReady || showCurrentLocationGuide) &&
         mapUiMode != MapUiMode.SpotDetail
     val shouldShowBottomSheet = uiState.shouldShowBottomSheet &&
@@ -435,6 +433,19 @@ private fun CollectionSpotMapContent(
         onBottomBarVisibilityChanged(!shouldHideBottomBar)
     }
 
+    LaunchedEffect(shouldShowCurrentLocationGuideOverlay) {
+        if (shouldShowCurrentLocationGuideOverlay) {
+            onBottomBarVisibilityChanged(true)
+        }
+        onBottomBarInputEnabledChanged(!shouldShowCurrentLocationGuideOverlay)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            onBottomBarInputEnabledChanged(true)
+        }
+    }
+
     LaunchedEffect(shouldRenderBottomSheet) {
         if (!shouldRenderBottomSheet) {
             visibleSheetHeight = 0.dp
@@ -484,7 +495,7 @@ private fun CollectionSpotMapContent(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (showCurrentLocationGuide) {
+                    if (shouldShowCurrentLocationGuideOverlay) {
                         Modifier.clearAndSetSemantics { }
                     } else {
                         Modifier
@@ -690,12 +701,7 @@ private fun CollectionSpotMapContent(
             }
         }
 
-        val guideTargetBounds = currentLocationButtonBounds
-        if (
-            showCurrentLocationGuide &&
-            guideTargetBounds != null &&
-            mapUiMode != MapUiMode.SpotDetail
-        ) {
+        currentLocationGuideTargetBounds?.let { guideTargetBounds ->
             MapCurrentLocationGuideOverlay(
                 targetBounds = guideTargetBounds,
                 onDismiss = onCurrentLocationGuideDismiss,
@@ -865,6 +871,7 @@ private fun CollectionSpotMapContentPreview() {
                 onSpotDetailDismiss = {},
                 onSpotFavoriteClick = {},
                 onBottomBarVisibilityChanged = {},
+                onBottomBarInputEnabledChanged = {},
                 onRegionalGuideClick = {},
             )
         }
