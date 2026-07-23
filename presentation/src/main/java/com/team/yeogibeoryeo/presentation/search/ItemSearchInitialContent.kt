@@ -76,7 +76,6 @@ fun ItemSearchInitialContent(
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
-    var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
     var handledScrollRestoreVersion by rememberSaveable {
         mutableIntStateOf(quickCategoryScrollRestoreVersion)
     }
@@ -207,7 +206,9 @@ fun ItemSearchInitialContent(
                             ),
                         )
                         AssistChip(
-                            onClick = { onQuickCategorySettingsClick(maxSelectedQuickCategoryCount) },
+                            onClick = {
+                                onQuickCategorySettingsClick(selectedQuickCategories.size)
+                            },
                             label = {
                                 Text(text = stringResource(R.string.quick_category_edit_action))
                             },
@@ -241,7 +242,6 @@ fun ItemSearchInitialContent(
                         onCollapseClick = onQuickCategoryCollapseClick,
                         screenHorizontalPadding = metrics.horizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,
-                        onVisibleCategoryCountChange = { maxSelectedQuickCategoryCount = it },
                     )
                 }
             }

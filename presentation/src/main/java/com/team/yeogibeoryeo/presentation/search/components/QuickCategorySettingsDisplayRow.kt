@@ -40,7 +40,7 @@ internal fun QuickCategorySettingsDisplayRow(
             .fillMaxWidth()
             .toggleable(
                 value = isSelected,
-                enabled = enabled,
+                enabled = true,
                 role = Role.Checkbox,
             ) {
                 onClick()

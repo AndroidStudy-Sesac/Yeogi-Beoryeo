@@ -16,7 +16,7 @@ fun QuickCategorySettingsRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val boundedMaxSelectedCount = maxSelectedCount.coerceAtLeast(0)
-    val selectedCategories = uiState.homeQuickCategories.take(boundedMaxSelectedCount).toSet()
+    val selectedCategories = uiState.homeQuickCategories.toSet()
 
     LaunchedEffect(boundedMaxSelectedCount) {
         viewModel.limitHomeQuickCategories(boundedMaxSelectedCount)

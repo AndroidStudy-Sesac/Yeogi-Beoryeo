@@ -180,7 +180,9 @@ fun ItemSearchScreen(
             onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
             onRegionalGuideSummaryRetryClick = onRegionalGuideSummaryRetryClick,
             onQuickCategoryClick = onQuickCategoryClick,
-            onQuickCategorySettingsClick = onQuickCategorySettingsClick,
+            onQuickCategorySettingsClick = {
+                onQuickCategorySettingsClick(uiState.homeQuickCategories.size)
+            },
             quickCategories = uiState.quickCategories,
             selectedQuickCategories = uiState.homeQuickCategories.toSet(),
             isQuickCategoryExpanded = uiState.isQuickCategoryExpanded,
