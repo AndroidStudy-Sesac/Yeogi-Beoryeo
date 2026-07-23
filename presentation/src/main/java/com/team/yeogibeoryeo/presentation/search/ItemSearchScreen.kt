@@ -39,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -292,6 +294,18 @@ fun ItemSearchScreen(
                                     .padding(horizontal = metrics.horizontalPadding),
                                 iconSize = metrics.searchIconSize,
                             )
+                            uiState.submittedQuery?.let { submittedQuery ->
+                                ItemSearchResultQuery(
+                                    query = submittedQuery,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            top = spacing.xs,
+                                            start = metrics.horizontalPadding,
+                                            end = metrics.horizontalPadding,
+                                        ),
+                                )
+                            }
                         }
                     }
 
@@ -355,6 +369,12 @@ fun ItemSearchScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
                 ) {
+                    if (!uiState.isLoading && uiState.errorMessageResId == null) {
+                        uiState.submittedQuery?.let { submittedQuery ->
+                            ItemSearchResultQuery(query = submittedQuery)
+                        }
+                    }
+
                     when {
                         uiState.isLoading -> {
                             ItemSearchLoadingContent(modifier = Modifier.fillMaxSize())
@@ -380,6 +400,19 @@ fun ItemSearchScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ItemSearchResultQuery(
+    query: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = stringResource(R.string.item_search_result_query, query),
+        modifier = modifier.semantics { heading() },
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
 }
 
 @Composable

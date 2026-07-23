@@ -65,6 +65,7 @@ class ItemSearchViewModelTest {
 
             assertEquals(listOf("유리"), repository.queries)
             assertEquals(expected, viewModel.uiState.value.guides)
+            assertEquals("유리", viewModel.uiState.value.submittedQuery)
             assertFalse(viewModel.uiState.value.isLoading)
             assertNull(viewModel.uiState.value.errorMessageResId)
         }
@@ -93,6 +94,7 @@ class ItemSearchViewModelTest {
 
             assertEquals(listOf("유리"), repository.queries)
             assertEquals("유리", viewModel.uiState.value.query)
+            assertEquals("유리", viewModel.uiState.value.submittedQuery)
             assertEquals(listOf("유리"), viewModel.uiState.value.guides.map { it.name })
         }
 
@@ -108,6 +110,42 @@ class ItemSearchViewModelTest {
 
             assertEquals(1, firstVersion)
             assertEquals(2, viewModel.uiState.value.searchResultVersion)
+        }
+
+    @Test
+    fun `연속 검색에서 새 제출 중에는 이전 결과를 제거한다`() =
+        runTest {
+            val secondResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val repository =
+                FakeRepository(
+                    onSearch = { query ->
+                        when (query) {
+                            "유리" -> listOf(sampleGuide("유리병"))
+                            "비닐" -> secondResult.await()
+                            else -> emptyList()
+                        }
+                    },
+                )
+            val viewModel = createViewModel(repository)
+
+            viewModel.search("유리")
+            viewModel.onQueryChange("비닐")
+
+            assertEquals("유리", viewModel.uiState.value.submittedQuery)
+            assertEquals(listOf("유리병"), viewModel.uiState.value.guides.map { it.name })
+
+            viewModel.search()
+
+            assertEquals("비닐", viewModel.uiState.value.query)
+            assertEquals("비닐", viewModel.uiState.value.submittedQuery)
+            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
+            assertEquals(true, viewModel.uiState.value.isLoading)
+
+            secondResult.complete(listOf(sampleGuide("비닐봉지")))
+            advanceUntilIdle()
+
+            assertEquals(listOf("비닐봉지"), viewModel.uiState.value.guides.map { it.name })
+            assertFalse(viewModel.uiState.value.isLoading)
         }
 
     @Test
@@ -139,10 +177,12 @@ class ItemSearchViewModelTest {
 
             assertNull(viewModel.uiState.value.errorMessageResId)
             assertEquals("비닐", viewModel.uiState.value.query)
+            assertNull(viewModel.uiState.value.submittedQuery)
+            assertFalse(viewModel.uiState.value.hasSearched)
         }
 
     @Test
-    fun `검색 결과 화면에서 검색어를 수정해도 이전 결과와 검색 상태를 유지한다`() =
+    fun `검색 결과 화면에서 검색어를 수정하면 입력과 제출 검색어를 분리한다`() =
         runTest {
             val repository = FakeRepository(onSearch = { listOf(sampleGuide("유리병")) })
             val viewModel = createViewModel(repository)
@@ -152,6 +192,7 @@ class ItemSearchViewModelTest {
             viewModel.onQueryChange("비닐")
 
             assertEquals("비닐", viewModel.uiState.value.query)
+            assertEquals("유리", viewModel.uiState.value.submittedQuery)
             assertEquals(listOf("유리병"), viewModel.uiState.value.guides.map { it.name })
             assertEquals(true, viewModel.uiState.value.hasSearched)
             assertFalse(viewModel.uiState.value.isLoading)
@@ -180,6 +221,7 @@ class ItemSearchViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf("비닐"), viewModel.uiState.value.guides.map { it.name })
+            assertEquals("비닐", viewModel.uiState.value.submittedQuery)
 
             firstResult.complete(listOf(sampleGuide("유리병")))
             advanceUntilIdle()
@@ -322,9 +364,34 @@ class ItemSearchViewModelTest {
             viewModel.clearSearch()
 
             assertEquals("", viewModel.uiState.value.query)
+            assertNull(viewModel.uiState.value.submittedQuery)
             assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
             assertFalse(viewModel.uiState.value.hasSearched)
             assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `검색 중 초기화하면 취소된 결과와 로딩 상태가 남지 않는다`() =
+        runTest {
+            val pendingResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val repository = FakeRepository(onSearch = { pendingResult.await() })
+            val viewModel = createViewModel(repository)
+
+            viewModel.onQueryChange("유리")
+            viewModel.search()
+
+            assertEquals(true, viewModel.uiState.value.isLoading)
+
+            viewModel.clearSearch()
+            pendingResult.complete(listOf(sampleGuide("유리병")))
+            advanceUntilIdle()
+
+            assertEquals("", viewModel.uiState.value.query)
+            assertNull(viewModel.uiState.value.submittedQuery)
+            assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
+            assertFalse(viewModel.uiState.value.hasSearched)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
     @Test
