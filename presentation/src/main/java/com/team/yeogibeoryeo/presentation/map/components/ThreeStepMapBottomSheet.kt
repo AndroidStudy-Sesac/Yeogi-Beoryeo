@@ -4,10 +4,14 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -43,7 +47,15 @@ fun ThreeStepMapBottomSheet(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val coroutineScope = rememberCoroutineScope()
-        val sheetHeight = (maxHeight - MapSheetTopMargin).coerceAtLeast(0.dp)
+        val navigationBarsBottomInset = with(density) {
+            WindowInsets.navigationBars.getBottom(density).toDp()
+        }
+        val safeDrawingBottomInset = with(density) {
+            WindowInsets.safeDrawing.getBottom(density).toDp()
+        }
+        val bottomInset = maxOf(navigationBarsBottomInset, safeDrawingBottomInset)
+        val sheetHeight = (maxHeight - MapSheetTopMargin - bottomInset)
+            .coerceAtLeast(0.dp)
         val minVisibleHeight = MapResultBottomSheetPeekHeight.coerceAtMost(sheetHeight)
         val expandedVisibleHeight = maxExpandedVisibleHeight
             ?.coerceIn(minVisibleHeight, sheetHeight)
@@ -156,6 +168,7 @@ fun ThreeStepMapBottomSheet(
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .padding(bottom = bottomInset)
                 .fillMaxWidth()
                 .height(sheetHeight)
                 .offset {
