@@ -1,9 +1,14 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -14,6 +19,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
@@ -22,6 +29,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
+@Suppress("TestFunctionName")
 class RegionalGuideScreenTest {
 
     @get:Rule
@@ -284,6 +292,51 @@ class RegionalGuideScreenTest {
         }
 
         composeTestRule.onNodeWithText("zone-12").assertIsDisplayed()
+    }
+
+    @Test
+    fun 가로_오류_화면에서_다시_시도_버튼을_스크롤해_실행할_수_있다() {
+        var retryCount = 0
+        val errorMessage = List(10) { "네트워크 연결을 확인한 뒤 다시 시도해 주세요." }
+            .joinToString(separator = "\n")
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.TopStart, unbounded = true)
+                        .requiredSize(width = 800.dp, height = 360.dp)
+                ) {
+                    RegionalGuideScreen(
+                        uiState = RegionalGuideUiState.Error(
+                            query = "서구",
+                            message = RegionalGuideErrorMessage.Dynamic(errorMessage),
+                        ),
+                        searchKeyword = "서구",
+                        regionSelectorUiState = RegionSelectorUiState(),
+                        onSearchKeywordChange = {},
+                        onSearchClick = {},
+                        onRetryClick = { retryCount += 1 },
+                        onEmptySearchActionClick = {},
+                        onSidoSelected = {},
+                        onSigunguSelected = {},
+                        onEupmyeondongSelected = {},
+                        onRegionSelectionSearchClick = {},
+                        onCandidateClick = {},
+                        onGuideCandidateClick = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("다시 시도")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+
+        composeTestRule.runOnIdle {
+            assertEquals(1, retryCount)
+        }
     }
 }
 

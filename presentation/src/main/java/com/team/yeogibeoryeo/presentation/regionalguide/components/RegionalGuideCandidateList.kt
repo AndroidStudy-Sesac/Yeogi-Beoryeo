@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -33,6 +34,7 @@ internal fun <T> RegionalGuideCandidateList(
     key: (T) -> Any,
     onCandidateClick: (T) -> Unit,
     modifier: Modifier = Modifier,
+    maxHeight: Dp = CANDIDATE_LIST_MAX_HEIGHT,
     scrollStateKey: Any = candidates.candidateListContentKey(key),
     initialScrollPosition: RegionalGuideCandidateListScrollPosition =
         RegionalGuideCandidateListScrollPosition.Initial,
@@ -61,7 +63,7 @@ internal fun <T> RegionalGuideCandidateList(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(max = CANDIDATE_LIST_MAX_HEIGHT)
+            .heightIn(max = maxHeight)
             .background(MaterialTheme.colorScheme.surface)
     ) {
         LazyColumn(

@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
@@ -35,6 +36,7 @@ fun RegionalGuideCandidateResult(
     candidates: List<RegionalGuideCandidateUiModel>,
     onCandidateClick: (RegionalGuideCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier,
+    candidateListMaxHeight: Dp = 260.dp,
     scrollStateKey: String = candidates.regionalGuideCandidateListScrollKey(),
     initialScrollPosition: RegionalGuideCandidateListScrollPosition =
         RegionalGuideCandidateListScrollPosition.Initial,
@@ -45,6 +47,7 @@ fun RegionalGuideCandidateResult(
             candidates = candidates,
             key = { candidate -> candidate.stableKey },
             onCandidateClick = onCandidateClick,
+            maxHeight = candidateListMaxHeight,
             scrollStateKey = scrollStateKey,
             initialScrollPosition = initialScrollPosition,
             onScrollPositionChange = onScrollPositionChange,

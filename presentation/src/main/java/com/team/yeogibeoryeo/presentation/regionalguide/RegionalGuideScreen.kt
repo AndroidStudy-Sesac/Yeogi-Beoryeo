@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -260,186 +261,222 @@ fun RegionalGuideScreen(
             }
         },
     ) { innerPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
         ) {
-            val headerModifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(top = 20.dp)
-                .then(
-                    if (collectionTypeGuideCandidatesState != null) {
-                        Modifier
-                            .weight(1f)
-                            .verticalScroll(collectionTypePanelScrollState)
-                    } else {
-                        Modifier
-                    }
-                )
+            val metrics = regionalGuideScreenMetricsSpec(
+                maxWidth = maxWidth,
+                maxHeight = maxHeight,
+            )
+            val shouldScrollWholeScreen =
+                metrics.isCompactLandscape &&
+                    (uiState is RegionalGuideUiState.Error || uiState is RegionalGuideUiState.Empty)
 
             Column(
-                modifier = headerModifier
-            ) {
-                Text(
-                    text = stringResource(id = R.string.regional_guide_screen_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = stringResource(id = R.string.regional_guide_screen_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                RegionalGuideSearchBar(
-                    keyword = displayedSearchKeyword,
-                    onKeywordChange = onSearchKeywordChange,
-                    onSearchClick = { submittedKeyword ->
-                        clearSearchFocus()
-                        collapseRegionSelector()
-                        onRegionSelectorDropdownDismissed()
-                        onSearchClick(
-                            searchKeywordRegionNameParts
-                                ?.let { searchKeyword }
-                                ?: submittedKeyword,
-                        )
-                    },
-                    candidateContent = if (hasSearchCandidates) {
-                        {
-                            if (ambiguousState != null) {
-                                val candidateListScrollKey = ambiguousState.candidateListScrollKey()
-
-                                RegionalGuideAmbiguousResult(
-                                    candidates = ambiguousState.candidates,
-                                    scrollStateKey = candidateListScrollKey,
-                                    initialScrollPosition =
-                                        ambiguousState.candidateListScrollPosition,
-                                    onScrollPositionChange = { position ->
-                                        onCandidateListScrollPositionChange(
-                                            candidateListScrollKey,
-                                            position,
-                                        )
-                                    },
-                                    onCandidateClick = { candidate ->
-                                        clearSearchFocus()
-                                        collapseRegionSelector()
-                                        onRegionSelectorDropdownDismissed()
-                                        onCandidateClick(candidate)
-                                    },
-                                )
-                            }
-
-                            if (listGuideCandidatesState != null) {
-                                val candidateListScrollKey = listGuideCandidatesState.candidateListScrollKey()
-
-                                RegionalGuideCandidateResult(
-                                    candidates = listGuideCandidatesState.candidates,
-                                    scrollStateKey = candidateListScrollKey,
-                                    initialScrollPosition =
-                                        listGuideCandidatesState.candidateListScrollPosition,
-                                    onScrollPositionChange = { position ->
-                                        onCandidateListScrollPositionChange(
-                                            candidateListScrollKey,
-                                            position,
-                                        )
-                                    },
-                                    onCandidateClick = { candidate ->
-                                        clearSearchFocus()
-                                        collapseRegionSelector()
-                                        onRegionSelectorDropdownDismissed()
-                                        onGuideCandidateClick(candidate)
-                                    },
-                                )
-                            }
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (shouldScrollWholeScreen) {
+                            Modifier.verticalScroll(rememberScrollState())
+                        } else {
+                            Modifier
                         }
-                    } else {
-                        null
-                    },
-                )
+                    ),
+            ) {
+                val headerModifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = metrics.horizontalPadding)
+                    .padding(top = metrics.topPadding)
+                    .then(
+                        if (collectionTypeGuideCandidatesState != null) {
+                            Modifier
+                                .weight(1f)
+                                .verticalScroll(collectionTypePanelScrollState)
+                        } else {
+                            Modifier
+                        }
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Column(
+                    modifier = headerModifier
+                ) {
+                    if (!metrics.isCompactLandscape) {
+                        Text(
+                            text = stringResource(id = R.string.regional_guide_screen_title),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                if (collectionTypeGuideCandidatesState != null) {
-                    val candidateMessageSpec =
-                        collectionTypeGuideCandidatesState.collectionTypeSelectionMessageSpec()
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    RegionalGuideCollectionTypeCandidateResult(
-                        message = candidateMessageSpec.title(),
-                        messageDescription = candidateMessageSpec.description(),
-                        sectionTitle = candidateMessageSpec.sectionTitle(),
-                        selectedRegionText = selectedRegionText
-                            ?: collectionTypeGuideCandidatesState
-                                .selectedRegionParts()
-                                ?.toRegionalGuideSelectorText(),
-                        candidates = collectionTypeGuideCandidatesState.candidates,
-                        onCandidateClick = { candidate ->
+                        Text(
+                            text = stringResource(id = R.string.regional_guide_screen_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(metrics.headerVerticalSpace))
+                    }
+
+                    RegionalGuideSearchBar(
+                        keyword = displayedSearchKeyword,
+                        onKeywordChange = onSearchKeywordChange,
+                        onSearchClick = { submittedKeyword ->
                             clearSearchFocus()
                             collapseRegionSelector()
                             onRegionSelectorDropdownDismissed()
-                            onGuideCandidateClick(candidate)
+                            onSearchClick(
+                                searchKeywordRegionNameParts
+                                    ?.let { searchKeyword }
+                                    ?: submittedKeyword,
+                            )
+                        },
+                        candidateContent = if (hasSearchCandidates) {
+                            {
+                                if (ambiguousState != null) {
+                                    val candidateListScrollKey = ambiguousState.candidateListScrollKey()
+
+                                    RegionalGuideAmbiguousResult(
+                                        candidates = ambiguousState.candidates,
+                                        candidateListMaxHeight = metrics.candidateListMaxHeight,
+                                        scrollStateKey = candidateListScrollKey,
+                                        initialScrollPosition =
+                                            ambiguousState.candidateListScrollPosition,
+                                        onScrollPositionChange = { position ->
+                                            onCandidateListScrollPositionChange(
+                                                candidateListScrollKey,
+                                                position,
+                                            )
+                                        },
+                                        onCandidateClick = { candidate ->
+                                            clearSearchFocus()
+                                            collapseRegionSelector()
+                                            onRegionSelectorDropdownDismissed()
+                                            onCandidateClick(candidate)
+                                        },
+                                    )
+                                }
+
+                                if (listGuideCandidatesState != null) {
+                                    val candidateListScrollKey = listGuideCandidatesState.candidateListScrollKey()
+
+                                    RegionalGuideCandidateResult(
+                                        candidates = listGuideCandidatesState.candidates,
+                                        candidateListMaxHeight = metrics.candidateListMaxHeight,
+                                        scrollStateKey = candidateListScrollKey,
+                                        initialScrollPosition =
+                                            listGuideCandidatesState.candidateListScrollPosition,
+                                        onScrollPositionChange = { position ->
+                                            onCandidateListScrollPositionChange(
+                                                candidateListScrollKey,
+                                                position,
+                                            )
+                                        },
+                                        onCandidateClick = { candidate ->
+                                            clearSearchFocus()
+                                            collapseRegionSelector()
+                                            onRegionSelectorDropdownDismissed()
+                                            onGuideCandidateClick(candidate)
+                                        },
+                                    )
+                                }
+                            }
+                        } else {
+                            null
                         },
                     )
+
+                    Spacer(modifier = Modifier.height(metrics.headerVerticalSpace))
+
+                    if (collectionTypeGuideCandidatesState != null) {
+                        val candidateMessageSpec =
+                            collectionTypeGuideCandidatesState.collectionTypeSelectionMessageSpec()
+
+                        RegionalGuideCollectionTypeCandidateResult(
+                            message = candidateMessageSpec.title(),
+                            messageDescription = candidateMessageSpec.description(),
+                            sectionTitle = candidateMessageSpec.sectionTitle(),
+                            selectedRegionText = selectedRegionText
+                                ?: collectionTypeGuideCandidatesState
+                                    .selectedRegionParts()
+                                    ?.toRegionalGuideSelectorText(),
+                            candidates = collectionTypeGuideCandidatesState.candidates,
+                            onCandidateClick = { candidate ->
+                                clearSearchFocus()
+                                collapseRegionSelector()
+                                onRegionSelectorDropdownDismissed()
+                                onGuideCandidateClick(candidate)
+                            },
+                        )
+                    }
+
+                    if (collectionTypeGuideCandidatesState == null) {
+                        RegionSelectorSection(
+                            uiState = regionSelectorUiState,
+                            compact = isRegionSelectorCompact,
+                            compactLandscape = metrics.isCompactLandscape,
+                            compactRegionText = compactRegionText,
+                            onSidoSelected = { sido ->
+                                clearSearchFocus()
+                                onSidoSelected(sido)
+                            },
+                            onSigunguSelected = { sigungu ->
+                                clearSearchFocus()
+                                onSigunguSelected(sigungu)
+                            },
+                            onEupmyeondongSelected = { eupmyeondong ->
+                                clearSearchFocus()
+                                onEupmyeondongSelected(eupmyeondong)
+                            },
+                            onDropdownExpanded = { dropdown ->
+                                clearSearchFocus()
+                                onRegionSelectorDropdownExpanded(dropdown)
+                            },
+                            onDropdownDismissed = onRegionSelectorDropdownDismissed,
+                            onSearchClick = {
+                                clearSearchFocus()
+                                collapseRegionSelector()
+                                onRegionSelectorDropdownDismissed()
+                                onRegionSelectionSearchClick()
+                            },
+                            onChangeClick = {
+                                clearSearchFocus()
+                                onRegionSelectionStarted()
+                                isRegionSelectorExpanded = true
+                            },
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(metrics.contentTopSpace))
                 }
 
                 if (collectionTypeGuideCandidatesState == null) {
-                    RegionSelectorSection(
-                        uiState = regionSelectorUiState,
-                        compact = isRegionSelectorCompact,
-                        compactRegionText = compactRegionText,
-                        onSidoSelected = { sido ->
-                            clearSearchFocus()
-                            onSidoSelected(sido)
-                        },
-                        onSigunguSelected = { sigungu ->
-                            clearSearchFocus()
-                            onSigunguSelected(sigungu)
-                        },
-                        onEupmyeondongSelected = { eupmyeondong ->
-                            clearSearchFocus()
-                            onEupmyeondongSelected(eupmyeondong)
-                        },
-                        onDropdownExpanded = { dropdown ->
-                            clearSearchFocus()
-                            onRegionSelectorDropdownExpanded(dropdown)
-                        },
-                        onDropdownDismissed = onRegionSelectorDropdownDismissed,
-                        onSearchClick = {
-                            clearSearchFocus()
-                            collapseRegionSelector()
-                            onRegionSelectorDropdownDismissed()
-                            onRegionSelectionSearchClick()
-                        },
-                        onChangeClick = {
-                            clearSearchFocus()
-                            onRegionSelectionStarted()
-                            isRegionSelectorExpanded = true
-                        },
+                    RegionalGuideContent(
+                        uiState = uiState,
+                        modifier = Modifier
+                            .then(
+                                if (shouldScrollWholeScreen) {
+                                    Modifier.fillMaxWidth()
+                                } else {
+                                    Modifier.weight(1f)
+                                }
+                            )
+                            .padding(horizontal = metrics.horizontalPadding),
+                        scrollable = !shouldScrollWholeScreen,
+                        onRetryClick = onRetryClick,
+                        onEmptyActionClick = ::handleEmptyAction,
+                        onFavoriteClick = onFavoriteClick,
+                        onPublicNoticeClick = onPublicNoticeClick,
                     )
+
+                    if (shouldScrollWholeScreen) {
+                        Spacer(modifier = Modifier.height(metrics.contentTopSpace))
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            if (collectionTypeGuideCandidatesState == null) {
-                RegionalGuideContent(
-                    uiState = uiState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 20.dp),
-                    onRetryClick = onRetryClick,
-                    onEmptyActionClick = ::handleEmptyAction,
-                    onFavoriteClick = onFavoriteClick,
-                    onPublicNoticeClick = onPublicNoticeClick,
-                )
             }
         }
     }
@@ -477,6 +514,7 @@ private fun RegionalGuideContent(
     onFavoriteClick: () -> Unit,
     onPublicNoticeClick: () -> Unit,
     modifier: Modifier = Modifier,
+    scrollable: Boolean = true,
 ) {
     when (uiState) {
         RegionalGuideUiState.Idle -> {
@@ -512,6 +550,7 @@ private fun RegionalGuideContent(
                 onActionClick = action?.let {
                     { onEmptyActionClick(action.type) }
                 },
+                scrollable = scrollable,
             )
         }
 
@@ -527,12 +566,12 @@ private fun RegionalGuideContent(
             RegionalGuideErrorContent(
                 message = uiState.message.displayText(),
                 onRetryClick = onRetryClick,
-                modifier = modifier
+                modifier = modifier,
+                scrollable = scrollable,
             )
         }
     }
 }
-
 @Composable
 private fun RegionalGuideErrorMessage.displayText(): String =
     when (this) {
@@ -651,39 +690,52 @@ private data class RegionalWasteScheduleDisplayGroup(
 private fun RegionalGuideErrorContent(
     message: String,
     onRetryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollable: Boolean = true,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (scrollable) {
+                    Modifier.verticalScroll(rememberScrollState())
+                } else {
+                    Modifier
+                }
+            ),
     ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
-            Text(
-                text = stringResource(id = R.string.regional_guide_error_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-
-            TextButton(
-                onClick = onRetryClick
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(text = stringResource(id = R.string.regional_guide_error_retry_action))
+                Text(
+                    text = stringResource(id = R.string.regional_guide_error_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+
+                TextButton(
+                    onClick = onRetryClick
+                ) {
+                    Text(text = stringResource(id = R.string.regional_guide_error_retry_action))
+                }
             }
         }
     }
