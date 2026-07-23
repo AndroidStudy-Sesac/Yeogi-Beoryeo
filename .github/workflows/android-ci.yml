@@ -84,6 +84,37 @@ jobs:
                 "client_info": {
                   "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
                   "android_client_info": {
+                    "package_name": "com.team.yeogibeoryeo.debug"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "ci_dummy_api_key"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+          cat > app/src/release/google-services.json <<'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "ci-dummy-project",
+              "storage_bucket": "ci-dummy-project.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": {
                     "package_name": "com.team.yeogibeoryeo"
                   }
                 },
@@ -103,7 +134,6 @@ jobs:
             "configuration_version": "1"
           }
           EOF
-          cp app/src/debug/google-services.json app/src/release/google-services.json
 
       - name: Create release signing config for CI
         if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
