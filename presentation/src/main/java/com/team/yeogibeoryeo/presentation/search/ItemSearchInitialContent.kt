@@ -21,9 +21,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -34,6 +36,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
@@ -81,11 +86,34 @@ fun ItemSearchInitialContent(
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
+    var shouldBringCollapseIntoViewAfterSettings by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var collapseBringIntoViewRequestVersion by rememberSaveable { mutableIntStateOf(0) }
     var handledScrollRestoreVersion by rememberSaveable {
         mutableIntStateOf(quickCategoryScrollRestoreVersion)
     }
     var appGuideScrollIndex by rememberSaveable { mutableIntStateOf(NO_APP_GUIDE_SCROLL_INDEX) }
     var appGuideScrollOffset by rememberSaveable { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, isQuickCategoryExpanded) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (
+                event == Lifecycle.Event.ON_RESUME &&
+                shouldBringCollapseIntoViewAfterSettings &&
+                isQuickCategoryExpanded
+            ) {
+                shouldBringCollapseIntoViewAfterSettings = false
+                collapseBringIntoViewRequestVersion += 1
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(
         isQuickCategoryExpanded,
@@ -253,7 +281,11 @@ fun ItemSearchInitialContent(
                             ),
                         )
                         AssistChip(
-                            onClick = { onQuickCategorySettingsClick(maxSelectedQuickCategoryCount) },
+                            onClick = {
+                                shouldBringCollapseIntoViewAfterSettings =
+                                    isQuickCategoryExpanded
+                                onQuickCategorySettingsClick(maxSelectedQuickCategoryCount)
+                            },
                             label = {
                                 Text(text = stringResource(R.string.quick_category_edit_action))
                             },
@@ -289,6 +321,8 @@ fun ItemSearchInitialContent(
                         screenHorizontalPadding = metrics.horizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,
                         onVisibleCategoryCountChange = { maxSelectedQuickCategoryCount = it },
+                        collapseBringIntoViewRequestVersion =
+                            collapseBringIntoViewRequestVersion,
                     )
                 }
             }
