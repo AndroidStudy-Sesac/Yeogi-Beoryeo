@@ -6,13 +6,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import org.junit.Rule
 import org.junit.Test
 
@@ -21,8 +24,9 @@ class QuickCategoryGridReturnTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun 설정_복귀_요청을_받으면_펼친_목록의_접기를_화면에_보여준다() {
+    fun 설정_복귀_후_접기를_누르면_목록이_접히고_더보기를_보여준다() {
         var requestVersion by mutableIntStateOf(0)
+        var isExpanded by mutableStateOf(true)
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -34,8 +38,10 @@ class QuickCategoryGridReturnTest {
                     item {
                         QuickCategoryGrid(
                             onCategoryClick = {},
-                            isExpanded = true,
-                            fixedCollapsedItemCount = 8,
+                            isExpanded = isExpanded,
+                            fixedCollapsedItemCount = 4,
+                            viewportBottomInRootPx = 3000,
+                            onCollapseClick = { isExpanded = false },
                             collapseBringIntoViewRequestVersion = requestVersion,
                         )
                     }
@@ -50,5 +56,11 @@ class QuickCategoryGridReturnTest {
         }
 
         composeTestRule.onNodeWithContentDescription("접기").assertIsDisplayed()
+            .performClick()
+
+        composeTestRule.onNodeWithContentDescription("더보기").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithContentDescription(RepresentativeGuideCategory.OTHER.displayName)
+            .assertDoesNotExist()
     }
 }
