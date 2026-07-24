@@ -1,0 +1,94 @@
+name: API 28 Instrumented Tests
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: '17 18 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  instrumented-test:
+    name: API 28 Instrumented Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "NAVER_CLIENT_ID=ci_dummy_naver_client_id" >> local.properties
+          echo "PUBLIC_DATA_SERVICE_KEY=ci_dummy_public_data_service_key" >> local.properties
+
+      - name: Create Firebase config
+        run: |
+          mkdir -p app/src/debug
+          cat > app/src/debug/google-services.json <<'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "ci-dummy-project",
+              "storage_bucket": "ci-dummy-project.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": {
+                    "package_name": "com.team.yeogibeoryeo.debug"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "ci_dummy_api_key"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+
+      - name: Run API 28 instrumented tests
+        run: |
+          ./gradlew \
+            :app:pixel2Api28DebugAndroidTest \
+            :data:pixel2Api28DebugAndroidTest \
+            :presentation:pixel2Api28DebugAndroidTest \
+            --no-parallel \
+            --no-daemon \
+            --stacktrace \
+            -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect

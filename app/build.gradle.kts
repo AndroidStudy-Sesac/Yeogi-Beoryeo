@@ -123,6 +123,25 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("pixel9ProApi36") {
+                    device = "Pixel 9 Pro"
+                    apiLevel = 36
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+                create("pixel2Api28") {
+                    device = "Pixel 2"
+                    apiLevel = 28
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+            }
+        }
+    }
 }
 
 if (!keystorePropertiesFile.isFile) {
