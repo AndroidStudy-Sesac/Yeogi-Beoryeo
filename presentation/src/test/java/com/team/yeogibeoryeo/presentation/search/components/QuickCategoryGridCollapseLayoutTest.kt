@@ -96,6 +96,7 @@ class QuickCategoryGridCollapseLayoutTest {
         )
 
         assertEquals(20, layout.visibleCategoryCount)
+        assertEquals(8, layout.collapsedItemCount)
         assertEquals(false, layout.showsMore)
         assertEquals(true, layout.showsCollapse)
     }
@@ -128,6 +129,40 @@ class QuickCategoryGridCollapseLayoutTest {
 
         assertEquals(12, layout.collapsedItemCount)
         assertEquals(11, layout.visibleCategoryCount)
+        assertEquals(true, layout.showsMore)
+    }
+
+    @Test
+    fun `한 행만 보이던 고정 슬롯은 큰 가용 높이로 재측정돼도 유지한다`() {
+        val layout = quickCategoryGridCollapseLayout(
+            categoryCount = 20,
+            columnCount = 3,
+            availableHeightPx = 2000,
+            rowHeightPx = 70,
+            rowSpacingPx = 10,
+            fixedCollapsedItemCount = 3,
+            isExpanded = false,
+        )
+
+        assertEquals(3, layout.collapsedItemCount)
+        assertEquals(2, layout.visibleCategoryCount)
+        assertEquals(true, layout.showsMore)
+    }
+
+    @Test
+    fun `전체 개수 이상인 고정 슬롯은 최소 접힘 슬롯으로 복구한다`() {
+        val layout = quickCategoryGridCollapseLayout(
+            categoryCount = 19,
+            columnCount = 4,
+            availableHeightPx = 2000,
+            rowHeightPx = 70,
+            rowSpacingPx = 10,
+            fixedCollapsedItemCount = 20,
+            isExpanded = false,
+        )
+
+        assertEquals(8, layout.collapsedItemCount)
+        assertEquals(7, layout.visibleCategoryCount)
         assertEquals(true, layout.showsMore)
     }
 }

@@ -27,7 +27,7 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 internal fun QuickCategorySettingsDisplayRow(
     category: RepresentativeGuideCategory,
     isSelected: Boolean,
-    enabled: Boolean,
+    selectionEnabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -40,7 +40,6 @@ internal fun QuickCategorySettingsDisplayRow(
             .fillMaxWidth()
             .toggleable(
                 value = isSelected,
-                enabled = enabled,
                 role = Role.Checkbox,
             ) {
                 onClick()
@@ -95,7 +94,10 @@ internal fun QuickCategorySettingsDisplayRow(
                         colorScheme.onSurface
                     },
             )
-            QuickCategorySelectionIndicator(isSelected = isSelected, enabled = enabled)
+            QuickCategorySelectionIndicator(
+                isSelected = isSelected,
+                enabled = selectionEnabled,
+            )
         }
     }
 }

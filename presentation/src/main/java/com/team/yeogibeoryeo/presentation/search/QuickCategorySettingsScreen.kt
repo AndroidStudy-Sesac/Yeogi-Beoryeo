@@ -16,10 +16,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -29,11 +33,13 @@ import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
+import com.team.yeogibeoryeo.presentation.common.components.MessageSnackbar
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategorySettingsDisplayRow
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategorySettingsSelectedCategorySummary
 import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun QuickCategorySettingsScreen(
@@ -46,10 +52,22 @@ internal fun QuickCategorySettingsScreen(
     val spacing = ItemSearchLayoutDefaults.spacing
     var keyword by rememberSaveable { mutableStateOf("") }
     val categories = filterQuickCategorySettingsCategories(keyword)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val limitExceededMessage =
+        stringResource(
+            R.string.quick_category_settings_limit_exceeded,
+            maxSelectedCount,
+        )
 
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0.dp),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { snackbarData ->
+                MessageSnackbar(message = snackbarData.visuals.message)
+            }
+        },
         topBar = {
             AppTopBar(
                 navigationIcon = {
@@ -112,10 +130,15 @@ internal fun QuickCategorySettingsScreen(
                 QuickCategorySettingsDisplayRow(
                     category = category,
                     isSelected = isSelected,
-                    enabled = canSelect,
+                    selectionEnabled = canSelect,
                     onClick = {
                         if (canSelect) {
                             onCategoryClick(category)
+                        } else {
+                            coroutineScope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                snackbarHostState.showSnackbar(limitExceededMessage)
+                            }
                         }
                     },
                 )
