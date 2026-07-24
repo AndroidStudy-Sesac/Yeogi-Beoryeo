@@ -67,6 +67,7 @@ fun QuickCategoryGrid(
     onMoreClick: (Int) -> Unit = {},
     onCollapseClick: () -> Unit = {},
     onVisibleCategoryCountChange: (Int) -> Unit = {},
+    collapseBringIntoViewRequestVersion: Int = 0,
     itemContent: @Composable (
         category: RepresentativeGuideCategory,
         onClick: () -> Unit,
@@ -85,11 +86,18 @@ fun QuickCategoryGrid(
     var rowHeightPx by remember { mutableIntStateOf(0) }
     var shouldBringExpandedGridIntoView by remember { mutableStateOf(false) }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val collapseBringIntoViewRequester = remember { BringIntoViewRequester() }
 
     LaunchedEffect(isExpanded, shouldBringExpandedGridIntoView) {
         if (isExpanded && shouldBringExpandedGridIntoView) {
             bringIntoViewRequester.bringIntoView()
             shouldBringExpandedGridIntoView = false
+        }
+    }
+
+    LaunchedEffect(isExpanded, collapseBringIntoViewRequestVersion) {
+        if (isExpanded && collapseBringIntoViewRequestVersion > 0) {
+            collapseBringIntoViewRequester.bringIntoView()
         }
     }
 
@@ -146,16 +154,21 @@ fun QuickCategoryGrid(
                     collapseLayout.showsMore -> add(
                         QuickCategoryGridItem.Toggle(
                             labelResId = R.string.quick_category_more_action,
-                        ) {
-                            shouldBringExpandedGridIntoView = true
-                            onMoreClick(collapseLayout.collapsedItemCount)
-                        },
+                            onClick = {
+                                shouldBringExpandedGridIntoView = true
+                                onMoreClick(collapseLayout.collapsedItemCount)
+                            },
+                        ),
                     )
 
                     collapseLayout.showsCollapse -> add(
                         QuickCategoryGridItem.Toggle(
                             labelResId = R.string.quick_category_collapse_action,
                             onClick = onCollapseClick,
+                            modifier =
+                                Modifier.bringIntoViewRequester(
+                                    collapseBringIntoViewRequester,
+                                ),
                         ),
                     )
                 }
@@ -190,6 +203,7 @@ fun QuickCategoryGrid(
 private fun QuickCategoryToggleItem(
     labelResId: Int,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val size = ItemSearchLayoutDefaults.size
     val metrics = LocalQuickCategoryGridMetrics.current
@@ -198,7 +212,7 @@ private fun QuickCategoryToggleItem(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(metrics.labelSpacing),
-        modifier = Modifier
+        modifier = modifier
             .sizeIn(
                 minWidth = size.minTouchTarget,
                 minHeight = size.minTouchTarget,
@@ -263,6 +277,7 @@ private fun QuickCategoryRow(
                         QuickCategoryToggleItem(
                             labelResId = item.labelResId,
                             onClick = item.onClick,
+                            modifier = item.modifier,
                         )
                 }
             }
@@ -302,6 +317,7 @@ private sealed interface QuickCategoryGridItem {
     data class Toggle(
         val labelResId: Int,
         val onClick: () -> Unit,
+        val modifier: Modifier = Modifier,
     ) : QuickCategoryGridItem
 }
 

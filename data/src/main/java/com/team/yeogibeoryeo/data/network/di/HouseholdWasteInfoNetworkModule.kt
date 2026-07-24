@@ -11,11 +11,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 
+internal const val HOUSEHOLD_WASTE_INFO_API_BASE_URL =
+    "https://apis.data.go.kr/1741000/household_waste_info/"
+
 @Module
 @InstallIn(SingletonComponent::class)
 object HouseholdWasteInfoNetworkModule {
-
-    private const val BASE_URL = "https://apis.data.go.kr/1741000/household_waste_info/"
 
     @Provides
     @Singleton
@@ -27,7 +28,7 @@ object HouseholdWasteInfoNetworkModule {
         val contentType = "application/json".toMediaType()
 
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(HOUSEHOLD_WASTE_INFO_API_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()

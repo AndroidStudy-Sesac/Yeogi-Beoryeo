@@ -22,22 +22,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleTime
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
 
 @Composable
 fun RegionalWasteScheduleCard(
     schedule: RegionalWasteScheduleUiModel,
+    modifier: Modifier = Modifier,
     disposalPlaces: List<String> = listOfNotNull(schedule.disposalPlace),
-    modifier: Modifier = Modifier
 ) {
     val normalizedDisposalPlaces = disposalPlaces
         .map { disposalPlace -> disposalPlace.trim() }
         .filter { disposalPlace -> disposalPlace.isNotEmpty() }
         .distinct()
+    val disposalTime = schedule.disposalTime?.displayText()
     val disposalPlaceExpansionKey = listOf(
         schedule.wasteTypeName,
         schedule.disposalDays.orEmpty(),
-        schedule.disposalTime.orEmpty(),
+        disposalTime.orEmpty(),
         schedule.disposalMethod.orEmpty(),
         normalizedDisposalPlaces.joinToString(DISPOSAL_PLACE_KEY_DELIMITER),
     ).joinToString(DISPOSAL_PLACE_KEY_DELIMITER)
@@ -72,10 +74,10 @@ fun RegionalWasteScheduleCard(
                 )
             }
 
-            schedule.disposalTime?.let { disposalTime ->
+            disposalTime?.let { displayTime ->
                 RegionalGuideInfoRow(
                     title = stringResource(id = R.string.regional_waste_schedule_time_label),
-                    value = disposalTime
+                    value = displayTime
                 )
             }
 
@@ -135,6 +137,27 @@ fun RegionalWasteScheduleCard(
     }
 }
 
+@Composable
+private fun RegionalWasteScheduleTime.displayText(): String =
+    when (this) {
+        is RegionalWasteScheduleTime.Value -> value
+        is RegionalWasteScheduleTime.Range -> stringResource(
+            id = R.string.regional_waste_schedule_time_range_format,
+            startTime,
+            endTime,
+        )
+
+        is RegionalWasteScheduleTime.After -> stringResource(
+            id = R.string.regional_waste_schedule_time_after_format,
+            startTime,
+        )
+
+        is RegionalWasteScheduleTime.Before -> stringResource(
+            id = R.string.regional_waste_schedule_time_before_format,
+            endTime,
+        )
+    }
+
 private const val DISPOSAL_PLACE_KEY_DELIMITER = "\u001F"
 
 @Preview(showBackground = true)
@@ -145,7 +168,7 @@ private fun RegionalWasteScheduleCardPreview() {
             schedule = RegionalWasteScheduleUiModel(
                 wasteTypeName = "일반쓰레기",
                 disposalDays = "월, 수, 금",
-                disposalTime = "18:00 ~ 24:00",
+                disposalTime = RegionalWasteScheduleTime.Range("18:00", "24:00"),
                 disposalMethod = "종량제 봉투에 담아 배출",
             ),
             modifier = Modifier.padding(16.dp),

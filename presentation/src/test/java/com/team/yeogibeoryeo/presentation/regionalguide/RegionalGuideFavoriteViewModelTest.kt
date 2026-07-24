@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -28,6 +28,28 @@ class RegionalGuideFavoriteViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
+
+    @Test
+    fun `즐겨찾기 복원 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+        val viewModel = createViewModel(
+            regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(
+                throwable = IllegalStateException(),
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId("regional-guide-target")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Error
+
+        assertEquals(
+            RegionalGuideErrorMessage.Resource(
+                resId = R.string.regional_guide_error_favorite_restore_message,
+            ),
+            state.message,
+        )
+    }
 
     @Test
     fun `즐겨찾기 클릭은 지역 가이드 즐겨찾기를 저장하고 상태를 관찰한다`() = runTest {
@@ -223,6 +245,77 @@ class RegionalGuideFavoriteViewModelTest {
         assertEquals("반석동 일부지역", state.guide.targetRegionName)
         assertEquals("노은3동", state.guide.managementZoneName)
         assertEquals(true, state.isFavorite)
+    }
+
+    @Test
+    fun `선택지에 없는 대상지역명 즐겨찾기는 조회 지역으로 복원하고 저장 스냅샷을 유지한다`() = runTest {
+        val snapshotRegion = Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "대동")
+        val guide =
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "구즉동",
+                targetRegionName = "대동+구룡동+금고동",
+                schedules = emptyList(),
+            )
+        val targetId = RegionalGuideFavoriteKey(
+            sido = snapshotRegion.sido,
+            sigungu = snapshotRegion.sigungu,
+            eupmyeondong = snapshotRegion.eupmyeondong,
+            targetRegionName = guide.targetRegionName,
+            managementZoneName = guide.managementZoneName,
+        ).encode()
+        val snapshot = RegionalGuideFavoriteSnapshot(
+            targetId = targetId,
+            region = snapshotRegion,
+            targetRegionName = guide.targetRegionName,
+            managementZoneName = guide.managementZoneName,
+        )
+        val favoriteRepository =
+            FakeFavoriteRepository(
+                initialFavorites =
+                    listOf(
+                        Favorite(
+                            type = FavoriteTargetType.REGIONAL_GUIDE,
+                            targetId = targetId,
+                            savedAtMillis = 1L,
+                        ),
+                    ),
+            )
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide))
+        val viewModel =
+            createViewModel(
+                regionOptionsRepository = FakeRegionOptionsRepository(
+                    sigunguOptionsBySido = mapOf(
+                        "대전광역시" to listOf("유성구")
+                    ),
+                    eupmyeondongOptionsByRegion = mapOf(
+                        "대전광역시" to mapOf(
+                            "유성구" to listOf("구즉동", "노은1동", "노은2동", "노은3동")
+                        )
+                    )
+                ),
+                regionalGuideRepository = regionalGuideRepository,
+                regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(candidates = listOf(guide)),
+                favoriteRepository = favoriteRepository,
+                regionalGuideSnapshotRepository =
+                    FakeRegionalGuideFavoriteSnapshotRepository(snapshots = listOf(snapshot)),
+            )
+        advanceUntilIdle()
+
+        viewModel.loadByFavoriteTargetId(targetId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertEquals("대전광역시 유성구 구즉동", state.guide.regionName)
+        assertEquals("대동+구룡동+금고동", state.guide.targetRegionName)
+        assertEquals(true, state.isFavorite)
+        assertEquals("대동", regionalGuideRepository.queries.single().displayRegion.eupmyeondong)
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("대전광역시", selectedSido)
+            assertEquals("유성구", selectedSigungu)
+            assertEquals("구즉동", selectedEupmyeondong)
+        }
     }
 
     @Test

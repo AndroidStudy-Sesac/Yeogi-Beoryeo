@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AssistChip
@@ -22,21 +21,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
@@ -77,11 +79,40 @@ fun ItemSearchInitialContent(
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    appGuideTarget: ItemSearchGuideTarget? = null,
+    searchGuideModifier: Modifier = Modifier,
+    quickCategoryGuideModifier: Modifier = Modifier,
+    usefulGuideModifier: Modifier = Modifier,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
+    var shouldBringCollapseIntoViewAfterSettings by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var collapseBringIntoViewRequestVersion by rememberSaveable { mutableIntStateOf(0) }
     var handledScrollRestoreVersion by rememberSaveable {
         mutableIntStateOf(quickCategoryScrollRestoreVersion)
+    }
+    var appGuideScrollIndex by rememberSaveable { mutableIntStateOf(NO_APP_GUIDE_SCROLL_INDEX) }
+    var appGuideScrollOffset by rememberSaveable { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, isQuickCategoryExpanded) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (
+                event == Lifecycle.Event.ON_RESUME &&
+                shouldBringCollapseIntoViewAfterSettings &&
+                isQuickCategoryExpanded
+            ) {
+                shouldBringCollapseIntoViewAfterSettings = false
+                collapseBringIntoViewRequestVersion += 1
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     LaunchedEffect(
@@ -100,6 +131,44 @@ fun ItemSearchInitialContent(
         }
     }
 
+    LaunchedEffect(appGuideTarget) {
+        if (appGuideTarget != null && appGuideScrollIndex == NO_APP_GUIDE_SCROLL_INDEX) {
+            appGuideScrollIndex = listState.firstVisibleItemIndex
+            appGuideScrollOffset = listState.firstVisibleItemScrollOffset
+        }
+
+        when (appGuideTarget) {
+            ItemSearchGuideTarget.SEARCH -> {
+                val isSearchVisible =
+                    listState.layoutInfo.visibleItemsInfo.any { item ->
+                        item.index == SEARCH_GUIDE_ITEM_INDEX
+                    }
+                if (!isSearchVisible) {
+                    listState.scrollToItem(SEARCH_GUIDE_ITEM_INDEX)
+                }
+            }
+
+            ItemSearchGuideTarget.QUICK_CATEGORY -> {
+                listState.scrollToItem(QUICK_CATEGORY_GUIDE_ITEM_INDEX)
+            }
+
+            ItemSearchGuideTarget.USEFUL_GUIDE -> {
+                listState.scrollToItem(USEFUL_GUIDE_GUIDE_ITEM_INDEX)
+            }
+
+            null -> {
+                if (appGuideScrollIndex != NO_APP_GUIDE_SCROLL_INDEX) {
+                    listState.scrollToItem(
+                        index = appGuideScrollIndex,
+                        scrollOffset = appGuideScrollOffset,
+                    )
+                    appGuideScrollIndex = NO_APP_GUIDE_SCROLL_INDEX
+                    appGuideScrollOffset = 0
+                }
+            }
+        }
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -109,7 +178,6 @@ fun ItemSearchInitialContent(
             maxWidth = maxWidth,
             maxHeight = maxHeight,
         )
-
         LaunchedEffect(metrics.isCompactLandscape) {
             onItemSearchBottomBarScrollEnabledChanged(metrics.isCompactLandscape)
             if (!metrics.isCompactLandscape) {
@@ -164,6 +232,7 @@ fun ItemSearchInitialContent(
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
                         onGuideClick = onUsefulGuideClick,
+                        modifier = usefulGuideModifier,
                         contentPadding = PaddingValues(horizontal = metrics.horizontalPadding),
                         itemWidthFraction = metrics.usefulGuideBannerWidthFraction,
                     )
@@ -188,11 +257,7 @@ fun ItemSearchInitialContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = metrics.horizontalPadding)
-                        .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(12.dp),
-                            clip = false,
-                        ),
+                        .then(searchGuideModifier),
                     iconSize = metrics.searchIconSize,
                 )
             }
@@ -216,7 +281,11 @@ fun ItemSearchInitialContent(
                             ),
                         )
                         AssistChip(
-                            onClick = { onQuickCategorySettingsClick(maxSelectedQuickCategoryCount) },
+                            onClick = {
+                                shouldBringCollapseIntoViewAfterSettings =
+                                    isQuickCategoryExpanded
+                                onQuickCategorySettingsClick(maxSelectedQuickCategoryCount)
+                            },
                             label = {
                                 Text(text = stringResource(R.string.quick_category_edit_action))
                             },
@@ -235,6 +304,7 @@ fun ItemSearchInitialContent(
                         )
                     }
                     QuickCategoryGrid(
+                        modifier = quickCategoryGuideModifier,
                         categories = quickCategories,
                         selectedCategories = selectedQuickCategories,
                         onCategoryClick = onQuickCategoryClick,
@@ -251,12 +321,19 @@ fun ItemSearchInitialContent(
                         screenHorizontalPadding = metrics.horizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,
                         onVisibleCategoryCountChange = { maxSelectedQuickCategoryCount = it },
+                        collapseBringIntoViewRequestVersion =
+                            collapseBringIntoViewRequestVersion,
                     )
                 }
             }
         }
     }
 }
+
+private const val USEFUL_GUIDE_GUIDE_ITEM_INDEX = 1
+private const val SEARCH_GUIDE_ITEM_INDEX = 3
+private const val QUICK_CATEGORY_GUIDE_ITEM_INDEX = 4
+private const val NO_APP_GUIDE_SCROLL_INDEX = -1
 
 @Composable
 fun ItemSearchHeader(

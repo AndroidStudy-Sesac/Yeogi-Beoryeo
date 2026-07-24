@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.data.regionalguide.remote
 
-import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideResponseDto
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideRootDto
 import retrofit2.Response
 import retrofit2.http.GET

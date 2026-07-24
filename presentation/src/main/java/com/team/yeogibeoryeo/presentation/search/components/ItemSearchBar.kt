@@ -6,7 +6,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -14,28 +18,44 @@ import androidx.compose.ui.unit.Dp
 import com.team.yeogibeoryeo.common.R as CommonR
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.SearchBarField
+import com.team.yeogibeoryeo.presentation.common.components.SearchBarFieldDefaults
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ItemSearchBar(
     keyword: String,
     onKeywordChange: (String) -> Unit,
     onSearchClick: () -> Unit,
-    modifier: Modifier = Modifier,
     placeholder: String,
+    modifier: Modifier = Modifier,
     iconSize: Dp = ItemSearchLayoutDefaults.size.iconSmall,
 ) {
     val size = ItemSearchLayoutDefaults.size
+    val elevation = ItemSearchLayoutDefaults.elevation
+    val shape = SearchBarFieldDefaults.shape
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    fun submitSearch() {
+        if (keyword.isBlank()) return
+
+        focusManager.clearFocus()
+        keyboardController?.hide()
+        onSearchClick()
+    }
 
     SearchBarField(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .shadow(
+                elevation = elevation.searchField,
+                shape = shape,
+                clip = false,
+            )
+            .fillMaxWidth(),
         keyword = keyword,
         onKeywordChange = onKeywordChange,
-        onSearch = {
-            if (keyword.isNotBlank()) {
-                onSearchClick()
-            }
-        },
+        onSearch = { submitSearch() },
         placeholder = placeholder,
         trailingContent = { isFocused ->
             val searchIconColor = when {
@@ -45,9 +65,7 @@ fun ItemSearchBar(
 
             IconButton(
                 onClick = {
-                    if (keyword.isNotBlank()) {
-                        onSearchClick()
-                    }
+                    submitSearch()
                 },
                 enabled = keyword.isNotBlank(),
             ) {

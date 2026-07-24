@@ -1,14 +1,15 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.region.model.Region
-import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
+import com.team.yeogibeoryeo.domain.region.model.RegionNameNaturalComparator
+import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideEupmyeondongNamePolicy
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import javax.inject.Inject
 
 class GetRegionalGuideEupmyeondongOptionsUseCase @Inject constructor(
-    private val getEupmyeondongOptionsUseCase: GetEupmyeondongOptionsUseCase,
+    private val regionOptionsRepository: RegionOptionsRepository,
     private val normalizeRegionalGuideQueryUseCase: NormalizeRegionalGuideQueryUseCase,
     private val repository: RegionalDisposalGuideRepository,
 ) {
@@ -17,7 +18,7 @@ class GetRegionalGuideEupmyeondongOptionsUseCase @Inject constructor(
         sido: String,
         sigungu: String,
     ): List<String> {
-        val options = getEupmyeondongOptionsUseCase(
+        val options = regionOptionsRepository.getRegionalGuideEupmyeondongOptions(
             sido = sido,
             sigungu = sigungu,
         )
@@ -33,32 +34,49 @@ class GetRegionalGuideEupmyeondongOptionsUseCase @Inject constructor(
         val candidates = repository.getRegionalDisposalGuideCandidates(query)
             .getOrElse { return options }
 
+        val selectableOptions = options.filterUnsupportedBranchOfficeOptions(candidates)
         val coverage = candidates.toAreaCoverages()
-        if (coverage.isEmpty()) return options
+        if (coverage.isEmpty()) return selectableOptions.sortedOptionNames()
 
-        val candidateRegionNames = candidates.toRegionNames()
-        val filteredOptions = options.filter { option ->
-            candidateRegionNames.any { name ->
-                RegionalGuideEupmyeondongNamePolicy.containsSameName(
-                    regionName = name,
+        val filteredOptions = selectableOptions.filter { option ->
+            candidates.any { candidate ->
+                RegionalGuideEupmyeondongNamePolicy.matchesManagementZoneOrTargetRegionName(
+                    managementZoneName = candidate.managementZoneName,
+                    targetRegionName = candidate.targetRegionName,
                     eupmyeondong = option,
                 )
             } ||
                 coverage.any { areaCoverage -> areaCoverage.matches(option) }
         }
 
-        return filteredOptions
+        return filteredOptions.sortedOptionNames()
     }
 
-    private fun List<RegionalDisposalGuide>.toRegionNames(): Set<String> {
-        return flatMap { guide ->
-            listOf(guide.managementZoneName, guide.targetRegionName)
-        }.mapNotNull { name ->
-            name
-                ?.trim()
-                ?.takeIf { trimmedName -> trimmedName.isNotBlank() }
-        }.toSet()
+    private fun List<String>.sortedOptionNames(): List<String> {
+        return distinct()
+            .sortedWith(RegionNameNaturalComparator)
     }
+
+    private fun List<String>.filterUnsupportedBranchOfficeOptions(
+        candidates: List<RegionalDisposalGuide>
+    ): List<String> {
+        return filter { option ->
+            !option.isBranchOfficeName() ||
+                candidates.any { candidate ->
+                    RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                        regionName = candidate.managementZoneName,
+                        eupmyeondong = option,
+                    ) ||
+                        RegionalGuideEupmyeondongNamePolicy.containsSameNameOrGuideAreaName(
+                            regionName = candidate.targetRegionName,
+                        eupmyeondong = option,
+                    )
+                }
+        }
+    }
+
+    private fun String.isBranchOfficeName(): Boolean =
+        trim().endsWith(BRANCH_OFFICE_SUFFIX)
 
     private fun List<RegionalDisposalGuide>.toAreaCoverages(): Set<RegionalGuideAreaCoverage> {
         return flatMap { guide ->
@@ -112,5 +130,6 @@ class GetRegionalGuideEupmyeondongOptionsUseCase @Inject constructor(
         const val EUP_SUFFIX = "읍"
         const val MYEON_SUFFIX = "면"
         const val DONG_SUFFIX = "동"
+        const val BRANCH_OFFICE_SUFFIX = "출장소"
     }
 }

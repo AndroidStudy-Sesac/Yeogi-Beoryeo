@@ -12,6 +12,7 @@ sealed interface RegionalGuideUiState {
     data class Loading(
         val query: String,
         val canRestoreCandidates: Boolean = false,
+        val regionNameParts: List<String>? = null,
     ) : RegionalGuideUiState
 
     data class Success(
@@ -30,7 +31,6 @@ sealed interface RegionalGuideUiState {
 
     data class Ambiguous(
         val query: String,
-        val message: String,
         val candidates: List<RegionSearchCandidateUiModel>,
         val candidateListScrollPosition: RegionalGuideCandidateListScrollPosition =
             RegionalGuideCandidateListScrollPosition.Initial,
@@ -47,9 +47,19 @@ sealed interface RegionalGuideUiState {
 
     data class Error(
         val query: String,
-        val message: String,
+        val message: RegionalGuideErrorMessage,
         val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
+}
+
+sealed interface RegionalGuideErrorMessage {
+    data class Dynamic(
+        val value: String,
+    ) : RegionalGuideErrorMessage
+
+    data class Resource(
+        @param:StringRes val resId: Int,
+    ) : RegionalGuideErrorMessage
 }
 
 data class RegionalGuideEmptyActionUiModel(

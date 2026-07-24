@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -16,9 +16,7 @@ import com.team.yeogibeoryeo.domain.region.repository.RegionRepository
 import com.team.yeogibeoryeo.domain.region.usecase.ClassifyRegionSearchInputUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ExtractRegionFromAddressUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.FindAdminDongCandidatesForLegalDongUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.GetEupmyeondongOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.GetSidoOptionsUseCase
-import com.team.yeogibeoryeo.domain.region.usecase.GetSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.NormalizeRegionForRegionalGuideUseCase
 import com.team.yeogibeoryeo.domain.region.usecase.ResolveRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
@@ -27,6 +25,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.repository.HomeRegionalGuidePr
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalDisposalGuideUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideEupmyeondongOptionsUseCase
+import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideSigunguOptionsUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideDisplayRegionUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
@@ -34,6 +33,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCan
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +42,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
@@ -66,7 +67,8 @@ internal fun createViewModel(
             resolveRegionFromKeywordUseCase = ResolveRegionFromKeywordUseCase(
                 repository = regionRepository,
                 regionOptionsRepository = regionOptionsRepository
-            )
+            ),
+            regionOptionsRepository = regionOptionsRepository,
         ),
         extractRegionFromAddressUseCase = ExtractRegionFromAddressUseCase(regionRepository),
         getRegionalDisposalGuideUseCase = GetRegionalDisposalGuideUseCase(
@@ -78,9 +80,11 @@ internal fun createViewModel(
             )
         ),
         getSidoOptionsUseCase = GetSidoOptionsUseCase(regionOptionsRepository),
-        getSigunguOptionsUseCase = GetSigunguOptionsUseCase(regionOptionsRepository),
+        getRegionalGuideSigunguOptionsUseCase = GetRegionalGuideSigunguOptionsUseCase(
+            regionOptionsRepository
+        ),
         getRegionalGuideEupmyeondongOptionsUseCase = GetRegionalGuideEupmyeondongOptionsUseCase(
-            getEupmyeondongOptionsUseCase = GetEupmyeondongOptionsUseCase(regionOptionsRepository),
+            regionOptionsRepository = regionOptionsRepository,
             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
             repository = regionalGuideOptionRepository,
         ),
@@ -116,18 +120,22 @@ internal fun sampleGuide(
 
 internal class FakeRegionRepository(
     private val resolvedRegion: Region? = null,
-    private val extractedRegion: Region? = null
+    private val extractedRegion: Region? = null,
+    private val resolveThrowable: Throwable? = null,
+    private val extractThrowable: Throwable? = null,
 ) : RegionRepository {
     val extractedAddresses = mutableListOf<String>()
     val resolvedKeywords = mutableListOf<String>()
 
     override fun extractRegionFromAddress(address: String): Region? {
         extractedAddresses += address
+        extractThrowable?.let { throwable -> throw throwable }
         return extractedRegion
     }
 
     override suspend fun resolveRegionFromKeyword(keyword: String): Region? {
         resolvedKeywords += keyword
+        resolveThrowable?.let { throwable -> throw throwable }
         return resolvedRegion
     }
 
@@ -142,6 +150,10 @@ internal class FakeRegionOptionsRepository(
     private val sigunguOptionsBySido: Map<String, List<String>> = emptyMap(),
     private val eupmyeondongOptionsByRegion: Map<String, Map<String, List<String>>> = emptyMap(),
     private val delayedSigunguOptionsBySido: Map<String, CompletableDeferred<List<String>>> = emptyMap(),
+    private val delayedEupmyeondongOptionsByRegion:
+        Map<String, Map<String, CompletableDeferred<List<String>>>> = emptyMap(),
+    private val nonCancellableDelayedEupmyeondongOptionsByRegion:
+        Map<String, Map<String, CompletableDeferred<List<String>>>> = emptyMap(),
     private val keywordRegions: List<Region> = emptyList(),
     private val adminDongCandidates: List<Region> = emptyList(),
 ) : RegionOptionsRepository {
@@ -159,9 +171,15 @@ internal class FakeRegionOptionsRepository(
         sido: String,
         sigungu: String
     ): List<String> {
-        return eupmyeondongOptionsByRegion[sido]
+        return nonCancellableDelayedEupmyeondongOptionsByRegion[sido]
             ?.get(sigungu)
-            .orEmpty()
+            ?.let { deferred -> withContext(NonCancellable) { deferred.await() } }
+            ?: delayedEupmyeondongOptionsByRegion[sido]
+            ?.get(sigungu)
+            ?.await()
+            ?: eupmyeondongOptionsByRegion[sido]
+                ?.get(sigungu)
+                .orEmpty()
     }
 
     override suspend fun findRegionsByEupmyeondongKeyword(
@@ -289,13 +307,17 @@ internal class FakeFavoriteRepository(
 
 internal class FakeRegionalGuideFavoriteSnapshotRepository(
     snapshots: List<RegionalGuideFavoriteSnapshot> = emptyList(),
+    private val throwable: Throwable? = null,
 ) : RegionalGuideFavoriteSnapshotRepository {
     private val snapshots = MutableStateFlow(snapshots)
 
     override fun observeSnapshots(): Flow<List<RegionalGuideFavoriteSnapshot>> = snapshots
 
-    override suspend fun getSnapshot(targetId: String): RegionalGuideFavoriteSnapshot? =
-        snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+    override suspend fun getSnapshot(targetId: String): RegionalGuideFavoriteSnapshot? {
+        throwable?.let { exception -> throw exception }
+
+        return snapshots.value.firstOrNull { snapshot -> snapshot.targetId == targetId }
+    }
 
     override suspend fun upsertSnapshot(snapshot: RegionalGuideFavoriteSnapshot) {
         snapshots.value =

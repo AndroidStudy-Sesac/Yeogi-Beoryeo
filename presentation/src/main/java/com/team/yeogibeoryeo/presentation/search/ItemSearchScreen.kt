@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.FloatingActionButton
@@ -38,9 +37,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -71,6 +71,11 @@ fun ItemSearchRoute(
     initialQuery: String? = null,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    isAppGuideActive: Boolean = false,
+    appGuideTarget: ItemSearchGuideTarget? = null,
+    searchGuideModifier: Modifier = Modifier,
+    quickCategoryGuideModifier: Modifier = Modifier,
+    usefulGuideModifier: Modifier = Modifier,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
 ) {
@@ -131,6 +136,11 @@ fun ItemSearchRoute(
         categoryListState = categoryListState,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
         onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
+        isAppGuideActive = isAppGuideActive,
+        appGuideTarget = appGuideTarget,
+        searchGuideModifier = searchGuideModifier,
+        quickCategoryGuideModifier = quickCategoryGuideModifier,
+        usefulGuideModifier = usefulGuideModifier,
         modifier = modifier,
     )
 }
@@ -158,9 +168,15 @@ fun ItemSearchScreen(
     categoryListState: LazyListState = rememberLazyListState(),
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
+    isAppGuideActive: Boolean = false,
+    appGuideTarget: ItemSearchGuideTarget? = null,
+    searchGuideModifier: Modifier = Modifier,
+    quickCategoryGuideModifier: Modifier = Modifier,
+    usefulGuideModifier: Modifier = Modifier,
 ) {
     val showsInitialContent =
-        !uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null
+        isAppGuideActive ||
+            (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null)
     val showsSearchResults = uiState.guides.isNotEmpty()
 
     LaunchedEffect(showsInitialContent, showsSearchResults) {
@@ -199,6 +215,10 @@ fun ItemSearchScreen(
             modifier = modifier.statusBarsPadding(),
             onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
             onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
+            appGuideTarget = appGuideTarget,
+            searchGuideModifier = searchGuideModifier,
+            quickCategoryGuideModifier = quickCategoryGuideModifier,
+            usefulGuideModifier = usefulGuideModifier,
         )
         return
     }
@@ -271,14 +291,21 @@ fun ItemSearchScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = searchResultHeaderTopPadding)
-                                    .padding(horizontal = metrics.horizontalPadding)
-                                    .shadow(
-                                        elevation = 6.dp,
-                                        shape = RoundedCornerShape(12.dp),
-                                        clip = false,
-                                    ),
+                                    .padding(horizontal = metrics.horizontalPadding),
                                 iconSize = metrics.searchIconSize,
                             )
+                            uiState.submittedQuery?.let { submittedQuery ->
+                                ItemSearchResultQuery(
+                                    query = submittedQuery,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            top = spacing.xs,
+                                            start = metrics.horizontalPadding,
+                                            end = metrics.horizontalPadding,
+                                        ),
+                                )
+                            }
                         }
                     }
 
@@ -334,12 +361,7 @@ fun ItemSearchScreen(
                     },
                     placeholder = stringResource(R.string.item_search_query_label),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(12.dp),
-                            clip = false,
-                        ),
+                        .fillMaxWidth(),
                     iconSize = metrics.searchIconSize,
                 )
 
@@ -347,6 +369,12 @@ fun ItemSearchScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
                 ) {
+                    if (!uiState.isLoading && uiState.errorMessageResId == null) {
+                        uiState.submittedQuery?.let { submittedQuery ->
+                            ItemSearchResultQuery(query = submittedQuery)
+                        }
+                    }
+
                     when {
                         uiState.isLoading -> {
                             ItemSearchLoadingContent(modifier = Modifier.fillMaxSize())
@@ -372,6 +400,19 @@ fun ItemSearchScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ItemSearchResultQuery(
+    query: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = stringResource(R.string.item_search_result_query, query),
+        modifier = modifier.semantics { heading() },
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
 }
 
 @Composable

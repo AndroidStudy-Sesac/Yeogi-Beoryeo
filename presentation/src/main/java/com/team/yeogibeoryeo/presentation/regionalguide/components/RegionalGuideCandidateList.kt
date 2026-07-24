@@ -3,17 +3,11 @@ package com.team.yeogibeoryeo.presentation.regionalguide.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -22,17 +16,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
-import kotlin.math.roundToInt
 
 @Composable
 internal fun <T> RegionalGuideCandidateList(
@@ -40,6 +34,7 @@ internal fun <T> RegionalGuideCandidateList(
     key: (T) -> Any,
     onCandidateClick: (T) -> Unit,
     modifier: Modifier = Modifier,
+    maxHeight: Dp = CANDIDATE_LIST_MAX_HEIGHT,
     scrollStateKey: Any = candidates.candidateListContentKey(key),
     initialScrollPosition: RegionalGuideCandidateListScrollPosition =
         RegionalGuideCandidateListScrollPosition.Initial,
@@ -68,7 +63,7 @@ internal fun <T> RegionalGuideCandidateList(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(max = CANDIDATE_LIST_MAX_HEIGHT)
+            .heightIn(max = maxHeight)
             .background(MaterialTheme.colorScheme.surface)
     ) {
         LazyColumn(
@@ -99,9 +94,7 @@ internal fun <T> RegionalGuideCandidateList(
 
         RegionalGuideCandidateScrollbar(
             listState = listState,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 2.dp)
+            modifier = Modifier.matchParentSize(),
         )
     }
 }
@@ -132,49 +125,58 @@ private fun RegionalGuideCandidateScrollbar(
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    val layoutInfo = listState.layoutInfo
-    val totalItemsCount = layoutInfo.totalItemsCount
-    val visibleItemsCount = layoutInfo.visibleItemsInfo.size
+    val trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = SCROLLBAR_TRACK_ALPHA)
+    val thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = SCROLLBAR_THUMB_ALPHA)
 
-    if (totalItemsCount == 0 || visibleItemsCount == 0 || visibleItemsCount >= totalItemsCount) {
-        return
-    }
-
-    BoxWithConstraints(
+    Box(
         modifier = modifier
-            .fillMaxHeight()
-            .width(SCROLLBAR_WIDTH)
-    ) {
-        val density = LocalDensity.current
-        val containerHeightPx = with(density) { maxHeight.toPx() }
-        val thumbHeightPx = (containerHeightPx * visibleItemsCount / totalItemsCount)
-            .coerceAtLeast(MIN_SCROLLBAR_THUMB_HEIGHT_PX)
-        val scrollableItemsCount = (totalItemsCount - visibleItemsCount).coerceAtLeast(1)
-        val offsetFraction = listState.firstVisibleItemIndex.toFloat() / scrollableItemsCount
-        val thumbOffsetPx = ((containerHeightPx - thumbHeightPx) * offsetFraction).roundToInt()
+            .drawWithCache {
+                val layoutInfo = listState.layoutInfo
+                val totalItemsCount = layoutInfo.totalItemsCount
+                val visibleItemsCount = layoutInfo.visibleItemsInfo.size
+                val scrollbarWidth = SCROLLBAR_WIDTH.toPx()
+                val scrollbarStartX = size.width - scrollbarWidth - SCROLLBAR_END_PADDING.toPx()
 
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(SCROLLBAR_WIDTH)
-                .clip(RoundedCornerShape(SCROLLBAR_RADIUS))
-                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = SCROLLBAR_TRACK_ALPHA))
-        )
+                onDrawWithContent {
+                    drawContent()
 
-        Box(
-            modifier = Modifier
-                .offset { IntOffset(x = 0, y = thumbOffsetPx) }
-                .width(SCROLLBAR_WIDTH)
-                .fillMaxHeight(thumbHeightPx / containerHeightPx)
-                .clip(RoundedCornerShape(SCROLLBAR_RADIUS))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = SCROLLBAR_THUMB_ALPHA))
-        )
-    }
+                    if (
+                        totalItemsCount == 0 ||
+                        visibleItemsCount == 0 ||
+                        visibleItemsCount >= totalItemsCount
+                    ) {
+                        return@onDrawWithContent
+                    }
+
+                    val thumbHeight = (size.height * visibleItemsCount / totalItemsCount)
+                        .coerceAtLeast(MIN_SCROLLBAR_THUMB_HEIGHT_PX)
+                        .coerceAtMost(size.height)
+                    val scrollableItemsCount = (totalItemsCount - visibleItemsCount).coerceAtLeast(1)
+                    val offsetFraction =
+                        listState.firstVisibleItemIndex.toFloat() / scrollableItemsCount
+                    val thumbOffset = (size.height - thumbHeight) * offsetFraction
+                    val cornerRadius = CornerRadius(scrollbarWidth / 2f, scrollbarWidth / 2f)
+
+                    drawRoundRect(
+                        color = trackColor,
+                        topLeft = Offset(x = scrollbarStartX, y = 0f),
+                        size = Size(width = scrollbarWidth, height = size.height),
+                        cornerRadius = cornerRadius,
+                    )
+                    drawRoundRect(
+                        color = thumbColor,
+                        topLeft = Offset(x = scrollbarStartX, y = thumbOffset),
+                        size = Size(width = scrollbarWidth, height = thumbHeight),
+                        cornerRadius = cornerRadius,
+                    )
+                }
+            },
+    )
 }
 
 private val CANDIDATE_LIST_MAX_HEIGHT = 260.dp
 private val SCROLLBAR_WIDTH = 3.dp
-private val SCROLLBAR_RADIUS = 999.dp
+private val SCROLLBAR_END_PADDING = 2.dp
 private const val SCROLLBAR_TRACK_ALPHA = 0.35f
 private const val SCROLLBAR_THUMB_ALPHA = 0.85f
 private const val MIN_SCROLLBAR_THUMB_HEIGHT_PX = 24f

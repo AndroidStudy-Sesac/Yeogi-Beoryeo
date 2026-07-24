@@ -9,16 +9,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideCandidateListScrollPosition
-import com.team.yeogibeoryeo.presentation.regionalguide.regionSearchCandidateListScrollKey
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
+import com.team.yeogibeoryeo.presentation.regionalguide.regionSearchCandidateListScrollKey
 
 @Composable
 fun RegionalGuideAmbiguousResult(
     candidates: List<RegionSearchCandidateUiModel>,
     onCandidateClick: (RegionSearchCandidateUiModel) -> Unit,
     modifier: Modifier = Modifier,
+    candidateListMaxHeight: Dp = 260.dp,
     scrollStateKey: String = candidates
         .filter { candidate -> candidate.isValid }
         .regionSearchCandidateListScrollKey(),
@@ -35,11 +37,14 @@ fun RegionalGuideAmbiguousResult(
         key = { candidate -> candidate.stableKey },
         onCandidateClick = onCandidateClick,
         modifier = modifier,
+        maxHeight = candidateListMaxHeight,
         scrollStateKey = scrollStateKey,
         initialScrollPosition = initialScrollPosition,
         onScrollPositionChange = onScrollPositionChange,
     ) { candidate ->
-        RegionalGuideCandidateRowText(text = candidate.displayText)
+        RegionalGuideCandidateRowText(
+            text = candidate.regionNameParts.toRegionalGuideSelectorText().orEmpty(),
+        )
     }
 }
 

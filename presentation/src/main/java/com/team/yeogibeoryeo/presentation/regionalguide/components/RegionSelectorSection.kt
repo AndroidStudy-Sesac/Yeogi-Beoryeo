@@ -1,8 +1,8 @@
 package com.team.yeogibeoryeo.presentation.regionalguide.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,30 +25,42 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorDropdown
+import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorEupmyeondongSelectionStatus
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionSelectorUiState
 
 @Composable
 fun RegionSelectorSection(
     uiState: RegionSelectorUiState,
-    compact: Boolean = false,
-    compactRegionText: String? = uiState.selectedRegionText,
     onSidoSelected: (String) -> Unit,
     onSigunguSelected: (String) -> Unit,
     onEupmyeondongSelected: (String) -> Unit,
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+    compactLandscape: Boolean = false,
+    compactRegionText: String? = null,
     onDropdownExpanded: (RegionSelectorDropdown) -> Unit = {},
     onDropdownDismissed: () -> Unit = {},
-    onSearchClick: () -> Unit,
     onChangeClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
-    if (compact && compactRegionText != null) {
+    val selectedRegionText = uiState.selectedRegionParts.toRegionalGuideSelectorText()
+    val dropdownMaxHeight = if (compactLandscape) {
+        CompactLandscapeDropdownMaxHeight
+    } else {
+        DefaultDropdownMaxHeight
+    }
+
+    if (compact && (selectedRegionText ?: compactRegionText) != null) {
         RegionSelectorCompactCard(
-            selectedRegionText = compactRegionText,
+            selectedRegionText = selectedRegionText ?: compactRegionText.orEmpty(),
             onChangeClick = onChangeClick,
             modifier = modifier,
         )
@@ -66,83 +78,127 @@ fun RegionSelectorSection(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(if (compactLandscape) 16.dp else 24.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compactLandscape) 10.dp else 16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 RegionDropdownChip(
-                    label = uiState.selectedSido ?: "시도 선택",
+                    label = uiState.selectedSido
+                        ?: stringResource(id = R.string.regional_guide_region_selector_sido_label),
                     options = uiState.sidoOptions,
                     expanded = uiState.expandedDropdown == RegionSelectorDropdown.SIDO,
                     onExpanded = { onDropdownExpanded(RegionSelectorDropdown.SIDO) },
                     onDismissed = onDropdownDismissed,
                     onOptionSelected = onSidoSelected,
+                    dropdownMaxHeight = dropdownMaxHeight,
                     modifier = Modifier.weight(1f),
                 )
 
                 RegionDropdownChip(
-                    label = uiState.selectedSigungu ?: "시군구 선택",
+                    label = uiState.selectedSigungu
+                        ?: stringResource(id = R.string.regional_guide_region_selector_sigungu_label),
                     options = uiState.sigunguOptions,
                     enabled = uiState.isSigunguSelectionEnabled,
                     expanded = uiState.expandedDropdown == RegionSelectorDropdown.SIGUNGU,
                     onExpanded = { onDropdownExpanded(RegionSelectorDropdown.SIGUNGU) },
                     onDismissed = onDropdownDismissed,
                     onOptionSelected = onSigunguSelected,
+                    dropdownMaxHeight = dropdownMaxHeight,
                     modifier = Modifier.weight(1f),
                 )
             }
 
-            RegionDropdownChip(
-                label = uiState.eupmyeondongSelectionLabel,
-                options = uiState.eupmyeondongOptions,
-                enabled = uiState.isEupmyeondongSelectionEnabled,
-                expanded = uiState.expandedDropdown == RegionSelectorDropdown.EUPMYEONDONG,
-                onExpanded = { onDropdownExpanded(RegionSelectorDropdown.EUPMYEONDONG) },
-                onDismissed = onDropdownDismissed,
-                onOptionSelected = onEupmyeondongSelected,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            uiState.selectedRegionText?.let { selectedRegionText ->
-                Surface(
+            if (compactLandscape) {
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.surface,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = "$selectedRegionText",
-                        modifier = Modifier.padding(
-                            horizontal = 14.dp,
-                            vertical = 12.dp,
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold,
+                    RegionDropdownChip(
+                        label = uiState.eupmyeondongSelectionStatus.label(),
+                        options = uiState.eupmyeondongOptions,
+                        enabled = uiState.isEupmyeondongSelectionEnabled,
+                        expanded = uiState.expandedDropdown == RegionSelectorDropdown.EUPMYEONDONG,
+                        onExpanded = { onDropdownExpanded(RegionSelectorDropdown.EUPMYEONDONG) },
+                        onDismissed = onDropdownDismissed,
+                        onOptionSelected = onEupmyeondongSelected,
+                        dropdownMaxHeight = dropdownMaxHeight,
+                        modifier = Modifier.weight(2f),
+                    )
+
+                    RegionSelectorSearchButton(
+                        onClick = onSearchClick,
+                        enabled = uiState.canSearchSelectedRegion,
+                        modifier = Modifier.weight(1f),
                     )
                 }
-            }
+            } else {
+                RegionDropdownChip(
+                    label = uiState.eupmyeondongSelectionStatus.label(),
+                    options = uiState.eupmyeondongOptions,
+                    enabled = uiState.isEupmyeondongSelectionEnabled,
+                    expanded = uiState.expandedDropdown == RegionSelectorDropdown.EUPMYEONDONG,
+                    onExpanded = { onDropdownExpanded(RegionSelectorDropdown.EUPMYEONDONG) },
+                    onDismissed = onDropdownDismissed,
+                    onOptionSelected = onEupmyeondongSelected,
+                    dropdownMaxHeight = dropdownMaxHeight,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onSearchClick,
-                enabled = uiState.canSearchSelectedRegion,
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            ) {
-                Text(
-                    text = "조회",
-                    fontWeight = FontWeight.Bold,
+                selectedRegionText?.let { selectedRegionText ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                    ) {
+                        Text(
+                            text = selectedRegionText,
+                            modifier = Modifier.padding(
+                                horizontal = 14.dp,
+                                vertical = 12.dp,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+
+                RegionSelectorSearchButton(
+                    onClick = onSearchClick,
+                    enabled = uiState.canSearchSelectedRegion,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun RegionSelectorSearchButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        modifier = modifier,
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+    ) {
+        Text(
+            text = stringResource(id = R.string.regional_guide_region_selector_search_action),
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -181,13 +237,27 @@ private fun RegionSelectorCompactCard(
                 onClick = onChangeClick,
             ) {
                 Text(
-                    text = "변경",
+                    text = stringResource(id = R.string.regional_guide_region_selector_change_action),
                     fontWeight = FontWeight.Bold,
                 )
             }
         }
     }
 }
+
+@Composable
+private fun RegionSelectorEupmyeondongSelectionStatus.label(): String =
+    when (this) {
+        is RegionSelectorEupmyeondongSelectionStatus.Selected -> name
+        RegionSelectorEupmyeondongSelectionStatus.Loading ->
+            stringResource(id = R.string.regional_guide_region_selector_eupmyeondong_loading_label)
+
+        RegionSelectorEupmyeondongSelectionStatus.Unavailable ->
+            stringResource(id = R.string.regional_guide_region_selector_eupmyeondong_unavailable_label)
+
+        RegionSelectorEupmyeondongSelectionStatus.Default ->
+            stringResource(id = R.string.regional_guide_region_selector_eupmyeondong_label)
+    }
 
 @Composable
 private fun RegionDropdownChip(
@@ -199,6 +269,7 @@ private fun RegionDropdownChip(
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    dropdownMaxHeight: Dp = DefaultDropdownMaxHeight,
 ) {
     BoxWithConstraints(
         modifier = modifier,
@@ -239,7 +310,7 @@ private fun RegionDropdownChip(
                 onDismissRequest = onDismissed,
                 modifier = Modifier
                     .width(dropdownWidth)
-                    .heightIn(max = 280.dp),
+                    .heightIn(max = dropdownMaxHeight),
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
@@ -259,6 +330,9 @@ private fun RegionDropdownChip(
         }
     }
 }
+
+private val CompactLandscapeDropdownMaxHeight = 180.dp
+private val DefaultDropdownMaxHeight = 280.dp
 
 @Preview(showBackground = true)
 @Composable

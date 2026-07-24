@@ -204,7 +204,7 @@ class RegionalGuideMapperTest {
     }
 
     @Test
-    fun `대형폐기물 배출장소는 요일과 분리해 일정 장소로 전달한다`() {
+    fun `대형폐기물 배출장소만 있어도 일정 장소로 전달한다`() {
         val result = RegionalGuideMapper.mapToDomain(
             baseRegion = Region(sido = "서울특별시", sigungu = "중구"),
             dto = RegionalGuideItemDto(
@@ -215,7 +215,30 @@ class RegionalGuideMapperTest {
         val schedule = result.schedules.single()
         assertEquals(RegionalWasteType.LARGE_ITEM, schedule.wasteType)
         assertNull(schedule.disposalDays)
+        assertNull(schedule.disposalStartTime)
+        assertNull(schedule.disposalEndTime)
         assertNull(schedule.disposalMethod)
+        assertEquals("대형폐기물 지정 장소", schedule.disposalPlace)
+    }
+
+    @Test
+    fun `대형폐기물 배출 상세 정보는 일정에 전달한다`() {
+        val result = RegionalGuideMapper.mapToDomain(
+            baseRegion = Region(sido = "서울특별시", sigungu = "중구"),
+            dto = RegionalGuideItemDto(
+                largeItemDisposalPlace = "대형폐기물 지정 장소",
+                largeItemStartTime = "1800",
+                largeItemEndTime = "2100",
+                largeItemMethod = "사전 신청 후 배출",
+            )
+        )
+
+        val schedule = result.schedules.single()
+        assertEquals(RegionalWasteType.LARGE_ITEM, schedule.wasteType)
+        assertNull(schedule.disposalDays)
+        assertEquals("18:00", schedule.disposalStartTime)
+        assertEquals("21:00", schedule.disposalEndTime)
+        assertEquals("사전 신청 후 배출", schedule.disposalMethod)
         assertEquals("대형폐기물 지정 장소", schedule.disposalPlace)
     }
 

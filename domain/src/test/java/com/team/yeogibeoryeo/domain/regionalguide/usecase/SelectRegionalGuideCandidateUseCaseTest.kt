@@ -1,7 +1,8 @@
-﻿package com.team.yeogibeoryeo.domain.regionalguide.usecase
+package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideSourceMetadata
@@ -360,6 +361,38 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
             guide.targetRegionName
         )
     }
+
+    @Test
+    fun `법정동 이름으로 시작하는 상세 대상지역 후보만 선택한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "의왕시",
+                    managementZoneName = "의왕시",
+                    targetRegionName = "부곡중앙북6길",
+                ),
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "의왕시",
+                    managementZoneName = "의왕시",
+                    targetRegionName = "가구단지길",
+                ),
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경기도",
+                    sigungu = "의왕시",
+                    eupmyeondong = "부곡동",
+                ),
+                sigunguQuery = "의왕시",
+            ),
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("부곡중앙북6길", guide.targetRegionName)
+    }
 }
 
 class SelectRegionalGuideCandidateIdentityUseCaseTest {
@@ -398,6 +431,188 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
         assertEquals(2, candidates.size)
         assertEquals("노은2동", candidates[0].managementZoneName)
         assertEquals("노은3동", candidates[1].managementZoneName)
+    }
+
+    @Test
+    fun `법정동 매핑 관리구역 후보가 있으면 단일 대상지역명 정확 매칭보다 후보 목록을 우선한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "죽동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "반석동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "지족동"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    eupmyeondong = "반석동"
+                ),
+                sigunguQuery = "유성구"
+            ),
+            mappedAdminDongCandidates = listOf(
+                Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "노은2동"),
+                Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "노은3동")
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf("노은2동", "노은3동"),
+            candidates.map { guide -> guide.managementZoneName }
+        )
+        assertEquals(
+            listOf("반석동 일부지역", "반석동"),
+            candidates.map { guide -> guide.targetRegionName }
+        )
+    }
+
+    @Test
+    fun `출장소 행정동 후보는 부모 읍면동 가이드로 연결한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대구광역시",
+                    sigungu = "달성군",
+                    managementZoneName = "다사읍",
+                    targetRegionName = "다사읍"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대구광역시",
+                    sigungu = "달성군",
+                    eupmyeondong = "다사읍서재출장소"
+                ),
+                sigunguQuery = "달성군"
+            )
+        )
+
+        val guide = (result as RegionalGuideLookupResult.Success).guide
+
+        assertEquals("다사읍", guide.managementZoneName)
+    }
+
+    @Test
+    fun `번호가 생략된 동 검색어는 번호가 붙은 관리구역명 후보와 매칭된다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은1동",
+                    targetRegionName = "노은1동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "온천2동",
+                    targetRegionName = "봉명동 일부지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    eupmyeondong = "노은동"
+                ),
+                sigunguQuery = "유성구"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(3, candidates.size)
+        assertEquals(
+            listOf("노은1동", "노은2동", "노은3동"),
+            candidates.map { guide -> guide.managementZoneName }
+        )
+    }
+
+    @Test
+    fun `번호가 생략된 동 검색어는 대상지역명보다 번호 관리구역명 후보를 우선한다`() {
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은1동",
+                    targetRegionName = "노은1동"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은2동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "노은3동",
+                    targetRegionName = "반석동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "상대동",
+                    targetRegionName = "노은동 일부지역"
+                ),
+                regionalDisposalGuide(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    managementZoneName = "신성동",
+                    targetRegionName = "노은동 일부지역"
+                )
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "대전광역시",
+                    sigungu = "유성구",
+                    eupmyeondong = "노은동"
+                ),
+                sigunguQuery = "유성구"
+            )
+        )
+
+        val candidates = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf("노은1동", "노은2동", "노은3동"),
+            candidates.map { guide -> guide.managementZoneName }
+        )
     }
 
     @Test
@@ -2195,14 +2410,18 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
     }
 
     @Test
-    fun `날짜가 같으면 첫 행을 임의 선택하지 않고 기존 병합 정책을 유지한다`() {
+    fun `데이터 기준일이 같고 일정이 다르면 별도 후보로 유지한다`() {
         val firstSchedule = RegionalWasteSchedule(
             wasteType = RegionalWasteType.GENERAL,
-            disposalDays = "월"
+            disposalDays = "일, 월, 수",
+            disposalStartTime = "09:00",
+            disposalEndTime = "18:00",
         )
         val secondSchedule = RegionalWasteSchedule(
-            wasteType = RegionalWasteType.FOOD,
-            disposalDays = "화"
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "일, 월, 수",
+            disposalStartTime = "20:00",
+            disposalEndTime = "06:00",
         )
 
         val result = useCase(
@@ -2215,8 +2434,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     disposalPlaceType = "거점수거",
                     schedules = listOf(firstSchedule),
                     sourceMetadata = RegionalGuideSourceMetadata(
-                        lastModifiedPoint = "20240709000000",
-                        dataCriteriaDate = "20240101"
+                        dataCriteriaDate = "20240709",
                     )
                 ),
                 regionalDisposalGuide(
@@ -2227,8 +2445,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                     disposalPlaceType = "거점수거",
                     schedules = listOf(secondSchedule),
                     sourceMetadata = RegionalGuideSourceMetadata(
-                        lastModifiedPoint = "20240709000000",
-                        dataCriteriaDate = "20240709"
+                        dataCriteriaDate = "20240709",
                     )
                 )
             ),
@@ -2242,9 +2459,208 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             )
         )
 
+        val guides = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf(listOf(firstSchedule), listOf(secondSchedule)),
+            guides.map { guide -> guide.schedules },
+        )
+    }
+
+    @Test
+    fun `최종수정일이 같고 일정이 같으면 하나의 후보로 정리한다`() {
+        val schedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "월, 수, 금",
+            disposalStartTime = "09:00",
+            disposalEndTime = "18:00",
+        )
+
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    managementZoneName = "양평읍",
+                    targetRegionName = "양근5리",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(schedule),
+                    uncollectedDays = "없음",
+                    departmentName = "청소행정과",
+                    departmentPhoneNumber = "031-111-1111",
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        managementNumber = "202541700000400153",
+                        lastModifiedPoint = "20240709105039",
+                    ),
+                ),
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    managementZoneName = "양평읍",
+                    targetRegionName = "양근5리",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(schedule),
+                    uncollectedDays = "화, 금, 토",
+                    departmentName = "자원순환과",
+                    departmentPhoneNumber = "031-222-2222",
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        managementNumber = "202541700000400121",
+                        lastModifiedPoint = "20240709105039",
+                    ),
+                ),
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    eupmyeondong = "양평읍",
+                ),
+                sigunguQuery = "양평군",
+            ),
+        )
+
         val guide = (result as RegionalGuideLookupResult.Success).guide
 
-        assertEquals(listOf(firstSchedule, secondSchedule), guide.schedules)
+        assertEquals(listOf(schedule), guide.schedules)
+    }
+
+    @Test
+    fun `동률인 최신 일정 묶음에서 이전 일정은 제외하고 같은 일정만 하나로 정리한다`() {
+        val daytimeSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "일, 월, 수",
+            disposalStartTime = "09:00",
+            disposalEndTime = "18:00",
+        )
+        val nighttimeSchedule = daytimeSchedule.copy(
+            disposalStartTime = "20:00",
+            disposalEndTime = "06:00",
+        )
+        val outdatedSchedule = daytimeSchedule.copy(
+            disposalStartTime = "07:00",
+            disposalEndTime = "08:00",
+        )
+        val latestDayManagementNumber = "202541700000400153"
+        val outdatedManagementNumber = "202541700000400121"
+        val latestNightManagementNumber = "202541700000400147"
+
+        fun `후보행`(
+            schedule: RegionalWasteSchedule,
+            managementNumber: String,
+            lastModifiedPoint: String,
+        ): RegionalDisposalGuide =
+            regionalDisposalGuide(
+                sido = "경기도",
+                sigungu = "양평군",
+                managementZoneName = "양평읍",
+                targetRegionName = "양근5리",
+                disposalPlaceType = "거점수거",
+                schedules = listOf(schedule),
+                sourceMetadata = RegionalGuideSourceMetadata(
+                    managementNumber = managementNumber,
+                    lastModifiedPoint = lastModifiedPoint,
+                ),
+            )
+
+        val result = useCase(
+            candidates = listOf(
+                후보행(daytimeSchedule, latestDayManagementNumber, "20240709105039"),
+                후보행(outdatedSchedule, outdatedManagementNumber, "20240709104936"),
+                후보행(nighttimeSchedule, latestNightManagementNumber, "20240709105039"),
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    eupmyeondong = "양평읍",
+                ),
+                sigunguQuery = "양평군",
+            ),
+        )
+
+        val guides = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf(listOf(daytimeSchedule), listOf(nighttimeSchedule)),
+            guides.map { guide -> guide.schedules },
+        )
+        assertEquals(
+            listOf(latestDayManagementNumber, latestNightManagementNumber),
+            guides.map { guide -> guide.sourceMetadata?.managementNumber },
+        )
+    }
+
+    @Test
+    fun `날짜를 읽을 수 없는 후보가 있으면 기존 일정 병합을 유지한다`() {
+        val firstSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.GENERAL,
+            disposalDays = "월, 수, 금",
+        )
+        val secondSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.FOOD,
+            disposalDays = "화, 목, 토",
+        )
+        val unreadableDateSchedule = RegionalWasteSchedule(
+            wasteType = RegionalWasteType.RECYCLABLE,
+            disposalDays = "일",
+        )
+
+        val result = useCase(
+            candidates = listOf(
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    managementZoneName = "양평읍",
+                    targetRegionName = "양근5리",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(firstSchedule),
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "20240709105039",
+                    ),
+                ),
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    managementZoneName = "양평읍",
+                    targetRegionName = "양근5리",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(secondSchedule),
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "20240709105039",
+                    ),
+                ),
+                regionalDisposalGuide(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    managementZoneName = "양평읍",
+                    targetRegionName = "양근5리",
+                    disposalPlaceType = "거점수거",
+                    schedules = listOf(unreadableDateSchedule),
+                    departmentName = "자원순환과",
+                    sourceMetadata = RegionalGuideSourceMetadata(
+                        lastModifiedPoint = "invalid",
+                    ),
+                ),
+            ),
+            query = regionalGuideQuery(
+                displayRegion = Region(
+                    sido = "경기도",
+                    sigungu = "양평군",
+                    eupmyeondong = "양평읍",
+                ),
+                sigunguQuery = "양평군",
+            ),
+        )
+
+        val guides = (result as RegionalGuideLookupResult.Candidates).guides
+
+        assertEquals(
+            listOf(
+                listOf(firstSchedule, secondSchedule),
+                listOf(unreadableDateSchedule),
+            ),
+            guides.map { guide -> guide.schedules },
+        )
     }
 
     @Test

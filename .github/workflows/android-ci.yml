@@ -44,7 +44,7 @@ jobs:
   build:
     name: Build Android Project
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -71,8 +71,39 @@ jobs:
 
       - name: Create Firebase config for CI
         run: |
-          mkdir -p app/src/debug
+          mkdir -p app/src/debug app/src/release
           cat > app/src/debug/google-services.json <<'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "ci-dummy-project",
+              "storage_bucket": "ci-dummy-project.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": {
+                    "package_name": "com.team.yeogibeoryeo.debug"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "ci_dummy_api_key"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+          cat > app/src/release/google-services.json <<'EOF'
           {
             "project_info": {
               "project_number": "000000000000",
@@ -102,6 +133,26 @@ jobs:
             ],
             "configuration_version": "1"
           }
+          EOF
+
+      - name: Create release signing config for CI
+        if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: |
+          keytool -genkeypair -noprompt \
+            -keystore ci-release.jks \
+            -storepass android \
+            -keypass android \
+            -alias ci-release \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 1 \
+            -dname "CN=CI, OU=CI, O=YeogiBeoryeo, L=Seoul, ST=Seoul, C=KR"
+
+          cat > keystore.properties <<'EOF'
+          storeFile=ci-release.jks
+          storePassword=android
+          keyAlias=ci-release
+          keyPassword=android
           EOF
 
       - name: Grant execute permission for gradlew
@@ -187,6 +238,18 @@ jobs:
             fi
           fi
 
+          tasks+=(
+            ":app:lintDebug"
+            ":common:lintDebug"
+            ":data:lintDebug"
+            ":presentation:lintDebug"
+          )
+
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]] || \
+             [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            tasks+=(":app:assembleRelease" ":app:bundleRelease")
+          fi
+
           unique_tasks=()
           for task in "${tasks[@]}"; do
             if [[ ! " ${unique_tasks[*]} " =~ " ${task} " ]]; then
@@ -198,5 +261,79 @@ jobs:
           echo "tasks=$selected_tasks" >> "$GITHUB_OUTPUT"
           echo "Selected Gradle tasks: $selected_tasks"
 
-      - name: Run selected unit tests and build debug APK
-        run: ./gradlew ${{ steps.gradle-tasks.outputs.tasks }} --no-daemon --stacktrace
+      - name: Run selected tests, lint, and builds
+        run: ./gradlew ${{ steps.gradle-tasks.outputs.tasks }} --no-daemon --stacktrace -PciReleaseCheck=true
+
+      - name: Validate release app bundle
+        if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        shell: bash
+        env:
+          BUNDLETOOL_VERSION: 1.18.3
+          BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
+        run: |
+          set -euo pipefail
+
+          aab_path="app/build/outputs/bundle/release/app-release.aab"
+          bundletool_jar="$RUNNER_TEMP/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          bundletool_output="$RUNNER_TEMP/bundletool-validate.txt"
+
+          test -f "$aab_path"
+          echo "Release AAB path: $aab_path"
+          echo "Release AAB size: $(stat -c %s "$aab_path") bytes"
+
+          curl --fail --location --silent --show-error \
+            --output "$bundletool_jar" \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          echo "${BUNDLETOOL_SHA256}  ${bundletool_jar}" | sha256sum --check
+
+          if ! java -jar "$bundletool_jar" validate --bundle="$aab_path" > "$bundletool_output" 2>&1; then
+            cat "$bundletool_output"
+            exit 1
+          fi
+
+          echo "bundletool validate: passed"
+
+  instrumented-test:
+    name: Instrumented Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' || (github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main') }}
+
+      - name: Create local.properties for CI
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "NAVER_CLIENT_ID=ci_dummy_naver_client_id" >> local.properties
+          echo "PUBLIC_DATA_SERVICE_KEY=ci_dummy_public_data_service_key" >> local.properties
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+
+      - name: Enable KVM
+        run: sudo chmod 666 /dev/kvm
+
+      - name: Run instrumented tests
+        run: |
+          ./gradlew \
+            :data:pixel9ProApi36DebugAndroidTest \
+            :presentation:pixel9ProApi36DebugAndroidTest \
+            --no-parallel \
+            --no-daemon \
+            --stacktrace \
+            -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect

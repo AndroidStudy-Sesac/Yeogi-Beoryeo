@@ -4,10 +4,14 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -17,10 +21,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -31,28 +40,42 @@ fun ThreeStepMapBottomSheet(
     revealKey: Any?,
     onSheetLevelChanged: (MapSheetLevel) -> Unit,
     modifier: Modifier = Modifier,
+    mediumVisibleHeight: Dp = MapSpotDetailBottomSheetPeekHeight,
+    maxExpandedVisibleHeight: Dp? = null,
     onVisibleHeightChanged: (Dp) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val coroutineScope = rememberCoroutineScope()
-        val sheetHeight = maxHeight - MapSheetTopMargin
+        val navigationBarsBottomInset = with(density) {
+            WindowInsets.navigationBars.getBottom(density).toDp()
+        }
+        val safeDrawingBottomInset = with(density) {
+            WindowInsets.safeDrawing.getBottom(density).toDp()
+        }
+        val bottomInset = maxOf(navigationBarsBottomInset, safeDrawingBottomInset)
+        val sheetHeight = (maxHeight - MapSheetTopMargin - bottomInset)
+            .coerceAtLeast(0.dp)
+        val minVisibleHeight = MapResultBottomSheetPeekHeight.coerceAtMost(sheetHeight)
+        val expandedVisibleHeight = maxExpandedVisibleHeight
+            ?.coerceIn(minVisibleHeight, sheetHeight)
+            ?: sheetHeight
         val sheetHeightPx = with(density) {
             sheetHeight.toPx()
         }
-        val hiddenOffset = with(density) {
-            (sheetHeight - Dp.Hairline).toPx().coerceIn(0f, sheetHeightPx)
+        val hiddenOffset = sheetHeightPx
+        val expandedOffset = with(density) {
+            (sheetHeight - expandedVisibleHeight).toPx().coerceIn(0f, hiddenOffset)
         }
         val peekOffset = with(density) {
-            (sheetHeight - MapResultBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
+            (sheetHeight - MapResultBottomSheetPeekHeight).toPx().coerceIn(expandedOffset, hiddenOffset)
         }
         val mediumOffset = with(density) {
-            (sheetHeight - MapSpotDetailBottomSheetPeekHeight).toPx().coerceIn(0f, hiddenOffset)
+            (sheetHeight - mediumVisibleHeight).toPx().coerceIn(expandedOffset, hiddenOffset)
         }
         val halfOffset = (sheetHeightPx * (1f - MAP_SHEET_HALF_VISIBLE_RATIO))
-            .coerceIn(0f, hiddenOffset)
-        val expandedOffset = 0f
+            .coerceIn(expandedOffset, hiddenOffset)
         fun offsetFor(level: MapSheetLevel): Float =
             when (level) {
                 MapSheetLevel.Hidden -> hiddenOffset
@@ -79,45 +102,111 @@ fun ThreeStepMapBottomSheet(
                 }
         }
 
+        fun snapSheetBy(delta: Float): Float {
+            val currentOffset = sheetOffset.value
+            val nextOffset = (currentOffset + delta).coerceIn(
+                expandedOffset,
+                hiddenOffset,
+            )
+            val consumed = nextOffset - currentOffset
+            if (consumed != 0f) {
+                coroutineScope.launch {
+                    sheetOffset.snapTo(nextOffset)
+                }
+            }
+            return consumed
+        }
+
+        fun settleSheet() {
+            val nearestLevel = MapSheetLevel.entries.minBy { level ->
+                kotlin.math.abs(offsetFor(level) - sheetOffset.value)
+            }
+
+            onSheetLevelChanged(nearestLevel)
+            coroutineScope.launch {
+                sheetOffset.animateTo(offsetFor(nearestLevel))
+            }
+        }
+
+        val sheetNestedScrollConnection = remember(
+            sheetHeightPx,
+            hiddenOffset,
+            expandedOffset,
+        ) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (source != NestedScrollSource.UserInput) return Offset.Zero
+
+                    val delta = available.y
+                    if (delta >= 0f || sheetOffset.value <= expandedOffset) {
+                        return Offset.Zero
+                    }
+
+                    return Offset(x = 0f, y = snapSheetBy(delta))
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (source != NestedScrollSource.UserInput || available.y == 0f) {
+                        return Offset.Zero
+                    }
+
+                    return Offset(x = 0f, y = snapSheetBy(available.y))
+                }
+
+                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                    settleSheet()
+                    return Velocity.Zero
+                }
+            }
+        }
+
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .padding(bottom = bottomInset)
                 .fillMaxWidth()
                 .height(sheetHeight)
                 .offset {
                     IntOffset(x = 0, y = sheetOffset.value.roundToInt())
                 }
-                .pointerInput(sheetHeightPx, hiddenOffset, peekOffset, mediumOffset, halfOffset) {
-                    detectVerticalDragGestures(
-                        onVerticalDrag = { change, dragAmount ->
-                            change.consume()
-                            coroutineScope.launch {
-                                sheetOffset.snapTo(
-                                    (sheetOffset.value + dragAmount).coerceIn(
-                                        expandedOffset,
-                                        hiddenOffset,
-                                    ),
-                                )
-                            }
-                        },
-                        onDragEnd = {
-                            val nearestLevel = MapSheetLevel.entries.minBy { level ->
-                                kotlin.math.abs(offsetFor(level) - sheetOffset.value)
-                            }
-
-                            onSheetLevelChanged(nearestLevel)
-                            coroutineScope.launch {
-                                sheetOffset.animateTo(offsetFor(nearestLevel))
-                            }
-                        },
-                    )
-                },
+                .nestedScroll(sheetNestedScrollConnection),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 4.dp,
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(expandedVisibleHeight),
+            ) {
                 content()
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(MapSheetDragHandleTouchHeight)
+                        .pointerInput(
+                            sheetHeightPx,
+                            hiddenOffset,
+                            peekOffset,
+                            mediumOffset,
+                            halfOffset,
+                            expandedOffset,
+                        ) {
+                            detectVerticalDragGestures(
+                                onVerticalDrag = { change, dragAmount ->
+                                    if (snapSheetBy(dragAmount) != 0f) {
+                                        change.consume()
+                                    }
+                                },
+                                onDragEnd = { settleSheet() },
+                            )
+                        },
+                )
             }
         }
     }
@@ -132,6 +221,7 @@ enum class MapSheetLevel {
 }
 
 private val MapSheetTopMargin = 72.dp
+private val MapSheetDragHandleTouchHeight = 56.dp
 private const val MAP_SHEET_HALF_VISIBLE_RATIO = 0.55f
 val MapResultBottomSheetPeekHeight = 144.dp
 val MapSpotDetailBottomSheetPeekHeight = 220.dp

@@ -6,6 +6,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 
 data class BottomNavigationItem(
@@ -18,12 +19,17 @@ data class BottomNavigationItem(
 @Composable
 fun AppBottomNavigationBar(
     items: List<BottomNavigationItem>,
+    modifier: Modifier = Modifier,
+    itemEnabled: (Int) -> Boolean = { true },
+    itemModifier: (Int) -> Modifier = { Modifier },
 ) {
-    NavigationBar {
-        items.forEach { item ->
+    NavigationBar(modifier = modifier) {
+        items.forEachIndexed { index, item ->
             NavigationBarItem(
                 selected = item.selected,
                 onClick = item.onClick,
+                enabled = itemEnabled(index),
+                modifier = itemModifier(index),
                 icon = {
                     Icon(
                         painter = painterResource(id = item.iconResId),

@@ -42,6 +42,9 @@ constructor(
 
     fun loadGuide(guideId: String) {
         loadGuideJob?.cancel()
+        val currentState = _uiState.value
+        if (currentState is ItemGuideDetailUiState.Success && currentState.guide.id == guideId) return
+
         loadGuideJob =
             viewModelScope.launch {
                 favoriteJob?.cancel()
@@ -109,17 +112,6 @@ constructor(
             if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
                 _events.emit(event)
             }
-        }
-    }
-
-    fun showOfficialGuideOpenFailedMessage() {
-        viewModelScope.launch {
-            _events.emit(
-                ItemGuideDetailEvent.ShowMessage(
-                    messageResId = R.string.item_guide_action_open_failed_message,
-                    icon = ItemGuideDetailMessageIcon.Warning,
-                ),
-            )
         }
     }
 

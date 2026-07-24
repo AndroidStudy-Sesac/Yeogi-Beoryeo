@@ -1,4 +1,4 @@
-﻿package com.team.yeogibeoryeo.presentation.regionalguide
+package com.team.yeogibeoryeo.presentation.regionalguide
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
@@ -24,6 +24,28 @@ class RegionalGuideKeywordSearchViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
+
+    @Test
+    fun `키워드 조회 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+        val viewModel = createViewModel(
+            regionRepository = FakeRegionRepository(
+                resolveThrowable = IllegalStateException(),
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.searchByKeyword("중구")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Error
+
+        assertEquals(
+            RegionalGuideErrorMessage.Resource(
+                resId = R.string.regional_guide_error_keyword_search_message,
+            ),
+            state.message,
+        )
+    }
 
     @Test
     fun `모호한 키워드 검색은 지역 후보 목록을 보여준다`() = runTest {
@@ -53,7 +75,10 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals("온양", state.query)
         assertEquals(2, state.candidates.size)
-        assertEquals("울산광역시 > 울주군 > 온양읍", state.candidates.first().displayText)
+        assertEquals(
+            listOf("울산광역시", "울주군", "온양읍"),
+            state.candidates.first().regionNameParts,
+        )
     }
 
     @Test
@@ -270,7 +295,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         val state = viewModel.uiState.value as RegionalGuideUiState.Success
 
         assertEquals("온양", viewModel.searchKeyword.value)
-        assertEquals(candidate.displayText, state.query)
+        assertEquals(candidate.query, state.query)
         assertEquals("울주군", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {
@@ -363,6 +388,195 @@ class RegionalGuideKeywordSearchViewModelTest {
     }
 
     @Test
+    fun `접미사 없는 법정동 검색어도 대상지역명과 행정동 매핑으로 후보 목록을 보여준다`() = runTest {
+        val guideCandidates = listOf(
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "노은2동",
+                targetRegionName = "반석동 일부지역",
+                schedules = emptyList()
+            ),
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "노은2동",
+                targetRegionName = "수남동+안산동+외삼동",
+                schedules = emptyList()
+            ),
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "노은2동",
+                targetRegionName = "죽동",
+                schedules = emptyList()
+            ),
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "노은3동",
+                targetRegionName = "반석동 일부지역",
+                schedules = emptyList()
+            ),
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "노은3동",
+                targetRegionName = "지족동",
+                schedules = emptyList()
+            )
+        )
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = guideCandidates
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("유성구")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "대전광역시" to mapOf(
+                        "유성구" to listOf("노은1동", "노은2동", "노은3동")
+                    )
+                ),
+                keywordRegions = listOf(
+                    Region(
+                        sido = "대전광역시",
+                        sigungu = "유성구",
+                        eupmyeondong = "반석동"
+                    )
+                ),
+                adminDongCandidates = listOf(
+                    Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "노은2동"),
+                    Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "노은3동")
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository,
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = guideCandidates
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("반석")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
+
+        assertEquals("반석", state.query)
+        assertEquals(2, state.candidates.size)
+        assertEquals(
+            listOf("노은2동", "노은3동"),
+            state.candidates.map { candidate -> candidate.guide.managementZoneName }
+        )
+        assertEquals(
+            listOf("반석동 일부지역", "반석동 일부지역"),
+            state.candidates.map { candidate -> candidate.guide.targetRegionName }
+        )
+        assertEquals(
+            listOf("노은1동", "노은2동", "노은3동"),
+            viewModel.regionSelectorUiState.value.eupmyeondongOptions
+        )
+        assertEquals("유성구", regionalGuideRepository.queries.single().sigunguQuery)
+    }
+
+    @Test
+    fun `대상지역명 별칭으로 상세에 진입하면 선택 상태는 관리구역명으로 보정한다`() = runTest {
+        val guideCandidates = listOf(
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "구즉동",
+                targetRegionName = "대동+구룡동+금고동",
+                schedules = emptyList()
+            )
+        )
+        val regionalGuideRepository = FakeRegionalDisposalGuideRepository(
+            candidates = guideCandidates
+        )
+        val viewModel = createViewModel(
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf(
+                    "대전광역시" to listOf("유성구")
+                ),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "대전광역시" to mapOf(
+                        "유성구" to listOf("구즉동", "노은1동", "노은2동", "노은3동", "상대동")
+                    )
+                ),
+                keywordRegions = listOf(
+                    Region(
+                        sido = "대전광역시",
+                        sigungu = "유성구",
+                        eupmyeondong = "대동"
+                    )
+                )
+            ),
+            regionalGuideRepository = regionalGuideRepository,
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = guideCandidates
+            )
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchKeywordChanged("대동")
+        viewModel.searchCurrentKeyword()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertEquals("대동", state.query)
+        assertEquals("대전광역시 유성구 구즉동", state.guide.regionName)
+        assertEquals("대동+구룡동+금고동", state.guide.targetRegionName)
+        with(viewModel.regionSelectorUiState.value) {
+            assertEquals("대전광역시", selectedSido)
+            assertEquals("유성구", selectedSigungu)
+            assertEquals("구즉동", selectedEupmyeondong)
+            assertEquals(
+                listOf("구즉동", "노은1동", "노은2동", "노은3동", "상대동"),
+                eupmyeondongOptions
+            )
+        }
+    }
+
+    @Test
+    fun `주소 법정동은 선택지에 없어도 조회 지역으로 상세를 찾는다`() = runTest {
+        val guideCandidates = listOf(
+            RegionalDisposalGuide(
+                region = Region(sido = "대전광역시", sigungu = "유성구"),
+                managementZoneName = "구즉동",
+                targetRegionName = "대동+구룡동+금고동",
+                schedules = emptyList(),
+            )
+        )
+        val regionRepository = FakeRegionRepository(
+            extractedRegion = Region(
+                sido = "대전광역시",
+                sigungu = "유성구",
+                eupmyeondong = "대동",
+            )
+        )
+        val viewModel = createViewModel(
+            regionRepository = regionRepository,
+            regionOptionsRepository = FakeRegionOptionsRepository(
+                sigunguOptionsBySido = mapOf("대전광역시" to listOf("유성구")),
+                eupmyeondongOptionsByRegion = mapOf(
+                    "대전광역시" to mapOf("유성구" to listOf("구즉동", "노은1동"))
+                ),
+            ),
+            regionalGuideRepository = FakeRegionalDisposalGuideRepository(candidates = guideCandidates),
+            regionalGuideOptionRepository = FakeRegionalDisposalGuideRepository(
+                candidates = guideCandidates
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.searchByKeyword("대전광역시 유성구 대학로 1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as RegionalGuideUiState.Success
+
+        assertEquals(listOf("대전광역시 유성구 대학로 1"), regionRepository.extractedAddresses)
+        assertEquals("대전광역시 유성구 구즉동", state.guide.regionName)
+        assertEquals("구즉동", viewModel.regionSelectorUiState.value.selectedEupmyeondong)
+    }
+
+    @Test
     fun `키워드로 찾은 읍면동이 지역 가이드 선택지에 없으면 선택 상태에 넣지 않는다`() = runTest {
         val guideCandidates = listOf(
             sampleGuide(
@@ -407,7 +621,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
-        assertTrue(regionalGuideRepository.queries.isEmpty())
+        assertEquals("김천시", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {
             assertEquals("경상북도", selectedSido)
@@ -467,7 +681,7 @@ class RegionalGuideKeywordSearchViewModelTest {
             assertEquals("경상북도", selectedSido)
             assertEquals("김천시", selectedSigungu)
             assertEquals("아포읍", selectedEupmyeondong)
-            assertEquals(listOf("아포읍", "봉산면"), eupmyeondongOptions)
+            assertEquals(listOf("봉산면", "아포읍"), eupmyeondongOptions)
         }
     }
 
@@ -516,13 +730,13 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
-        assertTrue(regionalGuideRepository.queries.isEmpty())
+        assertEquals("김천시", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {
             assertEquals("경상북도", selectedSido)
             assertEquals("김천시", selectedSigungu)
             assertEquals(null, selectedEupmyeondong)
-            assertEquals(listOf("아포읍", "봉산면"), eupmyeondongOptions)
+            assertEquals(listOf("봉산면", "아포읍"), eupmyeondongOptions)
         }
     }
 
@@ -659,7 +873,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         assertTrue(viewModel.restoreCandidatesFromDetail())
 
         val restoredGuideCandidatesState = viewModel.uiState.value as RegionalGuideUiState.GuideCandidates
-        assertEquals("대전광역시 > 중구", restoredGuideCandidatesState.query)
+        assertEquals("대전광역시 중구", restoredGuideCandidatesState.query)
         assertEquals(2, restoredGuideCandidatesState.candidates.size)
         assertTrue(restoredGuideCandidatesState.canRestoreCandidates)
         assertEquals(
@@ -681,6 +895,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         assertTrue(viewModel.restoreCandidatesFromDetail())
         assertEquals(RegionalGuideUiState.Idle, viewModel.uiState.value)
         assertEquals("", viewModel.searchKeyword.value)
+        assertNull(viewModel.searchKeywordRegionNameParts.value)
         with(viewModel.regionSelectorUiState.value) {
             assertNull(selectedSido)
             assertNull(selectedSigungu)
@@ -725,7 +940,7 @@ class RegionalGuideKeywordSearchViewModelTest {
         runCurrent()
 
         val loadingState = viewModel.uiState.value as RegionalGuideUiState.Loading
-        assertEquals("대전광역시 > 중구", loadingState.query)
+        assertEquals("대전광역시 중구", loadingState.query)
         assertTrue(loadingState.canRestoreCandidates)
 
         assertTrue(viewModel.restoreCandidatesFromDetail())
@@ -767,7 +982,13 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val errorState = viewModel.uiState.value as RegionalGuideUiState.Error
 
-        assertEquals("대전광역시 > 중구", errorState.query)
+        assertEquals("대전광역시 중구", errorState.query)
+        assertEquals(
+            RegionalGuideErrorMessage.Resource(
+                resId = R.string.regional_guide_error_unknown_message,
+            ),
+            errorState.message,
+        )
         assertTrue(errorState.canRestoreCandidates)
         assertTrue(viewModel.restoreCandidatesFromDetail())
 
@@ -807,7 +1028,11 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val errorState = viewModel.uiState.value as RegionalGuideUiState.Error
 
-        assertEquals("대전광역시 > 중구", errorState.query)
+        assertEquals("대전광역시 중구", errorState.query)
+        assertEquals(
+            RegionalGuideErrorMessage.Dynamic("조회 실패"),
+            errorState.message,
+        )
         assertTrue(errorState.canRestoreCandidates)
         assertTrue(viewModel.restoreCandidatesFromDetail())
 
@@ -845,7 +1070,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val emptyState = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("대전광역시 > 중구", emptyState.query)
+        assertEquals("대전광역시 중구", emptyState.query)
         assertFalse(viewModel.restoreCandidatesFromDetail())
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
     }
@@ -887,7 +1112,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val emptyState = viewModel.uiState.value as RegionalGuideUiState.Empty
 
-        assertEquals("대전광역시 > 중구", emptyState.query)
+        assertEquals("대전광역시 중구", emptyState.query)
         assertFalse(viewModel.restoreCandidatesFromDetail())
         assertTrue(viewModel.uiState.value is RegionalGuideUiState.Empty)
     }
@@ -926,7 +1151,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         val state = viewModel.uiState.value as RegionalGuideUiState.Success
 
-        assertEquals("대전광역시 > 중구", state.query)
+        assertEquals("대전광역시 중구", state.query)
         assertEquals("대전광역시 중구", state.guide.regionName)
         assertEquals("없음", state.guide.managementZoneName)
         assertEquals("없음", state.guide.targetRegionName)
