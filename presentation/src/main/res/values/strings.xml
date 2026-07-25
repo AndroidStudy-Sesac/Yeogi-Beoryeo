@@ -1,5 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="item_search_query_label">무엇을 버리시나요?</string>
+    <string name="item_search_field_label">품목 검색 창</string>
     <string name="item_search_screen_title">품목 검색</string>
     <string name="item_search_result_query">‘%1$s’ 검색 결과</string>
     <string name="item_search_result_summary">‘%1$s’ 검색 결과 %2$d개</string>

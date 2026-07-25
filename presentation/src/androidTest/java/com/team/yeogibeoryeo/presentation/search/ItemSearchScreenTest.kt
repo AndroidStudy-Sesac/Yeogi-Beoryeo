@@ -14,6 +14,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasImeAction
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -23,6 +25,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
@@ -417,6 +420,30 @@ class ItemSearchScreenTest {
 
         assertEquals(1, searchClickCount)
         searchField.assertIsNotFocused()
+    }
+
+    @Test
+    fun 품목_검색창은_접근성_이름과_텍스트_입력_동작을_제공한다() {
+        var changedQuery = ""
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(),
+                    onQueryChange = { changedQuery = it },
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
+            .assert(hasSetTextAction())
+            .assert(hasImeAction(ImeAction.Search))
+            .performTextReplacement("수석")
+
+        assertEquals("수석", changedQuery)
     }
 
     @Test
