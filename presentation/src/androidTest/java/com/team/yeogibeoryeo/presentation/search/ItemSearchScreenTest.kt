@@ -4,6 +4,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -56,6 +59,9 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithText("중소형 폐가전 수거함 안내").assertIsDisplayed()
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
         composeTestRule.onNodeWithText("종이").assertIsDisplayed()
+        composeTestRule.onNodeWithText("여기 버려").assert(hasHeading())
+        composeTestRule.onNodeWithText("안내 사항").assert(hasHeading())
+        composeTestRule.onNodeWithText("분리배출 분류").assert(hasHeading())
     }
 
     @Test
@@ -604,4 +610,7 @@ class ItemSearchScreenTest {
             onRoot().performTouchInput { swipeUp() }
         }
     }
+
+    private fun hasHeading() =
+        SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
 }

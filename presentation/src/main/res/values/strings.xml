@@ -210,6 +210,9 @@
     <string name="back_action">뒤로가기</string>
     <string name="favorite_add_action">즐겨찾기 추가</string>
     <string name="favorite_remove_action">즐겨찾기 해제</string>
+    <string name="favorite_item_open_action">%1$s 상세 보기</string>
+    <string name="favorite_collection_spot_open_action">%1$s 지도에서 보기</string>
+    <string name="favorite_regional_guide_open_action">%1$s 지역 가이드 보기</string>
     <string name="favorite_home_regional_guide_pin_action">%1$s 홈 지역 가이드로 고정</string>
     <string name="favorite_home_regional_guide_unpin_action">%1$s 홈 지역 가이드 고정 해제</string>
     <string name="item_card_open_action_label">상세 보기</string>

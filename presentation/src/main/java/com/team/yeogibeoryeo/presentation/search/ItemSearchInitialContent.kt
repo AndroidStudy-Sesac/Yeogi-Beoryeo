@@ -34,6 +34,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
@@ -227,7 +229,9 @@ fun ItemSearchInitialContent(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
-                        modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                        modifier = Modifier
+                            .padding(horizontal = metrics.horizontalPadding)
+                            .semantics { heading() },
                     )
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
@@ -275,6 +279,7 @@ fun ItemSearchInitialContent(
                     ) {
                         KoreanLineBreakText(
                             text = quickCategoriesTitle,
+                            modifier = Modifier.semantics { heading() },
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -359,7 +364,9 @@ fun ItemSearchHeader(
         ) {
             Text(
                 text = stringResource(R.string.item_search_title),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { heading() },
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,

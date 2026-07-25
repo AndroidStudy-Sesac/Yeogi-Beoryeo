@@ -17,7 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +45,7 @@ fun ItemSearchStatusContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite }
             .padding(contentPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(
@@ -64,7 +68,7 @@ fun ItemSearchStatusTitle(
 ) {
     KoreanLineBreakText(
         text = text,
-        modifier = modifier,
+        modifier = modifier.semantics { heading() },
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurface,
@@ -99,6 +103,7 @@ fun ItemSearchLoadingContent(
         CircularProgressIndicator(
             modifier = Modifier.semantics {
                 contentDescription = loadingContentDescription
+                liveRegion = LiveRegionMode.Polite
             },
             color = MaterialTheme.colorScheme.primary,
         )

@@ -428,6 +428,7 @@ private fun ItemSearchTopBar(
         title = {
             Text(
                 text = stringResource(R.string.item_search_screen_title),
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
