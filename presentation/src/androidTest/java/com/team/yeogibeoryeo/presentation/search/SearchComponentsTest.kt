@@ -137,20 +137,15 @@ class SearchComponentsTest {
     }
 
     @Test
-    fun 로딩_컴포넌트는_한_개의_live_region을_제공한다() {
+    fun 로딩_컴포넌트는_자동_상태_알림을_제공하지_않는다() {
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchLoadingContent()
             }
         }
 
-        val liveRegion =
-            SemanticsMatcher.expectValue(
-                SemanticsProperties.LiveRegion,
-                LiveRegionMode.Polite,
-            )
-        composeTestRule.onNodeWithContentDescription("로딩 중").assert(liveRegion)
-        composeTestRule.onAllNodes(liveRegion).assertCountEquals(1)
+        composeTestRule.onNodeWithContentDescription("로딩 중")
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.LiveRegion))
     }
 
     @Test

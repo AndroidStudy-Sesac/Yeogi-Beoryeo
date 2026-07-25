@@ -103,7 +103,6 @@ fun ItemSearchLoadingContent(
         CircularProgressIndicator(
             modifier = Modifier.semantics {
                 contentDescription = loadingContentDescription
-                liveRegion = LiveRegionMode.Polite
             },
             color = MaterialTheme.colorScheme.primary,
         )
