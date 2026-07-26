@@ -44,10 +44,8 @@ class RegionalGuideFavoriteViewModelTest {
         val state = viewModel.uiState.value as RegionalGuideUiState.Error
 
         assertEquals(
-            RegionalGuideErrorMessage.Resource(
-                resId = R.string.regional_guide_error_favorite_restore_message,
-            ),
-            state.message,
+            RegionalGuideErrorType.DATA,
+            state.errorType,
         )
     }
 

@@ -34,10 +34,8 @@ class RegionalGuideAddressSearchViewModelTest {
         val state = viewModel.uiState.value as RegionalGuideUiState.Error
 
         assertEquals(
-            RegionalGuideErrorMessage.Resource(
-                resId = R.string.regional_guide_error_address_search_message,
-            ),
-            state.message,
+            RegionalGuideErrorType.ADDRESS_SEARCH,
+            state.errorType,
         )
     }
 

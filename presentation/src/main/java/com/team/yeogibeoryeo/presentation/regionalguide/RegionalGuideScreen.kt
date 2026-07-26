@@ -564,7 +564,7 @@ private fun RegionalGuideContent(
 
         is RegionalGuideUiState.Error -> {
             RegionalGuideErrorContent(
-                message = uiState.message.displayText(),
+                message = stringResource(id = uiState.errorType.messageResId),
                 onRetryClick = onRetryClick,
                 modifier = modifier,
                 scrollable = scrollable,
@@ -572,13 +572,6 @@ private fun RegionalGuideContent(
         }
     }
 }
-@Composable
-private fun RegionalGuideErrorMessage.displayText(): String =
-    when (this) {
-        is RegionalGuideErrorMessage.Dynamic -> value
-        is RegionalGuideErrorMessage.Resource -> stringResource(id = resId)
-    }
-
 @Composable
 private fun RegionalGuideLoadingContent(
     query: String,
@@ -1023,9 +1016,7 @@ private fun RegionalGuideScreenErrorPreview() {
         RegionalGuideScreen(
             uiState = RegionalGuideUiState.Error(
                 query = "영등포구",
-                message = RegionalGuideErrorMessage.Resource(
-                    resId = R.string.regional_guide_error_keyword_search_message,
-                ),
+                errorType = RegionalGuideErrorType.KEYWORD_SEARCH,
             ),
             searchKeyword = "영등포구",
             regionSelectorUiState = RegionSelectorUiState(

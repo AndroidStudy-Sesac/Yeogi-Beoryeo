@@ -30,6 +30,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideQueryUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
+import com.team.yeogibeoryeo.presentation.regionalguide.log.RegionalGuideErrorLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,6 +61,7 @@ internal fun createViewModel(
             favoriteRepository = favoriteRepository,
             snapshotRepository = regionalGuideSnapshotRepository,
         ),
+    regionalGuideErrorLogger: RegionalGuideErrorLogger = NoOpRegionalGuideErrorLogger,
 ): RegionalGuideViewModel {
     return RegionalGuideViewModel(
         classifyRegionSearchInputUseCase = ClassifyRegionSearchInputUseCase(),
@@ -100,7 +102,26 @@ internal fun createViewModel(
             ),
         getRegionalGuideFavoriteSnapshotUseCase =
             GetRegionalGuideFavoriteSnapshotUseCase(regionalGuideSnapshotRepository),
+        regionalGuideErrorLogger = regionalGuideErrorLogger,
     )
+}
+
+private object NoOpRegionalGuideErrorLogger : RegionalGuideErrorLogger {
+    override fun log(
+        operation: String,
+        throwable: Throwable,
+    ) = Unit
+}
+
+internal class RecordingRegionalGuideErrorLogger : RegionalGuideErrorLogger {
+    val throwables = mutableListOf<Throwable>()
+
+    override fun log(
+        operation: String,
+        throwable: Throwable,
+    ) {
+        throwables += throwable
+    }
 }
 
 internal fun sampleGuide(

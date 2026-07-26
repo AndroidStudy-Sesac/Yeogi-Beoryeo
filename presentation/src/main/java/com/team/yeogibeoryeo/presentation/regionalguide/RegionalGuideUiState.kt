@@ -47,19 +47,21 @@ sealed interface RegionalGuideUiState {
 
     data class Error(
         val query: String,
-        val message: RegionalGuideErrorMessage,
+        val errorType: RegionalGuideErrorType,
         val canRestoreCandidates: Boolean = false,
     ) : RegionalGuideUiState
 }
 
-sealed interface RegionalGuideErrorMessage {
-    data class Dynamic(
-        val value: String,
-    ) : RegionalGuideErrorMessage
-
-    data class Resource(
-        @param:StringRes val resId: Int,
-    ) : RegionalGuideErrorMessage
+enum class RegionalGuideErrorType(
+    @param:StringRes val messageResId: Int,
+) {
+    KEYWORD_SEARCH(R.string.regional_guide_error_keyword_search_message),
+    ADDRESS_SEARCH(R.string.regional_guide_error_address_search_message),
+    DATA(R.string.regional_guide_error_favorite_restore_message),
+    SELECTED_REGION(R.string.regional_guide_error_selected_region_message),
+    NETWORK(R.string.regional_guide_error_network_message),
+    API(R.string.regional_guide_error_api_message),
+    UNKNOWN(R.string.regional_guide_error_unknown_message),
 }
 
 data class RegionalGuideEmptyActionUiModel(
