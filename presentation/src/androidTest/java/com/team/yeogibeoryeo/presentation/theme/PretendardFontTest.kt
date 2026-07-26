@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PretendardFontTest {
     @Test
-    fun retainedFontsExposeExpectedWeights() {
+    fun 유지한_글꼴_파일이_기대하는_굵기를_가진다() {
         val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
         val expectedWeights = mapOf(
             R.font.pretendard_regular to FontWeight.Normal.weight,
@@ -33,7 +33,7 @@ class PretendardFontTest {
     }
 
     @Test
-    fun materialTypographyUsesRetainedWeights() {
+    fun 기본_타이포그래피가_유지한_글꼴_굵기만_사용한다() {
         val retainedWeights = setOf(FontWeight.Normal, FontWeight.Medium)
         val typographyWeights = listOf(
             Typography.displayLarge,
