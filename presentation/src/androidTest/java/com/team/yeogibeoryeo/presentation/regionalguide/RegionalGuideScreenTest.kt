@@ -295,10 +295,8 @@ class RegionalGuideScreenTest {
     }
 
     @Test
-    fun 가로_오류_화면에서_다시_시도_버튼을_스크롤해_실행할_수_있다() {
+    fun 가로_오류_화면에서_다시_시도_버튼을_실행할_수_있다() {
         var retryCount = 0
-        val errorMessage = List(10) { "네트워크 연결을 확인한 뒤 다시 시도해 주세요." }
-            .joinToString(separator = "\n")
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -310,7 +308,7 @@ class RegionalGuideScreenTest {
                     RegionalGuideScreen(
                         uiState = RegionalGuideUiState.Error(
                             query = "서구",
-                            message = RegionalGuideErrorMessage.Dynamic(errorMessage),
+                            errorType = RegionalGuideErrorType.NETWORK,
                         ),
                         searchKeyword = "서구",
                         regionSelectorUiState = RegionSelectorUiState(),
@@ -330,7 +328,6 @@ class RegionalGuideScreenTest {
         }
 
         composeTestRule.onNodeWithText("다시 시도")
-            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
 
