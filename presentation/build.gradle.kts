@@ -40,6 +40,12 @@ android {
                     systemImageSource = "aosp"
                     testedAbi = "x86_64"
                 }
+                create("pixel2Api28") {
+                    device = "Pixel 2"
+                    apiLevel = 28
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
             }
         }
     }
