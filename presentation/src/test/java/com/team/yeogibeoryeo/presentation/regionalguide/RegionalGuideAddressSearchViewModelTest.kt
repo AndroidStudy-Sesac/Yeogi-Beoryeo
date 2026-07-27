@@ -20,7 +20,7 @@ class RegionalGuideAddressSearchViewModelTest {
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
-    fun `주소 조회 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+    fun `주소 조회 예외 발생 시 주소 검색 오류 유형으로 매핑한다`() = runTest {
         val viewModel = createViewModel(
             regionRepository = FakeRegionRepository(
                 extractThrowable = IllegalStateException(),
@@ -34,10 +34,8 @@ class RegionalGuideAddressSearchViewModelTest {
         val state = viewModel.uiState.value as RegionalGuideUiState.Error
 
         assertEquals(
-            RegionalGuideErrorMessage.Resource(
-                resId = R.string.regional_guide_error_address_search_message,
-            ),
-            state.message,
+            RegionalGuideErrorType.ADDRESS_SEARCH,
+            state.errorType,
         )
     }
 
