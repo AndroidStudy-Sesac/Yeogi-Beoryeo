@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,6 +60,15 @@ internal fun QuickCategorySettingsScreen(
             R.string.quick_category_settings_limit_exceeded,
             maxSelectedCount,
         )
+    val handleBack = {
+        if (keyword.isNotBlank()) {
+            keyword = ""
+        } else {
+            onBackClick()
+        }
+    }
+
+    BackHandler(onBack = handleBack)
 
     Scaffold(
         modifier = modifier,
@@ -71,7 +81,7 @@ internal fun QuickCategorySettingsScreen(
         topBar = {
             AppTopBar(
                 navigationIcon = {
-                    AppBackButton(onClick = onBackClick)
+                    AppBackButton(onClick = handleBack)
                 },
                 title = {
                     Text(
