@@ -49,7 +49,7 @@ release나 instrumented test dependency에 영향을 주는 변경은 관련 CI 
 3. 직접 dependency와 build plugin은 transitive dependency보다 먼저 공식 신뢰 근거를 확인합니다.
 4. PGP signature가 있으면 publisher의 공식 문서, 공식 저장소, release 안내에서 key fingerprint를 대조합니다.
 5. publisher가 공식 checksum을 제공하면 같은 version과 artifact의 checksum인지 대조합니다.
-6. 별도 signature나 공식 checksum이 없으면 공식 artifact repository에서 받은 파일의 checksum을 기준값으로 고정합니다. 이 값은 이후 byte 변경을 탐지하지만 publisher를 독립적으로 확인한 근거는 아닙니다.
+6. 별도 signature나 공식 checksum이 없으면 공식 artifact repository에서 받은 파일의 checksum을 기준값으로 기록합니다. 이 값은 이후 byte 변경을 탐지하지만 publisher를 독립적으로 확인한 근거는 아닙니다.
 7. `ignored-key`에 해당하는 signature를 사용하는 artifact도 `SHA-256` checksum이 있어야 합니다.
 8. `gradle/verification-keyring.keys`에 private key marker가 없는지 확인합니다.
 
