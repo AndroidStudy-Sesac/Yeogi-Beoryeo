@@ -79,6 +79,7 @@ fun ItemSearchBar(
         },
         minHeight = size.searchFieldHeight,
         searchEnabled = { it.isNotBlank() },
+        label = stringResource(R.string.item_search_field_label),
     )
 }
 

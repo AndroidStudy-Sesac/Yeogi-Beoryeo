@@ -11,6 +11,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
@@ -57,7 +59,7 @@ internal fun ItemGuideSectionTitle(
 
     KoreanLineBreakText(
         text = text,
-        modifier = modifier,
+        modifier = modifier.semantics { heading() },
         style = textStyles.sectionTitle.copy(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,

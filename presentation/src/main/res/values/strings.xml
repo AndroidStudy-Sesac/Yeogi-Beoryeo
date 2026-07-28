@@ -1,7 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="item_search_query_label">무엇을 버리시나요?</string>
+    <string name="item_search_field_label">품목 검색 창</string>
     <string name="item_search_screen_title">품목 검색</string>
     <string name="item_search_result_query">‘%1$s’ 검색 결과</string>
+    <string name="item_search_result_summary">‘%1$s’ 검색 결과 %2$d개</string>
     <string name="item_search_title">여기 버려</string>
     <string name="item_search_description">품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.</string>
     <string name="item_search_greeting">어서오세요!</string>
@@ -210,6 +212,9 @@
     <string name="back_action">뒤로가기</string>
     <string name="favorite_add_action">즐겨찾기 추가</string>
     <string name="favorite_remove_action">즐겨찾기 해제</string>
+    <string name="favorite_item_open_action">%1$s 상세 보기</string>
+    <string name="favorite_collection_spot_open_action">%1$s 지도에서 보기</string>
+    <string name="favorite_regional_guide_open_action">%1$s 지역 가이드 보기</string>
     <string name="favorite_home_regional_guide_pin_action">%1$s 홈 지역 가이드로 고정</string>
     <string name="favorite_home_regional_guide_unpin_action">%1$s 홈 지역 가이드 고정 해제</string>
     <string name="item_card_open_action_label">상세 보기</string>

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,11 +40,22 @@ fun FavoriteCard(
     onRemoveClick: (() -> Unit)? = null,
     onHomePrimaryClick: (() -> Unit)? = null,
 ) {
+    val openActionLabel =
+        stringResource(
+            id = when (favorite.type) {
+                FavoriteTargetType.ITEM_GUIDE -> R.string.favorite_item_open_action
+                FavoriteTargetType.COLLECTION_SPOT -> R.string.favorite_collection_spot_open_action
+                FavoriteTargetType.REGIONAL_GUIDE -> R.string.favorite_regional_guide_open_action
+            },
+            favorite.title,
+        )
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable(
                 enabled = enabled,
+                onClickLabel = openActionLabel,
+                role = Role.Button,
                 onClick = onClick,
             ),
         shape = RoundedCornerShape(20.dp),

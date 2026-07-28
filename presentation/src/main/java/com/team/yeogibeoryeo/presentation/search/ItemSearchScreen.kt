@@ -1,20 +1,16 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -37,13 +33,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -145,7 +141,6 @@ fun ItemSearchRoute(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ItemSearchScreen(
     uiState: ItemSearchUiState,
@@ -233,23 +228,9 @@ fun ItemSearchScreen(
             maxWidth = maxWidth,
             maxHeight = maxHeight,
         )
-        val density = LocalDensity.current
         val coroutineScope = rememberCoroutineScope()
 
         if (uiState.guides.isNotEmpty()) {
-            val statusBarTopPadding = with(density) {
-                WindowInsets.statusBars.getTop(this).toDp()
-            }
-            val stuckHeaderTopPadding = statusBarTopPadding + spacing.xs
-            val isSearchResultHeaderStuck by remember(searchResultListState) {
-                derivedStateOf {
-                    searchResultListState.firstVisibleItemIndex >= SearchResultHeaderItemIndex
-                }
-            }
-            val searchResultHeaderTopPadding by animateDpAsState(
-                targetValue = if (isSearchResultHeaderStuck) stuckHeaderTopPadding else 0.dp,
-                label = "searchResultHeaderTopPadding",
-            )
             val showScrollToTopButton by remember(searchResultListState) {
                 derivedStateOf {
                     searchResultListState.firstVisibleItemIndex > 0 ||
@@ -262,78 +243,73 @@ fun ItemSearchScreen(
                 onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
             )
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    state = searchResultListState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = metrics.listBottomPadding),
-                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
-                ) {
-                    item {
-                        ItemSearchTopBar(onBackClick = onBackClick)
-                    }
+            Column(modifier = Modifier.fillMaxSize()) {
+                ItemSearchTopBar(onBackClick = onBackClick)
 
-                    stickyHeader {
-                        Column(
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(bottom = metrics.sectionVerticalSpace),
+                ) {
+                    ItemSearchBar(
+                        keyword = uiState.query,
+                        onKeywordChange = onQueryChange,
+                        onSearchClick = onSearchClick,
+                        placeholder = stringResource(R.string.item_search_query_label),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = metrics.horizontalPadding),
+                        iconSize = metrics.searchIconSize,
+                    )
+                    uiState.submittedQuery?.let { submittedQuery ->
+                        ItemSearchResultQuery(
+                            query = submittedQuery,
+                            resultCount = uiState.guides.size,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .zIndex(SearchResultHeaderZIndex)
-                                .background(MaterialTheme.colorScheme.background)
-                                .padding(bottom = metrics.sectionVerticalSpace)
-                        ) {
-                            ItemSearchBar(
-                                keyword = uiState.query,
-                                onKeywordChange = onQueryChange,
-                                onSearchClick = {
-                                    onSearchClick()
-                                },
-                                placeholder = stringResource(R.string.item_search_query_label),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = searchResultHeaderTopPadding)
-                                    .padding(horizontal = metrics.horizontalPadding),
-                                iconSize = metrics.searchIconSize,
-                            )
-                            uiState.submittedQuery?.let { submittedQuery ->
-                                ItemSearchResultQuery(
-                                    query = submittedQuery,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(
-                                            top = spacing.xs,
-                                            start = metrics.horizontalPadding,
-                                            end = metrics.horizontalPadding,
-                                        ),
-                                )
-                            }
-                        }
-                    }
-
-                    items(uiState.guides, key = { it.id }) { guide ->
-                        DisposalItemCard(
-                            guide = guide,
-                            onClick = { onGuideClick(guide) },
-                            isFavorite = guide.id in uiState.favoriteGuideIds,
-                            modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                                .padding(
+                                    top = spacing.xs,
+                                    start = metrics.horizontalPadding,
+                                    end = metrics.horizontalPadding,
+                                ),
                         )
                     }
                 }
 
-                if (showScrollToTopButton) {
-                    FloatingActionButton(
-                        onClick = {
-                            coroutineScope.launch {
-                                searchResultListState.animateScrollToItem(0)
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(spacing.md),
+                Box(modifier = Modifier.weight(1f)) {
+                    LazyColumn(
+                        state = searchResultListState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = metrics.listBottomPadding),
+                        verticalArrangement = Arrangement.spacedBy(spacing.sm),
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.KeyboardArrowUp,
-                            contentDescription = stringResource(R.string.scroll_to_top_action),
-                        )
+                        items(uiState.guides, key = { it.id }) { guide ->
+                            DisposalItemCard(
+                                guide = guide,
+                                onClick = { onGuideClick(guide) },
+                                isFavorite = guide.id in uiState.favoriteGuideIds,
+                                modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                            )
+                        }
+                    }
+
+                    if (showScrollToTopButton) {
+                        FloatingActionButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    searchResultListState.animateScrollToItem(0)
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(spacing.md),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.KeyboardArrowUp,
+                                contentDescription = stringResource(R.string.scroll_to_top_action),
+                            )
+                        }
                     }
                 }
             }
@@ -405,11 +381,21 @@ fun ItemSearchScreen(
 @Composable
 private fun ItemSearchResultQuery(
     query: String,
+    resultCount: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = stringResource(R.string.item_search_result_query, query),
-        modifier = modifier.semantics { heading() },
+        text = if (resultCount == null) {
+            stringResource(R.string.item_search_result_query, query)
+        } else {
+            stringResource(R.string.item_search_result_summary, query, resultCount)
+        },
+        modifier = modifier.semantics {
+            heading()
+            if (resultCount != null) {
+                liveRegion = LiveRegionMode.Polite
+            }
+        },
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.onSurface,
     )
@@ -428,6 +414,7 @@ private fun ItemSearchTopBar(
         title = {
             Text(
                 text = stringResource(R.string.item_search_screen_title),
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -435,6 +422,3 @@ private fun ItemSearchTopBar(
         },
     )
 }
-
-private const val SearchResultHeaderItemIndex = 1
-private const val SearchResultHeaderZIndex = 1f

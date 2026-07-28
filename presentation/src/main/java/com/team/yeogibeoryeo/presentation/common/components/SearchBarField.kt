@@ -42,6 +42,7 @@ fun SearchBarField(
     candidateContent: (@Composable ColumnScope.() -> Unit)? = null,
     minHeight: Dp = SearchBarFieldDefaults.minHeight,
     searchEnabled: (String) -> Boolean = { it.isNotBlank() },
+    label: String? = null,
 ) {
     val hasCandidates = candidateContent != null
     val searchFieldInteractionSource = remember { MutableInteractionSource() }
@@ -81,6 +82,9 @@ fun SearchBarField(
             value = keyword,
             onValueChange = onKeywordChange,
             singleLine = true,
+            label = label?.let {
+                { Text(text = it) }
+            },
             placeholder = {
                 Text(text = placeholder)
             },

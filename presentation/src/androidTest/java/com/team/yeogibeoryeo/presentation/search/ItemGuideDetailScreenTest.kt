@@ -1,6 +1,9 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -39,10 +42,12 @@ class ItemGuideDetailScreenTest {
         }
 
         composeTestRule.onNodeWithText("유리컵").assertIsDisplayed()
+        composeTestRule.onNodeWithText("유리컵").assert(hasHeading())
         composeTestRule.onNodeWithContentDescription("재활용 분리배출").assertIsDisplayed()
         composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
         composeTestRule.onNodeWithText("유리컵·그릇").assertIsDisplayed()
         composeTestRule.onNodeWithText("주의사항").assertIsDisplayed()
+        composeTestRule.onNodeWithText("주의사항").assert(hasHeading())
         composeTestRule.onNodeWithText("품목 특징").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("배출 절차").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("재활용·처리 정보").performScrollTo().assertIsDisplayed()
@@ -256,5 +261,7 @@ class ItemGuideDetailScreenTest {
             isRecyclable = true,
             relatedSpotTypes = emptyList(),
         )
-}
 
+    private fun hasHeading() =
+        SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
+}

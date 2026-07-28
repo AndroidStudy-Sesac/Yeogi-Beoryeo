@@ -4,11 +4,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasImeAction
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -18,6 +25,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
@@ -56,6 +64,9 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithText("중소형 폐가전 수거함 안내").assertIsDisplayed()
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
         composeTestRule.onNodeWithText("종이").assertIsDisplayed()
+        composeTestRule.onNodeWithText("여기 버려").assert(hasHeading())
+        composeTestRule.onNodeWithText("안내 사항").assert(hasHeading())
+        composeTestRule.onNodeWithText("분리배출 분류").assert(hasHeading())
     }
 
     @Test
@@ -76,7 +87,12 @@ class ItemSearchScreenTest {
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchScreen(
-                    uiState = ItemSearchUiState(hasSearched = true),
+                    uiState =
+                        ItemSearchUiState(
+                            query = "없는 품목",
+                            submittedQuery = "없는 품목",
+                            hasSearched = true,
+                        ),
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
@@ -87,6 +103,7 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNodeWithText("검색 결과가 없어요.").assertIsDisplayed()
         composeTestRule.onNodeWithText("다른 이름으로 다시 검색해보세요.").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
     }
 
     @Test
@@ -97,6 +114,7 @@ class ItemSearchScreenTest {
                     uiState =
                         ItemSearchUiState(
                             query = "유리",
+                            submittedQuery = "유리",
                             hasSearched = true,
                             guides = listOf(sampleGuide("유리병")),
                         ),
@@ -108,7 +126,17 @@ class ItemSearchScreenTest {
             }
         }
 
+        composeTestRule.onNodeWithText("‘유리’ 검색 결과 1개")
+            .assert(hasHeading())
+            .assert(hasPoliteLiveRegion())
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
         composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.CollectionInfo,
+                CollectionInfo(rowCount = 1, columnCount = 1),
+            ),
+        ).assertExists()
     }
 
     @Test
@@ -202,7 +230,7 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("‘유리’ 검색 결과").assertIsDisplayed()
+        composeTestRule.onNodeWithText("‘유리’ 검색 결과 1개").assertIsDisplayed()
         composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
     }
 
@@ -303,6 +331,7 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNodeWithText("검색 결과를 불러오지 못했어요.").assertIsDisplayed()
         composeTestRule.onNodeWithText("잠시 후 다시 시도해주세요.").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
         composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
 
         assertEquals(1, backClickCount)
@@ -391,6 +420,30 @@ class ItemSearchScreenTest {
 
         assertEquals(1, searchClickCount)
         searchField.assertIsNotFocused()
+    }
+
+    @Test
+    fun 품목_검색창은_접근성_이름과_텍스트_입력_동작을_제공한다() {
+        var changedQuery = ""
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(),
+                    onQueryChange = { changedQuery = it },
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
+            .assert(hasSetTextAction())
+            .assert(hasImeAction(ImeAction.Search))
+            .performTextReplacement("수석")
+
+        assertEquals("수석", changedQuery)
     }
 
     @Test
@@ -604,4 +657,13 @@ class ItemSearchScreenTest {
             onRoot().performTouchInput { swipeUp() }
         }
     }
+
+    private fun hasHeading() =
+        SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
+
+    private fun hasPoliteLiveRegion() =
+        SemanticsMatcher.expectValue(
+            SemanticsProperties.LiveRegion,
+            LiveRegionMode.Polite,
+        )
 }
