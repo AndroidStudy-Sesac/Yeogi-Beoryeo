@@ -2,9 +2,14 @@ package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.test.espresso.Espresso.closeSoftKeyboard
+import androidx.test.espresso.Espresso.pressBack
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -13,6 +18,84 @@ import org.junit.Test
 class QuickCategorySettingsScreenUiTest {
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun 검색창과_빈_결과는_분류명_검색_범위를_안내한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                QuickCategorySettingsScreen(
+                    selectedCategories = emptySet(),
+                    maxSelectedCount = 1,
+                    onCategoryClick = {},
+                    onBackClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("분류 검색").assertIsDisplayed()
+        composeTestRule.onNode(hasSetTextAction()).performTextInput("zzznotfound")
+        composeTestRule.onNodeWithText("다른 분류 이름으로 다시 검색해 주세요.")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun 상단_뒤로가기는_검색어를_먼저_지우고_다음_클릭에_화면을_닫는다() {
+        var backClickCount = 0
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                QuickCategorySettingsScreen(
+                    selectedCategories = emptySet(),
+                    maxSelectedCount = 1,
+                    onCategoryClick = {},
+                    onBackClick = { backClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction()).performTextInput("zzznotfound")
+        composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
+
+        composeTestRule.onNodeWithText("검색 결과가 없어요.").assertDoesNotExist()
+        composeTestRule.runOnIdle {
+            assertEquals(0, backClickCount)
+        }
+
+        composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
+        composeTestRule.runOnIdle {
+            assertEquals(1, backClickCount)
+        }
+    }
+
+    @Test
+    fun 시스템_뒤로가기는_검색어를_먼저_지우고_다음_입력에_화면을_닫는다() {
+        var backClickCount = 0
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                QuickCategorySettingsScreen(
+                    selectedCategories = emptySet(),
+                    maxSelectedCount = 1,
+                    onCategoryClick = {},
+                    onBackClick = { backClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction()).performTextInput("zzznotfound")
+        closeSoftKeyboard()
+        pressBack()
+
+        composeTestRule.onNodeWithText("검색 결과가 없어요.").assertDoesNotExist()
+        composeTestRule.runOnIdle {
+            assertEquals(0, backClickCount)
+        }
+
+        pressBack()
+        composeTestRule.runOnIdle {
+            assertEquals(1, backClickCount)
+        }
+    }
 
     @Test
     fun 최대_개수에서_미선택_분류를_누르면_선택을_유지하고_스낵바를_보여준다() {
