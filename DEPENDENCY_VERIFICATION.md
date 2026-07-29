@@ -40,6 +40,14 @@ $tasks = @(
 
 release나 instrumented test dependency에 영향을 주는 변경은 관련 CI task도 같은 명령에 추가합니다.
 
+## Android Studio source artifact 처리
+
+1. 이 프로젝트에서는 Android Studio가 project import 중 자동으로 받는 `*-sources.jar`와 `*-javadoc.jar`를 build와 runtime classpath에 사용하지 않습니다.
+2. `trusted-artifacts`는 Gradle 공식 문서가 안내하는 두 파일명 정규식으로 제한합니다. 이 예외는 resolution 경로와 관계없이 같은 파일명의 artifact를 전역 신뢰하므로 checksum과 signature 검증을 수행하지 않습니다.
+3. dependency diff에서 같은 파일명의 artifact가 build나 runtime classpath에 들어오지 않는지 확인합니다. 들어온다면 정규식 예외를 제거하고 영향을 받는 artifact의 정확한 checksum을 기록합니다.
+4. `gradle-9.4.1-src.zip`과 같은 Gradle source distribution은 공식 checksum을 확인한 뒤 정확한 artifact checksum을 기록합니다.
+5. clean cache에서 Android Studio Gradle sync와 compile task를 함께 확인합니다.
+
 ## Diff 검토 기준
 
 초기 metadata는 현재 신뢰한 dependency set을 기준으로 생성한 baseline입니다. 이후 변경부터 새 artifact와 신뢰 근거를 함께 검토합니다.
@@ -69,10 +77,11 @@ Dependabot security update PR은 저장소의 기본 branch인 `main`을 대상�
 2. dependency 변경에서 예상한 artifact인지 먼저 확인합니다.
 3. 운영체제별 artifact가 누락됐다면 해당 운영체제의 공식 repository artifact를 확인하고 checksum을 추가합니다.
 4. Windows에서 생성한 metadata에 Linux용 AAPT2 artifact가 없었던 #471처럼, 로컬과 CI 운영체제가 다르면 platform classifier를 함께 확인합니다.
-5. 검증을 통과시키기 위해 verification을 끄거나 wildcard trust 범위를 추가하지 않습니다.
+5. build와 runtime classpath에 사용하는 artifact는 검증을 끄거나 wildcard trust 범위를 추가하지 않습니다. `trusted-artifacts` 예외는 앞에서 정한 두 파일명 정규식으로만 제한합니다.
 6. 신뢰 근거를 확인할 수 없으면 metadata를 갱신하지 않고 dependency 변경을 보류합니다.
 
 ## 공식 문서
 
 1. [Gradle Dependency Verification](https://docs.gradle.org/current/userguide/dependency_verification.html)
-2. [GitHub Dependabot Pull Requests](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-pull-requests)
+2. [Gradle 9.4.1 Source Distribution SHA-256](https://services.gradle.org/distributions/gradle-9.4.1-src.zip.sha256)
+3. [GitHub Dependabot Pull Requests](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-pull-requests)
