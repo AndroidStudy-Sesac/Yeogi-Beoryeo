@@ -1,9 +1,15 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -14,6 +20,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasImeAction
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -29,6 +36,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -608,6 +616,51 @@ class ItemSearchScreenTest {
     }
 
     @Test
+    fun useful_guide_상세는_하단_탐색바가_숨은_뒤에도_스크롤_위치를_유지한다() {
+        var guideType by mutableStateOf(ItemUsefulGuideType.SMALL_E_WASTE)
+        var isBottomBarVisible by mutableStateOf(true)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                key(guideType) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(752.dp)
+                            .padding(bottom = if (isBottomBarVisible) 80.dp else 0.dp),
+                    ) {
+                        ItemUsefulGuideRoute(
+                            guideType = guideType,
+                            onBackClick = {},
+                            onSmallEWasteClick = {},
+                            onFreePickupGuideClick = {},
+                            onOfficialSiteClick = {},
+                            onRegionalGuideClick = {},
+                            onItemSearchClick = {},
+                            onBottomBarVisibilityChanged = { isBottomBarVisible = it },
+                        )
+                    }
+                }
+            }
+        }
+
+        ItemUsefulGuideType.entries.forEach { type ->
+            composeTestRule.runOnIdle {
+                guideType = type
+                isBottomBarVisible = true
+            }
+            composeTestRule.waitForIdle()
+
+            composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+
+            composeTestRule.runOnIdle {
+                assertEquals(false, isBottomBarVisible)
+            }
+            composeTestRule.onNode(hasScrollAction()).assert(hasPositiveVerticalScrollPosition())
+        }
+    }
+
+    @Test
     fun small_e_waste_안내_상세에서_외부_링크_CTA를_전달한다() {
         var clickCount = 0
 
@@ -666,4 +719,9 @@ class ItemSearchScreenTest {
             SemanticsProperties.LiveRegion,
             LiveRegionMode.Polite,
         )
+
+    private fun hasPositiveVerticalScrollPosition() =
+        SemanticsMatcher("has positive vertical scroll position") { node ->
+            node.config[SemanticsProperties.VerticalScrollAxisRange].value() > 0f
+        }
 }

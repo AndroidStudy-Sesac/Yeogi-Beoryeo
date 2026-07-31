@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.unit.dp
 
 @Composable
 internal fun BottomBarVisibilityOnScrollEffect(
@@ -68,5 +69,7 @@ internal fun BottomBarVisibilityOnScrollEffect(
         }
     }
 }
+
+internal val bottomBarCollapseScrollAllowance = 80.dp
 
 private const val SCROLL_POSITION_ITEM_MULTIPLIER = 1_000_000L
