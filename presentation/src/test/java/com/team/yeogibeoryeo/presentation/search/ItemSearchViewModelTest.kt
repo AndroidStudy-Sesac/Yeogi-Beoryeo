@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -163,6 +164,60 @@ class ItemSearchViewModelTest {
             )
             assertEquals(emptyList<DisposalItemGuide>(), viewModel.uiState.value.guides)
             assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `검색 실패 후 다시 시도하면 같은 검색어로 결과를 불러온다`() =
+        runTest {
+            var shouldFail = true
+            val expected = listOf(sampleGuide("건전지"))
+            val repository =
+                FakeRepository(
+                    onSearch = {
+                        if (shouldFail) error("network")
+                        expected
+                    },
+                )
+            val viewModel = createViewModel(repository)
+
+            viewModel.search("건전지")
+            shouldFail = false
+            viewModel.retrySearch()
+            advanceUntilIdle()
+
+            assertEquals(listOf("건전지", "건전지"), repository.queries)
+            assertEquals(expected, viewModel.uiState.value.guides)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 재시도 중 다시 누르면 같은 요청을 중복 실행하지 않는다`() =
+        runTest {
+            val retryResult = CompletableDeferred<List<DisposalItemGuide>>()
+            var callCount = 0
+            val repository =
+                FakeRepository(
+                    onSearch = {
+                        callCount += 1
+                        if (callCount == 1) error("network")
+                        retryResult.await()
+                    },
+                )
+            val viewModel = createViewModel(repository)
+
+            viewModel.search("건전지")
+            viewModel.retrySearch()
+            runCurrent()
+            viewModel.retrySearch()
+
+            assertEquals(2, repository.searchCallCount)
+            assertEquals(true, viewModel.uiState.value.isLoading)
+
+            retryResult.complete(listOf(sampleGuide("건전지")))
+            advanceUntilIdle()
+
+            assertEquals(2, repository.searchCallCount)
         }
 
     @Test

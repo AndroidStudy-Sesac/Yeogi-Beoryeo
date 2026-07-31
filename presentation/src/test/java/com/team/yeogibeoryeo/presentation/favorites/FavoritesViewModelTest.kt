@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -427,6 +428,34 @@ class FavoritesViewModelTest {
             advanceUntilIdle()
 
             assertEquals(FavoriteTab.ITEM_GUIDE, viewModel.uiState.value.selectedTab)
+        }
+
+    @Test
+    fun `즐겨찾기 조회 실패 후 다시 시도하면 선택 탭을 유지하고 목록을 불러온다`() =
+        runTest {
+            val favoriteRepository = FakeFavoriteRepository(observeFailureCount = 1)
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect()
+            }
+            advanceUntilIdle()
+
+            assertEquals(true, viewModel.uiState.value.hasLoadError)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+
+            viewModel.selectTab(FavoriteTab.COLLECTION_SPOT)
+            viewModel.retryLoad()
+            viewModel.retryLoad()
+            advanceUntilIdle()
+
+            assertEquals(FavoriteTab.COLLECTION_SPOT, viewModel.uiState.value.selectedTab)
+            assertEquals(false, viewModel.uiState.value.hasLoadError)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+            assertEquals(4, favoriteRepository.observeCallCount)
         }
 
     @Test
@@ -1075,12 +1104,23 @@ class FavoritesViewModelTest {
         private val removeFailure: Exception? = null,
         private val removeStarted: CompletableDeferred<Unit>? = null,
         private val continueRemove: CompletableDeferred<Unit>? = null,
+        observeFailureCount: Int = 0,
     ) : FavoriteRepository {
         private val favorites = MutableStateFlow(initialFavorites)
+        private var remainingObserveFailures = observeFailureCount
+        var observeCallCount: Int = 0
+            private set
         var removeCallCount: Int = 0
             private set
 
-        override fun observeFavorites(): Flow<List<Favorite>> = favorites
+        override fun observeFavorites(): Flow<List<Favorite>> {
+            observeCallCount += 1
+            if (remainingObserveFailures > 0) {
+                remainingObserveFailures -= 1
+                return flow { throw IllegalStateException("조회 실패") }
+            }
+            return favorites
+        }
 
         override fun observeFavorite(
             type: FavoriteTargetType,

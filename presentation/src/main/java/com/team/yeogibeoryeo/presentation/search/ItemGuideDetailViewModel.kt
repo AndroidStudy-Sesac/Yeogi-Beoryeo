@@ -39,11 +39,22 @@ constructor(
     val events: SharedFlow<ItemGuideDetailEvent> = _events.asSharedFlow()
     private var loadGuideJob: Job? = null
     private var favoriteJob: Job? = null
+    private var requestedGuideId: String? = null
+    private var loadingGuideId: String? = null
 
     fun loadGuide(guideId: String) {
-        loadGuideJob?.cancel()
         val currentState = _uiState.value
-        if (currentState is ItemGuideDetailUiState.Success && currentState.guide.id == guideId) return
+        if (currentState is ItemGuideDetailUiState.Success && currentState.guide.id == guideId) {
+            loadGuideJob?.cancel()
+            requestedGuideId = guideId
+            loadingGuideId = null
+            return
+        }
+        if (loadGuideJob?.isActive == true && loadingGuideId == guideId) return
+
+        loadGuideJob?.cancel()
+        requestedGuideId = guideId
+        loadingGuideId = guideId
 
         loadGuideJob =
             viewModelScope.launch {
@@ -60,20 +71,25 @@ constructor(
                         )
                         observeFavorite(guide)
                     } else {
-                        _uiState.value =
-                            ItemGuideDetailUiState.Error(
-                                R.string.item_guide_detail_select_again_message,
-                            )
+                        _uiState.value = ItemGuideDetailUiState.NotFound
                     }
                 } catch (exception: CancellationException) {
                     throw exception
                 } catch (_: Throwable) {
-                    _uiState.value =
-                        ItemGuideDetailUiState.Error(
-                            R.string.item_guide_detail_load_failed_message,
-                        )
+                    _uiState.value = ItemGuideDetailUiState.LoadFailed
+                } finally {
+                    if (loadingGuideId == guideId) {
+                        loadingGuideId = null
+                    }
                 }
             }
+    }
+
+    fun retryLoadGuide() {
+        if (_uiState.value != ItemGuideDetailUiState.LoadFailed) return
+        val guideId = requestedGuideId ?: return
+
+        loadGuide(guideId)
     }
 
     fun toggleFavorite() {
@@ -141,9 +157,9 @@ sealed interface ItemGuideDetailUiState {
         val actions: List<ItemGuideDetailAction> = emptyList(),
     ) : ItemGuideDetailUiState
 
-    data class Error(
-        @param:StringRes val messageResId: Int,
-    ) : ItemGuideDetailUiState
+    data object NotFound : ItemGuideDetailUiState
+
+    data object LoadFailed : ItemGuideDetailUiState
 }
 
 sealed interface ItemGuideDetailEvent {
