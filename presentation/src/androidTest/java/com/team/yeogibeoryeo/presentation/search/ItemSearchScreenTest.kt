@@ -653,9 +653,7 @@ class ItemSearchScreenTest {
 
             composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
 
-            composeTestRule.runOnIdle {
-                assertEquals(false, isBottomBarVisible)
-            }
+            composeTestRule.waitUntil(timeoutMillis = 5_000) { !isBottomBarVisible }
             composeTestRule.onNode(hasScrollAction()).assert(hasPositiveVerticalScrollPosition())
         }
     }
