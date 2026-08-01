@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -456,6 +457,41 @@ class FavoritesViewModelTest {
             assertEquals(false, viewModel.uiState.value.hasLoadError)
             assertEquals(false, viewModel.uiState.value.isLoading)
             assertEquals(4, favoriteRepository.observeCallCount)
+        }
+
+    @Test
+    fun `화면 구독이 중지되면 즐겨찾기 관찰을 멈추고 재구독하면 다시 시작한다`() =
+        runTest {
+            val favoriteRepository = FakeFavoriteRepository()
+            val viewModel =
+                createViewModel(
+                    favoriteRepository = favoriteRepository,
+                    itemRepository = FakeItemRepository(guides = emptyList()),
+                )
+            val firstCollection =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.uiState.collect()
+                }
+            advanceUntilIdle()
+
+            assertEquals(2, favoriteRepository.observeCallCount)
+            assertEquals(2, favoriteRepository.activeObserverCount)
+
+            firstCollection.cancel()
+            advanceTimeBy(5_001)
+            runCurrent()
+
+            assertEquals(0, favoriteRepository.activeObserverCount)
+
+            val secondCollection =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.uiState.collect()
+                }
+            advanceUntilIdle()
+
+            assertEquals(4, favoriteRepository.observeCallCount)
+            assertEquals(2, favoriteRepository.activeObserverCount)
+            secondCollection.cancel()
         }
 
     @Test
@@ -1110,6 +1146,8 @@ class FavoritesViewModelTest {
         private var remainingObserveFailures = observeFailureCount
         var observeCallCount: Int = 0
             private set
+        val activeObserverCount: Int
+            get() = favorites.subscriptionCount.value
         var removeCallCount: Int = 0
             private set
 
