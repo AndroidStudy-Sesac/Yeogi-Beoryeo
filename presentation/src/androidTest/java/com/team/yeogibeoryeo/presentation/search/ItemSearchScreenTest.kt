@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,11 +31,14 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -44,7 +46,9 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
+import com.team.yeogibeoryeo.presentation.search.model.toUsefulGuideContent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 
@@ -616,46 +620,70 @@ class ItemSearchScreenTest {
     }
 
     @Test
-    fun useful_guide_상세는_하단_탐색바가_숨은_뒤에도_스크롤_위치를_유지한다() {
-        var guideType by mutableStateOf(ItemUsefulGuideType.SMALL_E_WASTE)
+    fun 중소형_폐가전_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.SMALL_E_WASTE)
+    }
+
+    @Test
+    fun 지역별_분리배출_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.REGIONAL_GUIDE)
+    }
+
+    @Test
+    fun 대표_분류별_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.REPRESENTATIVE_CATEGORY)
+    }
+
+    @Test
+    fun 품목별_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.ITEM_DICTIONARY)
+    }
+
+    private fun assertUsefulGuideScrollsToLastRelatedSite(guideType: ItemUsefulGuideType) {
         var isBottomBarVisible by mutableStateOf(true)
+        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
+        val lastRelatedSiteLabel =
+            targetContext.getString(guideType.toUsefulGuideContent().relatedSites.last().labelResId)
 
         composeTestRule.setContent {
             MaterialTheme {
-                key(guideType) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(752.dp)
-                            .padding(bottom = if (isBottomBarVisible) 80.dp else 0.dp),
-                    ) {
-                        ItemUsefulGuideRoute(
-                            guideType = guideType,
-                            onBackClick = {},
-                            onSmallEWasteClick = {},
-                            onFreePickupGuideClick = {},
-                            onOfficialSiteClick = {},
-                            onRegionalGuideClick = {},
-                            onItemSearchClick = {},
-                            onBottomBarVisibilityChanged = { isBottomBarVisible = it },
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(752.dp)
+                        .padding(bottom = if (isBottomBarVisible) 80.dp else 0.dp),
+                ) {
+                    ItemUsefulGuideRoute(
+                        guideType = guideType,
+                        onBackClick = {},
+                        onSmallEWasteClick = {},
+                        onFreePickupGuideClick = {},
+                        onOfficialSiteClick = {},
+                        onRegionalGuideClick = {},
+                        onItemSearchClick = {},
+                        onBottomBarVisibilityChanged = { isBottomBarVisible = it },
+                    )
                 }
             }
         }
 
-        ItemUsefulGuideType.entries.forEach { type ->
-            composeTestRule.runOnIdle {
-                guideType = type
-                isBottomBarVisible = true
-            }
-            composeTestRule.waitForIdle()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { !isBottomBarVisible }
 
-            composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNode(hasScrollAction())
+            .performScrollToNode(hasText(lastRelatedSiteLabel))
+        composeTestRule.onNodeWithText(lastRelatedSiteLabel)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.waitForIdle()
 
-            composeTestRule.waitUntil(timeoutMillis = 5_000) { !isBottomBarVisible }
-            composeTestRule.onNode(hasScrollAction()).assert(hasPositiveVerticalScrollPosition())
+        composeTestRule.runOnIdle {
+            assertFalse(isBottomBarVisible)
         }
+        composeTestRule.onNodeWithText(lastRelatedSiteLabel).assertIsDisplayed()
+
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeDown() }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { isBottomBarVisible }
     }
 
     @Test
@@ -718,8 +746,4 @@ class ItemSearchScreenTest {
             LiveRegionMode.Polite,
         )
 
-    private fun hasPositiveVerticalScrollPosition() =
-        SemanticsMatcher("has positive vertical scroll position") { node ->
-            node.config[SemanticsProperties.VerticalScrollAxisRange].value() > 0f
-        }
 }
