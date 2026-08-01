@@ -1,15 +1,14 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import androidx.test.espresso.Espresso.closeSoftKeyboard
-import androidx.test.espresso.Espresso.pressBack
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -17,7 +16,7 @@ import org.junit.Test
 
 class QuickCategorySettingsScreenUiTest {
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun 검색창과_빈_결과는_분류명_검색_범위를_안내한다() {
@@ -83,17 +82,22 @@ class QuickCategorySettingsScreenUiTest {
         }
 
         composeTestRule.onNode(hasSetTextAction()).performTextInput("zzznotfound")
-        closeSoftKeyboard()
-        pressBack()
+        pressSystemBack()
 
         composeTestRule.onNodeWithText("검색 결과가 없어요.").assertDoesNotExist()
         composeTestRule.runOnIdle {
             assertEquals(0, backClickCount)
         }
 
-        pressBack()
+        pressSystemBack()
         composeTestRule.runOnIdle {
             assertEquals(1, backClickCount)
+        }
+    }
+
+    private fun pressSystemBack() {
+        composeTestRule.runOnUiThread {
+            composeTestRule.activity.onBackPressedDispatcher.onBackPressed()
         }
     }
 
