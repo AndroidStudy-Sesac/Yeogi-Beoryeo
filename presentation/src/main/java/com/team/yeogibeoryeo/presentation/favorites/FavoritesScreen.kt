@@ -28,6 +28,7 @@ import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.components.EmptyFavoritesCard
 import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteCard
+import com.team.yeogibeoryeo.presentation.favorites.components.FavoritesLoadErrorCard
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 
@@ -43,6 +44,7 @@ fun FavoritesScreen(
     onRegionalGuideFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideHomePrimaryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onRetryClick: () -> Unit = {},
 ) {
     LazyColumn(
         modifier =
@@ -87,6 +89,17 @@ fun FavoritesScreen(
                             },
                         )
                     }
+                }
+            }
+
+            uiState.hasLoadError -> {
+                item {
+                    FavoritesLoadErrorCard(
+                        title = stringResource(R.string.favorites_load_failed_title),
+                        description = stringResource(R.string.favorites_load_failed_message),
+                        actionLabel = stringResource(R.string.retry_action),
+                        onRetryClick = onRetryClick,
+                    )
                 }
             }
 

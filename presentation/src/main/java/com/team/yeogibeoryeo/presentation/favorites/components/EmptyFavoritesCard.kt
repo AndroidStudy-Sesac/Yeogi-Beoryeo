@@ -3,9 +3,13 @@ package com.team.yeogibeoryeo.presentation.favorites.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -28,6 +32,55 @@ fun EmptyFavoritesCard(
     description: String,
     modifier: Modifier = Modifier,
 ) {
+    FavoritesStatusCard(
+        title = title,
+        description = description,
+        icon = {
+            Icon(
+                painter = painterResource(id = CommonR.drawable.ic_favorite),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+            )
+        },
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun FavoritesLoadErrorCard(
+    title: String,
+    description: String,
+    actionLabel: String,
+    onRetryClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    FavoritesStatusCard(
+        title = title,
+        description = description,
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.ErrorOutline,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+            )
+        },
+        action = {
+            Button(onClick = onRetryClick) {
+                Text(text = actionLabel)
+            }
+        },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun FavoritesStatusCard(
+    title: String,
+    description: String,
+    icon: @Composable ColumnScope.() -> Unit,
+    modifier: Modifier = Modifier,
+    action: (@Composable ColumnScope.() -> Unit)? = null,
+) {
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -43,11 +96,7 @@ fun EmptyFavoritesCard(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                painter = painterResource(id = CommonR.drawable.ic_favorite),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.tertiary,
-            )
+            icon()
             Text(
                 text = title,
                 modifier = Modifier.semantics { heading() },
@@ -59,6 +108,7 @@ fun EmptyFavoritesCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            action?.invoke(this)
         }
     }
 }

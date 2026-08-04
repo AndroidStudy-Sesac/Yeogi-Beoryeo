@@ -112,9 +112,9 @@ constructor(
 
     fun search(query: String) {
         val trimmedQuery = query.trim()
-        searchJob?.cancel()
-        searchJob = null
         if (trimmedQuery.isBlank()) {
+            searchJob?.cancel()
+            searchJob = null
             _uiState.update {
                 it.copy(
                     query = query,
@@ -127,6 +127,15 @@ constructor(
             }
             return
         }
+        if (
+            _uiState.value.isLoading &&
+            _uiState.value.submittedQuery == trimmedQuery
+        ) {
+            return
+        }
+
+        searchJob?.cancel()
+        searchJob = null
 
         _uiState.update {
             it.copy(
@@ -160,6 +169,14 @@ constructor(
                         }
                     }
             }
+    }
+
+    fun retrySearch() {
+        val state = _uiState.value
+        val submittedQuery = state.submittedQuery ?: return
+        if (state.isLoading || state.errorMessageResId == null) return
+
+        search(submittedQuery)
     }
 
     fun searchInitialQueryIfNeeded(query: String?) {

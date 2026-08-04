@@ -13,10 +13,12 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteCard
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -68,6 +70,36 @@ class FavoritesSemanticsTest {
         composeTestRule.onNodeWithContentDescription("로딩 중")
             .assert(hasPoliteLiveRegion())
         composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
+    }
+
+    @Test
+    fun 조회_실패_상태는_오류_안내와_재시도_동작을_제공한다() {
+        var retryClickCount = 0
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                FavoritesScreen(
+                    uiState = FavoritesUiState(hasLoadError = true),
+                    onTabClick = {},
+                    onItemGuideClick = {},
+                    onCollectionSpotClick = {},
+                    onRegionalGuideClick = {},
+                    onItemGuideFavoriteRemoveClick = {},
+                    onCollectionSpotFavoriteRemoveClick = {},
+                    onRegionalGuideFavoriteRemoveClick = {},
+                    onRegionalGuideHomePrimaryClick = {},
+                    onRetryClick = { retryClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("즐겨찾기를 불러오지 못했어요")
+            .assert(hasHeading())
+        composeTestRule.onNodeWithText("잠시 후 다시 시도해 주세요.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("다시 시도").performClick()
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
+
+        assertEquals(1, retryClickCount)
     }
 
     @Test

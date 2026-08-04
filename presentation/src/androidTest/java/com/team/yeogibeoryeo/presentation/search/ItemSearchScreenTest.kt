@@ -321,6 +321,7 @@ class ItemSearchScreenTest {
     @Test
     fun 에러_상태에서는_에러_리소스_문구를_보여준다() {
         var backClickCount = 0
+        var retryClickCount = 0
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -337,15 +338,18 @@ class ItemSearchScreenTest {
                     onGuideClick = {},
                     onQuickCategoryClick = {},
                     onBackClick = { backClickCount += 1 },
+                    onRetryClick = { retryClickCount += 1 },
                 )
             }
         }
 
         composeTestRule.onNodeWithText("검색 결과를 불러오지 못했어요.").assertIsDisplayed()
-        composeTestRule.onNodeWithText("잠시 후 다시 시도해주세요.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("잠시 후 다시 시도해 주세요.").assertIsDisplayed()
         composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
+        composeTestRule.onNodeWithText("다시 시도").performClick()
         composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
 
+        assertEquals(1, retryClickCount)
         assertEquals(1, backClickCount)
     }
 

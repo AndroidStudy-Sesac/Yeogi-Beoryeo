@@ -20,28 +20,34 @@ import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class FavoritesViewModel
     @Inject
     constructor(
         private val savedStateHandle: SavedStateHandle,
-        observeFavoritesUseCase: ObserveFavoritesUseCase,
-        observeCollectionSpotFavoritesUseCase: ObserveCollectionSpotFavoritesUseCase,
-        observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
+        private val observeFavoritesUseCase: ObserveFavoritesUseCase,
+        private val observeCollectionSpotFavoritesUseCase: ObserveCollectionSpotFavoritesUseCase,
+        private val observeRegionalGuideFavoriteSnapshotsUseCase: ObserveRegionalGuideFavoriteSnapshotsUseCase,
         private val removeFavoriteUseCase: RemoveFavoriteUseCase,
         private val removeCollectionSpotFavoriteUseCase: RemoveCollectionSpotFavoriteUseCase,
         private val removeRegionalGuideFavoriteUseCase: RemoveRegionalGuideFavoriteUseCase,
-        observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase:
+        private val observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase:
             ObserveHomeRegionalGuidePrimaryFavoriteTargetIdUseCase,
         private val setHomeRegionalGuidePrimaryFavoriteUseCase:
             SetHomeRegionalGuidePrimaryFavoriteUseCase,
@@ -54,45 +60,19 @@ class FavoritesViewModel
         private val _events = MutableSharedFlow<FavoritesEvent>()
         val events: SharedFlow<FavoritesEvent> = _events.asSharedFlow()
         private val favoriteRemovalJobs = mutableMapOf<Pair<FavoriteTargetType, String>, Job>()
+        private val retryRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
         private val selectedTab =
             savedStateHandle.getStateFlow(SELECTED_TAB_KEY, FavoriteTab.ITEM_GUIDE)
 
         val uiState: StateFlow<FavoritesUiState> =
             combine(
                 selectedTab,
-                observeFavoritesUseCase(),
-                observeCollectionSpotFavoritesUseCase(),
-                observeRegionalGuideFavoriteSnapshotsUseCase(),
-                observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(),
-            ) { selectedTab, favorites, collectionSpotFavorites, regionalGuideSnapshots, primaryTargetId ->
-                val itemGuideFavorites =
-                    favorites
-                        .filter { it.type == FavoriteTargetType.ITEM_GUIDE }
-                        .mapNotNull { favorite -> itemGuideUiMapper.map(favorite) }
-                val collectionSpotFavoriteUiModels =
-                    collectionSpotFavorites.map { favorite -> collectionSpotUiMapper.map(favorite) }
-                val regionalGuideSnapshotsById =
-                    regionalGuideSnapshots.associateBy { snapshot -> snapshot.targetId }
-                val regionalGuideFavorites =
-                    favorites
-                        .filter { it.type == FavoriteTargetType.REGIONAL_GUIDE }
-                        .mapNotNull { favorite ->
-                            regionalGuideSnapshotsById[favorite.targetId]
-                                ?.let { snapshot ->
-                                    regionalGuideUiMapper.map(
-                                        snapshot = snapshot,
-                                        isHomePrimary = favorite.targetId == primaryTargetId,
-                                    )
-                                }
-                        }
-
-                    FavoritesUiState(
-                        selectedTab = selectedTab,
-                        itemGuideFavorites = itemGuideFavorites,
-                        collectionSpotFavorites = collectionSpotFavoriteUiModels,
-                        regionalGuideFavorites = regionalGuideFavorites,
-                    )
-                }
+                retryRequests
+                    .onStart { emit(Unit) }
+                    .flatMapLatest { observeFavoriteContent() },
+            ) { selectedTab, contentState ->
+                contentState.copy(selectedTab = selectedTab)
+            }
                 .stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(5_000),
@@ -101,6 +81,12 @@ class FavoritesViewModel
 
         fun selectTab(tab: FavoriteTab) {
             savedStateHandle[SELECTED_TAB_KEY] = tab
+        }
+
+        fun retryLoad() {
+            if (!uiState.value.hasLoadError) return
+
+            retryRequests.tryEmit(Unit)
         }
 
         fun removeItemGuideFavorite(targetId: String) {
@@ -162,6 +148,48 @@ class FavoritesViewModel
                 }
             }
         }
+
+        private fun observeFavoriteContent(): Flow<FavoritesUiState> =
+            combine(
+                observeFavoritesUseCase(),
+                observeCollectionSpotFavoritesUseCase(),
+                observeRegionalGuideFavoriteSnapshotsUseCase(),
+                observeHomeRegionalGuidePrimaryFavoriteTargetIdUseCase(),
+            ) { favorites, collectionSpotFavorites, regionalGuideSnapshots, primaryTargetId ->
+                val itemGuideFavorites =
+                    favorites
+                        .filter { it.type == FavoriteTargetType.ITEM_GUIDE }
+                        .mapNotNull { favorite -> itemGuideUiMapper.map(favorite) }
+                val collectionSpotFavoriteUiModels =
+                    collectionSpotFavorites.map { favorite ->
+                        collectionSpotUiMapper.map(favorite)
+                    }
+                val regionalGuideSnapshotsById =
+                    regionalGuideSnapshots.associateBy { snapshot -> snapshot.targetId }
+                val regionalGuideFavorites =
+                    favorites
+                        .filter { it.type == FavoriteTargetType.REGIONAL_GUIDE }
+                        .mapNotNull { favorite ->
+                            regionalGuideSnapshotsById[favorite.targetId]
+                                ?.let { snapshot ->
+                                    regionalGuideUiMapper.map(
+                                        snapshot = snapshot,
+                                        isHomePrimary = favorite.targetId == primaryTargetId,
+                                    )
+                                }
+                        }
+
+                FavoritesUiState(
+                    itemGuideFavorites = itemGuideFavorites,
+                    collectionSpotFavorites = collectionSpotFavoriteUiModels,
+                    regionalGuideFavorites = regionalGuideFavorites,
+                )
+            }
+                .onStart { emit(FavoritesUiState(isLoading = true)) }
+                .catch { exception ->
+                    if (exception is CancellationException) throw exception
+                    emit(FavoritesUiState(hasLoadError = true))
+                }
 
         private companion object {
             const val SELECTED_TAB_KEY = "selected_tab"

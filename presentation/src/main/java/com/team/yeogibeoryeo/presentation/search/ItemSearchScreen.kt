@@ -116,6 +116,7 @@ fun ItemSearchRoute(
         regionalGuideSummaryState = regionalGuideSummaryState,
         onQueryChange = viewModel::onQueryChange,
         onSearchClick = viewModel::search,
+        onRetryClick = viewModel::retrySearch,
         onGuideClick = onGuideSelected,
         onUsefulGuideClick = onUsefulGuideClick,
         onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
@@ -149,6 +150,7 @@ fun ItemSearchScreen(
     onGuideClick: (DisposalItemGuide) -> Unit,
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
+    onRetryClick: () -> Unit = {},
     regionalGuideSummaryState: HomeRegionalGuideSummaryUiState = HomeRegionalGuideSummaryUiState.NoFavorite,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onRegionalGuideSummaryClick: (String) -> Unit = {},
@@ -360,6 +362,10 @@ fun ItemSearchScreen(
                             EmptySearchResult(
                                 title = stringResource(uiState.errorMessageResId),
                                 description = stringResource(R.string.retry_later_message),
+                                actionLabel = uiState.submittedQuery?.let {
+                                    stringResource(R.string.retry_action)
+                                },
+                                onActionClick = onRetryClick,
                             )
                         }
 

@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
@@ -84,6 +85,82 @@ class ItemGuideDetailViewModelTest {
 
             assertSame(loadedState, viewModel.uiState.value)
             assertEquals(listOf(guide.id), itemRepository.requestedGuideIds)
+        }
+
+    @Test
+    fun `가이드가 없으면 데이터 없음 상태를 표시한다`() =
+        runTest {
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = null),
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide("missing-guide")
+            advanceUntilIdle()
+
+            assertEquals(ItemGuideDetailUiState.NotFound, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `가이드 조회 실패 후 다시 시도하면 같은 ID로 상세를 불러온다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            var shouldFail = true
+            val itemRepository =
+                FakeItemRepository { guideId ->
+                    if (shouldFail) error("load failure")
+                    guide.takeIf { it.id == guideId }
+                }
+            val viewModel =
+                createViewModel(
+                    itemRepository = itemRepository,
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide(guide.id)
+            assertEquals(ItemGuideDetailUiState.LoadFailed, viewModel.uiState.value)
+
+            shouldFail = false
+            viewModel.retryLoadGuide()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
+            assertEquals(guide, state.guide)
+            assertEquals(listOf(guide.id, guide.id), itemRepository.requestedGuideIds)
+        }
+
+    @Test
+    fun `가이드 재시도 중 다시 누르면 같은 요청을 중복 실행하지 않는다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val retryResult = CompletableDeferred<DisposalItemGuide?>()
+            var callCount = 0
+            val itemRepository =
+                FakeItemRepository {
+                    callCount += 1
+                    if (callCount == 1) error("load failure")
+                    retryResult.await()
+                }
+            val viewModel =
+                createViewModel(
+                    itemRepository = itemRepository,
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide(guide.id)
+            viewModel.retryLoadGuide()
+            runCurrent()
+            viewModel.retryLoadGuide()
+
+            assertEquals(listOf(guide.id, guide.id), itemRepository.requestedGuideIds)
+            assertEquals(ItemGuideDetailUiState.Loading, viewModel.uiState.value)
+
+            retryResult.complete(guide)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value is ItemGuideDetailUiState.Success)
+            assertEquals(listOf(guide.id, guide.id), itemRepository.requestedGuideIds)
         }
 
     @Test

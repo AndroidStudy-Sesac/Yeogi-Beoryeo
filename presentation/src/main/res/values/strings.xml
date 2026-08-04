@@ -11,7 +11,8 @@
     <string name="search_action">검색</string>
     <string name="scroll_to_top_action">맨 위로 이동</string>
     <string name="loading_action">로딩 중</string>
-    <string name="retry_later_message">잠시 후 다시 시도해주세요.</string>
+    <string name="retry_action">다시 시도</string>
+    <string name="retry_later_message">잠시 후 다시 시도해 주세요.</string>
     <string name="search_load_failed_message">검색 결과를 불러오지 못했어요.</string>
     <string name="quick_categories">분리배출 분류</string>
     <string name="quick_category_more_action">더보기</string>
@@ -182,8 +183,9 @@
     <string name="regional_waste_schedule_place_collapse_action">접기</string>
     <string name="regional_guide_public_notice_cta">공공 안내에서 지자체 안내 링크 보기</string>
     <string name="item_guide_detail_not_found_title">품목 가이드를 찾을 수 없습니다</string>
-    <string name="item_guide_detail_select_again_message">다시 검색해서 품목을 선택해주세요.</string>
-    <string name="item_guide_detail_load_failed_message">품목 정보를 불러오는 중 오류가 발생했습니다.</string>
+    <string name="item_guide_detail_select_again_message">다시 검색해서 품목을 선택해 주세요.</string>
+    <string name="item_guide_detail_load_failed_title">품목 정보를 불러오지 못했어요</string>
+    <string name="item_guide_detail_load_failed_message">잠시 후 다시 시도해 주세요.</string>
     <string name="item_guide_detail_favorite_added_message">즐겨찾기에 추가되었습니다</string>
     <string name="item_guide_detail_favorite_removed_message">즐겨찾기에서 제외되었습니다</string>
     <string name="item_guide_detail_favorite_update_failed_message">즐겨찾기를 변경하지 못했습니다. 다시 시도해 주세요.</string>
@@ -230,6 +232,8 @@
     <string name="favorites_empty_collection_spot_description">지도에서 자주 확인하는 수거 장소를 즐겨찾기에 추가해 보세요.</string>
     <string name="favorites_empty_regional_guide_title">아직 즐겨찾기한 지역 가이드가 없어요</string>
     <string name="favorites_empty_regional_guide_description">지역 가이드 즐겨찾기 연결 후 이곳에서 모아볼 수 있어요.</string>
+    <string name="favorites_load_failed_title">즐겨찾기를 불러오지 못했어요</string>
+    <string name="favorites_load_failed_message">잠시 후 다시 시도해 주세요.</string>
     <string name="quick_category_click_action">배출 방법 보기</string>
     <string name="settings_action">설정</string>
     <string name="settings_title">설정</string>
