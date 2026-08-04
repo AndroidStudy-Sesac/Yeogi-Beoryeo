@@ -1,17 +1,29 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSection
 import com.team.yeogibeoryeo.domain.item.model.DisposalGuideSectionRow
@@ -226,6 +238,71 @@ class ItemGuideDetailScreenTest {
     }
 
     @Test
+    fun 비닐_상세는_하단_탐색바가_숨은_뒤에도_마지막_안내를_끝까지_보여준다() {
+        var isBottomBarVisible by mutableStateOf(true)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(752.dp)
+                        .padding(bottom = if (isBottomBarVisible) 80.dp else 0.dp),
+                ) {
+                    ItemGuideDetailScreen(
+                        guide = vinylGuide(),
+                        isFavorite = false,
+                        onBackClick = {},
+                        onFavoriteClick = {},
+                        onBottomBarVisibilityChanged = { isBottomBarVisible = it },
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNodeWithText(LOCAL_DISPOSAL_NOTICE)
+            .performScrollTo()
+            .assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            assertEquals(false, isBottomBarVisible)
+        }
+        composeTestRule.onNode(hasScrollAction()).assert(hasPositiveVerticalScrollPosition())
+    }
+
+    @Test
+    fun 짧은_품목_상세도_스크롤할_때_하단_탐색바를_다시_표시하지_않는다() {
+        var isBottomBarVisible by mutableStateOf(true)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(540.dp)
+                        .padding(bottom = if (isBottomBarVisible) 80.dp else 0.dp),
+                ) {
+                    ItemGuideDetailScreen(
+                        guide = shortGuide(),
+                        isFavorite = false,
+                        onBackClick = {},
+                        onFavoriteClick = {},
+                        onBottomBarVisibilityChanged = { isBottomBarVisible = it },
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+
+        composeTestRule.runOnIdle {
+            assertEquals(false, isBottomBarVisible)
+        }
+        composeTestRule.onNode(hasScrollAction()).assert(hasPositiveVerticalScrollPosition())
+    }
+
+    @Test
     fun 대표_카테고리_상세_화면은_제목과_같은_카테고리_칩을_숨긴다() {
         composeTestRule.setContent {
             MaterialTheme {
@@ -262,6 +339,55 @@ class ItemGuideDetailScreenTest {
             relatedSpotTypes = emptyList(),
         )
 
+    private fun vinylGuide() =
+        sampleGuide().copy(
+            id = "vinyl",
+            name = "비닐",
+            category = DisposalCategory.VINYL,
+            subCategory = null,
+            detailSections =
+                listOf(
+                    DisposalGuideSection(
+                        title = "배출방법",
+                        lines =
+                            listOf(
+                                "비닐포장재, 비닐봉투, 필름류는 비닐류 수거함으로 배출합니다.",
+                                "이물질과 내용물을 제거하고 흩날리지 않도록 투명비닐봉투에 모아서 배출합니다.",
+                                "PP, PE, PS 등 재질 구분없이 배출합니다.",
+                                "양파 등 농산물을 담는 그물망은 비닐로 함께 배출합니다.",
+                            ),
+                    ),
+                    DisposalGuideSection(
+                        title = "특징",
+                        lines = listOf("비닐류에는 비닐포장재, 1회용 비닐봉투, 필름류가 있습니다."),
+                    ),
+                ),
+        )
+
+    private fun shortGuide() =
+        sampleGuide().copy(
+            id = "short-guide",
+            name = "짧은 품목",
+            subCategory = null,
+            detailSections =
+                listOf(
+                    DisposalGuideSection(
+                        title = "배출방법",
+                        lines = listOf("내용물을 비우고 분리배출합니다."),
+                    ),
+                ),
+        )
+
     private fun hasHeading() =
         SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
+
+    private fun hasPositiveVerticalScrollPosition() =
+        SemanticsMatcher("has positive vertical scroll position") { node ->
+            node.config[SemanticsProperties.VerticalScrollAxisRange].value() > 0f
+        }
+
+    private companion object {
+        const val LOCAL_DISPOSAL_NOTICE =
+            "배출방법은 지역별로 차이가 있을 수 있으니, 해당 지방자치단체에서 정하는 방법이 있는 경우에는 해당 방법에 따라 배출하시기 바랍니다."
+    }
 }

@@ -31,6 +31,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
+import com.team.yeogibeoryeo.presentation.common.effects.bottomBarCollapseScrollAllowance
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
@@ -92,7 +93,7 @@ fun ItemGuideDetailScreen(
                     start = spacing.md,
                     top = 0.dp,
                     end = spacing.md,
-                    bottom = spacing.xl,
+                    bottom = spacing.xl + bottomBarCollapseScrollAllowance,
                 ),
             verticalArrangement = Arrangement.spacedBy(spacing.md),
         ) {

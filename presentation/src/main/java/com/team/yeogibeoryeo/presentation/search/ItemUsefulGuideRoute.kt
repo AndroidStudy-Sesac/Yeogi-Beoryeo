@@ -23,6 +23,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
+import com.team.yeogibeoryeo.presentation.common.effects.bottomBarCollapseScrollAllowance
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
@@ -102,7 +103,9 @@ fun ItemUsefulGuideRoute(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .padding(horizontal = spacing.xl),
-            contentPadding = PaddingValues(bottom = spacing.xxl),
+            contentPadding = PaddingValues(
+                bottom = spacing.xxl + bottomBarCollapseScrollAllowance,
+            ),
             verticalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
             item {
