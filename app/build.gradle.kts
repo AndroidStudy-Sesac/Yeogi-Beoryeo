@@ -180,7 +180,6 @@ dependencies {
 
     // Firebase
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.config)
     implementation(libs.firebase.crashlytics)
 
     // Hilt
