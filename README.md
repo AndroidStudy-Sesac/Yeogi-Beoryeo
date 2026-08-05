@@ -118,8 +118,6 @@ flowchart TB
 | `data` | API·Local Asset·Room·DataStore 접근과 repository 구현 |
 | `common` | theme과 공통 UI 구성요소 |
 
-`domain`은 Android UI와 데이터 구현에 의존하지 않습니다. `presentation`은 `domain`의 use case와 model을 사용하며, `data`가 repository 계약을 구현합니다.
-
 ## 데이터와 외부 서비스
 
 ### 공공데이터 OpenAPI
