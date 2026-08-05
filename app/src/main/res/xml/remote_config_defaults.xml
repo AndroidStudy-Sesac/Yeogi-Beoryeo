@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<defaultsMap>
+    <entry>
+        <key>operation_notice</key>
+        <value><![CDATA[
+            {
+              "schemaVersion": 1,
+              "enabled": false,
+              "id": "",
+              "severity": "info",
+              "title": "",
+              "message": "",
+              "affectedFeatures": [],
+              "startsAt": null,
+              "endsAt": null,
+              "minVersionCode": null,
+              "maxVersionCode": null,
+              "actionLabel": null,
+              "actionUrl": null
+            }
+        ]]></value>
+    </entry>
+</defaultsMap>
