@@ -369,6 +369,7 @@ jobs:
             :app:pixel9ProApi36DebugAndroidTest \
             :data:pixel9ProApi36DebugAndroidTest \
             :presentation:pixel9ProApi36DebugAndroidTest \
+            -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8" \
             --no-parallel \
             --no-daemon \
             --stacktrace \
