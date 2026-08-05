@@ -249,6 +249,9 @@
     <string name="settings_cache_detail_title">위치 캐시 삭제</string>
     <string name="settings_notice_empty_title">등록된 공지사항이 없습니다</string>
     <string name="settings_notice_empty_description">서비스 변경, 데이터 업데이트, 주요 오류 안내가 생기면 이곳에 표시됩니다.</string>
+    <string name="settings_notice_load_failed_title">공지사항을 불러오지 못했습니다</string>
+    <string name="settings_notice_load_failed_description">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</string>
+    <string name="settings_notice_published_date">게시일 %1$s</string>
     <string name="settings_contact_email_label">이메일</string>
     <string name="settings_contact_email" translatable="false">yeogi-beoryeo-support@googlegroups.com</string>
     <string name="settings_app_info_description">내 위치 기반 맞춤형 분리수거 가이드와 수거 장소 안내 서비스입니다.</string>
