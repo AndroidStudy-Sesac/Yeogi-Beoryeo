@@ -14,10 +14,17 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        testRemoteConfig()
+
+        // Remote Config 연결 확인용 임시 코드는 개발 빌드에서만 실행
+        if (BuildConfig.DEBUG) {
+            testRemoteConfig()
+        }
+
         enableEdgeToEdge()
+
         setContent {
             YeogiBeoryeoTheme {
                 YeogiBeoryeoNavHost()
@@ -27,21 +34,21 @@ class MainActivity : ComponentActivity() {
 
     private fun testRemoteConfig() {
         val remoteConfig = Firebase.remoteConfig
+
         val settings = remoteConfigSettings {
-            minimumFetchIntervalInSeconds = if (BuildConfig.DEBUG) {
-                0L
-            } else {
-                REMOTE_CONFIG_RELEASE_FETCH_INTERVAL_SECONDS
-            }
+            minimumFetchIntervalInSeconds = 0L
         }
 
         remoteConfig.setConfigSettingsAsync(settings)
-        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
-            .continueWithTask {
+            .onSuccessTask {
+                remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
+            }
+            .onSuccessTask {
                 remoteConfig.fetchAndActivate()
             }
             .addOnCompleteListener { task ->
                 val noticeJson = remoteConfig.getString(OPERATION_NOTICE_KEY)
+
                 if (task.isSuccessful) {
                     Log.d(
                         REMOTE_CONFIG_TAG,
@@ -50,7 +57,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     Log.e(
                         REMOTE_CONFIG_TAG,
-                        "Remote Config fetch failed. fallback=$noticeJson",
+                        "Remote Config initialization failed. currentValue=$noticeJson",
                         task.exception,
                     )
                 }
@@ -60,6 +67,5 @@ class MainActivity : ComponentActivity() {
     private companion object {
         const val REMOTE_CONFIG_TAG = "RemoteConfigTest"
         const val OPERATION_NOTICE_KEY = "operation_notice"
-        const val REMOTE_CONFIG_RELEASE_FETCH_INTERVAL_SECONDS = 3_600L
     }
 }
