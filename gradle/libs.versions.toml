@@ -4,6 +4,7 @@ agp = "9.2.1"
 kotlin = "2.2.10"
 jetbrainsKotlinJvm = "2.2.10"
 ksp = "2.3.6"
+kover = "0.9.9"
 
 # AndroidX Core
 coreKtx = "1.10.1"
@@ -143,6 +144,7 @@ hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 # Firebase
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServicesPlugin" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 
 
 [bundles]

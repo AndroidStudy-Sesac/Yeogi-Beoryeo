@@ -1,6 +1,15 @@
 plugins {
     id("java-library")
     alias(libs.plugins.jetbrains.kotlin.jvm)
+    alias(libs.plugins.kover)
+}
+
+kover {
+    currentProject {
+        createVariant("focused") {
+            add("jvm")
+        }
+    }
 }
 
 java {
