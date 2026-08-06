@@ -8,6 +8,7 @@ Focused coverage는 JVM unit test로 검증할 business logic의 회귀 감시 �
 |---|---|
 | 측정 source 기준 | `9bf5c6320e9bcb673856cb6ad0af5350103220c7`의 production·test source |
 | 측정 설정 기준 | 이 문서와 같은 revision의 Kover filter |
+| 최초 CI 검증 commit | `d289f2a5885517acacca1c608d5f6c66f7366216` |
 | 측정 시각 | 2026-08-06 11:36 KST |
 | 측정 도구 | Kover 0.9.9, AGP 9.2.1, Kotlin 2.2.10, JDK 21 |
 | 측정 variant | Android `debug` + JVM `jvm` |
@@ -15,12 +16,12 @@ Focused coverage는 JVM unit test로 검증할 business logic의 회귀 감시 �
 | unit test | 파일 108개, `@Test` 1,016개 |
 | Line | 89.92% (5,658/6,292) |
 | Branch | 75.05% (2,452/3,267) |
-| CI gate | Line 89% 이상, Branch 75% 이상 |
+| CI gate | Raw baseline 비율 이상 + Line 89%·Branch 75% 최소선 |
 | 상세 report | `focused-coverage-<run-id>-<attempt>` artifact |
 
-Baseline과 gate는 역할이 다릅니다. Baseline은 최초 측정 결과를 소수점 둘째 자리까지 보존합니다. Gate는 최초 결과의 정수 내림값을 사용해 의미 있는 하락을 막고 계산 경계에서 생기는 불필요한 실패를 줄입니다.
+Baseline은 최초 측정의 covered/total을 원본으로 보존합니다. CI는 정수 교차곱으로 현재 비율을 raw baseline과 비교하므로 소수점 표시가 같아도 실제 비율이 낮으면 실패합니다. Line 89%와 Branch 75% 최소선은 큰 하락을 한 번 더 막는 보조 기준입니다.
 
-Baseline은 표의 source와 이 문서 revision의 filter로 생성했습니다. 수치 하락을 통과시키기 위해 baseline이나 gate를 낮추지 않습니다. 측정 범위가 바뀌면 변경 이유와 전후 수치를 같은 PR에 기록하고 새 baseline을 확정합니다.
+Baseline은 표의 production·test source와 filter로 생성했습니다. 각 CI 실행에서 측정한 정확한 commit은 Actions Summary에 표시합니다. 수치 하락을 통과시키기 위해 baseline이나 최소선을 낮추지 않습니다. 측정 범위가 바뀌면 변경 이유와 전후 수치를 같은 PR에 기록하고 새 baseline을 확정합니다.
 
 ## 측정 대상
 
@@ -75,19 +76,29 @@ python -X utf8 .github/scripts/focused_coverage_summary.py \
   --properties gradle.properties
 ```
 
+CI와 같은 strict baseline gate는 다음 명령으로 확인합니다. 성공하면 exit code 0, baseline이나 최소선 미달이면 exit code 1을 반환합니다.
+
+```shell
+python -X utf8 -m unittest discover -s .github/scripts -p 'test_focused_coverage_summary.py'
+python -X utf8 .github/scripts/focused_coverage_summary.py \
+  --report build/reports/kover/focused/report.xml \
+  --properties gradle.properties \
+  --verify
+```
+
 Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행합니다.
 
 ## GitHub Actions 결과 확인
 
 `Android CI` workflow의 `Focused Coverage` job을 엽니다. Summary 표에서 다음 항목을 확인합니다.
 
-`Focused Coverage`는 기준 미달이면 CI check를 실패시킵니다. Merge 차단을 강제하려면 저장소 ruleset에서 이 check를 required로 별도 지정해야 합니다.
+`Focused Coverage`는 raw baseline이나 최소선보다 낮으면 CI check를 실패시킵니다. Merge 차단을 강제하려면 저장소 ruleset에서 이 check를 required로 별도 지정해야 합니다.
 
 1. `현재`: 해당 commit의 covered/total과 coverage 비율
 2. `baseline`: 최초로 확정한 coverage 비율
 3. `차이`: baseline 대비 percentage point 변화
-4. `gate`: CI가 허용하는 최소 비율
-5. `결과`: 현재 수치의 통과 여부
+4. `검증 기준`: baseline 회귀 gate와 최소선
+5. `결과`: 현재 수치의 통과 여부와 실패 원인
 
 `Line`은 실행된 source line 비율입니다. `Branch`는 조건문의 각 경로가 실행된 비율입니다. 조건 분기 회귀를 볼 때는 Branch를 먼저 확인합니다.
 
