@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -46,11 +47,17 @@ def read_metric(root: ElementTree.Element, metric_type: str) -> tuple[int, int, 
     return covered, total, covered * 100 / total
 
 
-def require_number(properties: dict[str, str], key: str) -> float:
+def require_percentage(properties: dict[str, str], key: str) -> float:
     try:
-        return float(properties[key])
+        value = float(properties[key])
     except KeyError as error:
         raise ValueError(f"{key} 값이 properties에 없습니다.") from error
+    except ValueError as error:
+        raise ValueError(f"{key} 값은 숫자여야 합니다.") from error
+
+    if not math.isfinite(value) or not 0 <= value <= 100:
+        raise ValueError(f"{key} 값은 0 이상 100 이하의 유한한 숫자여야 합니다.")
+    return value
 
 
 def require_int(properties: dict[str, str], key: str) -> int:
@@ -138,8 +145,8 @@ def main() -> None:
     branch = read_metric(root, "BRANCH")
     line_baseline_covered, line_baseline_total = read_baseline(properties, "Line")
     branch_baseline_covered, branch_baseline_total = read_baseline(properties, "Branch")
-    line_minimum = require_number(properties, "focusedCoverageLineMinimum")
-    branch_minimum = require_number(properties, "focusedCoverageBranchMinimum")
+    line_minimum = require_percentage(properties, "focusedCoverageLineMinimum")
+    branch_minimum = require_percentage(properties, "focusedCoverageBranchMinimum")
 
     failures = [
         f"{name} ({reason})"

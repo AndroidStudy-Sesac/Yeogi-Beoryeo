@@ -59,6 +59,8 @@ ViewModel, mapper, policy, formatter와 화면 결과를 결정하는 순수 상
 
 프로젝트에 필요한 `local.properties`와 debug Firebase 설정을 준비한 뒤 실행합니다.
 
+Kover와 Gradle은 HTML·XML report를 생성하고 Line 89%·Branch 75% 최소선을 검증합니다. Python script는 raw covered/total baseline 비교, Actions Summary 생성과 strict baseline gate를 담당하므로 로컬에서 CI와 같은 검증을 실행하려면 Python 3 환경이 필요합니다.
+
 ```shell
 ./gradlew :koverXmlReportFocused :koverHtmlReportFocused :koverVerifyFocused
 ```

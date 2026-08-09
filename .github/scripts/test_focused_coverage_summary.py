@@ -14,25 +14,25 @@ SPEC.loader.exec_module(MODULE)
 
 
 class FocusedCoverageBaselineTest(unittest.TestCase):
-    def test_exact_line_baseline_passes(self) -> None:
+    def test_라인_기준선과_같으면_통과한다(self) -> None:
         self.assertFalse(MODULE.is_below_baseline(5658, 6292, 5658, 6292))
 
-    def test_line_ratio_below_baseline_fails_even_above_floor(self) -> None:
+    def test_최소선보다_높아도_라인_기준선보다_낮으면_실패한다(self) -> None:
         self.assertTrue(MODULE.is_below_baseline(5600, 6292, 5658, 6292))
 
-    def test_branch_ratio_below_baseline_fails_even_when_rounded_equal(self) -> None:
+    def test_반올림값이_같아도_브랜치_기준선보다_낮으면_실패한다(self) -> None:
         self.assertTrue(MODULE.is_below_baseline(2451, 3267, 2452, 3267))
 
-    def test_ratio_above_baseline_passes(self) -> None:
+    def test_기준선보다_높은_비율은_통과한다(self) -> None:
         self.assertFalse(MODULE.is_below_baseline(5659, 6292, 5658, 6292))
 
-    def test_same_ratio_with_larger_counts_passes(self) -> None:
+    def test_분모와_분자가_같은_비율로_증가하면_통과한다(self) -> None:
         self.assertFalse(MODULE.is_below_baseline(11316, 12584, 5658, 6292))
 
-    def test_added_uncovered_line_fails_even_above_floor(self) -> None:
+    def test_미실행_라인이_추가되면_최소선_이상이어도_실패한다(self) -> None:
         self.assertTrue(MODULE.is_below_baseline(5658, 6357, 5658, 6292))
 
-    def test_invalid_baseline_total_fails(self) -> None:
+    def test_기준선_분모가_올바르지_않으면_실패한다(self) -> None:
         properties = {
             "focusedCoverageLineBaselineCovered": "1",
             "focusedCoverageLineBaselineTotal": "0",
@@ -40,7 +40,20 @@ class FocusedCoverageBaselineTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             MODULE.read_baseline(properties, "Line")
 
-    def test_verify_mode_exits_for_baseline_regression(self) -> None:
+    def test_최소선은_0과_100을_허용한다(self) -> None:
+        key = "focusedCoverageLineMinimum"
+
+        self.assertEqual(MODULE.require_percentage({key: "0"}, key), 0)
+        self.assertEqual(MODULE.require_percentage({key: "100"}, key), 100)
+
+    def test_최소선이_유한한_백분율이_아니면_실패한다(self) -> None:
+        key = "focusedCoverageLineMinimum"
+
+        for value in ("숫자 아님", "NaN", "Infinity", "-0.01", "100.01"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, key):
+                MODULE.require_percentage({key: value}, key)
+
+    def test_엄격_검증은_기준선_회귀에서_종료한다(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             report = pathlib.Path(temp_dir) / "report.xml"
             properties = pathlib.Path(temp_dir) / "gradle.properties"
