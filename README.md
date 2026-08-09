@@ -63,7 +63,7 @@
 각 모듈의 `Depends on`은 compile dependency를 나타냅니다. 화살표는 주요 구성·연결 흐름을, 점선은 runtime 데이터 소스 접근 관계를 나타냅니다.
 
 <p align="center">
-  <img src="docs/images/architecture-overview.png" width="1200" alt="여기버려 app, presentation, common, domain, data 모듈과 데이터 소스 연결 구조">
+  <img src="docs/images/architecture-overview.png" width="100%" alt="여기버려 app, presentation, common, domain, data 모듈과 데이터 소스 연결 구조">
 </p>
 
 ### 모듈 구성
