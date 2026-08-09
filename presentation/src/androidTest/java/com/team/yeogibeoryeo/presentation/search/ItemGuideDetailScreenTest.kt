@@ -215,7 +215,7 @@ class ItemGuideDetailScreenTest {
                 ItemGuideDetailScreen(
                     guide =
                         sampleGuide().copy(
-                            id = "paper",
+                            id = RepresentativeGuideCategory.PAPER.representativeGuideId,
                             name = RepresentativeGuideCategory.PAPER.representativeGuideName,
                             category = DisposalCategory.PAPER,
                             subCategory = null,
@@ -309,7 +309,7 @@ class ItemGuideDetailScreenTest {
                 ItemGuideDetailScreen(
                     guide =
                         sampleGuide().copy(
-                            id = "paper",
+                            id = RepresentativeGuideCategory.PAPER.representativeGuideId,
                             name = RepresentativeGuideCategory.PAPER.representativeGuideName,
                             category = DisposalCategory.PAPER,
                             subCategory = null,

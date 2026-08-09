@@ -53,7 +53,7 @@ constructor(
                 ),
             )
             .map { (item, _) -> item.dictionaryToDomain() }
-            .distinctBy { it.name }
+            .distinctBy { it.id }
     }
 
     override suspend fun getCategoryGuides(category: DisposalCategory): List<DisposalItemGuide> =
@@ -66,7 +66,7 @@ constructor(
                     if (sourceCategory != category) return@mapNotNull null
 
                     guideDetail.toDomain(
-                        guideDetailKey = guideDetailKey,
+                        guideName = guideDetailKey,
                         category = sourceCategory,
                     )
                 }
@@ -74,18 +74,23 @@ constructor(
 
     override suspend fun getItemGuide(guideId: String): DisposalItemGuide? =
         withContext(ioDispatcher) {
-            val guideDetail = localDataSource.getGuideDetails()[guideId]
-
-            if (guideDetail != null) {
-                guideDetail.toDomain(
-                    guideDetailKey = guideId,
+            val guideDetailEntry =
+                localDataSource.getGuideDetails().entries.firstOrNull { (name, detail) ->
+                    guideId == detail.id || guideId == name || guideId in detail.legacyNames
+                }
+            if (guideDetailEntry != null) {
+                val (guideName, guideDetail) = guideDetailEntry
+                return@withContext guideDetail.toDomain(
+                    guideName = guideName,
                     category = resolveCategory(guideDetail),
                 )
-            } else {
-                val searchResults = searchItemGuides(guideId)
-                searchResults.firstOrNull { it.id == guideId || it.name == guideId }
-                    ?: searchResults.firstOrNull()
             }
+
+            localDataSource.getWasteDictionaryItems()
+                .firstOrNull { item ->
+                    guideId == item.id || guideId == item.name || guideId in item.legacyNames
+                }
+                ?.dictionaryToDomain()
         }
 
     override fun getCategories(): List<DisposalCategory> = DisposalCategory.entries.toList()
@@ -131,12 +136,12 @@ constructor(
             ?: DisposalCategory.OTHER
 
     private fun ItemGuideDetail.toDomain(
-        guideDetailKey: String,
+        guideName: String,
         category: DisposalCategory,
     ): DisposalItemGuide {
         return DisposalItemGuide(
-            id = guideDetailKey,
-            name = guideDetailKey,
+            id = id,
+            name = guideName,
             category = category,
             subCategory = null,
             instructions = emptyList(),

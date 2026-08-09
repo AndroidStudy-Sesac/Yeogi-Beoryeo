@@ -180,9 +180,113 @@ class ItemGuideAssetTest {
         assertTrue("중복된 품목사전 품목명: $duplicatedNames", duplicatedNames.isEmpty())
     }
 
+    @Test
+    fun `품목 가이드 ID와 이전 표시명은 모든 asset에서 하나의 품목만 가리킨다`() {
+        val identities = parseGuideIdentities()
+        val invalidIds =
+            identities
+                .filterNot { STABLE_ID_PATTERN.matches(it.id) }
+                .map { "${it.name}: ${it.id}" }
+        val idConflicts =
+            identities
+                .groupBy { it.id }
+                .filterValues { matches -> matches.map { it.name }.distinct().size > 1 }
+        val nameConflicts =
+            identities
+                .flatMap { identity ->
+                    (listOf(identity.name) + identity.legacyNames).map { name -> name to identity.id }
+                }
+                .groupBy({ it.first }, { it.second })
+                .mapValues { (_, ids) -> ids.distinct() }
+                .filterValues { it.size > 1 }
+
+        assertTrue("형식이 잘못된 품목 가이드 ID: $invalidIds", invalidIds.isEmpty())
+        assertTrue("여러 표시명에 연결된 품목 가이드 ID: $idConflicts", idConflicts.isEmpty())
+        assertTrue("여러 ID에 연결된 현재·이전 표시명: $nameConflicts", nameConflicts.isEmpty())
+    }
+
+    @Test
+    fun `대표 상세 가이드 ID는 카테고리 순서와 무관하게 고정된다`() {
+        val expectedIds =
+            mapOf(
+                "종이" to "item-guide-0001",
+                "종이팩" to "item-guide-0002",
+                "무색페트병" to "item-guide-0003",
+                "플라스틱류" to "item-guide-0004",
+                "비닐류" to "item-guide-0005",
+                "발포합성수지" to "item-guide-0006",
+                "유리병" to "item-guide-0007",
+                "금속류" to "item-guide-0008",
+                "의류 및 원단" to "item-guide-0009",
+                "전지" to "item-guide-0010",
+                "조명제품" to "item-guide-0011",
+                "전기전자제품" to "item-guide-0012",
+                "음식물류폐기물" to "item-guide-0013",
+                "일반종량제폐기물" to "item-guide-0014",
+                "불연성종량제폐기물" to "item-guide-0015",
+                "대형폐기물" to "item-guide-0016",
+                "공사장 생활폐기물" to "item-guide-0017",
+                "생활계 유해폐기물" to "item-guide-0018",
+                "기타" to "item-guide-0019",
+            )
+        val actualIds =
+            parseObject("representative_guide_details.json")
+                .mapValues { (_, value) -> value.jsonObject["id"]?.jsonPrimitive?.content }
+        val mismatches =
+            (expectedIds.keys + actualIds.keys)
+                .mapNotNull { name ->
+                    val expectedId = expectedIds[name]
+                    val actualId = actualIds[name]
+                    if (actualId == expectedId) null else "$name: expected=$expectedId actual=$actualId"
+                }
+
+        assertTrue("대표 상세 가이드 ID가 고정 계약과 다릅니다: $mismatches", mismatches.isEmpty())
+    }
+
+    private fun parseGuideIdentities(): List<GuideIdentity> {
+        val dictionaryIdentities =
+            parseArray("item_disposal_guides.json").map { element ->
+                val item = element.jsonObject
+                GuideIdentity(
+                    id = item["id"]!!.jsonPrimitive.content,
+                    name = item["name"]!!.jsonPrimitive.content,
+                    legacyNames =
+                        item["legacyNames"]
+                            ?.jsonArray
+                            ?.map { it.jsonPrimitive.content }
+                            .orEmpty(),
+                )
+            }
+        val representativeIdentities =
+            parseObject("representative_guide_details.json").map { (name, element) ->
+                val detail = element.jsonObject
+                GuideIdentity(
+                    id = detail["id"]!!.jsonPrimitive.content,
+                    name = name,
+                    legacyNames =
+                        detail["legacyNames"]
+                            ?.jsonArray
+                            ?.map { it.jsonPrimitive.content }
+                            .orEmpty(),
+                )
+            }
+
+        return dictionaryIdentities + representativeIdentities
+    }
+
     private fun parseObject(fileName: String) =
-        json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonObject
+        json.parseToJsonElement(File(assetsDir, fileName).readText(Charsets.UTF_8)).jsonObject
 
     private fun parseArray(fileName: String) =
-        json.parseToJsonElement(File(assetsDir, fileName).readText()).jsonArray
+        json.parseToJsonElement(File(assetsDir, fileName).readText(Charsets.UTF_8)).jsonArray
+
+    private data class GuideIdentity(
+        val id: String,
+        val name: String,
+        val legacyNames: List<String>,
+    )
+
+    private companion object {
+        val STABLE_ID_PATTERN = Regex("item-guide-\\d{4}")
+    }
 }

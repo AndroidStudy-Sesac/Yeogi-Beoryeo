@@ -16,6 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 data class ItemGuideDetail(
+    val id: String,
+    val legacyNames: List<String> = emptyList(),
     val steps: List<String>,
     val cautions: List<String>,
     val subGuides: List<DisposalSubGuide> = emptyList(),
@@ -26,7 +28,9 @@ data class ItemGuideDetail(
 )
 
 data class WasteDictionaryItem(
+    val id: String,
     val name: String,
+    val legacyNames: List<String> = emptyList(),
     val categoryPaths: List<List<String>>,
     val similarItems: List<String>,
     val dischargeMethods: List<String>,
@@ -73,6 +77,8 @@ constructor(
 
             itemNm to
                     ItemGuideDetail(
+                        id = obj.requiredString("id"),
+                        legacyNames = obj.stringList("legacyNames"),
                         steps = obj.stringList("steps"),
                         cautions = obj.stringList("cautions"),
                         subGuides =
@@ -117,7 +123,9 @@ constructor(
         array.map { element ->
             val obj = element.jsonObject
             WasteDictionaryItem(
+                id = obj.requiredString("id"),
                 name = obj.requiredString("name"),
+                legacyNames = obj.stringList("legacyNames"),
                 categoryPaths =
                     obj.requiredArray("categoryPaths")
                         .map { path ->

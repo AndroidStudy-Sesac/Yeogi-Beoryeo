@@ -343,7 +343,10 @@ class ItemSearchViewModelTest {
         runTest {
             val expected = listOf(
                 sampleGuide("비닐봉투"),
-                sampleGuide(RepresentativeGuideCategory.VINYL.representativeGuideName),
+                sampleGuide(
+                    name = RepresentativeGuideCategory.VINYL.representativeGuideName,
+                    id = RepresentativeGuideCategory.VINYL.representativeGuideId,
+                ),
             )
             val repository = FakeRepository(onCategory = { expected })
             val viewModel = createViewModel(repository)
@@ -611,9 +614,12 @@ class ItemSearchViewModelTest {
             ObserveHomeQuickCategoriesUseCase(homeQuickCategoryRepository),
         )
 
-    private fun sampleGuide(name: String): DisposalItemGuide =
+    private fun sampleGuide(
+        name: String,
+        id: String = name,
+    ): DisposalItemGuide =
         DisposalItemGuide(
-            id = name,
+            id = id,
             name = name,
             category = DisposalCategory.GLASS,
             subCategory = null,
