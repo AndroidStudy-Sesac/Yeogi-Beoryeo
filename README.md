@@ -60,53 +60,11 @@
 
 ## Architecture
 
-실선은 모듈의 compile dependency, 점선은 runtime 데이터·서비스 사용 관계를 나타냅니다.
+각 모듈의 `Depends on`은 compile dependency를 나타냅니다. 화살표는 주요 구성·연결 흐름을, 점선은 runtime 데이터 소스 접근 관계를 나타냅니다.
 
-```mermaid
-flowchart TB
-    subgraph Android["Android App"]
-        app["app<br>앱 진입·navigation·의존성 조립"]
-        presentation["presentation<br>Compose UI·ViewModel"]
-        domain["domain<br>model·repository 계약·use case"]
-        data["data<br>repository 구현·데이터 조합"]
-        common["common<br>theme·공통 UI"]
-
-        assets["가공 Local Asset<br>품목 안내·유의어·행정구역<br>지역 매핑·데이터 제공 범위"]
-        room["Room<br>즐겨찾기"]
-        datastore["DataStore<br>설정·사용자 상태·cache"]
-
-        app --> presentation
-        app --> data
-        app --> domain
-        app --> common
-        presentation --> domain
-        presentation --> common
-        data --> domain
-
-        data -. "조회" .-> assets
-        data -. "저장·조회" .-> room
-        data -. "저장·조회" .-> datastore
-    end
-
-    subgraph PublicData["공공데이터 OpenAPI"]
-        spotApi["기후에너지환경부<br>분리배출 정보조회 서비스<br>GET /getSpot"]
-        regionalApi["행정안전부<br>생활쓰레기배출정보 조회서비스<br>GET /info"]
-    end
-
-    subgraph Platform["지도·위치·운영 서비스"]
-        naver["NAVER Maps Android SDK"]
-        location["Fused Location Provider API"]
-        geocoder["Android Geocoder API"]
-        crashlytics["Firebase Crashlytics"]
-    end
-
-    data -. "수거 장소 조회" .-> spotApi
-    data -. "지역별 안내 조회" .-> regionalApi
-    presentation -. "지도 표시" .-> naver
-    presentation -. "현재 위치 조회" .-> location
-    data -. "주소·좌표 변환" .-> geocoder
-    app -. "오류 기록" .-> crashlytics
-```
+<p align="center">
+  <img src="docs/images/architecture-overview.png" width="1200" alt="여기버려 app, presentation, common, domain, data 모듈과 데이터 소스 연결 구조">
+</p>
 
 ### 모듈 구성
 
