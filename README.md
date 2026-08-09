@@ -218,13 +218,14 @@ Issue
 
 ## Team
 
-| GitHub |
-|---|
-| [Jiyeong-kor](https://github.com/Jiyeong-kor) |
-| [ksubin-dev](https://github.com/ksubin-dev) |
-| [ExpeditionMoon](https://github.com/ExpeditionMoon) |
+| [<img src="https://github.com/Jiyeong-kor.png" width="100">](https://github.com/Jiyeong-kor) | [<img src="https://github.com/ksubin-dev.png" width="100">](https://github.com/ksubin-dev) | [<img src="https://github.com/ExpeditionMoon.png" width="100">](https://github.com/ExpeditionMoon) |
+| :---: | :---: | :---: |
+| **정지영**<br><sub>홈 · 품목 카테고리 · 검색</sub> | **김수빈**<br><sub>지도 탭 전반 · 수거 장소 탐색</sub> | **원정문**<br><sub>지역별 배출 안내</sub> |
+| [Jiyeong-kor](https://github.com/Jiyeong-kor) | [ksubin-dev](https://github.com/ksubin-dev) | [ExpeditionMoon](https://github.com/ExpeditionMoon) |
 
 세부 변경 이력은 [Contributors](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/graphs/contributors)와 각 Pull Request에서 확인할 수 있습니다.
+
+
 
 ## 운영 및 문서
 
