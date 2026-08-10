@@ -45,6 +45,8 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeBanner
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 import com.team.yeogibeoryeo.presentation.search.components.HomeRegionalGuideSummaryBanner
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.ItemUsefulGuideBannerRow
@@ -75,6 +77,8 @@ fun ItemSearchInitialContent(
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
     onSettingsClick: (() -> Unit)?,
+    operationNotice: OperationNoticeUiModel?,
+    onOperationNoticeDismiss: (String) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
     onRegionalGuideSummaryClick: (String) -> Unit = {},
@@ -216,6 +220,16 @@ fun ItemSearchInitialContent(
                     horizontalPadding = metrics.horizontalPadding,
                     onSettingsClick = onSettingsClick,
                 )
+            }
+
+            operationNotice?.let { notice ->
+                item(key = "operation_notice_${notice.id}") {
+                    OperationNoticeBanner(
+                        notice = notice,
+                        onDismiss = onOperationNoticeDismiss,
+                        modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                    )
+                }
             }
 
             item {

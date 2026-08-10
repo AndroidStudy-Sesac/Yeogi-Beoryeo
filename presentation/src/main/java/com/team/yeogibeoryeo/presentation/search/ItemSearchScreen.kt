@@ -47,6 +47,8 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
+import com.team.yeogibeoryeo.presentation.operationnotice.HomeOperationNoticeViewModel
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
@@ -74,10 +76,12 @@ fun ItemSearchRoute(
     usefulGuideModifier: Modifier = Modifier,
     viewModel: ItemSearchViewModel = hiltViewModel(),
     regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
+    operationNoticeViewModel: HomeOperationNoticeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val regionalGuideSummaryState by
         regionalGuideSummaryViewModel.uiState.collectAsStateWithLifecycle()
+    val operationNotice by operationNoticeViewModel.notice.collectAsStateWithLifecycle()
     val currentOnGuideSelected by rememberUpdatedState(onGuideSelected)
 
     val searchResultListState = rememberLazyListState()
@@ -129,6 +133,8 @@ fun ItemSearchRoute(
         onQuickCategorySettingsClick = onQuickCategorySettingsClick,
         onSettingsClick = onSettingsClick,
         onBackClick = viewModel::clearSearch,
+        operationNotice = operationNotice,
+        onOperationNoticeDismiss = operationNoticeViewModel::dismissNotice,
         searchResultListState = searchResultListState,
         categoryListState = categoryListState,
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
@@ -161,6 +167,8 @@ fun ItemSearchScreen(
     onQuickCategorySettingsClick: (Int) -> Unit = {},
     onSettingsClick: (() -> Unit)? = null,
     onBackClick: () -> Unit = {},
+    operationNotice: OperationNoticeUiModel? = null,
+    onOperationNoticeDismiss: (String) -> Unit = {},
     searchResultListState: LazyListState = rememberLazyListState(),
     categoryListState: LazyListState = rememberLazyListState(),
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
@@ -208,6 +216,8 @@ fun ItemSearchScreen(
             onQuickCategoryCollapseClick = onQuickCategoryCollapseClick,
             onQuickCategoryViewportChanged = onQuickCategoryViewportChanged,
             onSettingsClick = onSettingsClick,
+            operationNotice = operationNotice,
+            onOperationNoticeDismiss = onOperationNoticeDismiss,
             listState = categoryListState,
             modifier = modifier.statusBarsPadding(),
             onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,

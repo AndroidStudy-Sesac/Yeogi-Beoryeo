@@ -78,6 +78,10 @@ dependencies {
     // Network
     implementation(libs.bundles.network)
 
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
