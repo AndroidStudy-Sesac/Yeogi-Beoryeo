@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -255,6 +256,36 @@ class ItemGuideDetailViewModelTest {
         }
 
     @Test
+    fun `즐겨찾기를 빠르게 두 번 누르면 처리 중 중복 요청을 무시한다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val favoriteRepository = FakeFavoriteRepository()
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = guide),
+                    favoriteRepository = favoriteRepository,
+                )
+
+            viewModel.loadGuide(guide.id)
+            advanceUntilIdle()
+
+            viewModel.toggleFavorite()
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            assertEquals(1, favoriteRepository.toggleCallCount)
+            assertTrue((viewModel.uiState.value as ItemGuideDetailUiState.Success).isFavorite)
+
+            advanceTimeBy(500L)
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            assertEquals(2, favoriteRepository.toggleCallCount)
+        }
+
+    @Test
     fun `즐겨찾기 변경에 실패하면 실패 메시지 이벤트를 보낸다`() =
         runTest {
             val guide = sampleGuide("유리병")
@@ -279,6 +310,31 @@ class ItemGuideDetailViewModelTest {
                 messageEvent.messageResId,
             )
             assertEquals(ItemGuideDetailMessageIcon.Warning, messageEvent.icon)
+        }
+
+    @Test
+    fun `즐겨찾기 변경 실패 뒤 다시 누르면 재시도한다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val favoriteRepository =
+                FakeFavoriteRepository(toggleError = IllegalStateException("저장 실패"))
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = guide),
+                    favoriteRepository = favoriteRepository,
+                )
+
+            viewModel.loadGuide(guide.id)
+            advanceUntilIdle()
+
+            viewModel.toggleFavorite()
+            advanceUntilIdle()
+            favoriteRepository.toggleError = null
+            viewModel.toggleFavorite()
+            advanceUntilIdle()
+
+            assertEquals(2, favoriteRepository.toggleCallCount)
+            assertTrue((viewModel.uiState.value as ItemGuideDetailUiState.Success).isFavorite)
         }
 
     @Test
@@ -359,9 +415,11 @@ class ItemGuideDetailViewModelTest {
 
     private class FakeFavoriteRepository(
         initialFavorites: List<Favorite> = emptyList(),
-        private val toggleError: Throwable? = null,
+        var toggleError: Throwable? = null,
     ) : FavoriteRepository {
         private val favorites = MutableStateFlow(initialFavorites)
+        var toggleCallCount = 0
+            private set
 
         override fun observeFavorites(): Flow<List<Favorite>> = favorites
 
@@ -380,6 +438,7 @@ class ItemGuideDetailViewModelTest {
             favorites.value.any { it.type == type && it.targetId == targetId }
 
         override suspend fun toggleFavorite(favorite: Favorite): Boolean {
+            toggleCallCount += 1
             toggleError?.let { throw it }
             return if (isFavorite(favorite.type, favorite.targetId)) {
                 removeFavorite(favorite.type, favorite.targetId)

@@ -15,7 +15,9 @@ import com.team.yeogibeoryeo.presentation.search.model.toDetailActions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -39,6 +41,7 @@ constructor(
     val events: SharedFlow<ItemGuideDetailEvent> = _events.asSharedFlow()
     private var loadGuideJob: Job? = null
     private var favoriteJob: Job? = null
+    private var favoriteToggleJob: Job? = null
     private var requestedGuideId: String? = null
     private var loadingGuideId: String? = null
 
@@ -94,41 +97,52 @@ constructor(
 
     fun toggleFavorite() {
         val currentState = _uiState.value as? ItemGuideDetailUiState.Success ?: return
+        if (favoriteToggleJob?.isActive == true) return
         val guide = currentState.guide
 
-        viewModelScope.launch {
-            val event =
-                try {
-                    val isFavorite =
-                        toggleFavoriteUseCase(
-                            Favorite(
-                                type = FavoriteTargetType.ITEM_GUIDE,
-                                targetId = guide.id,
-                                savedAtMillis = System.currentTimeMillis(),
-                            ),
+        favoriteToggleJob =
+            viewModelScope.launch {
+                val guardJob =
+                    launch(start = CoroutineStart.UNDISPATCHED) {
+                        delay(FAVORITE_TOGGLE_GUARD_MILLIS)
+                    }
+                val event =
+                    try {
+                        val isFavorite =
+                            toggleFavoriteUseCase(
+                                Favorite(
+                                    type = FavoriteTargetType.ITEM_GUIDE,
+                                    targetId = guide.id,
+                                    savedAtMillis = System.currentTimeMillis(),
+                                ),
+                            )
+                        ItemGuideDetailEvent.ShowMessage(
+                            messageResId =
+                                if (isFavorite) {
+                                    R.string.item_guide_detail_favorite_added_message
+                                } else {
+                                    R.string.item_guide_detail_favorite_removed_message
+                                },
+                            icon = ItemGuideDetailMessageIcon.Favorite,
                         )
-                    ItemGuideDetailEvent.ShowMessage(
-                        messageResId =
-                            if (isFavorite) {
-                                R.string.item_guide_detail_favorite_added_message
-                            } else {
-                                R.string.item_guide_detail_favorite_removed_message
-                            },
-                        icon = ItemGuideDetailMessageIcon.Favorite,
-                    )
-                } catch (exception: CancellationException) {
-                    throw exception
-                } catch (_: Throwable) {
-                    ItemGuideDetailEvent.ShowMessage(
-                        messageResId = R.string.item_guide_detail_favorite_update_failed_message,
-                        icon = ItemGuideDetailMessageIcon.Warning,
-                    )
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (_: Throwable) {
+                        ItemGuideDetailEvent.ShowMessage(
+                            messageResId = R.string.item_guide_detail_favorite_update_failed_message,
+                            icon = ItemGuideDetailMessageIcon.Warning,
+                        )
+                    }
+                val latestState = uiState.value
+                if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
+                    _events.emit(event)
                 }
-            val latestState = uiState.value
-            if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
-                _events.emit(event)
+                guardJob.join()
             }
-        }
+    }
+
+    private companion object {
+        const val FAVORITE_TOGGLE_GUARD_MILLIS = 500L
     }
 
     private fun observeFavorite(guide: DisposalItemGuide) {
