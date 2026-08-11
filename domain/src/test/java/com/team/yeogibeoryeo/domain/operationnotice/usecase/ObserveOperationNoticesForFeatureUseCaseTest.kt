@@ -7,13 +7,22 @@ import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverit
 import com.team.yeogibeoryeo.domain.operationnotice.repository.DismissedOperationNoticeRepository
 import com.team.yeogibeoryeo.domain.operationnotice.repository.OperationNoticeRepository
 import com.team.yeogibeoryeo.domain.time.TimeProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveOperationNoticesForFeatureUseCaseTest {
 
     @Test
@@ -63,14 +72,79 @@ class ObserveOperationNoticesForFeatureUseCaseTest {
         assertEquals(listOf("current"), result.map { it.id })
     }
 
+    @Test
+    fun `구독 중 startsAt을 지나면 예정 공지를 표시한다`() = runTest {
+        val useCase = createUseCase(
+            notices = listOf(
+                notice(
+                    id = "scheduled",
+                    startsAtMillis = 100,
+                    endsAtMillis = 200,
+                ),
+            ),
+            timeProvider = FakeTimeProvider { testScheduler.currentTime },
+        )
+        val results = mutableListOf<List<String>>()
+
+        val job =
+            launch {
+                useCase(OperationNoticeFeature.HOME)
+                    .map { notices -> notices.map { notice -> notice.id } }
+                    .take(2)
+                    .toList(results)
+            }
+
+        runCurrent()
+        assertEquals(listOf(emptyList<String>()), results)
+
+        advanceTimeBy(100)
+        runCurrent()
+
+        assertEquals(listOf(emptyList(), listOf("scheduled")), results)
+        job.cancel()
+    }
+
+    @Test
+    fun `구독 중 endsAt을 지나면 종료 공지를 숨긴다`() = runTest {
+        val useCase = createUseCase(
+            notices = listOf(
+                notice(
+                    id = "expired",
+                    startsAtMillis = 0,
+                    endsAtMillis = 100,
+                ),
+            ),
+            timeProvider = FakeTimeProvider { testScheduler.currentTime },
+        )
+        val results = mutableListOf<List<String>>()
+
+        val job =
+            launch {
+                useCase(OperationNoticeFeature.HOME)
+                    .map { notices -> notices.map { notice -> notice.id } }
+                    .take(2)
+                    .toList(results)
+            }
+
+        runCurrent()
+        assertEquals(listOf(listOf("expired")), results)
+
+        advanceTimeBy(101)
+        runCurrent()
+
+        assertEquals(listOf(listOf("expired"), emptyList()), results)
+        job.cancel()
+    }
+
     private fun createUseCase(
         notices: List<OperationNotice>,
         dismissedRepository: DismissedOperationNoticeRepository = FakeDismissedOperationNoticeRepository(),
+        timeProvider: TimeProvider = FakeTimeProvider(TEST_NOW),
     ): ObserveOperationNoticesForFeatureUseCase =
         ObserveOperationNoticesForFeatureUseCase(
             operationNoticeRepository = FakeOperationNoticeRepository(notices),
             dismissedOperationNoticeRepository = dismissedRepository,
-            timeProvider = FakeTimeProvider(TEST_NOW),
+            timeProvider = timeProvider,
             appVersionProvider = FakeAppVersionProvider(versionCode = 4),
         )
 
@@ -122,9 +196,11 @@ class ObserveOperationNoticesForFeatureUseCaseTest {
     }
 
     private class FakeTimeProvider(
-        private val nowMillis: Long,
+        private val nowMillis: () -> Long,
     ) : TimeProvider {
-        override fun currentTimeMillis(): Long = nowMillis
+        constructor(nowMillis: Long) : this({ nowMillis })
+
+        override fun currentTimeMillis(): Long = nowMillis()
     }
 
     private class FakeAppVersionProvider(
@@ -135,4 +211,3 @@ class ObserveOperationNoticesForFeatureUseCaseTest {
         const val TEST_NOW = 1_000L
     }
 }
-

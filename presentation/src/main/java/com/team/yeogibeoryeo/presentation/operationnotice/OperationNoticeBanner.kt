@@ -100,7 +100,11 @@ fun OperationNoticeBanner(
                     )
                     if (notice.actionLabel != null && notice.actionUrl != null) {
                         TextButton(
-                            onClick = { uriHandler.openUri(notice.actionUrl) },
+                            onClick = {
+                                runCatching {
+                                    uriHandler.openUri(notice.actionUrl)
+                                }
+                            },
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                         ) {
                             Text(text = notice.actionLabel)

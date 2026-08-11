@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.data.operationnotice.remote.OperationNoticeDto
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNotice
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeFeature
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverity
+import java.net.URI
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 
@@ -15,11 +16,17 @@ fun OperationNoticeDto.toDomainOrNull(): OperationNotice? {
     val normalizedMessage = message.trim()
     if (normalizedId.isEmpty() || normalizedTitle.isEmpty() || normalizedMessage.isEmpty()) return null
 
-    val severity = OperationNoticeSeverity.fromRemoteValue(severity.trim()) ?: OperationNoticeSeverity.INFO
-    val features =
-        affectedFeatures
-            .mapNotNull { value -> OperationNoticeFeature.fromRemoteValue(value.trim()) }
-            .toSet()
+    val severity = OperationNoticeSeverity.fromRemoteValue(severity.trim()) ?: return null
+    val features = affectedFeatures.toOperationNoticeFeaturesOrNull() ?: return null
+    val startsAtMillis = startsAt.toEpochMillisOrNull()
+    val endsAtMillis = endsAt.toEpochMillisOrNull()
+    if (startsAt.hasText() && startsAtMillis == null) return null
+    if (endsAt.hasText() && endsAtMillis == null) return null
+
+    val normalizedActionLabel = actionLabel?.trim()?.takeIf(String::isNotEmpty)
+    val normalizedActionUrl = actionUrl?.trim()?.takeIf(String::isNotEmpty)
+    val safeActionUrl = normalizedActionUrl?.takeIf { url -> url.hasAllowedScheme() }
+    val shouldShowAction = normalizedActionLabel != null && safeActionUrl != null
 
     return OperationNotice(
         id = normalizedId,
@@ -28,13 +35,22 @@ fun OperationNoticeDto.toDomainOrNull(): OperationNotice? {
         title = normalizedTitle,
         message = normalizedMessage,
         affectedFeatures = features,
-        startsAtMillis = startsAt.toEpochMillisOrNull(),
-        endsAtMillis = endsAt.toEpochMillisOrNull(),
+        startsAtMillis = startsAtMillis,
+        endsAtMillis = endsAtMillis,
         minVersionCode = minVersionCode,
         maxVersionCode = maxVersionCode,
-        actionLabel = actionLabel?.trim()?.takeIf(String::isNotEmpty),
-        actionUrl = actionUrl?.trim()?.takeIf(String::isNotEmpty),
+        actionLabel = normalizedActionLabel?.takeIf { shouldShowAction },
+        actionUrl = safeActionUrl?.takeIf { shouldShowAction },
     )
+}
+
+private fun List<String>.toOperationNoticeFeaturesOrNull(): Set<OperationNoticeFeature>? {
+    if (isEmpty()) return emptySet()
+
+    val features =
+        mapNotNull { value -> OperationNoticeFeature.fromRemoteValue(value.trim()) }
+            .toSet()
+    return features.takeIf { it.isNotEmpty() }
 }
 
 private fun String?.toEpochMillisOrNull(): Long? {
@@ -46,3 +62,12 @@ private fun String?.toEpochMillisOrNull(): Long? {
     }
 }
 
+private fun String?.hasText(): Boolean = !this?.trim().isNullOrEmpty()
+
+private fun String.hasAllowedScheme(): Boolean =
+    runCatching {
+        when (URI(this).scheme?.lowercase()) {
+            "http", "https" -> true
+            else -> false
+        }
+    }.getOrDefault(false)

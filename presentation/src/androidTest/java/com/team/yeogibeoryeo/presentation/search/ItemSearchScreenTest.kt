@@ -42,7 +42,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
+import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverity
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
@@ -192,6 +194,32 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
         composeTestRule.onAllNodesWithContentDescription("뒤로가기").assertCountEquals(0)
+    }
+
+    @Test
+    fun 작은_화면에서_운영_공지와_앱_가이드가_함께_있어도_검색_타겟으로_스크롤한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(480.dp),
+                ) {
+                    ItemSearchScreen(
+                        uiState = ItemSearchUiState(),
+                        onQueryChange = {},
+                        onSearchClick = {},
+                        onGuideClick = {},
+                        onQuickCategoryClick = {},
+                        operationNotice = sampleOperationNotice(),
+                        appGuideTarget = ItemSearchGuideTarget.SEARCH,
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
+            .assertIsDisplayed()
     }
 
     @Test
@@ -728,6 +756,16 @@ class ItemSearchScreenTest {
             tip = null,
             isRecyclable = true,
             relatedSpotTypes = emptyList(),
+        )
+
+    private fun sampleOperationNotice(): OperationNoticeUiModel =
+        OperationNoticeUiModel(
+            id = "notice",
+            severity = OperationNoticeSeverity.WARNING,
+            title = "운영 공지",
+            message = "공지 내용",
+            actionLabel = null,
+            actionUrl = null,
         )
 
     private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.swipeUpUntilTextExists(

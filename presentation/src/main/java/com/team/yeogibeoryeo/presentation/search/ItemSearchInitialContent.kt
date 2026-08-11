@@ -137,29 +137,31 @@ fun ItemSearchInitialContent(
         }
     }
 
-    LaunchedEffect(appGuideTarget) {
+    LaunchedEffect(appGuideTarget, operationNotice != null) {
         if (appGuideTarget != null && appGuideScrollIndex == NO_APP_GUIDE_SCROLL_INDEX) {
             appGuideScrollIndex = listState.firstVisibleItemIndex
             appGuideScrollOffset = listState.firstVisibleItemScrollOffset
         }
+        val appGuideItemIndex =
+            appGuideTarget?.toLazyListItemIndex(hasOperationNotice = operationNotice != null)
 
         when (appGuideTarget) {
             ItemSearchGuideTarget.SEARCH -> {
                 val isSearchVisible =
                     listState.layoutInfo.visibleItemsInfo.any { item ->
-                        item.index == SEARCH_GUIDE_ITEM_INDEX
+                        item.index == appGuideItemIndex
                     }
                 if (!isSearchVisible) {
-                    listState.scrollToItem(SEARCH_GUIDE_ITEM_INDEX)
+                    listState.scrollToItem(checkNotNull(appGuideItemIndex))
                 }
             }
 
             ItemSearchGuideTarget.QUICK_CATEGORY -> {
-                listState.scrollToItem(QUICK_CATEGORY_GUIDE_ITEM_INDEX)
+                listState.scrollToItem(checkNotNull(appGuideItemIndex))
             }
 
             ItemSearchGuideTarget.USEFUL_GUIDE -> {
-                listState.scrollToItem(USEFUL_GUIDE_GUIDE_ITEM_INDEX)
+                listState.scrollToItem(checkNotNull(appGuideItemIndex))
             }
 
             null -> {
@@ -353,6 +355,17 @@ private const val USEFUL_GUIDE_GUIDE_ITEM_INDEX = 1
 private const val SEARCH_GUIDE_ITEM_INDEX = 3
 private const val QUICK_CATEGORY_GUIDE_ITEM_INDEX = 4
 private const val NO_APP_GUIDE_SCROLL_INDEX = -1
+
+internal fun ItemSearchGuideTarget.toLazyListItemIndex(hasOperationNotice: Boolean): Int {
+    val baseIndex =
+        when (this) {
+            ItemSearchGuideTarget.USEFUL_GUIDE -> USEFUL_GUIDE_GUIDE_ITEM_INDEX
+            ItemSearchGuideTarget.SEARCH -> SEARCH_GUIDE_ITEM_INDEX
+            ItemSearchGuideTarget.QUICK_CATEGORY -> QUICK_CATEGORY_GUIDE_ITEM_INDEX
+        }
+
+    return baseIndex + if (hasOperationNotice) 1 else 0
+}
 
 @Composable
 fun ItemSearchHeader(

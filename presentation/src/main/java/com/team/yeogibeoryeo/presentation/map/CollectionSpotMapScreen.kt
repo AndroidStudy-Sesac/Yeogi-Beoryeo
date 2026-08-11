@@ -378,6 +378,17 @@ private fun CollectionSpotMapContent(
         showCurrentLocationGuide,
     ) {
         if (shouldDeferBottomSheetForGuide) return@LaunchedEffect
+        if (
+            shouldKeepSpotDetailOnOperationNotice(
+                mapUiMode = mapUiMode,
+                hasOperationNotice = hasOperationNotice,
+                hasLocationNotice = hasLocationNotice,
+                hasError = uiState.errorMessageResId != null,
+                isLoading = uiState.isLoading,
+            )
+        ) {
+            return@LaunchedEffect
+        }
 
         when {
             hasRegionSelection -> {
@@ -741,11 +752,24 @@ private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
         spots.isNotEmpty() ||
         selectedSpot != null
 
-private enum class MapUiMode {
+internal enum class MapUiMode {
     Browsing,
     ResultList,
     SpotDetail,
 }
+
+internal fun shouldKeepSpotDetailOnOperationNotice(
+    mapUiMode: MapUiMode,
+    hasOperationNotice: Boolean,
+    hasLocationNotice: Boolean,
+    hasError: Boolean,
+    isLoading: Boolean,
+): Boolean =
+    mapUiMode == MapUiMode.SpotDetail &&
+        hasOperationNotice &&
+        !hasLocationNotice &&
+        !hasError &&
+        !isLoading
 
 private fun bottomSheetMaxExpandedHeight(
     mapUiMode: MapUiMode,
