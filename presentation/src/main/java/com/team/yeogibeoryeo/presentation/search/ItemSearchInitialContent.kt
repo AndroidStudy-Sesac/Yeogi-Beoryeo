@@ -361,6 +361,7 @@ fun ItemSearchInitialContent(
 private const val USEFUL_GUIDE_GUIDE_ITEM_INDEX = 1
 private const val SEARCH_GUIDE_ITEM_INDEX = 3
 private const val QUICK_CATEGORY_GUIDE_ITEM_INDEX = 4
+private const val OPERATION_NOTICE_ITEM_INDEX = 1
 private const val NO_APP_GUIDE_SCROLL_INDEX = -1
 
 internal fun ItemSearchGuideTarget.toLazyListItemIndex(hasOperationNotice: Boolean): Int {
@@ -381,8 +382,12 @@ internal fun restoredAppGuideScrollIndex(
 ): Int {
     val noticeIndexOffset =
         when {
-            hadOperationNotice && !hasOperationNotice -> -1
-            !hadOperationNotice && hasOperationNotice -> 1
+            hadOperationNotice &&
+                !hasOperationNotice &&
+                storedIndex > OPERATION_NOTICE_ITEM_INDEX -> -1
+            !hadOperationNotice &&
+                hasOperationNotice &&
+                storedIndex >= OPERATION_NOTICE_ITEM_INDEX -> 1
             else -> 0
         }
 

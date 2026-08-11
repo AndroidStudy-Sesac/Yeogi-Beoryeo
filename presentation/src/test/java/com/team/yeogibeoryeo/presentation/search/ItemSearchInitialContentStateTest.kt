@@ -20,7 +20,19 @@ class ItemSearchInitialContentStateTest {
     }
 
     @Test
-    fun `앱 가이드 중 운영 공지가 나타나면 복원 item index를 한 칸 뒤로 보정한다`() {
+    fun `앱 가이드 중 운영 공지가 나타나도 헤더 복원 item index는 유지한다`() {
+        assertEquals(
+            0,
+            restoredAppGuideScrollIndex(
+                storedIndex = 0,
+                hadOperationNotice = false,
+                hasOperationNotice = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `앱 가이드 중 운영 공지가 나타나면 공지 뒤 항목 복원 item index를 한 칸 뒤로 보정한다`() {
         assertEquals(
             4,
             restoredAppGuideScrollIndex(
@@ -32,7 +44,19 @@ class ItemSearchInitialContentStateTest {
     }
 
     @Test
-    fun `앱 가이드 중 운영 공지가 사라지면 복원 item index를 한 칸 앞으로 보정한다`() {
+    fun `앱 가이드 중 운영 공지가 사라져도 공지 item 복원 index는 유지한다`() {
+        assertEquals(
+            1,
+            restoredAppGuideScrollIndex(
+                storedIndex = 1,
+                hadOperationNotice = true,
+                hasOperationNotice = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `앱 가이드 중 운영 공지가 사라지면 공지 뒤 항목 복원 item index를 한 칸 앞으로 보정한다`() {
         assertEquals(
             2,
             restoredAppGuideScrollIndex(

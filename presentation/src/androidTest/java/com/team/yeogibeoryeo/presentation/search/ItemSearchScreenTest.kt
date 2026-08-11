@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -220,6 +222,60 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun 앱_가이드_중_운영_공지_등장_후_종료해도_헤더_위치로_복원한다() {
+        var appGuideTarget by mutableStateOf<ItemSearchGuideTarget?>(null)
+        var operationNotice by mutableStateOf<OperationNoticeUiModel?>(null)
+        lateinit var listState: LazyListState
+
+        composeTestRule.setContent {
+            val categoryListState = rememberLazyListState()
+            listState = categoryListState
+
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(480.dp),
+                ) {
+                    ItemSearchScreen(
+                        uiState = ItemSearchUiState(),
+                        onQueryChange = {},
+                        onSearchClick = {},
+                        onGuideClick = {},
+                        onQuickCategoryClick = {},
+                        operationNotice = operationNotice,
+                        categoryListState = categoryListState,
+                        appGuideTarget = appGuideTarget,
+                    )
+                }
+            }
+        }
+
+        composeTestRule.runOnIdle {
+            assertEquals(0, listState.firstVisibleItemIndex)
+            assertEquals(0, listState.firstVisibleItemScrollOffset)
+            appGuideTarget = ItemSearchGuideTarget.SEARCH
+        }
+        composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
+            .assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            operationNotice = sampleOperationNotice()
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.runOnIdle {
+            appGuideTarget = null
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.runOnIdle {
+            assertEquals(0, listState.firstVisibleItemIndex)
+            assertEquals(0, listState.firstVisibleItemScrollOffset)
+        }
     }
 
     @Test
