@@ -101,6 +101,7 @@ fun ItemSearchInitialContent(
     }
     var appGuideScrollIndex by rememberSaveable { mutableIntStateOf(NO_APP_GUIDE_SCROLL_INDEX) }
     var appGuideScrollOffset by rememberSaveable { mutableIntStateOf(0) }
+    var appGuideScrollHadOperationNotice by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner, isQuickCategoryExpanded) {
@@ -141,6 +142,7 @@ fun ItemSearchInitialContent(
         if (appGuideTarget != null && appGuideScrollIndex == NO_APP_GUIDE_SCROLL_INDEX) {
             appGuideScrollIndex = listState.firstVisibleItemIndex
             appGuideScrollOffset = listState.firstVisibleItemScrollOffset
+            appGuideScrollHadOperationNotice = operationNotice != null
         }
         val appGuideItemIndex =
             appGuideTarget?.toLazyListItemIndex(hasOperationNotice = operationNotice != null)
@@ -167,11 +169,16 @@ fun ItemSearchInitialContent(
             null -> {
                 if (appGuideScrollIndex != NO_APP_GUIDE_SCROLL_INDEX) {
                     listState.scrollToItem(
-                        index = appGuideScrollIndex,
+                        index = restoredAppGuideScrollIndex(
+                            storedIndex = appGuideScrollIndex,
+                            hadOperationNotice = appGuideScrollHadOperationNotice,
+                            hasOperationNotice = operationNotice != null,
+                        ),
                         scrollOffset = appGuideScrollOffset,
                     )
                     appGuideScrollIndex = NO_APP_GUIDE_SCROLL_INDEX
                     appGuideScrollOffset = 0
+                    appGuideScrollHadOperationNotice = false
                 }
             }
         }
@@ -365,6 +372,21 @@ internal fun ItemSearchGuideTarget.toLazyListItemIndex(hasOperationNotice: Boole
         }
 
     return baseIndex + if (hasOperationNotice) 1 else 0
+}
+
+internal fun restoredAppGuideScrollIndex(
+    storedIndex: Int,
+    hadOperationNotice: Boolean,
+    hasOperationNotice: Boolean,
+): Int {
+    val noticeIndexOffset =
+        when {
+            hadOperationNotice && !hasOperationNotice -> -1
+            !hadOperationNotice && hasOperationNotice -> 1
+            else -> 0
+        }
+
+    return (storedIndex + noticeIndexOffset).coerceAtLeast(0)
 }
 
 @Composable

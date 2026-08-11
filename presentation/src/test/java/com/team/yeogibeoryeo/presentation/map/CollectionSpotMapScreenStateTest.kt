@@ -1,6 +1,8 @@
 package com.team.yeogibeoryeo.presentation.map
 
+import com.team.yeogibeoryeo.presentation.map.components.MapSheetLevel
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -46,5 +48,41 @@ class CollectionSpotMapScreenStateTest {
             )
 
         assertFalse(shouldKeepDetail)
+    }
+
+    @Test
+    fun `장소 상세를 닫을 때 수신한 운영 공지가 있으면 결과 목록을 Medium으로 보여준다`() {
+        val returnState =
+            mapDetailCloseReturnState(
+                hasResultListToReturn = true,
+                hasOperationNotice = true,
+            )
+
+        assertEquals(MapUiMode.ResultList, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Medium, returnState.sheetLevel)
+    }
+
+    @Test
+    fun `장소 상세를 닫을 때 운영 공지만 있어도 공지 결과 목록을 Medium으로 보여준다`() {
+        val returnState =
+            mapDetailCloseReturnState(
+                hasResultListToReturn = false,
+                hasOperationNotice = true,
+            )
+
+        assertEquals(MapUiMode.ResultList, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Medium, returnState.sheetLevel)
+    }
+
+    @Test
+    fun `장소 상세를 닫을 때 운영 공지가 없으면 기존 결과 목록 Peek로 돌아간다`() {
+        val returnState =
+            mapDetailCloseReturnState(
+                hasResultListToReturn = true,
+                hasOperationNotice = false,
+            )
+
+        assertEquals(MapUiMode.ResultList, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Peek, returnState.sheetLevel)
     }
 }

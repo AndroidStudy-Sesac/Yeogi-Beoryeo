@@ -339,13 +339,13 @@ private fun CollectionSpotMapContent(
 
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
-        mapUiMode = if (hasResultListToReturn) {
-            sheetLevel = MapSheetLevel.Peek
-            MapUiMode.ResultList
-        } else {
-            sheetLevel = MapSheetLevel.Hidden
-            MapUiMode.Browsing
-        }
+        val returnState =
+            mapDetailCloseReturnState(
+                hasResultListToReturn = hasResultListToReturn,
+                hasOperationNotice = hasOperationNotice,
+            )
+        mapUiMode = returnState.mapUiMode
+        sheetLevel = returnState.sheetLevel
     }
 
     BackHandler(
@@ -424,13 +424,13 @@ private fun CollectionSpotMapContent(
 
     LaunchedEffect(selectedSpot?.id, uiState.spots) {
         if (selectedSpot == null && mapUiMode == MapUiMode.SpotDetail) {
-            mapUiMode = if (uiState.hasSearched) {
-                sheetLevel = MapSheetLevel.Peek
-                MapUiMode.ResultList
-            } else {
-                sheetLevel = MapSheetLevel.Hidden
-                MapUiMode.Browsing
-            }
+            val returnState =
+                mapDetailCloseReturnState(
+                    hasResultListToReturn = uiState.hasSearched,
+                    hasOperationNotice = hasOperationNotice,
+                )
+            mapUiMode = returnState.mapUiMode
+            sheetLevel = returnState.sheetLevel
         }
     }
 
@@ -681,8 +681,13 @@ private fun CollectionSpotMapContent(
                                     onRegionalGuideClick = onRegionalGuideClick,
                                     onCloseClick = {
                                         onSpotDetailDismiss()
-                                        mapUiMode = MapUiMode.ResultList
-                                        sheetLevel = MapSheetLevel.Peek
+                                        val returnState =
+                                            mapDetailCloseReturnState(
+                                                hasResultListToReturn = true,
+                                                hasOperationNotice = hasOperationNotice,
+                                            )
+                                        mapUiMode = returnState.mapUiMode
+                                        sheetLevel = returnState.sheetLevel
                                     },
                                     bottomContentPadding = bottomContentPadding,
                                 )
@@ -770,6 +775,33 @@ internal fun shouldKeepSpotDetailOnOperationNotice(
         !hasLocationNotice &&
         !hasError &&
         !isLoading
+
+internal data class MapDetailReturnState(
+    val mapUiMode: MapUiMode,
+    val sheetLevel: MapSheetLevel,
+)
+
+internal fun mapDetailCloseReturnState(
+    hasResultListToReturn: Boolean,
+    hasOperationNotice: Boolean,
+): MapDetailReturnState =
+    when {
+        hasResultListToReturn || hasOperationNotice ->
+            MapDetailReturnState(
+                mapUiMode = MapUiMode.ResultList,
+                sheetLevel = if (hasOperationNotice) {
+                    MapSheetLevel.Medium
+                } else {
+                    MapSheetLevel.Peek
+                },
+            )
+
+        else ->
+            MapDetailReturnState(
+                mapUiMode = MapUiMode.Browsing,
+                sheetLevel = MapSheetLevel.Hidden,
+            )
+    }
 
 private fun bottomSheetMaxExpandedHeight(
     mapUiMode: MapUiMode,

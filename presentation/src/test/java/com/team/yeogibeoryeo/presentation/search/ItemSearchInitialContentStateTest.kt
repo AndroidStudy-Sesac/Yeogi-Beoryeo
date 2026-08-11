@@ -18,4 +18,40 @@ class ItemSearchInitialContentStateTest {
         assertEquals(4, ItemSearchGuideTarget.SEARCH.toLazyListItemIndex(hasOperationNotice = true))
         assertEquals(5, ItemSearchGuideTarget.QUICK_CATEGORY.toLazyListItemIndex(hasOperationNotice = true))
     }
+
+    @Test
+    fun `앱 가이드 중 운영 공지가 나타나면 복원 item index를 한 칸 뒤로 보정한다`() {
+        assertEquals(
+            4,
+            restoredAppGuideScrollIndex(
+                storedIndex = 3,
+                hadOperationNotice = false,
+                hasOperationNotice = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `앱 가이드 중 운영 공지가 사라지면 복원 item index를 한 칸 앞으로 보정한다`() {
+        assertEquals(
+            2,
+            restoredAppGuideScrollIndex(
+                storedIndex = 3,
+                hadOperationNotice = true,
+                hasOperationNotice = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `복원 item index 보정 결과는 음수가 되지 않는다`() {
+        assertEquals(
+            0,
+            restoredAppGuideScrollIndex(
+                storedIndex = 0,
+                hadOperationNotice = true,
+                hasOperationNotice = false,
+            ),
+        )
+    }
 }
