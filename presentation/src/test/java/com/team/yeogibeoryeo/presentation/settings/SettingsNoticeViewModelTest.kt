@@ -110,6 +110,43 @@ class SettingsNoticeViewModelTest {
     }
 
     @Test
+    fun `로딩 중 선택과 해제 요청은 저장 상태를 바꾸지 않는다`() = runTest {
+        val completion = CompletableDeferred<List<Notice>>()
+        val savedStateHandle = SavedStateHandle(mapOf("selectedNoticeId" to "notice-1"))
+        val viewModel = createViewModel(
+            repository = FakeNoticeRepository(mutableListOf({ completion.await() })),
+            savedStateHandle = savedStateHandle,
+        )
+
+        viewModel.selectNotice("notice-1")
+        viewModel.clearNoticeSelection()
+
+        assertSame(SettingsNoticeUiState.Loading, viewModel.uiState.value)
+        assertEquals("notice-1", savedStateHandle.get<String>("selectedNoticeId"))
+        completion.complete(listOf(notice()))
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `목록에 없는 공지 선택 요청은 기존 선택을 유지한다`() = runTest {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(
+            repository = FakeNoticeRepository(mutableListOf({ listOf(notice()) })),
+            savedStateHandle = savedStateHandle,
+        )
+        advanceUntilIdle()
+        viewModel.selectNotice("notice-1")
+
+        viewModel.selectNotice("missing")
+
+        assertEquals(
+            "notice-1",
+            (viewModel.uiState.value as SettingsNoticeUiState.Content).selectedNotice?.id,
+        )
+        assertEquals("notice-1", savedStateHandle.get<String>("selectedNoticeId"))
+    }
+
+    @Test
     fun `저장된 공지가 조회 목록에 있으면 본문 선택을 복원한다`() = runTest {
         val savedStateHandle = SavedStateHandle(mapOf("selectedNoticeId" to "notice-1"))
 
