@@ -7,12 +7,14 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -685,8 +687,10 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
                         try {
                             awaitCancellation()
                         } finally {
-                            firstCleanupStarted.complete(Unit)
-                            firstCleanupCanFinish.await()
+                            withContext(NonCancellable) {
+                                firstCleanupStarted.complete(Unit)
+                                firstCleanupCanFinish.await()
+                            }
                         }
                     }
 
