@@ -31,7 +31,7 @@ class OperationNoticeMapperTest {
     }
 
     @Test
-    fun `원본 affectedFeatures가 비어 있으면 전역 공지로 매핑한다`() {
+    fun `원본 affectedFeatures가 비어 있으면 홈 기본 공지로 매핑한다`() {
         val notice = dto(affectedFeatures = emptyList()).toDomainOrNull()
 
         assertEquals(emptySet<OperationNoticeFeature>(), notice?.affectedFeatures)
