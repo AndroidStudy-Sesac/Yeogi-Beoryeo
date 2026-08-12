@@ -286,7 +286,7 @@ class ItemGuideDetailViewModelTest {
         }
 
     @Test
-    fun `guard 중 다른 가이드를 로드하면 새 가이드 즐겨찾기를 처리한다`() =
+    fun `guard 중 A B A로 전환하면 품목별 중복 요청만 무시한다`() =
         runTest {
             val firstGuide = sampleGuide("유리병")
             val secondGuide = sampleGuide("종이팩")
@@ -314,7 +314,14 @@ class ItemGuideDetailViewModelTest {
             viewModel.toggleFavorite()
             runCurrent()
 
+            viewModel.loadGuide(firstGuide.id)
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
             assertEquals(2, favoriteRepository.toggleCallCount)
+            assertEquals(1, favoriteRepository.toggledTargetIds.count { it == firstGuide.id })
+            assertEquals(1, favoriteRepository.toggledTargetIds.count { it == secondGuide.id })
             assertTrue((viewModel.uiState.value as ItemGuideDetailUiState.Success).isFavorite)
         }
 
@@ -451,8 +458,9 @@ class ItemGuideDetailViewModelTest {
         var toggleError: Throwable? = null,
     ) : FavoriteRepository {
         private val favorites = MutableStateFlow(initialFavorites)
-        var toggleCallCount = 0
-            private set
+        val toggledTargetIds = mutableListOf<String>()
+        val toggleCallCount: Int
+            get() = toggledTargetIds.size
 
         override fun observeFavorites(): Flow<List<Favorite>> = favorites
 
@@ -471,7 +479,7 @@ class ItemGuideDetailViewModelTest {
             favorites.value.any { it.type == type && it.targetId == targetId }
 
         override suspend fun toggleFavorite(favorite: Favorite): Boolean {
-            toggleCallCount += 1
+            toggledTargetIds += favorite.targetId
             toggleError?.let { throw it }
             return if (isFavorite(favorite.type, favorite.targetId)) {
                 removeFavorite(favorite.type, favorite.targetId)

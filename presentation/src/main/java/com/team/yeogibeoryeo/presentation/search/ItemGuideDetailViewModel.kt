@@ -41,8 +41,7 @@ constructor(
     val events: SharedFlow<ItemGuideDetailEvent> = _events.asSharedFlow()
     private var loadGuideJob: Job? = null
     private var favoriteJob: Job? = null
-    private var favoriteToggleJob: Job? = null
-    private var favoriteToggleGuideId: String? = null
+    private val guardedFavoriteGuideIds = mutableSetOf<String>()
     private var requestedGuideId: String? = null
     private var loadingGuideId: String? = null
 
@@ -99,11 +98,10 @@ constructor(
     fun toggleFavorite() {
         val currentState = _uiState.value as? ItemGuideDetailUiState.Success ?: return
         val guide = currentState.guide
-        if (favoriteToggleGuideId == guide.id && favoriteToggleJob?.isActive == true) return
-        favoriteToggleGuideId = guide.id
+        if (!guardedFavoriteGuideIds.add(guide.id)) return
 
-        favoriteToggleJob =
-            viewModelScope.launch {
+        viewModelScope.launch {
+            try {
                 val guardJob =
                     launch(start = CoroutineStart.UNDISPATCHED) {
                         delay(FAVORITE_TOGGLE_GUARD_MILLIS)
@@ -140,7 +138,10 @@ constructor(
                     _events.emit(event)
                 }
                 guardJob.join()
+            } finally {
+                guardedFavoriteGuideIds.remove(guide.id)
             }
+        }
     }
 
     private companion object {
