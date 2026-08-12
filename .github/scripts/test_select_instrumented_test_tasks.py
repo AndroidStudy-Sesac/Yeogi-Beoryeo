@@ -1,6 +1,6 @@
 import unittest
 
-from select_instrumented_test_tasks import select_modules
+from select_instrumented_test_tasks import build_matrix, select_modules
 
 
 ALL_MODULES = ("app", "data", "presentation")
@@ -60,6 +60,29 @@ class SelectInstrumentedTestTasksTest(unittest.TestCase):
         self.assertEqual(
             select_modules("pull_request", ["unexpected/path.txt"]),
             ALL_MODULES,
+        )
+
+    def test_builds_one_matrix_entry_per_module(self) -> None:
+        self.assertEqual(
+            build_matrix(("app", "data")),
+            {
+                "include": [
+                    {
+                        "module": "app",
+                        "task": ":app:pixel9ProApi36DebugAndroidTest",
+                    },
+                    {
+                        "module": "data",
+                        "task": ":data:pixel9ProApi36DebugAndroidTest",
+                    },
+                ],
+            },
+        )
+
+    def test_builds_valid_matrix_when_no_module_is_selected(self) -> None:
+        self.assertEqual(
+            build_matrix(()),
+            {"include": [{"module": "none", "task": ""}]},
         )
 
 

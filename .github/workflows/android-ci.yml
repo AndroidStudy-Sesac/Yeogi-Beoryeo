@@ -212,10 +212,13 @@ jobs:
 
           echo "bundletool validate: passed"
 
-  instrumented-test:
-    name: Instrumented Tests
+  determine-instrumented-tests:
+    name: Determine Instrumented Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 5
+    outputs:
+      has_tests: ${{ steps.instrumented-tasks.outputs.has_tests }}
+      matrix: ${{ steps.instrumented-tasks.outputs.matrix }}
 
     steps:
       - name: Checkout repository
@@ -251,28 +254,38 @@ jobs:
           echo "$selection" >> "$GITHUB_OUTPUT"
           echo "$selection"
 
+  instrumented-test-modules:
+    name: Instrumented Test (${{ matrix.module }})
+    needs: determine-instrumented-tests
+    if: needs.determine-instrumented-tests.outputs.has_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.determine-instrumented-tests.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
       - name: Set up JDK 21
-        if: steps.instrumented-tasks.outputs.tasks != ''
         uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: 21
 
       - name: Set up Gradle
-        if: steps.instrumented-tasks.outputs.tasks != ''
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' || (github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main') }}
 
       - name: Create local.properties for CI
-        if: steps.instrumented-tasks.outputs.tasks != ''
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "NAVER_CLIENT_ID=ci_dummy_naver_client_id" >> local.properties
           echo "PUBLIC_DATA_SERVICE_KEY=ci_dummy_public_data_service_key" >> local.properties
 
       - name: Create Firebase config for CI
-        if: steps.instrumented-tasks.outputs.tasks != ''
         run: |
           mkdir -p app/src/debug
           cat > app/src/debug/google-services.json <<'EOF'
@@ -308,27 +321,64 @@ jobs:
           EOF
 
       - name: Grant execute permission for gradlew
-        if: steps.instrumented-tasks.outputs.tasks != ''
         run: chmod +x ./gradlew
 
       - name: Accept Android SDK licenses
-        if: steps.instrumented-tasks.outputs.tasks != ''
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
 
       - name: Enable KVM
-        if: steps.instrumented-tasks.outputs.tasks != ''
         run: sudo chmod 666 /dev/kvm
 
       - name: Run instrumented tests
-        if: steps.instrumented-tasks.outputs.tasks != ''
         run: |
           ./gradlew \
-            ${{ steps.instrumented-tasks.outputs.tasks }} \
+            "${{ matrix.task }}" \
             -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8" \
             --no-parallel \
             --no-daemon \
             --stacktrace \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+
+  instrumented-test:
+    name: Instrumented Tests
+    needs:
+      - determine-instrumented-tests
+      - instrumented-test-modules
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Verify instrumented test results
+        env:
+          DETECTION_RESULT: ${{ needs.determine-instrumented-tests.result }}
+          HAS_TESTS: ${{ needs.determine-instrumented-tests.outputs.has_tests }}
+          MODULE_RESULT: ${{ needs.instrumented-test-modules.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$DETECTION_RESULT" != "success" ]]; then
+            echo "계측 테스트 대상을 확인하지 못했습니다."
+            exit 1
+          fi
+
+          if [[ "$HAS_TESTS" != "true" && "$HAS_TESTS" != "false" ]]; then
+            echo "계측 테스트 실행 여부가 올바르지 않습니다."
+            exit 1
+          fi
+
+          if [[ "$HAS_TESTS" == "true" && "$MODULE_RESULT" != "success" ]]; then
+            echo "하나 이상의 module 계측 테스트가 실패하거나 취소됐습니다."
+            exit 1
+          fi
+
+          if [[ "$HAS_TESTS" == "false" && "$MODULE_RESULT" != "skipped" ]]; then
+            echo "계측 테스트 대상이 없지만 module job이 실행됐습니다."
+            exit 1
+          fi
+
+          echo "Instrumented test gate passed."
 
   focused-coverage:
     name: Focused Coverage

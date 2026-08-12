@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Iterable
 
@@ -69,6 +70,14 @@ def is_known_file(file: str) -> bool:
     )
 
 
+def build_matrix(modules: tuple[str, ...]) -> dict[str, list[dict[str, str]]]:
+    include = [
+        {"module": module, "task": MODULE_TASKS[module]}
+        for module in modules
+    ]
+    return {"include": include or [{"module": "none", "task": ""}]}
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event-name", required=True)
@@ -78,9 +87,9 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     modules = select_modules(args.event_name, sys.stdin)
-    tasks = " ".join(MODULE_TASKS[module] for module in modules)
     print(f"modules={','.join(modules)}")
-    print(f"tasks={tasks}")
+    print(f"has_tests={'true' if modules else 'false'}")
+    print(f"matrix={json.dumps(build_matrix(modules), separators=(',', ':'))}")
 
 
 if __name__ == "__main__":
