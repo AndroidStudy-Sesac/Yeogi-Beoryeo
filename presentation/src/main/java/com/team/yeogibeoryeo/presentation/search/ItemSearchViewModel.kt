@@ -196,7 +196,7 @@ constructor(
                 runCatchingCancellable { getDisposalCategoryGuidesUseCase(category.disposalCategory) }
                     .onSuccess { guides ->
                         val representativeGuide =
-                            guides.firstOrNull { it.name == category.representativeGuideName }
+                            guides.firstOrNull { it.id == category.representativeGuideId }
                                 ?: guides.firstOrNull()
 
                         representativeGuide?.let {

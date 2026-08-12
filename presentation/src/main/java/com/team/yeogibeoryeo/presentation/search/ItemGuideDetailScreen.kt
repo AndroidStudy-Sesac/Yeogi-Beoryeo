@@ -66,7 +66,7 @@ fun ItemGuideDetailScreen(
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
     )
 
-    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
+    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideId(guide.id)
     val isRepresentativeGuide = matchedRepresentativeCategory != null
     val representativeCategory =
         matchedRepresentativeCategory

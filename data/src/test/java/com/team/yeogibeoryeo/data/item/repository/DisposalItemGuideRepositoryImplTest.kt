@@ -56,22 +56,22 @@ class DisposalItemGuideRepositoryImplTest {
                 DisposalItemGuideRepositoryImpl(
                     localDataSource =
                         FakeLocalSource(
-                            synonyms = mapOf("캔" to "음료캔"),
+                            synonyms = mapOf("스마트폰" to "핸드폰"),
                             wasteDictionaryItems =
                                 listOf(
                                     sampleDictionaryItem(
-                                        name = "음료캔",
-                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류 금속캔")),
-                                        dischargeMethods = listOf("음료캔은 캔류로 배출합니다."),
+                                        name = "핸드폰",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자 제품류")),
+                                        dischargeMethods = listOf("핸드폰은 폐가전 수거 기준에 따라 배출합니다."),
                                     ),
                                 ),
                         ),
                 )
 
-            val results = repository.searchItemGuides("캔")
+            val results = repository.searchItemGuides("스마트폰")
 
-            assertEquals(listOf("음료캔"), results.map { it.name })
-            assertEquals(DisposalCategory.METAL, results.first().category)
+            assertEquals(listOf("핸드폰"), results.map { it.name })
+            assertEquals(DisposalCategory.ELECTRONICS, results.first().category)
         }
 
     @Test
@@ -195,7 +195,7 @@ class DisposalItemGuideRepositoryImplTest {
                         ),
                 )
 
-            val results = repository.searchItemGuides("박스")
+            val results = repository.searchItemGuides("택배")
 
             assertEquals(listOf("아이스박스"), results.map { it.name })
         }
@@ -427,6 +427,40 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `searchItemGuides는 표시명이 같아도 안정 ID가 다르면 모두 유지한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0100",
+                                        name = "동일 표시명",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "종이")),
+                                        dischargeMethods = listOf("종이류로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0101",
+                                        name = "동일 표시명",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "종이")),
+                                        dischargeMethods = listOf("종이류로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("동일 표시명")
+
+            assertEquals(2, results.size)
+            assertEquals(
+                setOf("item-guide-0100", "item-guide-0101"),
+                results.map { it.id }.toSet(),
+            )
+        }
+
+    @Test
     fun `getCategoryGuides는 sourceCategory 기반 초기 가이드를 반환한다`() =
         runBlocking {
             val repository =
@@ -437,6 +471,7 @@ class DisposalItemGuideRepositoryImplTest {
                                 mapOf(
                                     "종이" to
                                             ItemGuideDetail(
+                                                id = "item-guide-test",
                                                 steps = emptyList(),
                                                 cautions = emptyList(),
                                                 tip = null,
@@ -445,6 +480,7 @@ class DisposalItemGuideRepositoryImplTest {
                                             ),
                                     "유리병" to
                                             ItemGuideDetail(
+                                                id = "item-guide-test",
                                                 steps = emptyList(),
                                                 cautions = emptyList(),
                                                 tip = null,
@@ -458,6 +494,7 @@ class DisposalItemGuideRepositoryImplTest {
             val results = repository.getCategoryGuides(DisposalCategory.PAPER)
 
             assertEquals(1, results.size)
+            assertEquals("item-guide-test", results.first().id)
             assertEquals("종이", results.first().name)
             assertNull(results.first().subCategory)
         }
@@ -473,6 +510,7 @@ class DisposalItemGuideRepositoryImplTest {
                                 mapOf(
                                     "분류없음" to
                                             ItemGuideDetail(
+                                                id = "item-guide-test",
                                                 steps = emptyList(),
                                                 cautions = emptyList(),
                                                 tip = null,
@@ -498,6 +536,7 @@ class DisposalItemGuideRepositoryImplTest {
                                 mapOf(
                                     "종이" to
                                             ItemGuideDetail(
+                                                id = "item-guide-test",
                                                 steps = emptyList(),
                                                 cautions = emptyList(),
                                                 tip = null,
@@ -524,6 +563,7 @@ class DisposalItemGuideRepositoryImplTest {
                                 mapOf(
                                     "대형폐기물" to
                                             ItemGuideDetail(
+                                                id = "item-guide-test",
                                                 steps = emptyList(),
                                                 cautions = emptyList(),
                                                 tip = null,
@@ -550,6 +590,7 @@ class DisposalItemGuideRepositoryImplTest {
                                 mapOf(
                                     "종이" to
                                             ItemGuideDetail(
+                                                id = "item-guide-test",
                                                 steps = listOf("물기 제거"),
                                                 cautions = listOf("기름 묻은 종이 제외"),
                                                 sections = listOf(
@@ -589,6 +630,7 @@ class DisposalItemGuideRepositoryImplTest {
                                 mapOf(
                                     "기타" to
                                             ItemGuideDetail(
+                                                id = "item-guide-test",
                                                 steps = emptyList(),
                                                 cautions = emptyList(),
                                                 tip = null,
@@ -605,7 +647,7 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
-    fun `getItemGuide는 대표 가이드 상세를 id로 직접 반환한다`() =
+    fun `getItemGuide는 대표 가이드를 안정 ID와 이전 표시명으로 정확히 찾는다`() =
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
@@ -614,27 +656,103 @@ class DisposalItemGuideRepositoryImplTest {
                             guideDetails =
                                 mapOf(
                                     "플라스틱류" to
-                                            ItemGuideDetail(
-                                                steps = listOf("내용물을 비웁니다."),
-                                                cautions = emptyList(),
-                                                tip = null,
-                                                relatedSpotTypes = emptyList(),
-                                                sourceCategory = "플라스틱류",
-                                            ),
+                                        ItemGuideDetail(
+                                            id = "item-guide-0004",
+                                            legacyNames = listOf("합성수지류"),
+                                            steps = listOf("내용물을 비웁니다."),
+                                            cautions = emptyList(),
+                                            tip = null,
+                                            relatedSpotTypes = emptyList(),
+                                            sourceCategory = "플라스틱류",
+                                        ),
                                 ),
                         ),
                 )
 
-            val result = repository.getItemGuide("플라스틱류")
+            val stableIdResult = repository.getItemGuide("item-guide-0004")
+            val currentNameResult = repository.getItemGuide("플라스틱류")
+            val legacyNameResult = repository.getItemGuide("합성수지류")
 
-            assertEquals("플라스틱류", result?.name)
-            assertEquals(DisposalCategory.PLASTIC, result?.category)
-            assertNull(result?.subCategory)
-            assertEquals(listOf("내용물을 비웁니다."), result?.steps)
+            assertEquals("item-guide-0004", stableIdResult?.id)
+            assertEquals("플라스틱류", stableIdResult?.name)
+            assertEquals(stableIdResult, currentNameResult)
+            assertEquals(stableIdResult, legacyNameResult)
+            assertEquals(DisposalCategory.PLASTIC, stableIdResult?.category)
+            assertNull(stableIdResult?.subCategory)
+            assertEquals(listOf("내용물을 비웁니다."), stableIdResult?.steps)
         }
 
     @Test
-    fun `getItemGuide는 대표 가이드 상세가 없으면 품목 사전 검색 결과를 반환한다`() =
+    fun `getItemGuide는 품목 사전을 안정 ID와 이전 표시명으로 정확히 찾는다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0100",
+                                        name = "유리병",
+                                        legacyNames = listOf("유리용기"),
+                                        categoryPaths = listOf(listOf("재활용폐기물", "유리병")),
+                                        dischargeMethods = listOf("유리병 수거함으로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val stableIdResult = repository.getItemGuide("item-guide-0100")
+            val legacyNameResult = repository.getItemGuide("유리용기")
+
+            assertEquals("item-guide-0100", stableIdResult?.id)
+            assertEquals("유리병", stableIdResult?.name)
+            assertEquals(stableIdResult, legacyNameResult)
+            assertEquals(DisposalCategory.GLASS, stableIdResult?.category)
+        }
+
+    @Test
+    fun `getItemGuide는 같은 분류의 대표 가이드와 품목 사전을 각각 조회한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            guideDetails =
+                                mapOf(
+                                    "플라스틱류" to
+                                        ItemGuideDetail(
+                                            id = "item-guide-0004",
+                                            steps = listOf("대표 가이드 내용"),
+                                            cautions = emptyList(),
+                                            tip = null,
+                                            relatedSpotTypes = emptyList(),
+                                            sourceCategory = "플라스틱류",
+                                        ),
+                                ),
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0233",
+                                        name = "플라스틱",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "합성수지 재질")),
+                                        dischargeMethods = listOf("품목 사전 내용"),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val representativeGuide = repository.getItemGuide("item-guide-0004")
+            val dictionaryGuide = repository.getItemGuide("item-guide-0233")
+
+            assertEquals("플라스틱류", representativeGuide?.name)
+            assertEquals(listOf("대표 가이드 내용"), representativeGuide?.steps)
+            assertEquals("플라스틱", dictionaryGuide?.name)
+            assertEquals("품목 사전 내용", dictionaryGuide?.instructions?.single()?.method)
+        }
+
+    @Test
+    fun `getItemGuide는 정확히 일치하는 ID가 없으면 null을 반환한다`() =
         runBlocking {
             val repository =
                 DisposalItemGuideRepositoryImpl(
@@ -651,11 +769,7 @@ class DisposalItemGuideRepositoryImplTest {
                         ),
                 )
 
-            val result = repository.getItemGuide("유리병")
-
-            assertEquals("유리병", result?.name)
-            assertEquals(DisposalCategory.GLASS, result?.category)
-            assertEquals("유리병 수거함으로 배출합니다.", result?.instructions?.first()?.method)
+            assertNull(repository.getItemGuide("유리"))
         }
 
     @Test
@@ -673,9 +787,13 @@ class DisposalItemGuideRepositoryImplTest {
         categoryPaths: List<List<String>>,
         dischargeMethods: List<String>,
         similarItems: List<String> = emptyList(),
+        id: String = "item-guide-$name",
+        legacyNames: List<String> = emptyList(),
     ): WasteDictionaryItem =
         WasteDictionaryItem(
+            id = id,
             name = name,
+            legacyNames = legacyNames,
             categoryPaths = categoryPaths,
             similarItems = similarItems,
             dischargeMethods = dischargeMethods,
