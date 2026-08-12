@@ -7,9 +7,11 @@ import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -664,6 +666,62 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertEquals(listOf("명동", "명동1가"), regionOptionsRepository.eupmyeondongKeywords)
             assertEquals(listOf("명동1가"), repository.keywords)
             assertEquals("명동1가", viewModel.uiState.value.searchKeyword)
+        }
+
+    @Test
+    fun `취소된 동일 검색어 job cleanup이 늦어도 새 검색 중복 제출 guard를 유지한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val firstCleanupStarted = CompletableDeferred<Unit>()
+            val firstCleanupCanFinish = CompletableDeferred<Unit>()
+            val secondCandidateSearchResult = CompletableDeferred<List<Region>>()
+            var myeongdongSearchCount = 0
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidateProvider = { keyword ->
+                    if (keyword != "명동") return@FakeMapRegionOptionsRepository emptyList()
+
+                    myeongdongSearchCount += 1
+                    if (myeongdongSearchCount == 1) {
+                        try {
+                            awaitCancellation()
+                        } finally {
+                            firstCleanupStarted.complete(Unit)
+                            firstCleanupCanFinish.await()
+                        }
+                    }
+
+                    secondCandidateSearchResult.await()
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            runCurrent()
+
+            viewModel.onSearchKeywordChanged("명동1가")
+            firstCleanupStarted.await()
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            runCurrent()
+
+            firstCleanupCanFinish.complete(Unit)
+            runCurrent()
+
+            viewModel.searchByKeyword()
+            runCurrent()
+
+            assertEquals(listOf("명동", "명동"), regionOptionsRepository.eupmyeondongKeywords)
+
+            secondCandidateSearchResult.complete(emptyList())
+            advanceUntilIdle()
+
+            assertEquals(listOf("명동"), repository.keywords)
         }
 
     @Test

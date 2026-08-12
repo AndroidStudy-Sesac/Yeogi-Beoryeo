@@ -5,10 +5,14 @@ import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Test
 
 class RegionOptionsRepositoryImplTest {
@@ -122,6 +126,38 @@ class RegionOptionsRepositoryImplTest {
                     listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동1가")),
                 ),
             )
+        }
+
+    @Test
+    fun `지역별 가이드 availability 변환은 주입한 dispatcher에서 실행한다`() =
+        runBlocking {
+            val callingThread = Thread.currentThread()
+            var availabilityIterationThread: Thread? = null
+            val availability = object : AbstractList<RegionalGuideAvailabilityDto>() {
+                private val items = sampleRegionalGuideAvailability()
+
+                override val size: Int
+                    get() = items.size
+
+                override fun get(index: Int): RegionalGuideAvailabilityDto = items[index]
+
+                override fun iterator(): Iterator<RegionalGuideAvailabilityDto> {
+                    availabilityIterationThread = Thread.currentThread()
+                    return super.iterator()
+                }
+            }
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val repository = createRepository(
+                    regionalGuideAvailability = availability,
+                    defaultDispatcher = dispatcher,
+                )
+
+                assertEquals(listOf("서울특별시"), repository.getSidoOptions())
+            }
+
+            assertNotNull(availabilityIterationThread)
+            assertNotSame(callingThread, availabilityIterationThread)
         }
 
     private fun createRepository(

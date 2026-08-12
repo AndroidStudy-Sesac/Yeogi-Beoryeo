@@ -225,14 +225,16 @@ class RegionOptionsRepositoryImpl internal constructor(
     }
 
     private suspend fun getAvailableRegionalGuideRegions(): List<RegionalGuideRegionDto> {
-        val availableRegions = getRegionalGuideAvailability()
-            .map { region ->
+        val availability = getRegionalGuideAvailability()
+        val availableRegions = mapRegionOptions {
+            availability.map { region ->
                 RegionalGuideRegionDto(
                     sidoName = region.sidoName,
                     sigunguName = region.sigunguName
                 )
             }
-            .distinct()
+                .distinct()
+        }
 
         return availableRegions.ifEmpty {
             getRegionalGuideRegionOptions()

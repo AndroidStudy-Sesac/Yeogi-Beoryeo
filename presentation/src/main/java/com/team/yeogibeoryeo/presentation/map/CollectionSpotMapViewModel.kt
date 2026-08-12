@@ -69,6 +69,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var originalSpots: List<CollectionSpot> = emptyList()
     private var spotSearchJob: Job? = null
     private var inFlightKeywordSearch: String? = null
+    private var keywordSearchGeneration = 0
     private var currentLocationRefreshJob: Job? = null
     private var currentLocationLoadingJob: Job? = null
     private var hasRequestedInitialCurrentLocationSearch = false
@@ -182,6 +183,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         if (spotSearchJob?.isActive == true && inFlightKeywordSearch == keyword) return
 
         cancelSpotSearchJob()
+        val searchGeneration = ++keywordSearchGeneration
         inFlightKeywordSearch = keyword
         startKeywordSearchLoading()
         spotSearchJob = viewModelScope.launch {
@@ -211,7 +213,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     }
                 }
             } finally {
-                if (inFlightKeywordSearch == keyword) {
+                if (keywordSearchGeneration == searchGeneration && inFlightKeywordSearch == keyword) {
                     inFlightKeywordSearch = null
                 }
             }
@@ -1224,6 +1226,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private fun cancelSpotSearchJob() {
         spotSearchJob?.cancel()
+        keywordSearchGeneration += 1
         inFlightKeywordSearch = null
     }
 
