@@ -3,6 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kover)
+}
+
+kover {
+    currentProject {
+        createVariant("focused") {
+            add("debug")
+        }
+    }
 }
 
 android {
@@ -43,6 +52,12 @@ android {
                     systemImageSource = "aosp"
                     testedAbi = "x86_64"
                 }
+                create("pixel2Api28") {
+                    device = "Pixel 2"
+                    apiLevel = 28
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
             }
         }
     }
@@ -64,6 +79,11 @@ dependencies {
 
     // Coroutine
     implementation(libs.bundles.coroutines)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
 
     // Room
     implementation(libs.bundles.room)
@@ -72,12 +92,17 @@ dependencies {
     // Network
     implementation(libs.bundles.network)
 
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.mockk)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

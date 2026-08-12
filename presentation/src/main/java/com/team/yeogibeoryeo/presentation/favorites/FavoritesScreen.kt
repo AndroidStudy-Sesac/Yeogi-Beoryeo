@@ -17,12 +17,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.favorites.components.EmptyFavoritesCard
 import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteCard
+import com.team.yeogibeoryeo.presentation.favorites.components.FavoritesLoadErrorCard
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpotMapMoveRequest
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 
@@ -38,6 +44,7 @@ fun FavoritesScreen(
     onRegionalGuideFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideHomePrimaryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onRetryClick: () -> Unit = {},
 ) {
     LazyColumn(
         modifier =
@@ -51,6 +58,7 @@ fun FavoritesScreen(
         item {
             Text(
                 text = stringResource(R.string.favorites_title),
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -66,14 +74,32 @@ fun FavoritesScreen(
         when {
             uiState.isLoading -> {
                 item {
+                    val loadingContentDescription = stringResource(R.string.loading_action)
+
                     Column(
                         modifier = Modifier
                             .fillParentMaxSize()
                             .padding(top = 96.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            modifier = Modifier.semantics {
+                                contentDescription = loadingContentDescription
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                        )
                     }
+                }
+            }
+
+            uiState.hasLoadError -> {
+                item {
+                    FavoritesLoadErrorCard(
+                        title = stringResource(R.string.favorites_load_failed_title),
+                        description = stringResource(R.string.favorites_load_failed_message),
+                        actionLabel = stringResource(R.string.retry_action),
+                        onRetryClick = onRetryClick,
+                    )
                 }
             }
 

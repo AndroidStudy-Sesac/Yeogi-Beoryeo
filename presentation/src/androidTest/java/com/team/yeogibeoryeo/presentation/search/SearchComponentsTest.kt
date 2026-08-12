@@ -2,7 +2,9 @@ package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
@@ -23,6 +25,7 @@ import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadat
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.DisposalSubCategoryChip
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
+import com.team.yeogibeoryeo.presentation.search.components.ItemSearchLoadingContent
 import com.team.yeogibeoryeo.presentation.search.components.QuickCategoryGrid
 import com.team.yeogibeoryeo.presentation.search.components.SectionCard
 import com.team.yeogibeoryeo.presentation.search.components.SubGuideSection
@@ -123,6 +126,26 @@ class SearchComponentsTest {
 
         composeTestRule.onNodeWithText("없어요").assertIsDisplayed()
         composeTestRule.onNodeWithText("다시 검색하세요").assertIsDisplayed()
+        composeTestRule.onNodeWithText("없어요")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit))
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.LiveRegion,
+                LiveRegionMode.Polite,
+            ),
+        ).assertExists()
+    }
+
+    @Test
+    fun 로딩_컴포넌트는_자동_상태_알림을_제공하지_않는다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchLoadingContent()
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("로딩 중")
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.LiveRegion))
     }
 
     @Test

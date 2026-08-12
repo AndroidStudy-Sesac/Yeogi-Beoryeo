@@ -12,7 +12,7 @@ import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 fun WasteDictionaryItem.toDomain(): DisposalItemGuide {
     val category = categoryPaths.toPrimaryCategory()
     return DisposalItemGuide(
-        id = name,
+        id = id,
         name = name,
         category = category,
         subCategory = categoryPaths.toSubCategory(),

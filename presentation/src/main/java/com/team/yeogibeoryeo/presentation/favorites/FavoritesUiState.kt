@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 
 data class FavoritesUiState(
     val isLoading: Boolean = false,
+    val hasLoadError: Boolean = false,
     val selectedTab: FavoriteTab = FavoriteTab.ITEM_GUIDE,
     val itemGuideFavorites: List<FavoriteUiModel> = emptyList(),
     val collectionSpotFavorites: List<FavoriteUiModel> = emptyList(),

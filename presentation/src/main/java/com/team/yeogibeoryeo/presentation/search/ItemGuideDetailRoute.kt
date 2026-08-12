@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -101,28 +102,55 @@ fun ItemGuideDetailRoute(
                 )
             }
 
-            is ItemGuideDetailUiState.Error -> {
-                ItemSearchStatusContent(
-                    title = {
-                        ItemSearchStatusTitle(
-                            text = stringResource(R.string.item_guide_detail_not_found_title),
-                        )
-                    },
-                    description = {
-                        ItemSearchStatusDescription(text = stringResource(state.messageResId))
-                    },
+            ItemGuideDetailUiState.NotFound -> {
+                ItemGuideDetailStatusContent(
+                    titleResId = R.string.item_guide_detail_not_found_title,
+                    descriptionResId = R.string.item_guide_detail_select_again_message,
+                    actionResId = R.string.back_action,
+                    onActionClick = onBackClick,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    action = {
-                        Button(onClick = onBackClick) {
-                            Text(text = stringResource(R.string.back_action))
-                        }
-                    },
+                )
+            }
+
+            ItemGuideDetailUiState.LoadFailed -> {
+                ItemGuideDetailStatusContent(
+                    titleResId = R.string.item_guide_detail_load_failed_title,
+                    descriptionResId = R.string.item_guide_detail_load_failed_message,
+                    actionResId = R.string.retry_action,
+                    onActionClick = viewModel::retryLoadGuide,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
                 )
             }
         }
     }
+}
+
+@Composable
+private fun ItemGuideDetailStatusContent(
+    @StringRes titleResId: Int,
+    @StringRes descriptionResId: Int,
+    @StringRes actionResId: Int,
+    onActionClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ItemSearchStatusContent(
+        title = {
+            ItemSearchStatusTitle(text = stringResource(titleResId))
+        },
+        description = {
+            ItemSearchStatusDescription(text = stringResource(descriptionResId))
+        },
+        modifier = modifier,
+        action = {
+            Button(onClick = onActionClick) {
+                Text(text = stringResource(actionResId))
+            }
+        },
+    )
 }
 
 @Composable

@@ -15,7 +15,9 @@ import com.team.yeogibeoryeo.presentation.search.model.toDetailActions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -39,11 +41,23 @@ constructor(
     val events: SharedFlow<ItemGuideDetailEvent> = _events.asSharedFlow()
     private var loadGuideJob: Job? = null
     private var favoriteJob: Job? = null
+    private val guardedFavoriteGuideIds = mutableSetOf<String>()
+    private var requestedGuideId: String? = null
+    private var loadingGuideId: String? = null
 
     fun loadGuide(guideId: String) {
-        loadGuideJob?.cancel()
         val currentState = _uiState.value
-        if (currentState is ItemGuideDetailUiState.Success && currentState.guide.id == guideId) return
+        if (currentState is ItemGuideDetailUiState.Success && currentState.guide.id == guideId) {
+            loadGuideJob?.cancel()
+            requestedGuideId = guideId
+            loadingGuideId = null
+            return
+        }
+        if (loadGuideJob?.isActive == true && loadingGuideId == guideId) return
+
+        loadGuideJob?.cancel()
+        requestedGuideId = guideId
+        loadingGuideId = guideId
 
         loadGuideJob =
             viewModelScope.launch {
@@ -60,59 +74,78 @@ constructor(
                         )
                         observeFavorite(guide)
                     } else {
-                        _uiState.value =
-                            ItemGuideDetailUiState.Error(
-                                R.string.item_guide_detail_select_again_message,
-                            )
+                        _uiState.value = ItemGuideDetailUiState.NotFound
                     }
                 } catch (exception: CancellationException) {
                     throw exception
                 } catch (_: Throwable) {
-                    _uiState.value =
-                        ItemGuideDetailUiState.Error(
-                            R.string.item_guide_detail_load_failed_message,
-                        )
+                    _uiState.value = ItemGuideDetailUiState.LoadFailed
+                } finally {
+                    if (loadingGuideId == guideId) {
+                        loadingGuideId = null
+                    }
                 }
             }
+    }
+
+    fun retryLoadGuide() {
+        if (_uiState.value != ItemGuideDetailUiState.LoadFailed) return
+        val guideId = requestedGuideId ?: return
+
+        loadGuide(guideId)
     }
 
     fun toggleFavorite() {
         val currentState = _uiState.value as? ItemGuideDetailUiState.Success ?: return
         val guide = currentState.guide
+        if (!guardedFavoriteGuideIds.add(guide.id)) return
 
         viewModelScope.launch {
-            val event =
-                try {
-                    val isFavorite =
-                        toggleFavoriteUseCase(
-                            Favorite(
-                                type = FavoriteTargetType.ITEM_GUIDE,
-                                targetId = guide.id,
-                                savedAtMillis = System.currentTimeMillis(),
-                            ),
+            try {
+                val guardJob =
+                    launch(start = CoroutineStart.UNDISPATCHED) {
+                        delay(FAVORITE_TOGGLE_GUARD_MILLIS)
+                    }
+                val event =
+                    try {
+                        val isFavorite =
+                            toggleFavoriteUseCase(
+                                Favorite(
+                                    type = FavoriteTargetType.ITEM_GUIDE,
+                                    targetId = guide.id,
+                                    savedAtMillis = System.currentTimeMillis(),
+                                ),
+                            )
+                        ItemGuideDetailEvent.ShowMessage(
+                            messageResId =
+                                if (isFavorite) {
+                                    R.string.item_guide_detail_favorite_added_message
+                                } else {
+                                    R.string.item_guide_detail_favorite_removed_message
+                                },
+                            icon = ItemGuideDetailMessageIcon.Favorite,
                         )
-                    ItemGuideDetailEvent.ShowMessage(
-                        messageResId =
-                            if (isFavorite) {
-                                R.string.item_guide_detail_favorite_added_message
-                            } else {
-                                R.string.item_guide_detail_favorite_removed_message
-                            },
-                        icon = ItemGuideDetailMessageIcon.Favorite,
-                    )
-                } catch (exception: CancellationException) {
-                    throw exception
-                } catch (_: Throwable) {
-                    ItemGuideDetailEvent.ShowMessage(
-                        messageResId = R.string.item_guide_detail_favorite_update_failed_message,
-                        icon = ItemGuideDetailMessageIcon.Warning,
-                    )
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (_: Throwable) {
+                        ItemGuideDetailEvent.ShowMessage(
+                            messageResId = R.string.item_guide_detail_favorite_update_failed_message,
+                            icon = ItemGuideDetailMessageIcon.Warning,
+                        )
+                    }
+                val latestState = uiState.value
+                if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
+                    _events.emit(event)
                 }
-            val latestState = uiState.value
-            if (latestState is ItemGuideDetailUiState.Success && latestState.guide.id == guide.id) {
-                _events.emit(event)
+                guardJob.join()
+            } finally {
+                guardedFavoriteGuideIds.remove(guide.id)
             }
         }
+    }
+
+    private companion object {
+        const val FAVORITE_TOGGLE_GUARD_MILLIS = 500L
     }
 
     private fun observeFavorite(guide: DisposalItemGuide) {
@@ -141,9 +174,9 @@ sealed interface ItemGuideDetailUiState {
         val actions: List<ItemGuideDetailAction> = emptyList(),
     ) : ItemGuideDetailUiState
 
-    data class Error(
-        @param:StringRes val messageResId: Int,
-    ) : ItemGuideDetailUiState
+    data object NotFound : ItemGuideDetailUiState
+
+    data object LoadFailed : ItemGuideDetailUiState
 }
 
 sealed interface ItemGuideDetailEvent {

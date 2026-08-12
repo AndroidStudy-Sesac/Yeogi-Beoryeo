@@ -34,6 +34,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
@@ -43,6 +45,8 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBarDefaults
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeBanner
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 import com.team.yeogibeoryeo.presentation.search.components.HomeRegionalGuideSummaryBanner
 import com.team.yeogibeoryeo.presentation.search.components.ItemSearchBar
 import com.team.yeogibeoryeo.presentation.search.components.ItemUsefulGuideBannerRow
@@ -73,6 +77,8 @@ fun ItemSearchInitialContent(
     onQuickCategoryCollapseClick: () -> Unit,
     onQuickCategoryViewportChanged: () -> Unit,
     onSettingsClick: (() -> Unit)?,
+    operationNotice: OperationNoticeUiModel?,
+    onOperationNoticeDismiss: (String) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
     onRegionalGuideSummaryClick: (String) -> Unit = {},
@@ -95,6 +101,7 @@ fun ItemSearchInitialContent(
     }
     var appGuideScrollIndex by rememberSaveable { mutableIntStateOf(NO_APP_GUIDE_SCROLL_INDEX) }
     var appGuideScrollOffset by rememberSaveable { mutableIntStateOf(0) }
+    var appGuideScrollHadOperationNotice by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner, isQuickCategoryExpanded) {
@@ -131,39 +138,47 @@ fun ItemSearchInitialContent(
         }
     }
 
-    LaunchedEffect(appGuideTarget) {
+    LaunchedEffect(appGuideTarget, operationNotice != null) {
         if (appGuideTarget != null && appGuideScrollIndex == NO_APP_GUIDE_SCROLL_INDEX) {
             appGuideScrollIndex = listState.firstVisibleItemIndex
             appGuideScrollOffset = listState.firstVisibleItemScrollOffset
+            appGuideScrollHadOperationNotice = operationNotice != null
         }
+        val appGuideItemIndex =
+            appGuideTarget?.toLazyListItemIndex(hasOperationNotice = operationNotice != null)
 
         when (appGuideTarget) {
             ItemSearchGuideTarget.SEARCH -> {
                 val isSearchVisible =
                     listState.layoutInfo.visibleItemsInfo.any { item ->
-                        item.index == SEARCH_GUIDE_ITEM_INDEX
+                        item.index == appGuideItemIndex
                     }
                 if (!isSearchVisible) {
-                    listState.scrollToItem(SEARCH_GUIDE_ITEM_INDEX)
+                    listState.scrollToItem(checkNotNull(appGuideItemIndex))
                 }
             }
 
             ItemSearchGuideTarget.QUICK_CATEGORY -> {
-                listState.scrollToItem(QUICK_CATEGORY_GUIDE_ITEM_INDEX)
+                listState.scrollToItem(checkNotNull(appGuideItemIndex))
             }
 
             ItemSearchGuideTarget.USEFUL_GUIDE -> {
-                listState.scrollToItem(USEFUL_GUIDE_GUIDE_ITEM_INDEX)
+                listState.scrollToItem(checkNotNull(appGuideItemIndex))
             }
 
             null -> {
                 if (appGuideScrollIndex != NO_APP_GUIDE_SCROLL_INDEX) {
                     listState.scrollToItem(
-                        index = appGuideScrollIndex,
+                        index = restoredAppGuideScrollIndex(
+                            storedIndex = appGuideScrollIndex,
+                            hadOperationNotice = appGuideScrollHadOperationNotice,
+                            hasOperationNotice = operationNotice != null,
+                        ),
                         scrollOffset = appGuideScrollOffset,
                     )
                     appGuideScrollIndex = NO_APP_GUIDE_SCROLL_INDEX
                     appGuideScrollOffset = 0
+                    appGuideScrollHadOperationNotice = false
                 }
             }
         }
@@ -216,6 +231,16 @@ fun ItemSearchInitialContent(
                 )
             }
 
+            operationNotice?.let { notice ->
+                item(key = "operation_notice_${notice.id}") {
+                    OperationNoticeBanner(
+                        notice = notice,
+                        onDismiss = onOperationNoticeDismiss,
+                        modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                    )
+                }
+            }
+
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -227,7 +252,9 @@ fun ItemSearchInitialContent(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
-                        modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
+                        modifier = Modifier
+                            .padding(horizontal = metrics.horizontalPadding)
+                            .semantics { heading() },
                     )
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
@@ -275,6 +302,7 @@ fun ItemSearchInitialContent(
                     ) {
                         KoreanLineBreakText(
                             text = quickCategoriesTitle,
+                            modifier = Modifier.semantics { heading() },
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -333,7 +361,38 @@ fun ItemSearchInitialContent(
 private const val USEFUL_GUIDE_GUIDE_ITEM_INDEX = 1
 private const val SEARCH_GUIDE_ITEM_INDEX = 3
 private const val QUICK_CATEGORY_GUIDE_ITEM_INDEX = 4
+private const val OPERATION_NOTICE_ITEM_INDEX = 1
 private const val NO_APP_GUIDE_SCROLL_INDEX = -1
+
+internal fun ItemSearchGuideTarget.toLazyListItemIndex(hasOperationNotice: Boolean): Int {
+    val baseIndex =
+        when (this) {
+            ItemSearchGuideTarget.USEFUL_GUIDE -> USEFUL_GUIDE_GUIDE_ITEM_INDEX
+            ItemSearchGuideTarget.SEARCH -> SEARCH_GUIDE_ITEM_INDEX
+            ItemSearchGuideTarget.QUICK_CATEGORY -> QUICK_CATEGORY_GUIDE_ITEM_INDEX
+        }
+
+    return baseIndex + if (hasOperationNotice) 1 else 0
+}
+
+internal fun restoredAppGuideScrollIndex(
+    storedIndex: Int,
+    hadOperationNotice: Boolean,
+    hasOperationNotice: Boolean,
+): Int {
+    val noticeIndexOffset =
+        when {
+            hadOperationNotice &&
+                !hasOperationNotice &&
+                storedIndex > OPERATION_NOTICE_ITEM_INDEX -> -1
+            !hadOperationNotice &&
+                hasOperationNotice &&
+                storedIndex >= OPERATION_NOTICE_ITEM_INDEX -> 1
+            else -> 0
+        }
+
+    return (storedIndex + noticeIndexOffset).coerceAtLeast(0)
+}
 
 @Composable
 fun ItemSearchHeader(
@@ -359,7 +418,9 @@ fun ItemSearchHeader(
         ) {
             Text(
                 text = stringResource(R.string.item_search_title),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { heading() },
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,

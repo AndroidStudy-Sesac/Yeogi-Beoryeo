@@ -21,7 +21,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
@@ -84,6 +86,82 @@ class ItemGuideDetailViewModelTest {
 
             assertSame(loadedState, viewModel.uiState.value)
             assertEquals(listOf(guide.id), itemRepository.requestedGuideIds)
+        }
+
+    @Test
+    fun `가이드가 없으면 데이터 없음 상태를 표시한다`() =
+        runTest {
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = null),
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide("missing-guide")
+            advanceUntilIdle()
+
+            assertEquals(ItemGuideDetailUiState.NotFound, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `가이드 조회 실패 후 다시 시도하면 같은 ID로 상세를 불러온다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            var shouldFail = true
+            val itemRepository =
+                FakeItemRepository { guideId ->
+                    if (shouldFail) error("load failure")
+                    guide.takeIf { it.id == guideId }
+                }
+            val viewModel =
+                createViewModel(
+                    itemRepository = itemRepository,
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide(guide.id)
+            assertEquals(ItemGuideDetailUiState.LoadFailed, viewModel.uiState.value)
+
+            shouldFail = false
+            viewModel.retryLoadGuide()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ItemGuideDetailUiState.Success
+            assertEquals(guide, state.guide)
+            assertEquals(listOf(guide.id, guide.id), itemRepository.requestedGuideIds)
+        }
+
+    @Test
+    fun `가이드 재시도 중 다시 누르면 같은 요청을 중복 실행하지 않는다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val retryResult = CompletableDeferred<DisposalItemGuide?>()
+            var callCount = 0
+            val itemRepository =
+                FakeItemRepository {
+                    callCount += 1
+                    if (callCount == 1) error("load failure")
+                    retryResult.await()
+                }
+            val viewModel =
+                createViewModel(
+                    itemRepository = itemRepository,
+                    favoriteRepository = FakeFavoriteRepository(),
+                )
+
+            viewModel.loadGuide(guide.id)
+            viewModel.retryLoadGuide()
+            runCurrent()
+            viewModel.retryLoadGuide()
+
+            assertEquals(listOf(guide.id, guide.id), itemRepository.requestedGuideIds)
+            assertEquals(ItemGuideDetailUiState.Loading, viewModel.uiState.value)
+
+            retryResult.complete(guide)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value is ItemGuideDetailUiState.Success)
+            assertEquals(listOf(guide.id, guide.id), itemRepository.requestedGuideIds)
         }
 
     @Test
@@ -178,6 +256,76 @@ class ItemGuideDetailViewModelTest {
         }
 
     @Test
+    fun `즐겨찾기를 빠르게 두 번 누르면 처리 중 중복 요청을 무시한다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val favoriteRepository = FakeFavoriteRepository()
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = guide),
+                    favoriteRepository = favoriteRepository,
+                )
+
+            viewModel.loadGuide(guide.id)
+            advanceUntilIdle()
+
+            viewModel.toggleFavorite()
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            assertEquals(1, favoriteRepository.toggleCallCount)
+            assertTrue((viewModel.uiState.value as ItemGuideDetailUiState.Success).isFavorite)
+
+            advanceTimeBy(500L)
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            assertEquals(2, favoriteRepository.toggleCallCount)
+        }
+
+    @Test
+    fun `guard 중 A B A로 전환하면 품목별 중복 요청만 무시한다`() =
+        runTest {
+            val firstGuide = sampleGuide("유리병")
+            val secondGuide = sampleGuide("종이팩")
+            val favoriteRepository = FakeFavoriteRepository()
+            val viewModel =
+                createViewModel(
+                    itemRepository =
+                        FakeItemRepository { guideId ->
+                            when (guideId) {
+                                firstGuide.id -> firstGuide
+                                secondGuide.id -> secondGuide
+                                else -> null
+                            }
+                        },
+                    favoriteRepository = favoriteRepository,
+                )
+
+            viewModel.loadGuide(firstGuide.id)
+            advanceUntilIdle()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            viewModel.loadGuide(secondGuide.id)
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            viewModel.loadGuide(firstGuide.id)
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            assertEquals(2, favoriteRepository.toggleCallCount)
+            assertEquals(1, favoriteRepository.toggledTargetIds.count { it == firstGuide.id })
+            assertEquals(1, favoriteRepository.toggledTargetIds.count { it == secondGuide.id })
+            assertTrue((viewModel.uiState.value as ItemGuideDetailUiState.Success).isFavorite)
+        }
+
+    @Test
     fun `즐겨찾기 변경에 실패하면 실패 메시지 이벤트를 보낸다`() =
         runTest {
             val guide = sampleGuide("유리병")
@@ -202,6 +350,31 @@ class ItemGuideDetailViewModelTest {
                 messageEvent.messageResId,
             )
             assertEquals(ItemGuideDetailMessageIcon.Warning, messageEvent.icon)
+        }
+
+    @Test
+    fun `즐겨찾기 변경 실패 뒤 다시 누르면 재시도한다`() =
+        runTest {
+            val guide = sampleGuide("유리병")
+            val favoriteRepository =
+                FakeFavoriteRepository(toggleError = IllegalStateException("저장 실패"))
+            val viewModel =
+                createViewModel(
+                    itemRepository = FakeItemRepository(guide = guide),
+                    favoriteRepository = favoriteRepository,
+                )
+
+            viewModel.loadGuide(guide.id)
+            advanceUntilIdle()
+
+            viewModel.toggleFavorite()
+            advanceUntilIdle()
+            favoriteRepository.toggleError = null
+            viewModel.toggleFavorite()
+            advanceUntilIdle()
+
+            assertEquals(2, favoriteRepository.toggleCallCount)
+            assertTrue((viewModel.uiState.value as ItemGuideDetailUiState.Success).isFavorite)
         }
 
     @Test
@@ -282,9 +455,12 @@ class ItemGuideDetailViewModelTest {
 
     private class FakeFavoriteRepository(
         initialFavorites: List<Favorite> = emptyList(),
-        private val toggleError: Throwable? = null,
+        var toggleError: Throwable? = null,
     ) : FavoriteRepository {
         private val favorites = MutableStateFlow(initialFavorites)
+        val toggledTargetIds = mutableListOf<String>()
+        val toggleCallCount: Int
+            get() = toggledTargetIds.size
 
         override fun observeFavorites(): Flow<List<Favorite>> = favorites
 
@@ -303,6 +479,7 @@ class ItemGuideDetailViewModelTest {
             favorites.value.any { it.type == type && it.targetId == targetId }
 
         override suspend fun toggleFavorite(favorite: Favorite): Boolean {
+            toggledTargetIds += favorite.targetId
             toggleError?.let { throw it }
             return if (isFavorite(favorite.type, favorite.targetId)) {
                 removeFavorite(favorite.type, favorite.targetId)

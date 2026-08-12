@@ -26,7 +26,7 @@ class RegionalGuideKeywordSearchViewModelTest {
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
-    fun `키워드 조회 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+    fun `키워드 조회 예외 발생 시 키워드 검색 오류 유형으로 매핑한다`() = runTest {
         val viewModel = createViewModel(
             regionRepository = FakeRegionRepository(
                 resolveThrowable = IllegalStateException(),
@@ -40,10 +40,8 @@ class RegionalGuideKeywordSearchViewModelTest {
         val state = viewModel.uiState.value as RegionalGuideUiState.Error
 
         assertEquals(
-            RegionalGuideErrorMessage.Resource(
-                resId = R.string.regional_guide_error_keyword_search_message,
-            ),
-            state.message,
+            RegionalGuideErrorType.KEYWORD_SEARCH,
+            state.errorType,
         )
     }
 
@@ -621,6 +619,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
+        assertTrue(state.showsPublicNoticeCta)
         assertEquals("김천시", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {
@@ -730,6 +729,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
+        assertTrue(state.showsPublicNoticeCta)
         assertEquals("김천시", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {
@@ -984,10 +984,8 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals("대전광역시 중구", errorState.query)
         assertEquals(
-            RegionalGuideErrorMessage.Resource(
-                resId = R.string.regional_guide_error_unknown_message,
-            ),
-            errorState.message,
+            RegionalGuideErrorType.UNKNOWN,
+            errorState.errorType,
         )
         assertTrue(errorState.canRestoreCandidates)
         assertTrue(viewModel.restoreCandidatesFromDetail())
@@ -999,6 +997,8 @@ class RegionalGuideKeywordSearchViewModelTest {
 
     @Test
     fun `후보에서 파생된 조회가 예외를 던지면 뒤로가기로 이전 검색 후보 목록을 복원한다`() = runTest {
+        val errorLogger = RecordingRegionalGuideErrorLogger()
+        val exception = IllegalStateException("Failed to connect to https://api.example.com/info")
         val viewModel = createViewModel(
             regionOptionsRepository = FakeRegionOptionsRepository(
                 sigunguOptionsBySido = mapOf(
@@ -1010,8 +1010,9 @@ class RegionalGuideKeywordSearchViewModelTest {
                 )
             ),
             regionalGuideRepository = FakeRegionalDisposalGuideRepository(
-                throwable = IllegalStateException("조회 실패")
-            )
+                throwable = exception,
+            ),
+            regionalGuideErrorLogger = errorLogger,
         )
         advanceUntilIdle()
 
@@ -1030,9 +1031,10 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals("대전광역시 중구", errorState.query)
         assertEquals(
-            RegionalGuideErrorMessage.Dynamic("조회 실패"),
-            errorState.message,
+            RegionalGuideErrorType.SELECTED_REGION,
+            errorState.errorType,
         )
+        assertEquals(listOf(exception), errorLogger.throwables)
         assertTrue(errorState.canRestoreCandidates)
         assertTrue(viewModel.restoreCandidatesFromDetail())
 

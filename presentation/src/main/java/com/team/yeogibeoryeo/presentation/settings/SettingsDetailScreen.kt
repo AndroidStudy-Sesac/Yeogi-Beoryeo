@@ -43,6 +43,9 @@ internal fun SettingsDetailScreen(
     cacheUiState: SettingsCacheUiState,
     cacheEvents: SharedFlow<SettingsCacheEvent>,
     modifier: Modifier = Modifier,
+    noticeUiState: SettingsNoticeUiState? = null,
+    onNoticeClick: (String) -> Unit = {},
+    onNoticeRetryClick: () -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
@@ -86,7 +89,13 @@ internal fun SettingsDetailScreen(
             verticalArrangement = Arrangement.spacedBy(SettingsLayoutDefaults.detailItemSpacing),
         ) {
             when (detailType) {
-                SettingsDetailType.Notice -> item { NoticeDetail() }
+                SettingsDetailType.Notice -> item {
+                    NoticeDetail(
+                        uiState = requireNotNull(noticeUiState),
+                        onNoticeClick = onNoticeClick,
+                        onRetryClick = onNoticeRetryClick,
+                    )
+                }
                 SettingsDetailType.Contact -> item { ContactDetail() }
                 SettingsDetailType.AppInfo -> item {
                     AppInfoDetail(appVersionName = appVersionName)

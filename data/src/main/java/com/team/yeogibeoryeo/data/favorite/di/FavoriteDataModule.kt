@@ -13,6 +13,7 @@ import com.team.yeogibeoryeo.data.favorite.repository.CollectionSpotFavoriteRepo
 import com.team.yeogibeoryeo.data.favorite.repository.FavoriteRepositoryImpl
 import com.team.yeogibeoryeo.data.favorite.repository.RegionalGuideFavoriteRepositoryImpl
 import com.team.yeogibeoryeo.data.favorite.repository.RegionalGuideFavoriteSnapshotRepositoryImpl
+import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.CollectionSpotFavoriteSnapshotRepository
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
@@ -33,13 +34,18 @@ object FavoriteDatabaseModule {
     @Singleton
     fun provideFavoriteDatabase(
         @ApplicationContext context: Context,
+        itemCategoryLocalSource: ItemCategoryLocalSource,
     ): FavoriteDatabase =
         Room.databaseBuilder(
             context,
             FavoriteDatabase::class.java,
             "yeogi_beoryeo_favorites.db",
         )
-            .addMigrations(*favoriteDatabaseMigrations)
+            .addMigrations(
+                *favoriteDatabaseMigrations(
+                    itemGuideIdMappings(itemCategoryLocalSource),
+                ),
+            )
             .build()
 
     @Provides
@@ -97,11 +103,76 @@ object FavoriteDatabaseModule {
             }
         }
 
-    internal val favoriteDatabaseMigrations =
+    internal fun favoriteDatabaseMigrations(
+        itemGuideIdMappings: Map<String, String>,
+    ): Array<Migration> =
         arrayOf(
             FAVORITE_DATABASE_MIGRATION_1_2,
             FAVORITE_DATABASE_MIGRATION_2_3,
+            favoriteDatabaseMigration3To4(itemGuideIdMappings),
         )
+
+    private fun favoriteDatabaseMigration3To4(
+        itemGuideIdMappings: Map<String, String>,
+    ): Migration =
+        object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val migratedFavorites = linkedMapOf<String, Long>()
+
+                db.query(
+                    "SELECT targetId, savedAtMillis FROM favorites WHERE type = 'ITEM_GUIDE'",
+                ).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val legacyId = cursor.getString(0)
+                        val stableId = itemGuideIdMappings[legacyId] ?: continue
+                        val savedAtMillis = cursor.getLong(1)
+                        migratedFavorites[stableId] =
+                            maxOf<Long>(migratedFavorites[stableId] ?: Long.MIN_VALUE, savedAtMillis)
+                    }
+                }
+
+                db.execSQL("DELETE FROM favorites WHERE type = 'ITEM_GUIDE'")
+                migratedFavorites.forEach { (stableId, savedAtMillis) ->
+                    db.execSQL(
+                        """
+                        INSERT INTO favorites (type, targetId, savedAtMillis)
+                        VALUES (?, ?, ?)
+                        """.trimIndent(),
+                        arrayOf<Any?>("ITEM_GUIDE", stableId, savedAtMillis),
+                    )
+                }
+            }
+        }
+
+    internal fun itemGuideIdMappings(
+        itemCategoryLocalSource: ItemCategoryLocalSource,
+    ): Map<String, String> =
+        buildMap {
+            itemCategoryLocalSource.getGuideDetails().forEach { (name, detail) ->
+                putItemGuideId(detail.id, detail.id)
+                putItemGuideId(name, detail.id)
+                detail.legacyNames.forEach { legacyName ->
+                    putItemGuideId(legacyName, detail.id)
+                }
+            }
+            itemCategoryLocalSource.getWasteDictionaryItems().forEach { item ->
+                putItemGuideId(item.id, item.id)
+                putItemGuideId(item.name, item.id)
+                item.legacyNames.forEach { legacyName ->
+                    putItemGuideId(legacyName, item.id)
+                }
+            }
+        }
+
+    private fun MutableMap<String, String>.putItemGuideId(
+        legacyId: String,
+        stableId: String,
+    ) {
+        val existingId = putIfAbsent(legacyId, stableId)
+        require(existingId == null || existingId == stableId) {
+            "품목 즐겨찾기 ID 매핑이 중복되었습니다: $legacyId"
+        }
+    }
 }
 
 @Module

@@ -16,11 +16,12 @@ import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
@@ -295,10 +296,8 @@ class RegionalGuideScreenTest {
     }
 
     @Test
-    fun 가로_오류_화면에서_다시_시도_버튼을_스크롤해_실행할_수_있다() {
+    fun 가로_오류_화면에서_다시_시도_버튼을_실행할_수_있다() {
         var retryCount = 0
-        val errorMessage = List(10) { "네트워크 연결을 확인한 뒤 다시 시도해 주세요." }
-            .joinToString(separator = "\n")
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -310,7 +309,7 @@ class RegionalGuideScreenTest {
                     RegionalGuideScreen(
                         uiState = RegionalGuideUiState.Error(
                             query = "서구",
-                            message = RegionalGuideErrorMessage.Dynamic(errorMessage),
+                            errorType = RegionalGuideErrorType.NETWORK,
                         ),
                         searchKeyword = "서구",
                         regionSelectorUiState = RegionSelectorUiState(),
@@ -330,13 +329,97 @@ class RegionalGuideScreenTest {
         }
 
         composeTestRule.onNodeWithText("다시 시도")
-            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
 
         composeTestRule.runOnIdle {
             assertEquals(1, retryCount)
         }
+    }
+    @Test
+    fun 가이드가_없을_때_공공_안내_CTA와_지역_재선택_동작을_제공한다() {
+        var publicNoticeClickCount = 0
+        var regionSelectionStarted = false
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalGuideScreen(
+                    uiState = RegionalGuideUiState.Empty(
+                        query = "서울특별시 종로구",
+                        titleResId = R.string.regional_guide_empty_info_not_found_title,
+                        messageResId = R.string.regional_guide_empty_info_not_found_message,
+                        action = RegionalGuideEmptyActionUiModel(
+                            type = RegionalGuideEmptyActionType.SELECT_REGION,
+                            labelResId = R.string.regional_guide_empty_action_select_region,
+                        ),
+                        showsPublicNoticeCta = true,
+                    ),
+                    searchKeyword = "서울특별시 종로구",
+                    regionSelectorUiState = RegionSelectorUiState(),
+                    onSearchKeywordChange = {},
+                    onSearchClick = {},
+                    onRetryClick = {},
+                    onEmptySearchActionClick = {},
+                    onSidoSelected = {},
+                    onSigunguSelected = {},
+                    onEupmyeondongSelected = {},
+                    onRegionSelectionStarted = { regionSelectionStarted = true },
+                    onRegionSelectionSearchClick = {},
+                    onCandidateClick = {},
+                    onGuideCandidateClick = {},
+                    onPublicNoticeClick = { publicNoticeClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("공공 안내에서 지자체 안내 링크 보기")
+            .assertIsDisplayed()
+            .performClick()
+        composeTestRule.onNodeWithContentDescription(
+            "공공 안내에서 지자체 안내 링크 보기, 외부 공공 안내 페이지로 이동"
+        ).assertIsDisplayed()
+        composeTestRule.onNodeWithText("지역 다시 선택하기")
+            .assertIsDisplayed()
+            .performClick()
+
+        composeTestRule.runOnIdle {
+            assertEquals(1, publicNoticeClickCount)
+            assertTrue(regionSelectionStarted)
+        }
+    }
+
+    @Test
+    fun 입력_오류_결과에는_공공_안내_CTA를_노출하지_않는다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalGuideScreen(
+                    uiState = RegionalGuideUiState.Empty(
+                        query = "",
+                        titleResId = R.string.regional_guide_empty_blank_keyword_title,
+                        messageResId = R.string.regional_guide_empty_blank_keyword_message,
+                        action = RegionalGuideEmptyActionUiModel(
+                            type = RegionalGuideEmptyActionType.SEARCH_AGAIN,
+                            labelResId = R.string.regional_guide_empty_action_search_again,
+                        ),
+                    ),
+                    searchKeyword = "",
+                    regionSelectorUiState = RegionSelectorUiState(),
+                    onSearchKeywordChange = {},
+                    onSearchClick = {},
+                    onRetryClick = {},
+                    onEmptySearchActionClick = {},
+                    onSidoSelected = {},
+                    onSigunguSelected = {},
+                    onEupmyeondongSelected = {},
+                    onRegionSelectionSearchClick = {},
+                    onCandidateClick = {},
+                    onGuideCandidateClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("공공 안내에서 지자체 안내 링크 보기")
+            .assertDoesNotExist()
     }
 }
 

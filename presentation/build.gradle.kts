@@ -3,6 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kover)
+}
+
+kover {
+    currentProject {
+        createVariant("focused") {
+            add("debug")
+        }
+    }
 }
 
 android {
@@ -37,6 +46,12 @@ android {
                 create("pixel9ProApi36") {
                     device = "Pixel 9 Pro"
                     apiLevel = 36
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+                create("pixel2Api28") {
+                    device = "Pixel 2"
+                    apiLevel = 28
                     systemImageSource = "aosp"
                     testedAbi = "x86_64"
                 }

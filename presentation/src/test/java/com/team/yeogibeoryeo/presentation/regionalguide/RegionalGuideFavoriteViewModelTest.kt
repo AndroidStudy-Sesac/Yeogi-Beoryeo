@@ -30,7 +30,7 @@ class RegionalGuideFavoriteViewModelTest {
     val mainDispatcherRule = RegionalGuideMainDispatcherRule()
 
     @Test
-    fun `즐겨찾기 복원 예외에 메시지가 없으면 화면용 대체 리소스를 사용한다`() = runTest {
+    fun `즐겨찾기 복원 예외 발생 시 데이터 오류 유형으로 매핑한다`() = runTest {
         val viewModel = createViewModel(
             regionalGuideSnapshotRepository = FakeRegionalGuideFavoriteSnapshotRepository(
                 throwable = IllegalStateException(),
@@ -44,10 +44,8 @@ class RegionalGuideFavoriteViewModelTest {
         val state = viewModel.uiState.value as RegionalGuideUiState.Error
 
         assertEquals(
-            RegionalGuideErrorMessage.Resource(
-                resId = R.string.regional_guide_error_favorite_restore_message,
-            ),
-            state.message,
+            RegionalGuideErrorType.DATA,
+            state.errorType,
         )
     }
 

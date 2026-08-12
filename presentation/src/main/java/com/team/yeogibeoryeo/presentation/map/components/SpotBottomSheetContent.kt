@@ -36,6 +36,8 @@ import com.team.yeogibeoryeo.presentation.map.MapLocationNotice
 import com.team.yeogibeoryeo.presentation.map.MapLocationNoticeAction
 import com.team.yeogibeoryeo.presentation.map.MapSearchMode
 import com.team.yeogibeoryeo.presentation.map.mapper.toFilterEmptyResultDisplayNameResId
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeBanner
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 
 @Composable
 fun SpotBottomSheetContent(
@@ -49,6 +51,7 @@ fun SpotBottomSheetContent(
     regionSearchCandidates: List<MapRegionSearchCandidate>,
     regionDetailSearchCandidate: MapRegionSearchCandidate?,
     locationNotice: MapLocationNotice?,
+    operationNotice: OperationNoticeUiModel? = null,
     @StringRes errorMessageResId: Int?,
     @StringRes partialWarningMessageResId: Int?,
     onTypeClick: (CollectionSpotType) -> Unit,
@@ -58,6 +61,7 @@ fun SpotBottomSheetContent(
     onRegionDetailKeywordClick: (String) -> Unit,
     onRegionDetailBackClick: () -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
+    onOperationNoticeDismiss: (String) -> Unit = {},
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
     modifier: Modifier = Modifier,
@@ -72,6 +76,10 @@ fun SpotBottomSheetContent(
         !isLoading &&
         !hasNoticeOrError &&
         !isSelectingRegion
+    val shouldShowCompactSearchFailure = operationNotice != null &&
+        errorMessageResId != null &&
+        !isLoading &&
+        !isSelectingRegion
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -80,6 +88,23 @@ fun SpotBottomSheetContent(
             resultCount = spots.size,
             hasSearched = hasSearched,
         )
+
+        operationNotice?.let { notice ->
+            OperationNoticeBanner(
+                notice = notice,
+                onDismiss = onOperationNoticeDismiss,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+            )
+        }
+
+        if (shouldShowCompactSearchFailure) {
+            Text(
+                text = stringResource(R.string.map_operation_notice_search_failure_hint),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         if (shouldShowPartialWarning) {
             Text(
@@ -145,6 +170,10 @@ fun SpotBottomSheetContent(
                     bottomContentPadding = bottomContentPadding,
                     modifier = Modifier.weight(1f),
                 )
+            }
+
+            errorMessageResId != null && operationNotice != null -> {
+                Box(modifier = Modifier.weight(1f))
             }
 
             errorMessageResId != null -> {

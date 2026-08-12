@@ -31,6 +31,15 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.kover)
+}
+
+kover {
+    currentProject {
+        createVariant("focused") {
+            add("debug")
+        }
+    }
 }
 
 android {
@@ -59,8 +68,8 @@ android {
         applicationId = "com.team.yeogibeoryeo"
         minSdk = 28
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.2.0"
+        versionCode = 5
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -123,6 +132,25 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("pixel9ProApi36") {
+                    device = "Pixel 9 Pro"
+                    apiLevel = 36
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+                create("pixel2Api28") {
+                    device = "Pixel 2"
+                    apiLevel = 28
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+            }
+        }
+    }
 }
 
 if (!keystorePropertiesFile.isFile) {
@@ -161,6 +189,7 @@ dependencies {
 
     // Firebase
     implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
     implementation(libs.firebase.crashlytics)
 
     // Hilt

@@ -1,14 +1,29 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasImeAction
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -18,17 +33,26 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
+import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverity
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 import com.team.yeogibeoryeo.presentation.search.model.ItemUsefulGuideType
 import com.team.yeogibeoryeo.presentation.search.model.itemUsefulGuideContents
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
+import com.team.yeogibeoryeo.presentation.search.model.toUsefulGuideContent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 
@@ -56,6 +80,9 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithText("중소형 폐가전 수거함 안내").assertIsDisplayed()
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
         composeTestRule.onNodeWithText("종이").assertIsDisplayed()
+        composeTestRule.onNodeWithText("여기 버려").assert(hasHeading())
+        composeTestRule.onNodeWithText("안내 사항").assert(hasHeading())
+        composeTestRule.onNodeWithText("분리배출 분류").assert(hasHeading())
     }
 
     @Test
@@ -76,7 +103,12 @@ class ItemSearchScreenTest {
         composeTestRule.setContent {
             MaterialTheme {
                 ItemSearchScreen(
-                    uiState = ItemSearchUiState(hasSearched = true),
+                    uiState =
+                        ItemSearchUiState(
+                            query = "없는 품목",
+                            submittedQuery = "없는 품목",
+                            hasSearched = true,
+                        ),
                     onQueryChange = {},
                     onSearchClick = {},
                     onGuideClick = {},
@@ -87,6 +119,7 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNodeWithText("검색 결과가 없어요.").assertIsDisplayed()
         composeTestRule.onNodeWithText("다른 이름으로 다시 검색해보세요.").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
     }
 
     @Test
@@ -97,6 +130,7 @@ class ItemSearchScreenTest {
                     uiState =
                         ItemSearchUiState(
                             query = "유리",
+                            submittedQuery = "유리",
                             hasSearched = true,
                             guides = listOf(sampleGuide("유리병")),
                         ),
@@ -108,7 +142,17 @@ class ItemSearchScreenTest {
             }
         }
 
+        composeTestRule.onNodeWithText("‘유리’ 검색 결과 1개")
+            .assert(hasHeading())
+            .assert(hasPoliteLiveRegion())
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
         composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.CollectionInfo,
+                CollectionInfo(rowCount = 1, columnCount = 1),
+            ),
+        ).assertExists()
     }
 
     @Test
@@ -152,6 +196,86 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
         composeTestRule.onAllNodesWithContentDescription("뒤로가기").assertCountEquals(0)
+    }
+
+    @Test
+    fun 작은_화면에서_운영_공지와_앱_가이드가_함께_있어도_검색_타겟으로_스크롤한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(480.dp),
+                ) {
+                    ItemSearchScreen(
+                        uiState = ItemSearchUiState(),
+                        onQueryChange = {},
+                        onSearchClick = {},
+                        onGuideClick = {},
+                        onQuickCategoryClick = {},
+                        operationNotice = sampleOperationNotice(),
+                        appGuideTarget = ItemSearchGuideTarget.SEARCH,
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun 앱_가이드_중_운영_공지_등장_후_종료해도_헤더_위치로_복원한다() {
+        var appGuideTarget by mutableStateOf<ItemSearchGuideTarget?>(null)
+        var operationNotice by mutableStateOf<OperationNoticeUiModel?>(null)
+        lateinit var listState: LazyListState
+
+        composeTestRule.setContent {
+            val categoryListState = rememberLazyListState()
+            listState = categoryListState
+
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(480.dp),
+                ) {
+                    ItemSearchScreen(
+                        uiState = ItemSearchUiState(),
+                        onQueryChange = {},
+                        onSearchClick = {},
+                        onGuideClick = {},
+                        onQuickCategoryClick = {},
+                        operationNotice = operationNotice,
+                        categoryListState = categoryListState,
+                        appGuideTarget = appGuideTarget,
+                    )
+                }
+            }
+        }
+
+        composeTestRule.runOnIdle {
+            assertEquals(0, listState.firstVisibleItemIndex)
+            assertEquals(0, listState.firstVisibleItemScrollOffset)
+            appGuideTarget = ItemSearchGuideTarget.SEARCH
+        }
+        composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
+            .assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            operationNotice = sampleOperationNotice()
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.runOnIdle {
+            appGuideTarget = null
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.runOnIdle {
+            assertEquals(0, listState.firstVisibleItemIndex)
+            assertEquals(0, listState.firstVisibleItemScrollOffset)
+        }
     }
 
     @Test
@@ -202,7 +326,7 @@ class ItemSearchScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("‘유리’ 검색 결과").assertIsDisplayed()
+        composeTestRule.onNodeWithText("‘유리’ 검색 결과 1개").assertIsDisplayed()
         composeTestRule.onNodeWithText("유리병").assertIsDisplayed()
     }
 
@@ -281,6 +405,7 @@ class ItemSearchScreenTest {
     @Test
     fun 에러_상태에서는_에러_리소스_문구를_보여준다() {
         var backClickCount = 0
+        var retryClickCount = 0
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -297,15 +422,70 @@ class ItemSearchScreenTest {
                     onGuideClick = {},
                     onQuickCategoryClick = {},
                     onBackClick = { backClickCount += 1 },
+                    onRetryClick = { retryClickCount += 1 },
                 )
             }
         }
 
         composeTestRule.onNodeWithText("검색 결과를 불러오지 못했어요.").assertIsDisplayed()
-        composeTestRule.onNodeWithText("잠시 후 다시 시도해주세요.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("잠시 후 다시 시도해 주세요.").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
+        composeTestRule.onNodeWithText("다시 시도").performClick()
         composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
 
+        assertEquals(1, retryClickCount)
         assertEquals(1, backClickCount)
+    }
+
+    @Test
+    fun 검색_결과_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "유리",
+                    submittedQuery = "유리",
+                    hasSearched = true,
+                    guides = listOf(sampleGuide("유리병")),
+                ),
+        )
+    }
+
+    @Test
+    fun 검색_로딩_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "유리",
+                    submittedQuery = "유리",
+                    hasSearched = true,
+                    isLoading = true,
+                ),
+        )
+    }
+
+    @Test
+    fun 빈_검색_결과_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "없는 품목",
+                    submittedQuery = "없는 품목",
+                    hasSearched = true,
+                ),
+        )
+    }
+
+    @Test
+    fun 검색_오류_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "PMP",
+                    submittedQuery = "PMP",
+                    hasSearched = true,
+                    errorMessageResId = R.string.search_load_failed_message,
+                ),
+        )
     }
 
     @Test
@@ -391,6 +571,30 @@ class ItemSearchScreenTest {
 
         assertEquals(1, searchClickCount)
         searchField.assertIsNotFocused()
+    }
+
+    @Test
+    fun 품목_검색창은_접근성_이름과_텍스트_입력_동작을_제공한다() {
+        var changedQuery = ""
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(),
+                    onQueryChange = { changedQuery = it },
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasSetTextAction() and hasText("품목 검색 창"))
+            .assert(hasSetTextAction())
+            .assert(hasImeAction(ImeAction.Search))
+            .performTextReplacement("수석")
+
+        assertEquals("수석", changedQuery)
     }
 
     @Test
@@ -555,6 +759,73 @@ class ItemSearchScreenTest {
     }
 
     @Test
+    fun 중소형_폐가전_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.SMALL_E_WASTE)
+    }
+
+    @Test
+    fun 지역별_분리배출_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.REGIONAL_GUIDE)
+    }
+
+    @Test
+    fun 대표_분류별_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.REPRESENTATIVE_CATEGORY)
+    }
+
+    @Test
+    fun 품목별_안내는_마지막_관련_사이트까지_스크롤한_뒤_하단_탐색바를_숨긴다() {
+        assertUsefulGuideScrollsToLastRelatedSite(ItemUsefulGuideType.ITEM_DICTIONARY)
+    }
+
+    private fun assertUsefulGuideScrollsToLastRelatedSite(guideType: ItemUsefulGuideType) {
+        var isBottomBarVisible by mutableStateOf(true)
+        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
+        val lastRelatedSiteLabel =
+            targetContext.getString(guideType.toUsefulGuideContent().relatedSites.last().labelResId)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(752.dp)
+                        .padding(bottom = if (isBottomBarVisible) 80.dp else 0.dp),
+                ) {
+                    ItemUsefulGuideRoute(
+                        guideType = guideType,
+                        onBackClick = {},
+                        onSmallEWasteClick = {},
+                        onFreePickupGuideClick = {},
+                        onOfficialSiteClick = {},
+                        onRegionalGuideClick = {},
+                        onItemSearchClick = {},
+                        onBottomBarVisibilityChanged = { isBottomBarVisible = it },
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { !isBottomBarVisible }
+
+        composeTestRule.onNode(hasScrollAction())
+            .performScrollToNode(hasText(lastRelatedSiteLabel))
+        composeTestRule.onNodeWithText(lastRelatedSiteLabel)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.runOnIdle {
+            assertFalse(isBottomBarVisible)
+        }
+        composeTestRule.onNodeWithText(lastRelatedSiteLabel).assertIsDisplayed()
+
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeDown() }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { isBottomBarVisible }
+    }
+
+    @Test
     fun small_e_waste_안내_상세에서_외부_링크_CTA를_전달한다() {
         var clickCount = 0
 
@@ -594,6 +865,34 @@ class ItemSearchScreenTest {
             relatedSpotTypes = emptyList(),
         )
 
+    private fun sampleOperationNotice(): OperationNoticeUiModel =
+        OperationNoticeUiModel(
+            id = "notice",
+            severity = OperationNoticeSeverity.WARNING,
+            title = "운영 공지",
+            message = "공지 내용",
+            actionLabel = null,
+            actionUrl = null,
+        )
+
+    private fun assertOperationNoticeIsDisplayedInHomeState(uiState: ItemSearchUiState) {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    operationNotice = sampleOperationNotice(),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("운영 공지").assertIsDisplayed()
+        composeTestRule.onNodeWithText("공지 내용").assertIsDisplayed()
+    }
+
     private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.swipeUpUntilTextExists(
         text: String,
     ) {
@@ -604,4 +903,14 @@ class ItemSearchScreenTest {
             onRoot().performTouchInput { swipeUp() }
         }
     }
+
+    private fun hasHeading() =
+        SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
+
+    private fun hasPoliteLiveRegion() =
+        SemanticsMatcher.expectValue(
+            SemanticsProperties.LiveRegion,
+            LiveRegionMode.Polite,
+        )
+
 }

@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.regionalguide
 
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -25,6 +24,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.usecase.GetRegionalGuideSigung
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.NormalizeRegionalGuideDisplayRegionUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.ResolveRegionalGuideRegionFromKeywordUseCase
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.log.RegionalGuideErrorLogger
 import com.team.yeogibeoryeo.presentation.regionalguide.mapper.toUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionSearchCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
@@ -55,7 +55,8 @@ class RegionalGuideViewModel @Inject constructor(
     private val normalizeRegionalGuideDisplayRegionUseCase: NormalizeRegionalGuideDisplayRegionUseCase,
     private val observeFavoriteUseCase: ObserveFavoriteUseCase,
     private val toggleRegionalGuideFavoriteUseCase: ToggleRegionalGuideFavoriteUseCase,
-    private val getRegionalGuideFavoriteSnapshotUseCase: GetRegionalGuideFavoriteSnapshotUseCase
+    private val getRegionalGuideFavoriteSnapshotUseCase: GetRegionalGuideFavoriteSnapshotUseCase,
+    private val regionalGuideErrorLogger: RegionalGuideErrorLogger,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RegionalGuideUiState>(RegionalGuideUiState.Idle)
@@ -461,12 +462,11 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                logRegionalGuideError(operation = "키워드 검색", throwable = e)
                 clearGuideCandidateBackStack()
                 _uiState.value = RegionalGuideUiState.Error(
                     query = trimmedKeyword,
-                    message = e.toErrorMessage(
-                        fallbackResId = R.string.regional_guide_error_keyword_search_message,
-                    ),
+                    errorType = RegionalGuideErrorType.KEYWORD_SEARCH,
                 )
             }
         }
@@ -517,12 +517,11 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                logRegionalGuideError(operation = "주소 검색", throwable = e)
                 clearGuideCandidateBackStack()
                 _uiState.value = RegionalGuideUiState.Error(
                     query = trimmedAddress,
-                    message = e.toErrorMessage(
-                        fallbackResId = R.string.regional_guide_error_address_search_message,
-                    ),
+                    errorType = RegionalGuideErrorType.ADDRESS_SEARCH,
                 )
             }
         }
@@ -568,12 +567,11 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                logRegionalGuideError(operation = "즐겨찾기 복원", throwable = e)
                 clearGuideCandidateBackStack()
                 _uiState.value = RegionalGuideUiState.Error(
                     query = "",
-                    message = e.toErrorMessage(
-                        fallbackResId = R.string.regional_guide_error_favorite_restore_message,
-                    ),
+                    errorType = RegionalGuideErrorType.DATA,
                 )
             }
         }
@@ -677,11 +675,10 @@ class RegionalGuideViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                logRegionalGuideError(operation = "선택 지역 조회", throwable = e)
                 _uiState.value = RegionalGuideUiState.Error(
                     query = query,
-                    message = e.toErrorMessage(
-                        fallbackResId = R.string.regional_guide_error_selected_region_message,
-                    ),
+                    errorType = RegionalGuideErrorType.SELECTED_REGION,
                     canRestoreCandidates = guideCandidateBackStack.canRestore,
                 )
             }
@@ -941,7 +938,8 @@ class RegionalGuideViewModel @Inject constructor(
                             query = query,
                             titleResId = R.string.regional_guide_empty_info_not_found_title,
                             messageResId = R.string.regional_guide_empty_info_not_found_message,
-                            action = selectRegionAction()
+                            action = selectRegionAction(),
+                            showsPublicNoticeCta = true,
                         )
                 }
             }
@@ -957,38 +955,38 @@ class RegionalGuideViewModel @Inject constructor(
                             query = query,
                             titleResId = R.string.regional_guide_empty_candidate_not_found_title,
                             messageResId = R.string.regional_guide_empty_candidate_not_found_message,
-                            action = selectRegionAction()
+                            action = selectRegionAction(),
+                            showsPublicNoticeCta = true,
                         )
                 }
             }
 
             is RegionalGuideLookupResult.Failure -> {
+                throwable?.let { exception ->
+                    logRegionalGuideError(operation = "지역 가이드 조회", throwable = exception)
+                }
                 RegionalGuideUiState.Error(
                     query = query,
-                    message = RegionalGuideErrorMessage.Resource(
-                        resId = reason.toErrorMessageResId(),
-                    ),
+                    errorType = reason.toErrorType(),
                     canRestoreCandidates = guideCandidateBackStack.canRestore,
                 )
             }
         }
     }
 
-    private fun RegionalGuideFailureReason.toErrorMessageResId(): Int =
+    private fun RegionalGuideFailureReason.toErrorType(): RegionalGuideErrorType =
         when (this) {
-            RegionalGuideFailureReason.NETWORK -> R.string.regional_guide_error_network_message
-            RegionalGuideFailureReason.API -> R.string.regional_guide_error_api_message
-            RegionalGuideFailureReason.UNKNOWN -> R.string.regional_guide_error_unknown_message
+            RegionalGuideFailureReason.NETWORK -> RegionalGuideErrorType.NETWORK
+            RegionalGuideFailureReason.API -> RegionalGuideErrorType.API
+            RegionalGuideFailureReason.UNKNOWN -> RegionalGuideErrorType.UNKNOWN
         }
 
-    private fun Exception.toErrorMessage(
-        @StringRes fallbackResId: Int,
-    ): RegionalGuideErrorMessage =
-        message
-            ?.trim()
-            ?.takeIf { value -> value.isNotEmpty() }
-            ?.let(RegionalGuideErrorMessage::Dynamic)
-            ?: RegionalGuideErrorMessage.Resource(resId = fallbackResId)
+    private fun logRegionalGuideError(
+        operation: String,
+        throwable: Throwable,
+    ) {
+        regionalGuideErrorLogger.log(operation = operation, throwable = throwable)
+    }
 
     private fun searchAgainAction(): RegionalGuideEmptyActionUiModel =
         RegionalGuideEmptyActionUiModel(
@@ -1018,6 +1016,7 @@ class RegionalGuideViewModel @Inject constructor(
             titleResId = R.string.regional_guide_empty_unavailable_eupmyeondong_title,
             messageResId = R.string.regional_guide_empty_unavailable_eupmyeondong_message,
             action = selectRegionAction(),
+            showsPublicNoticeCta = true,
         )
 
     private fun Region.toCandidateUiModel(): RegionSearchCandidateUiModel =

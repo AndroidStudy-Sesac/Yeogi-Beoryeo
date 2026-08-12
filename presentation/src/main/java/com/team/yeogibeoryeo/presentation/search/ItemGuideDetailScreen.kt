@@ -21,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -29,6 +31,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
+import com.team.yeogibeoryeo.presentation.common.effects.bottomBarCollapseScrollAllowance
 import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.components.DisposalGuideMetadataChips
 import com.team.yeogibeoryeo.presentation.search.components.ItemGuideActionButton
@@ -63,7 +66,7 @@ fun ItemGuideDetailScreen(
         onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
     )
 
-    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideName(guide.name)
+    val matchedRepresentativeCategory = RepresentativeGuideCategory.fromGuideId(guide.id)
     val isRepresentativeGuide = matchedRepresentativeCategory != null
     val representativeCategory =
         matchedRepresentativeCategory
@@ -90,7 +93,7 @@ fun ItemGuideDetailScreen(
                     start = spacing.md,
                     top = 0.dp,
                     end = spacing.md,
-                    bottom = spacing.xl,
+                    bottom = spacing.xl + bottomBarCollapseScrollAllowance,
                 ),
             verticalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
@@ -123,6 +126,7 @@ fun ItemGuideDetailScreen(
                 ) {
                     KoreanLineBreakText(
                         text = guide.name,
+                        modifier = Modifier.semantics { heading() },
                         style = textStyles.title.copy(
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface

@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase
         CollectionSpotFavoriteSnapshotEntity::class,
         RegionalGuideFavoriteSnapshotEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class FavoriteDatabase : RoomDatabase() {
