@@ -10,6 +10,7 @@ import com.team.yeogibeoryeo.data.operationnotice.mapper.toDomainOrNull
 import com.team.yeogibeoryeo.data.operationnotice.remote.OperationNoticesRemoteConfigDto
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNotice
 import com.team.yeogibeoryeo.domain.operationnotice.repository.OperationNoticeRepository
+import java.util.concurrent.Executor
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -21,35 +22,51 @@ import kotlinx.serialization.json.Json
 import kotlin.coroutines.resume
 
 class FirebaseRemoteConfigOperationNoticeRepository
-@Inject
-constructor() : OperationNoticeRepository {
-    private val remoteConfig: FirebaseRemoteConfig = Firebase.remoteConfig
+internal constructor(
+    private val getRemoteConfigString: (String) -> String,
+    private val setConfigSettings: suspend (Long) -> Unit,
+    private val setDefaults: suspend (Map<String, String>) -> Unit,
+    private val fetchAndActivate: suspend () -> Unit,
+    private val isDebug: Boolean = BuildConfig.DEBUG,
+) : OperationNoticeRepository {
     private val refreshSignals = MutableStateFlow(0)
     private val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
     }
 
+    @Inject
+    constructor() : this(
+        getRemoteConfigString = { key -> Firebase.remoteConfig.getString(key) },
+        setConfigSettings = { minimumFetchIntervalInSeconds ->
+            Firebase.remoteConfig.setConfigSettingsAsync(
+                remoteConfigSettings {
+                    this.minimumFetchIntervalInSeconds = minimumFetchIntervalInSeconds
+                },
+            ).awaitRemoteConfigTask()
+        },
+        setDefaults = { defaults -> Firebase.remoteConfig.setDefaultsAsync(defaults).awaitRemoteConfigTask() },
+        fetchAndActivate = { Firebase.remoteConfig.fetchAndActivate().awaitRemoteConfigTask() },
+    )
+
     override fun observeOperationNotices(): Flow<List<OperationNotice>> =
         refreshSignals.map {
-            parseOperationNotices(remoteConfig.getString(OPERATION_NOTICES_KEY))
+            parseOperationNotices(getRemoteConfigString(OPERATION_NOTICES_KEY))
         }
 
     override suspend fun refreshOperationNotices() {
         try {
-            remoteConfig.setConfigSettingsAsync(
-                remoteConfigSettings {
-                    minimumFetchIntervalInSeconds = if (BuildConfig.DEBUG) {
-                        DEBUG_MINIMUM_FETCH_INTERVAL_SECONDS
-                    } else {
-                        RELEASE_MINIMUM_FETCH_INTERVAL_SECONDS
-                    }
+            setConfigSettings(
+                if (isDebug) {
+                    DEBUG_MINIMUM_FETCH_INTERVAL_SECONDS
+                } else {
+                    RELEASE_MINIMUM_FETCH_INTERVAL_SECONDS
                 },
-            ).await()
-            remoteConfig.setDefaultsAsync(
+            )
+            setDefaults(
                 mapOf(OPERATION_NOTICES_KEY to DEFAULT_OPERATION_NOTICES_JSON),
-            ).await()
-            remoteConfig.fetchAndActivate().await()
+            )
+            fetchAndActivate()
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
@@ -76,9 +93,18 @@ constructor() : OperationNoticeRepository {
         }
     }
 
-    private suspend fun <T> Task<T>.await(): T =
+    private companion object {
+        const val OPERATION_NOTICES_KEY = "operation_notices"
+        const val SUPPORTED_SCHEMA_VERSION = 1
+        const val DEBUG_MINIMUM_FETCH_INTERVAL_SECONDS = 0L
+        const val RELEASE_MINIMUM_FETCH_INTERVAL_SECONDS = 3600L
+        const val DEFAULT_OPERATION_NOTICES_JSON = """{"schemaVersion":1,"notices":[]}"""
+    }
+}
+
+internal suspend fun <T> Task<T>.awaitRemoteConfigTask(): T =
         suspendCancellableCoroutine { continuation ->
-            addOnCompleteListener { task ->
+            addOnCompleteListener(DirectExecutor) { task ->
                 if (task.isSuccessful) {
                     continuation.resume(task.result)
                 } else {
@@ -87,12 +113,9 @@ constructor() : OperationNoticeRepository {
             }
         }
 
-    private companion object {
-        const val OPERATION_NOTICES_KEY = "operation_notices"
-        const val SUPPORTED_SCHEMA_VERSION = 1
-        const val DEBUG_MINIMUM_FETCH_INTERVAL_SECONDS = 0L
-        const val RELEASE_MINIMUM_FETCH_INTERVAL_SECONDS = 3600L
-        const val DEFAULT_OPERATION_NOTICES_JSON = """{"schemaVersion":1,"notices":[]}"""
+private object DirectExecutor : Executor {
+    override fun execute(command: Runnable) {
+        command.run()
     }
 }
 

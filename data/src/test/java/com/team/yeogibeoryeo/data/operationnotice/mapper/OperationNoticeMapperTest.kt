@@ -10,6 +10,20 @@ import org.junit.Test
 class OperationNoticeMapperTest {
 
     @Test
+    fun `비활성 공지는 제외한다`() {
+        val notice = dto(enabled = false).toDomainOrNull()
+
+        assertNull(notice)
+    }
+
+    @Test
+    fun `필수 문자열이 비어 있으면 공지를 제외한다`() {
+        assertNull(dto(id = " ").toDomainOrNull())
+        assertNull(dto(title = " ").toDomainOrNull())
+        assertNull(dto(message = " ").toDomainOrNull())
+    }
+
+    @Test
     fun `지원하지 않는 severity는 공지를 제외한다`() {
         val notice = dto(severity = "notice").toDomainOrNull()
 
@@ -81,8 +95,31 @@ class OperationNoticeMapperTest {
         assertEquals("https://www.data.go.kr", notice?.actionUrl)
     }
 
+    @Test
+    fun `actionLabel과 actionUrl 중 하나만 있으면 action을 제외한다`() {
+        val labelOnlyNotice = dto(actionLabel = "자세히 보기", actionUrl = null).toDomainOrNull()
+        val urlOnlyNotice = dto(actionLabel = null, actionUrl = "https://www.data.go.kr").toDomainOrNull()
+
+        assertNull(labelOnlyNotice?.actionLabel)
+        assertNull(labelOnlyNotice?.actionUrl)
+        assertNull(urlOnlyNotice?.actionLabel)
+        assertNull(urlOnlyNotice?.actionUrl)
+    }
+
+    @Test
+    fun `날짜 값이 비어 있으면 기간 제한 없이 매핑한다`() {
+        val notice = dto(startsAt = " ", endsAt = null).toDomainOrNull()
+
+        assertNull(notice?.startsAtMillis)
+        assertNull(notice?.endsAtMillis)
+    }
+
     private fun dto(
+        id: String = "notice-id",
+        enabled: Boolean = true,
         severity: String = OperationNoticeSeverity.WARNING.remoteValue,
+        title: String = "운영 공지",
+        message: String = "공지 내용",
         affectedFeatures: List<String> = listOf(OperationNoticeFeature.HOME.remoteValue),
         startsAt: String? = "2026-08-10T00:00:00+09:00",
         endsAt: String? = "2026-08-11T00:00:00+09:00",
@@ -90,11 +127,11 @@ class OperationNoticeMapperTest {
         actionUrl: String? = null,
     ): OperationNoticeDto =
         OperationNoticeDto(
-            id = "notice-id",
-            enabled = true,
+            id = id,
+            enabled = enabled,
             severity = severity,
-            title = "운영 공지",
-            message = "공지 내용",
+            title = title,
+            message = message,
             affectedFeatures = affectedFeatures,
             startsAt = startsAt,
             endsAt = endsAt,
