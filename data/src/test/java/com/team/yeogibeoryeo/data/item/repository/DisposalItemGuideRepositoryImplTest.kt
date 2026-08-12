@@ -56,22 +56,22 @@ class DisposalItemGuideRepositoryImplTest {
                 DisposalItemGuideRepositoryImpl(
                     localDataSource =
                         FakeLocalSource(
-                            synonyms = mapOf("캔" to "음료캔"),
+                            synonyms = mapOf("스마트폰" to "핸드폰"),
                             wasteDictionaryItems =
                                 listOf(
                                     sampleDictionaryItem(
-                                        name = "음료캔",
-                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류 금속캔")),
-                                        dischargeMethods = listOf("음료캔은 캔류로 배출합니다."),
+                                        name = "핸드폰",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "전기전자 제품류")),
+                                        dischargeMethods = listOf("핸드폰은 폐가전 수거 기준에 따라 배출합니다."),
                                     ),
                                 ),
                         ),
                 )
 
-            val results = repository.searchItemGuides("캔")
+            val results = repository.searchItemGuides("스마트폰")
 
-            assertEquals(listOf("음료캔"), results.map { it.name })
-            assertEquals(DisposalCategory.METAL, results.first().category)
+            assertEquals(listOf("핸드폰"), results.map { it.name })
+            assertEquals(DisposalCategory.ELECTRONICS, results.first().category)
         }
 
     @Test
@@ -195,7 +195,7 @@ class DisposalItemGuideRepositoryImplTest {
                         ),
                 )
 
-            val results = repository.searchItemGuides("박스")
+            val results = repository.searchItemGuides("택배")
 
             assertEquals(listOf("아이스박스"), results.map { it.name })
         }

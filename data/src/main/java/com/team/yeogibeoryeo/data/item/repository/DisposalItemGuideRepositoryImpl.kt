@@ -42,7 +42,9 @@ constructor(
                 val rank = item.dictionarySearchRank(query) ?: return@mapNotNull null
                 item to rank
             }
-        val bestDictionaryRank = rankedDictionaryMatches.minOfOrNull { it.second }
+        val bestDictionaryRank =
+            rankedDictionaryMatches.minOfOrNull { it.second }
+                ?: return emptyList()
 
         return rankedDictionaryMatches
             .filter { (_, rank) -> rank.isEligibleDictionaryRank(bestDictionaryRank) }
@@ -116,13 +118,12 @@ constructor(
         }
     }
 
-    private fun Int.isEligibleDictionaryRank(bestRank: Int?): Boolean =
+    private fun Int.isEligibleDictionaryRank(bestRank: Int): Boolean =
         when (bestRank) {
             0 -> this == 0
             1, 2 -> this in 1..2
             3 -> this == 3
-            4, 5 -> this in 4..5
-            else -> false
+            else -> this in 4..5
         }
 
     private fun String.toSearchKey(): String = filterNot { it.isWhitespace() }
