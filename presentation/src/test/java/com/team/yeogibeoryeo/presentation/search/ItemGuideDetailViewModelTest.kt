@@ -286,6 +286,39 @@ class ItemGuideDetailViewModelTest {
         }
 
     @Test
+    fun `guard 중 다른 가이드를 로드하면 새 가이드 즐겨찾기를 처리한다`() =
+        runTest {
+            val firstGuide = sampleGuide("유리병")
+            val secondGuide = sampleGuide("종이팩")
+            val favoriteRepository = FakeFavoriteRepository()
+            val viewModel =
+                createViewModel(
+                    itemRepository =
+                        FakeItemRepository { guideId ->
+                            when (guideId) {
+                                firstGuide.id -> firstGuide
+                                secondGuide.id -> secondGuide
+                                else -> null
+                            }
+                        },
+                    favoriteRepository = favoriteRepository,
+                )
+
+            viewModel.loadGuide(firstGuide.id)
+            advanceUntilIdle()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            viewModel.loadGuide(secondGuide.id)
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            assertEquals(2, favoriteRepository.toggleCallCount)
+            assertTrue((viewModel.uiState.value as ItemGuideDetailUiState.Success).isFavorite)
+        }
+
+    @Test
     fun `즐겨찾기 변경에 실패하면 실패 메시지 이벤트를 보낸다`() =
         runTest {
             val guide = sampleGuide("유리병")

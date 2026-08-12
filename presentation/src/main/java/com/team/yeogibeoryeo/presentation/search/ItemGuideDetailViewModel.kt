@@ -42,6 +42,7 @@ constructor(
     private var loadGuideJob: Job? = null
     private var favoriteJob: Job? = null
     private var favoriteToggleJob: Job? = null
+    private var favoriteToggleGuideId: String? = null
     private var requestedGuideId: String? = null
     private var loadingGuideId: String? = null
 
@@ -97,8 +98,9 @@ constructor(
 
     fun toggleFavorite() {
         val currentState = _uiState.value as? ItemGuideDetailUiState.Success ?: return
-        if (favoriteToggleJob?.isActive == true) return
         val guide = currentState.guide
+        if (favoriteToggleGuideId == guide.id && favoriteToggleJob?.isActive == true) return
+        favoriteToggleGuideId = guide.id
 
         favoriteToggleJob =
             viewModelScope.launch {
