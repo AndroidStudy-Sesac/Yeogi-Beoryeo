@@ -79,6 +79,11 @@ dependencies {
 
     // Coroutine
     implementation(libs.bundles.coroutines)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
 
     // Room
     implementation(libs.bundles.room)
@@ -97,6 +102,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.mockk)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
