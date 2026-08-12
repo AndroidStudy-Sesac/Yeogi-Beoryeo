@@ -9,6 +9,8 @@ on:
       - '.github/workflows/android-ci.yml'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
+      - '.github/scripts/select_instrumented_test_tasks.py'
+      - '.github/scripts/test_select_instrumented_test_tasks.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -18,6 +20,8 @@ on:
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
 
   push:
     branches:
@@ -27,6 +31,8 @@ on:
       - '.github/workflows/android-ci.yml'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
+      - '.github/scripts/select_instrumented_test_tasks.py'
+      - '.github/scripts/test_select_instrumented_test_tasks.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -36,6 +42,8 @@ on:
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
 
 permissions:
   contents: read
@@ -53,8 +61,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
@@ -162,111 +168,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Determine Gradle tasks
-        id: gradle-tasks
+      - name: Run lint and builds
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-            HEAD_SHA="${{ github.sha }}"
-          fi
-
-          if [[ "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
-            CHANGED_FILES="$(git ls-tree -r --name-only "$HEAD_SHA")"
-          else
-            CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
-          fi
-
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          full_test=false
-          common_changed=false
-          domain_changed=false
-          data_changed=false
-          presentation_changed=false
-
-          while IFS= read -r file; do
-            [[ -z "$file" ]] && continue
-
-            case "$file" in
-              .github/workflows/*|gradle/*|*gradle.kts|settings.gradle.kts|gradle.properties|gradle/libs.versions.toml)
-                full_test=true
-                ;;
-              common/*)
-                common_changed=true
-                ;;
-              domain/*)
-                domain_changed=true
-                ;;
-              data/*)
-                data_changed=true
-                ;;
-              presentation/*)
-                presentation_changed=true
-                ;;
-            esac
-          done <<< "$CHANGED_FILES"
-
-          tasks=(":app:testDebugUnitTest" ":app:assembleDebug")
-
-          if [[ "$full_test" == "true" ]]; then
-            tasks=(
-              ":common:testDebugUnitTest"
-              ":data:testDebugUnitTest"
-              ":presentation:testDebugUnitTest"
-              ":domain:test"
-              ":app:testDebugUnitTest"
-              ":app:assembleDebug"
-            )
-          else
-            if [[ "$common_changed" == "true" ]]; then
-              tasks+=(":common:testDebugUnitTest" ":presentation:testDebugUnitTest")
-            fi
-
-            if [[ "$domain_changed" == "true" ]]; then
-              tasks+=(":domain:test" ":data:testDebugUnitTest" ":presentation:testDebugUnitTest")
-            fi
-
-            if [[ "$data_changed" == "true" ]]; then
-              tasks+=(":data:testDebugUnitTest")
-            fi
-
-            if [[ "$presentation_changed" == "true" ]]; then
-              tasks+=(":presentation:testDebugUnitTest")
-            fi
-          fi
-
-          tasks+=(
-            ":app:lintDebug"
-            ":common:lintDebug"
-            ":data:lintDebug"
-            ":presentation:lintDebug"
-          )
+          tasks=(":app:lintDebug" ":app:assembleDebug")
 
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]] || \
              [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             tasks+=(":app:assembleRelease" ":app:bundleRelease")
           fi
 
-          unique_tasks=()
-          for task in "${tasks[@]}"; do
-            if [[ ! " ${unique_tasks[*]} " =~ " ${task} " ]]; then
-              unique_tasks+=("$task")
-            fi
-          done
-
-          selected_tasks="${unique_tasks[*]}"
-          echo "tasks=$selected_tasks" >> "$GITHUB_OUTPUT"
-          echo "Selected Gradle tasks: $selected_tasks"
-
-      - name: Run selected tests, lint, and builds
-        run: ./gradlew ${{ steps.gradle-tasks.outputs.tasks }} --no-daemon --stacktrace -PciReleaseCheck=true
+          echo "Selected Gradle tasks: ${tasks[*]}"
+          ./gradlew "${tasks[@]}" --no-daemon --stacktrace -PciReleaseCheck=true
 
       - name: Validate release app bundle
         if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
@@ -305,25 +220,59 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Determine instrumented test tasks
+        id: instrumented-tasks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          changed_files_path="$(mktemp)"
+          trap 'rm -f "$changed_files_path"' EXIT
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if ! git diff --name-only --no-renames \
+              "${{ github.event.pull_request.base.sha }}" \
+              "${{ github.sha }}" \
+              > "$changed_files_path"; then
+              echo "::warning::변경 파일을 확인하지 못해 전체 계측 테스트를 실행합니다."
+              : > "$changed_files_path"
+            fi
+          fi
+
+          echo "Changed files:"
+          cat "$changed_files_path"
+
+          selection="$(python -X utf8 .github/scripts/select_instrumented_test_tasks.py \
+            --event-name "${{ github.event_name }}" \
+            < "$changed_files_path")"
+          echo "$selection" >> "$GITHUB_OUTPUT"
+          echo "$selection"
 
       - name: Set up JDK 21
+        if: steps.instrumented-tasks.outputs.tasks != ''
         uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: 21
 
       - name: Set up Gradle
+        if: steps.instrumented-tasks.outputs.tasks != ''
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' || (github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main') }}
 
       - name: Create local.properties for CI
+        if: steps.instrumented-tasks.outputs.tasks != ''
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "NAVER_CLIENT_ID=ci_dummy_naver_client_id" >> local.properties
           echo "PUBLIC_DATA_SERVICE_KEY=ci_dummy_public_data_service_key" >> local.properties
 
       - name: Create Firebase config for CI
+        if: steps.instrumented-tasks.outputs.tasks != ''
         run: |
           mkdir -p app/src/debug
           cat > app/src/debug/google-services.json <<'EOF'
@@ -359,20 +308,22 @@ jobs:
           EOF
 
       - name: Grant execute permission for gradlew
+        if: steps.instrumented-tasks.outputs.tasks != ''
         run: chmod +x ./gradlew
 
       - name: Accept Android SDK licenses
+        if: steps.instrumented-tasks.outputs.tasks != ''
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
 
       - name: Enable KVM
+        if: steps.instrumented-tasks.outputs.tasks != ''
         run: sudo chmod 666 /dev/kvm
 
       - name: Run instrumented tests
+        if: steps.instrumented-tasks.outputs.tasks != ''
         run: |
           ./gradlew \
-            :app:pixel9ProApi36DebugAndroidTest \
-            :data:pixel9ProApi36DebugAndroidTest \
-            :presentation:pixel9ProApi36DebugAndroidTest \
+            ${{ steps.instrumented-tasks.outputs.tasks }} \
             -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8" \
             --no-parallel \
             --no-daemon \
