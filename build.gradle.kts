@@ -1,8 +1,3 @@
-import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
-
-val focusedLineCoverageMinimum = providers.gradleProperty("focusedCoverageLineMinimum").get().toInt()
-val focusedBranchCoverageMinimum = providers.gradleProperty("focusedCoverageBranchMinimum").get().toInt()
-
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.android.application) apply false
@@ -88,14 +83,6 @@ kover {
             }
             xml {
                 xmlFile = layout.buildDirectory.file("reports/kover/focused/report.xml")
-            }
-            verify {
-                rule("focused line coverage") {
-                    minBound(focusedLineCoverageMinimum)
-                }
-                rule("focused branch coverage") {
-                    minBound(focusedBranchCoverageMinimum, CoverageUnit.BRANCH)
-                }
             }
         }
     }

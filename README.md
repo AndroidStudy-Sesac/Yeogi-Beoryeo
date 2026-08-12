@@ -152,7 +152,7 @@ unit test, instrumented test, lint, release build와 AAB 검증을 CI에 포함�
 다음 검증을 GitHub Actions에서 실행합니다.
 
 - 변경 모듈별 unit test
-- business logic focused coverage와 회귀 gate
+- business logic focused coverage report
 - Android lint
 - debug APK build
 - API 36 Gradle Managed Device instrumented test

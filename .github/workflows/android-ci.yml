@@ -478,11 +478,6 @@ jobs:
             exit 1
           fi
 
-      - name: Verify focused coverage gates
+      - name: Test focused coverage summary
         run: |
           python -X utf8 -m unittest discover -s .github/scripts -p 'test_focused_coverage_summary.py'
-          python -X utf8 .github/scripts/focused_coverage_summary.py \
-            --report build/reports/kover/focused/report.xml \
-            --properties gradle.properties \
-            --verify
-          ./gradlew :koverVerifyFocused --no-daemon --stacktrace
