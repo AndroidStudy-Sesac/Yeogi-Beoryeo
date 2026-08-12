@@ -144,7 +144,7 @@ unit test, instrumented test, lint, release build와 AAB 검증을 CI에 포함�
 | Local Data | Room, DataStore, JSON asset |
 | Map & Location | NAVER Maps Android SDK, Google Play services Location |
 | Monitoring | Firebase Crashlytics |
-| Test | JUnit, Espresso, Compose UI Test |
+| Test | JUnit, Kover, Espresso, Compose UI Test |
 | CI | GitHub Actions, Gradle Managed Device, bundletool |
 
 ## 테스트와 CI
@@ -152,6 +152,7 @@ unit test, instrumented test, lint, release build와 AAB 검증을 CI에 포함�
 다음 검증을 GitHub Actions에서 실행합니다.
 
 - 변경 모듈별 unit test
+- business logic focused coverage와 회귀 gate
 - Android lint
 - debug APK build
 - API 36 Gradle Managed Device instrumented test
@@ -159,7 +160,7 @@ unit test, instrumented test, lint, release build와 AAB 검증을 CI에 포함�
 - release APK·AAB build와 bundletool 검증
 - 지역별 배출 안내 OpenAPI contract 검증
 
-CI 상태는 [Android CI](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/actions/workflows/android-ci.yml)에서 확인할 수 있습니다.
+CI 상태는 [Android CI](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/actions/workflows/android-ci.yml)에서 확인할 수 있습니다. Coverage 측정 범위와 하락 대응은 [focused coverage 운영 정책](docs/testing/focused-coverage.md)에 정리했습니다.
 
 ## 협업 방식
 

@@ -31,6 +31,15 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.kover)
+}
+
+kover {
+    currentProject {
+        createVariant("focused") {
+            add("debug")
+        }
+    }
 }
 
 android {

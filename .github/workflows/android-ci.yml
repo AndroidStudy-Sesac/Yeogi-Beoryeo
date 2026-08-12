@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - '.github/workflows/android-ci.yml'
+      - '.github/scripts/focused_coverage_summary.py'
+      - '.github/scripts/test_focused_coverage_summary.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -23,6 +25,8 @@ on:
       - main
     paths:
       - '.github/workflows/android-ci.yml'
+      - '.github/scripts/focused_coverage_summary.py'
+      - '.github/scripts/test_focused_coverage_summary.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -373,3 +377,112 @@ jobs:
             --no-daemon \
             --stacktrace \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+
+  focused-coverage:
+    name: Focused Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' || (github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main') }}
+
+      - name: Create local.properties for CI
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "NAVER_CLIENT_ID=ci_dummy_naver_client_id" >> local.properties
+          echo "PUBLIC_DATA_SERVICE_KEY=ci_dummy_public_data_service_key" >> local.properties
+
+      - name: Create Firebase config for CI
+        run: |
+          mkdir -p app/src/debug
+          cat > app/src/debug/google-services.json <<'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "ci-dummy-project",
+              "storage_bucket": "ci-dummy-project.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": {
+                    "package_name": "com.team.yeogibeoryeo.debug"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "ci_dummy_api_key"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
+      - name: Generate focused coverage reports
+        run: |
+          chmod +x ./gradlew
+          ./gradlew \
+            :koverXmlReportFocused \
+            :koverHtmlReportFocused \
+            --no-daemon \
+            --stacktrace
+
+      - name: Upload focused coverage reports
+        id: focused-coverage-artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: focused-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/reports/kover/focused/html
+            build/reports/kover/focused/report.xml
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Print focused coverage summary
+        if: always()
+        shell: bash
+        run: |
+          report_path='build/reports/kover/focused/report.xml'
+          if [[ -f "$report_path" ]]; then
+            python -X utf8 .github/scripts/focused_coverage_summary.py \
+              --report "$report_path" \
+              --properties gradle.properties \
+              --commit "${{ github.sha }}" \
+              --artifact-url "${{ steps.focused-coverage-artifact.outputs.artifact-url }}" \
+              --policy-url "${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/docs/testing/focused-coverage.md" \
+              >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Focused coverage report를 생성하지 못했습니다.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Verify focused coverage gates
+        run: |
+          python -X utf8 -m unittest discover -s .github/scripts -p 'test_focused_coverage_summary.py'
+          python -X utf8 .github/scripts/focused_coverage_summary.py \
+            --report build/reports/kover/focused/report.xml \
+            --properties gradle.properties \
+            --verify
+          ./gradlew :koverVerifyFocused --no-daemon --stacktrace
