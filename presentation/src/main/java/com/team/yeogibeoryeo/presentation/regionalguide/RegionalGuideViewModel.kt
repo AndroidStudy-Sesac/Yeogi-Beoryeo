@@ -1016,6 +1016,7 @@ class RegionalGuideViewModel @Inject constructor(
             titleResId = R.string.regional_guide_empty_unavailable_eupmyeondong_title,
             messageResId = R.string.regional_guide_empty_unavailable_eupmyeondong_message,
             action = selectRegionAction(),
+            showsPublicNoticeCta = true,
         )
 
     private fun Region.toCandidateUiModel(): RegionSearchCandidateUiModel =
