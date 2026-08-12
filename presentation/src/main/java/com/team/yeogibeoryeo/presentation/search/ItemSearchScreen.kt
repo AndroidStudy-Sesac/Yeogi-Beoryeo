@@ -48,6 +48,7 @@ import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
 import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
 import com.team.yeogibeoryeo.presentation.operationnotice.HomeOperationNoticeViewModel
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeBanner
 import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
 import com.team.yeogibeoryeo.presentation.search.components.EmptySearchResult
@@ -274,6 +275,19 @@ fun ItemSearchScreen(
                             .padding(horizontal = metrics.horizontalPadding),
                         iconSize = metrics.searchIconSize,
                     )
+                    operationNotice?.let { notice ->
+                        OperationNoticeBanner(
+                            notice = notice,
+                            onDismiss = onOperationNoticeDismiss,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = spacing.sm,
+                                    start = metrics.horizontalPadding,
+                                    end = metrics.horizontalPadding,
+                                ),
+                        )
+                    }
                     uiState.submittedQuery?.let { submittedQuery ->
                         ItemSearchResultQuery(
                             query = submittedQuery,
@@ -352,6 +366,14 @@ fun ItemSearchScreen(
                         .fillMaxWidth(),
                     iconSize = metrics.searchIconSize,
                 )
+
+                operationNotice?.let { notice ->
+                    OperationNoticeBanner(
+                        notice = notice,
+                        onDismiss = onOperationNoticeDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
 
                 Column(
                     modifier = Modifier.weight(1f),

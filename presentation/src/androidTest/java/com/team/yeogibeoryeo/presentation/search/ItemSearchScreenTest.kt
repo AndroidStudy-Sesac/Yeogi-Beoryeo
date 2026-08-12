@@ -438,6 +438,57 @@ class ItemSearchScreenTest {
     }
 
     @Test
+    fun 검색_결과_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "유리",
+                    submittedQuery = "유리",
+                    hasSearched = true,
+                    guides = listOf(sampleGuide("유리병")),
+                ),
+        )
+    }
+
+    @Test
+    fun 검색_로딩_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "유리",
+                    submittedQuery = "유리",
+                    hasSearched = true,
+                    isLoading = true,
+                ),
+        )
+    }
+
+    @Test
+    fun 빈_검색_결과_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "없는 품목",
+                    submittedQuery = "없는 품목",
+                    hasSearched = true,
+                ),
+        )
+    }
+
+    @Test
+    fun 검색_오류_상태에서도_홈_운영_공지를_보여준다() {
+        assertOperationNoticeIsDisplayedInHomeState(
+            uiState =
+                ItemSearchUiState(
+                    query = "PMP",
+                    submittedQuery = "PMP",
+                    hasSearched = true,
+                    errorMessageResId = R.string.search_load_failed_message,
+                ),
+        )
+    }
+
+    @Test
     fun 결과_카드를_누르면_선택한_가이드를_전달한다() {
         var clickedGuide: DisposalItemGuide? = null
         val guide = sampleGuide("플라스틱병")
@@ -823,6 +874,24 @@ class ItemSearchScreenTest {
             actionLabel = null,
             actionUrl = null,
         )
+
+    private fun assertOperationNoticeIsDisplayedInHomeState(uiState: ItemSearchUiState) {
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    operationNotice = sampleOperationNotice(),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("운영 공지").assertIsDisplayed()
+        composeTestRule.onNodeWithText("공지 내용").assertIsDisplayed()
+    }
 
     private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.swipeUpUntilTextExists(
         text: String,

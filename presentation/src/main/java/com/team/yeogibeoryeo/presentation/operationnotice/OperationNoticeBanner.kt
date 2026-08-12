@@ -115,7 +115,7 @@ fun OperationNoticeBanner(
                 if (notice.isDismissible) {
                     IconButton(
                         onClick = { onDismiss(notice.id) },
-                        modifier = Modifier.size(34.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
