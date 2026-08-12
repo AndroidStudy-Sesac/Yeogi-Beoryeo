@@ -698,6 +698,7 @@ class RegionalGuideSelectorViewModelTest {
         assertEquals(R.string.regional_guide_empty_info_not_found_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
         assertEquals(R.string.regional_guide_empty_action_select_region, state.action?.labelResId)
+        assertTrue(state.showsPublicNoticeCta)
     }
 
     @Test
@@ -738,6 +739,7 @@ class RegionalGuideSelectorViewModelTest {
         assertEquals(R.string.regional_guide_empty_candidate_not_found_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_candidate_not_found_message, state.messageResId)
         assertEquals(RegionalGuideEmptyActionType.SELECT_REGION, state.action?.type)
+        assertTrue(state.showsPublicNoticeCta)
     }
 
     @Test

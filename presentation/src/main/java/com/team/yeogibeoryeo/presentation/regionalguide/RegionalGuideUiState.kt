@@ -27,6 +27,7 @@ sealed interface RegionalGuideUiState {
         @param:StringRes val titleResId: Int = R.string.regional_guide_empty_default_title,
         @param:StringRes val messageResId: Int = R.string.regional_guide_empty_default_message,
         val action: RegionalGuideEmptyActionUiModel? = null,
+        val showsPublicNoticeCta: Boolean = false,
     ) : RegionalGuideUiState
 
     data class Ambiguous(
