@@ -7,6 +7,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -46,6 +47,27 @@ class ItemGuideAssetTest {
                 .map { it.key }
 
         assertTrue("대상 검색어가 비어 있는 synonyms 항목: $emptyTargets", emptyTargets.isEmpty())
+    }
+
+    @Test
+    fun `스트로폼 별칭은 스티로폼 품목 검색어를 가리킨다`() {
+        val searchTarget =
+            parseObject("synonyms.json")["스트로폼"]
+                ?.jsonPrimitive
+                ?.content
+        val searchableTerms =
+            parseArray("item_disposal_guides.json")
+                .flatMap { element ->
+                    val item = element.jsonObject
+                    listOf(item["name"]!!.jsonPrimitive.content) +
+                            item["similarItems"]!!.jsonArray.map { it.jsonPrimitive.content }
+                }.map { term -> term.filterNot { it.isWhitespace() } }
+
+        assertEquals("스티로폼", searchTarget)
+        assertTrue(
+            "스티로폼으로 검색할 수 있는 품목이 없습니다.",
+            searchableTerms.any { term -> term.contains(searchTarget.orEmpty()) },
+        )
     }
 
     @Test
