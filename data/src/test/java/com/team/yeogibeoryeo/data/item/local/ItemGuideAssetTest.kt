@@ -181,6 +181,38 @@ class ItemGuideAssetTest {
     }
 
     @Test
+    fun `내용이 다른 대표 상세 가이드와 품목사전 가이드는 ID를 공유하지 않는다`() {
+        val representativeIds =
+            parseObject("representative_guide_details.json")
+                .mapValues { (_, value) -> value.jsonObject["id"]?.jsonPrimitive?.content }
+        val dictionaryIds =
+            parseArray("item_disposal_guides.json")
+                .associate { element ->
+                    val item = element.jsonObject
+                    item["name"]!!.jsonPrimitive.content to item["id"]?.jsonPrimitive?.content
+                }
+        val distinctGuidePairs =
+            listOf(
+                "플라스틱류" to "플라스틱",
+                "비닐류" to "비닐",
+                "금속류" to "금속",
+                "의류 및 원단" to "의류, 원단",
+            )
+        val invalidPairs =
+            distinctGuidePairs.mapNotNull { (representativeName, dictionaryName) ->
+                val representativeId = representativeIds[representativeName]
+                val dictionaryId = dictionaryIds[dictionaryName]
+                if (representativeId != null && dictionaryId != null && representativeId != dictionaryId) {
+                    null
+                } else {
+                    "$representativeName=$representativeId, $dictionaryName=$dictionaryId"
+                }
+            }
+
+        assertTrue("서로 다른 가이드가 ID를 공유하거나 누락되었습니다: $invalidPairs", invalidPairs.isEmpty())
+    }
+
+    @Test
     fun `품목 가이드 ID와 이전 표시명은 모든 asset에서 하나의 품목만 가리킨다`() {
         val identities = parseGuideIdentities()
         val invalidIds =

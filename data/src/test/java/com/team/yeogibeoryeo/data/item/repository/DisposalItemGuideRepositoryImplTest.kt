@@ -712,6 +712,46 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `getItemGuide는 같은 분류의 대표 가이드와 품목 사전을 각각 조회한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            guideDetails =
+                                mapOf(
+                                    "플라스틱류" to
+                                        ItemGuideDetail(
+                                            id = "item-guide-0004",
+                                            steps = listOf("대표 가이드 내용"),
+                                            cautions = emptyList(),
+                                            tip = null,
+                                            relatedSpotTypes = emptyList(),
+                                            sourceCategory = "플라스틱류",
+                                        ),
+                                ),
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0233",
+                                        name = "플라스틱",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "합성수지 재질")),
+                                        dischargeMethods = listOf("품목 사전 내용"),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val representativeGuide = repository.getItemGuide("item-guide-0004")
+            val dictionaryGuide = repository.getItemGuide("item-guide-0233")
+
+            assertEquals("플라스틱류", representativeGuide?.name)
+            assertEquals(listOf("대표 가이드 내용"), representativeGuide?.steps)
+            assertEquals("플라스틱", dictionaryGuide?.name)
+            assertEquals("품목 사전 내용", dictionaryGuide?.instructions?.single()?.method)
+        }
+
+    @Test
     fun `getItemGuide는 정확히 일치하는 ID가 없으면 null을 반환한다`() =
         runBlocking {
             val repository =
