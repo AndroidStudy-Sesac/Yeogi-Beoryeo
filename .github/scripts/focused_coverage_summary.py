@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import math
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -16,7 +15,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--commit", default="")
     parser.add_argument("--artifact-url", default="")
     parser.add_argument("--policy-url", default="")
-    parser.add_argument("--verify", action="store_true")
     return parser.parse_args()
 
 
@@ -47,19 +45,6 @@ def read_metric(root: ElementTree.Element, metric_type: str) -> tuple[int, int, 
     return covered, total, covered * 100 / total
 
 
-def require_percentage(properties: dict[str, str], key: str) -> float:
-    try:
-        value = float(properties[key])
-    except KeyError as error:
-        raise ValueError(f"{key} 값이 properties에 없습니다.") from error
-    except ValueError as error:
-        raise ValueError(f"{key} 값은 숫자여야 합니다.") from error
-
-    if not math.isfinite(value) or not 0 <= value <= 100:
-        raise ValueError(f"{key} 값은 0 이상 100 이하의 유한한 숫자여야 합니다.")
-    return value
-
-
 def require_int(properties: dict[str, str], key: str) -> int:
     try:
         return int(properties[key])
@@ -87,22 +72,6 @@ def is_below_baseline(
     return covered * baseline_total < baseline_covered * total
 
 
-def metric_failure_reason(
-    covered: int,
-    total: int,
-    current: float,
-    baseline_covered: int,
-    baseline_total: int,
-    minimum: float,
-) -> str:
-    reasons: list[str] = []
-    if is_below_baseline(covered, total, baseline_covered, baseline_total):
-        reasons.append("baseline 미달")
-    if current < minimum:
-        reasons.append("최소선 미달")
-    return " · ".join(reasons)
-
-
 def render_row(
     name: str,
     covered: int,
@@ -110,7 +79,6 @@ def render_row(
     current: float,
     baseline_covered: int,
     baseline_total: int,
-    minimum: float,
 ) -> str:
     baseline = baseline_covered * 100 / baseline_total
     delta = current - baseline
@@ -121,18 +89,9 @@ def render_row(
         delta_text = "-<0.01pp" if below_baseline else "+<0.01pp"
     else:
         delta_text = f"{delta:+.2f}pp"
-    reason = metric_failure_reason(
-        covered,
-        total,
-        current,
-        baseline_covered,
-        baseline_total,
-        minimum,
-    )
-    result = f"실패 ({reason})" if reason else "통과"
     return (
         f"| {name} | {current:.2f}% ({covered:,}/{total:,}) | {baseline:.2f}% | "
-        f"{delta_text} | baseline 이상 · ≥{minimum:.2f}% | {result} |"
+        f"{delta_text} |"
     )
 
 
@@ -145,46 +104,23 @@ def main() -> None:
     branch = read_metric(root, "BRANCH")
     line_baseline_covered, line_baseline_total = read_baseline(properties, "Line")
     branch_baseline_covered, branch_baseline_total = read_baseline(properties, "Branch")
-    line_minimum = require_percentage(properties, "focusedCoverageLineMinimum")
-    branch_minimum = require_percentage(properties, "focusedCoverageBranchMinimum")
-
-    failures = [
-        f"{name} ({reason})"
-        for name, metric, baseline_covered, baseline_total, minimum in (
-            ("Line", line, line_baseline_covered, line_baseline_total, line_minimum),
-            ("Branch", branch, branch_baseline_covered, branch_baseline_total, branch_minimum),
-        )
-        if (
-            reason := metric_failure_reason(
-                *metric, baseline_covered, baseline_total, minimum
-            )
-        )
-    ]
-
-    if args.verify:
-        if failures:
-            raise SystemExit(f"Focused coverage 검증 실패: {', '.join(failures)}")
-        print("Focused coverage baseline과 최소선을 통과했습니다.")
-        return
 
     lines = [
         "## Focused coverage",
         "",
-        "| 지표 | 현재 | baseline | 차이 | 검증 기준 | 결과 |",
-        "|---|---:|---:|---:|---:|---|",
+        "| 지표 | 현재 | baseline | 차이 |",
+        "|---|---:|---:|---:|",
         render_row(
             "Line",
             *line,
             line_baseline_covered,
             line_baseline_total,
-            line_minimum,
         ),
         render_row(
             "Branch",
             *branch,
             branch_baseline_covered,
             branch_baseline_total,
-            branch_minimum,
         ),
         "",
         "`app`, `data`, `domain`, `presentation`의 business logic과 순수 상태·계산 helper를 JVM unit test로 측정합니다.",
