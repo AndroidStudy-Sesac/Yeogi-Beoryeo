@@ -70,6 +70,8 @@ import com.team.yeogibeoryeo.presentation.map.components.ThreeStepMapBottomSheet
 import com.team.yeogibeoryeo.presentation.map.location.rememberFineLocationPermissionGranted
 import com.team.yeogibeoryeo.presentation.map.location.rememberCurrentLocationSearchRequester
 import com.team.yeogibeoryeo.presentation.map.model.FavoriteSpotMapMoveRequest
+import com.team.yeogibeoryeo.presentation.operationnotice.MapOperationNoticeViewModel
+import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 
 @Composable
 fun CollectionSpotMapScreen(
@@ -81,11 +83,13 @@ fun CollectionSpotMapScreen(
     onRegionalGuideClick: (String) -> Unit = {},
     viewModel: CollectionSpotMapViewModel = hiltViewModel(),
     mapLocationGuideViewModel: MapLocationGuideViewModel = hiltViewModel(),
+    operationNoticeViewModel: MapOperationNoticeViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val mapLocationGuideUiState by mapLocationGuideViewModel.uiState.collectAsStateWithLifecycle()
+    val operationNotice by operationNoticeViewModel.notice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val favoriteUpdateFailedMessage = stringResource(R.string.favorite_update_failed_message)
     val currentFavoriteUpdateFailedMessage by rememberUpdatedState(favoriteUpdateFailedMessage)
@@ -211,6 +215,8 @@ fun CollectionSpotMapScreen(
             onSpotClick = viewModel::onSpotClick,
             onSpotDetailDismiss = viewModel::clearSelectedSpot,
             onSpotFavoriteClick = viewModel::onSpotFavoriteClick,
+            operationNotice = operationNotice,
+            onOperationNoticeDismiss = operationNoticeViewModel::dismissNotice,
             onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
             onBottomBarInputEnabledChanged = onBottomBarInputEnabledChanged,
             onRegionalGuideClick = onRegionalGuideClick,
@@ -260,6 +266,8 @@ private fun CollectionSpotMapContent(
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotDetailDismiss: () -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
+    operationNotice: OperationNoticeUiModel? = null,
+    onOperationNoticeDismiss: (String) -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit,
     onBottomBarInputEnabledChanged: (Boolean) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
@@ -289,7 +297,8 @@ private fun CollectionSpotMapContent(
     val shouldShowCurrentLocationGuideOverlay = currentLocationGuideTargetBounds != null
     val shouldDeferBottomSheetForGuide = (!isCurrentLocationGuideReady || showCurrentLocationGuide) &&
         mapUiMode != MapUiMode.SpotDetail
-    val shouldShowBottomSheet = uiState.shouldShowBottomSheet &&
+    val hasOperationNotice = operationNotice != null
+    val shouldShowBottomSheet = (uiState.shouldShowBottomSheet || hasOperationNotice) &&
         !isSpotSearchLoading &&
         !shouldDeferBottomSheetForGuide
     val shouldRenderBottomSheet =
@@ -298,6 +307,7 @@ private fun CollectionSpotMapContent(
     val selectedSpotMoveRequestSequence = uiState.favoriteSpotMoveRequestSequence
     val hasLocationNotice = uiState.locationNotice != null
     val hasNoticeOrError = hasLocationNotice ||
+        hasOperationNotice ||
         uiState.errorMessageResId != null
     val hasRegionCandidates = uiState.regionSearchCandidates.isNotEmpty()
     val hasRegionDetailSelection = uiState.regionDetailSearchCandidate != null
@@ -329,13 +339,13 @@ private fun CollectionSpotMapContent(
 
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
-        mapUiMode = if (hasResultListToReturn) {
-            sheetLevel = MapSheetLevel.Peek
-            MapUiMode.ResultList
-        } else {
-            sheetLevel = MapSheetLevel.Hidden
-            MapUiMode.Browsing
-        }
+        val returnState =
+            mapDetailCloseReturnState(
+                hasResultListToReturn = hasResultListToReturn,
+                hasOperationNotice = hasOperationNotice,
+            )
+        mapUiMode = returnState.mapUiMode
+        sheetLevel = returnState.sheetLevel
     }
 
     BackHandler(
@@ -361,12 +371,24 @@ private fun CollectionSpotMapContent(
         uiState.spots,
         uiState.errorMessageResId,
         uiState.locationNotice,
+        operationNotice?.id,
         uiState.regionSearchCandidates,
         uiState.regionDetailSearchCandidate,
         isCurrentLocationGuideReady,
         showCurrentLocationGuide,
     ) {
         if (shouldDeferBottomSheetForGuide) return@LaunchedEffect
+        if (
+            shouldKeepSpotDetailOnOperationNotice(
+                mapUiMode = mapUiMode,
+                hasOperationNotice = hasOperationNotice,
+                hasLocationNotice = hasLocationNotice,
+                hasError = uiState.errorMessageResId != null,
+                isLoading = uiState.isLoading,
+            )
+        ) {
+            return@LaunchedEffect
+        }
 
         when {
             hasRegionSelection -> {
@@ -382,7 +404,7 @@ private fun CollectionSpotMapContent(
             uiState.isLoading || hasNoticeOrError -> {
                 mapUiMode = MapUiMode.ResultList
                 sheetLevel = when {
-                    hasLocationNotice -> MapSheetLevel.Medium
+                    hasLocationNotice || hasOperationNotice -> MapSheetLevel.Medium
                     hasNoticeOrError -> MapSheetLevel.Expanded
                     else -> MapSheetLevel.Peek
                 }
@@ -402,13 +424,13 @@ private fun CollectionSpotMapContent(
 
     LaunchedEffect(selectedSpot?.id, uiState.spots) {
         if (selectedSpot == null && mapUiMode == MapUiMode.SpotDetail) {
-            mapUiMode = if (uiState.hasSearched) {
-                sheetLevel = MapSheetLevel.Peek
-                MapUiMode.ResultList
-            } else {
-                sheetLevel = MapSheetLevel.Hidden
-                MapUiMode.Browsing
-            }
+            val returnState =
+                mapDetailCloseReturnState(
+                    hasResultListToReturn = uiState.hasSearched,
+                    hasOperationNotice = hasOperationNotice,
+                )
+            mapUiMode = returnState.mapUiMode
+            sheetLevel = returnState.sheetLevel
         }
     }
 
@@ -659,8 +681,13 @@ private fun CollectionSpotMapContent(
                                     onRegionalGuideClick = onRegionalGuideClick,
                                     onCloseClick = {
                                         onSpotDetailDismiss()
-                                        mapUiMode = MapUiMode.ResultList
-                                        sheetLevel = MapSheetLevel.Peek
+                                        val returnState =
+                                            mapDetailCloseReturnState(
+                                                hasResultListToReturn = true,
+                                                hasOperationNotice = hasOperationNotice,
+                                            )
+                                        mapUiMode = returnState.mapUiMode
+                                        sheetLevel = returnState.sheetLevel
                                     },
                                     bottomContentPadding = bottomContentPadding,
                                 )
@@ -681,6 +708,7 @@ private fun CollectionSpotMapContent(
                                 locationNotice = uiState.locationNotice.withLocationPermissionActionFallback(
                                     isLocationPermissionRequestBlocked = isLocationPermissionRequestBlocked,
                                 ),
+                                operationNotice = operationNotice,
                                 errorMessageResId = uiState.errorMessageResId,
                                 partialWarningMessageResId = uiState.partialWarningMessageResId,
                                 onTypeClick = onTypeClick,
@@ -690,6 +718,7 @@ private fun CollectionSpotMapContent(
                                 onRegionDetailKeywordClick = onRegionDetailKeywordClick,
                                 onRegionDetailBackClick = onRegionDetailBackClick,
                                 onLocationNoticeActionClick = onLocationNoticeActionClick,
+                                onOperationNoticeDismiss = onOperationNoticeDismiss,
                                 onSpotFavoriteClick = onSpotFavoriteClick,
                                 onSpotClick = { spot ->
                                     onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
@@ -728,11 +757,51 @@ private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
         spots.isNotEmpty() ||
         selectedSpot != null
 
-private enum class MapUiMode {
+internal enum class MapUiMode {
     Browsing,
     ResultList,
     SpotDetail,
 }
+
+internal fun shouldKeepSpotDetailOnOperationNotice(
+    mapUiMode: MapUiMode,
+    hasOperationNotice: Boolean,
+    hasLocationNotice: Boolean,
+    hasError: Boolean,
+    isLoading: Boolean,
+): Boolean =
+    mapUiMode == MapUiMode.SpotDetail &&
+        hasOperationNotice &&
+        !hasLocationNotice &&
+        !hasError &&
+        !isLoading
+
+internal data class MapDetailReturnState(
+    val mapUiMode: MapUiMode,
+    val sheetLevel: MapSheetLevel,
+)
+
+internal fun mapDetailCloseReturnState(
+    hasResultListToReturn: Boolean,
+    hasOperationNotice: Boolean,
+): MapDetailReturnState =
+    when {
+        hasResultListToReturn || hasOperationNotice ->
+            MapDetailReturnState(
+                mapUiMode = MapUiMode.ResultList,
+                sheetLevel = if (hasOperationNotice) {
+                    MapSheetLevel.Medium
+                } else {
+                    MapSheetLevel.Peek
+                },
+            )
+
+        else ->
+            MapDetailReturnState(
+                mapUiMode = MapUiMode.Browsing,
+                sheetLevel = MapSheetLevel.Hidden,
+            )
+    }
 
 private fun bottomSheetMaxExpandedHeight(
     mapUiMode: MapUiMode,
