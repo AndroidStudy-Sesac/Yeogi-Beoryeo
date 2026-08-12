@@ -60,53 +60,11 @@
 
 ## Architecture
 
-실선은 모듈의 compile dependency, 점선은 runtime 데이터·서비스 사용 관계를 나타냅니다.
+각 모듈의 `Depends on`은 compile dependency를 나타냅니다. 화살표는 주요 구성·연결 흐름을, 점선은 runtime 데이터 소스 접근 관계를 나타냅니다.
 
-```mermaid
-flowchart TB
-    subgraph Android["Android App"]
-        app["app<br>앱 진입·navigation·의존성 조립"]
-        presentation["presentation<br>Compose UI·ViewModel"]
-        domain["domain<br>model·repository 계약·use case"]
-        data["data<br>repository 구현·데이터 조합"]
-        common["common<br>theme·공통 UI"]
-
-        assets["가공 Local Asset<br>품목 안내·유의어·행정구역<br>지역 매핑·데이터 제공 범위"]
-        room["Room<br>즐겨찾기"]
-        datastore["DataStore<br>설정·사용자 상태·cache"]
-
-        app --> presentation
-        app --> data
-        app --> domain
-        app --> common
-        presentation --> domain
-        presentation --> common
-        data --> domain
-
-        data -. "조회" .-> assets
-        data -. "저장·조회" .-> room
-        data -. "저장·조회" .-> datastore
-    end
-
-    subgraph PublicData["공공데이터 OpenAPI"]
-        spotApi["기후에너지환경부<br>분리배출 정보조회 서비스<br>GET /getSpot"]
-        regionalApi["행정안전부<br>생활쓰레기배출정보 조회서비스<br>GET /info"]
-    end
-
-    subgraph Platform["지도·위치·운영 서비스"]
-        naver["NAVER Maps Android SDK"]
-        location["Fused Location Provider API"]
-        geocoder["Android Geocoder API"]
-        crashlytics["Firebase Crashlytics"]
-    end
-
-    data -. "수거 장소 조회" .-> spotApi
-    data -. "지역별 안내 조회" .-> regionalApi
-    presentation -. "지도 표시" .-> naver
-    presentation -. "현재 위치 조회" .-> location
-    data -. "주소·좌표 변환" .-> geocoder
-    app -. "오류 기록" .-> crashlytics
-```
+<p align="center">
+  <img src="docs/images/architecture-overview.png" width="100%" alt="여기버려 app, presentation, common, domain, data 모듈과 데이터 소스 연결 구조">
+</p>
 
 ### 모듈 구성
 
@@ -186,7 +144,7 @@ unit test, instrumented test, lint, release build와 AAB 검증을 CI에 포함�
 | Local Data | Room, DataStore, JSON asset |
 | Map & Location | NAVER Maps Android SDK, Google Play services Location |
 | Monitoring | Firebase Crashlytics |
-| Test | JUnit, Espresso, Compose UI Test |
+| Test | JUnit, Kover, Espresso, Compose UI Test |
 | CI | GitHub Actions, Gradle Managed Device, bundletool |
 
 ## 테스트와 CI
@@ -194,6 +152,7 @@ unit test, instrumented test, lint, release build와 AAB 검증을 CI에 포함�
 다음 검증을 GitHub Actions에서 실행합니다.
 
 - 변경 모듈별 unit test
+- business logic focused coverage와 회귀 gate
 - Android lint
 - debug APK build
 - API 36 Gradle Managed Device instrumented test
@@ -201,7 +160,7 @@ unit test, instrumented test, lint, release build와 AAB 검증을 CI에 포함�
 - release APK·AAB build와 bundletool 검증
 - 지역별 배출 안내 OpenAPI contract 검증
 
-CI 상태는 [Android CI](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/actions/workflows/android-ci.yml)에서 확인할 수 있습니다.
+CI 상태는 [Android CI](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/actions/workflows/android-ci.yml)에서 확인할 수 있습니다. Coverage 측정 범위와 하락 대응은 [focused coverage 운영 정책](docs/testing/focused-coverage.md)에 정리했습니다.
 
 ## 협업 방식
 
@@ -218,13 +177,14 @@ Issue
 
 ## Team
 
-| GitHub |
-|---|
-| [Jiyeong-kor](https://github.com/Jiyeong-kor) |
-| [ksubin-dev](https://github.com/ksubin-dev) |
-| [ExpeditionMoon](https://github.com/ExpeditionMoon) |
+| [<img src="https://github.com/Jiyeong-kor.png" width="100">](https://github.com/Jiyeong-kor) | [<img src="https://github.com/ksubin-dev.png" width="100">](https://github.com/ksubin-dev) | [<img src="https://github.com/ExpeditionMoon.png" width="100">](https://github.com/ExpeditionMoon) |
+| :---: | :---: | :---: |
+| **정지영**<br><sub>홈 · 품목 카테고리 · 검색</sub> | **김수빈**<br><sub>지도 탭 전반 · 수거 장소 탐색</sub> | **원정문**<br><sub>지역별 배출 안내</sub> |
+| [Jiyeong-kor](https://github.com/Jiyeong-kor) | [ksubin-dev](https://github.com/ksubin-dev) | [ExpeditionMoon](https://github.com/ExpeditionMoon) |
 
 세부 변경 이력은 [Contributors](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/graphs/contributors)와 각 Pull Request에서 확인할 수 있습니다.
+
+
 
 ## 운영 및 문서
 
