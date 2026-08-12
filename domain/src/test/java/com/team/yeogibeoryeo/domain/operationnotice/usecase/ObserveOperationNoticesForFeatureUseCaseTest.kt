@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.domain.app.AppVersionProvider
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNotice
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeFeature
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverity
+import com.team.yeogibeoryeo.domain.operationnotice.policy.OperationNoticeDisplayPolicy
 import com.team.yeogibeoryeo.domain.operationnotice.repository.DismissedOperationNoticeRepository
 import com.team.yeogibeoryeo.domain.operationnotice.repository.OperationNoticeRepository
 import com.team.yeogibeoryeo.domain.time.TimeProvider
@@ -55,6 +56,18 @@ class ObserveOperationNoticesForFeatureUseCaseTest {
         val result = useCase(OperationNoticeFeature.HOME).first()
 
         assertEquals(listOf("visible"), result.map { it.id })
+    }
+
+    @Test
+    fun `닫힌 위험 공지는 최종 흐름에서도 표시된다`() = runBlocking {
+        val useCase = createUseCase(
+            notices = listOf(notice(id = "critical", severity = OperationNoticeSeverity.CRITICAL)),
+            dismissedRepository = FakeDismissedOperationNoticeRepository(setOf("critical")),
+        )
+
+        val result = useCase(OperationNoticeFeature.HOME).first()
+
+        assertEquals(listOf("critical"), result.map { it.id })
     }
 
     @Test
@@ -146,6 +159,7 @@ class ObserveOperationNoticesForFeatureUseCaseTest {
             dismissedOperationNoticeRepository = dismissedRepository,
             timeProvider = timeProvider,
             appVersionProvider = FakeAppVersionProvider(versionCode = 4),
+            operationNoticeDisplayPolicy = OperationNoticeDisplayPolicy(),
         )
 
     private fun notice(
