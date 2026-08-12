@@ -252,6 +252,7 @@
     <string name="settings_notice_load_failed_title">공지사항을 불러오지 못했습니다</string>
     <string name="settings_notice_load_failed_description">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</string>
     <string name="settings_notice_published_date">게시일 %1$s</string>
+    <string name="operation_notice_dismiss_action">공지 닫기</string>
     <string name="settings_contact_email_label">이메일</string>
     <string name="settings_contact_email" translatable="false">yeogi-beoryeo-support@googlegroups.com</string>
     <string name="settings_app_info_description">내 위치 기반 맞춤형 분리수거 가이드와 수거 장소 안내 서비스입니다.</string>
@@ -435,6 +436,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.]]></string>
     <string name="map_search_blank_keyword_message">검색어를 입력해주세요.</string>
     <string name="map_spot_search_failure_message">잠시 후 다시 시도하거나 네트워크 연결을 확인해 주세요.</string>
     <string name="map_spot_search_partial_failure_message">일부 결과를 불러오지 못했어요. 다시 검색해 주세요.</string>
+    <string name="map_operation_notice_search_failure_hint">검색 결과를 불러오지 못했습니다. 공지 내용을 확인한 뒤 잠시 후 다시 시도해 주세요.</string>
     <string name="map_current_location_spot_search_failure_message">네트워크 연결을 확인한 뒤 다시 시도하거나 직접 동/읍/면을 검색해 주세요.</string>
     <string name="map_spot_search_title">수거 장소 검색</string>
     <string name="map_spot_result_count">검색 결과 %1$d개</string>

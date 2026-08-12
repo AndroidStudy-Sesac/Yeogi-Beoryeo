@@ -1,5 +1,6 @@
 [
   {
+    "id": "item-guide-0020",
     "name": "대리석 상판",
     "similarItems": [
       "수석",
@@ -36,6 +37,7 @@
     ]
   },
   {
+    "id": "item-guide-0021",
     "name": "수석",
     "similarItems": [
       "대리석 상판",
@@ -81,6 +83,7 @@
     ]
   },
   {
+    "id": "item-guide-0022",
     "name": "와인잔",
     "similarItems": [
       "대리석 상판",
@@ -116,6 +119,7 @@
     ]
   },
   {
+    "id": "item-guide-0023",
     "name": "냄비뚜껑(내열)",
     "similarItems": [
       "대리석 상판",
@@ -149,6 +153,7 @@
     ]
   },
   {
+    "id": "item-guide-0024",
     "name": "책상유리",
     "similarItems": [
       "대리석 상판",
@@ -196,6 +201,7 @@
     ]
   },
   {
+    "id": "item-guide-0025",
     "name": "꿀 용기",
     "similarItems": [
       "마요네즈 용기",
@@ -231,6 +237,7 @@
     ]
   },
   {
+    "id": "item-guide-0026",
     "name": "칼라타이",
     "similarItems": [
       "일반종량제폐기물",
@@ -255,6 +262,7 @@
     ]
   },
   {
+    "id": "item-guide-0027",
     "name": "아보카도씨",
     "similarItems": [
       "옥수수껍질",
@@ -283,6 +291,7 @@
     ]
   },
   {
+    "id": "item-guide-0028",
     "name": "공갈젖꼭지",
     "similarItems": [
       "일반종량제폐기물",
@@ -306,6 +315,7 @@
     ]
   },
   {
+    "id": "item-guide-0029",
     "name": "바이올린",
     "similarItems": [
       "전자피아노",
@@ -338,6 +348,7 @@
     ]
   },
   {
+    "id": "item-guide-0030",
     "name": "옥수수껍질",
     "similarItems": [
       "아보카도씨",
@@ -368,6 +379,7 @@
     ]
   },
   {
+    "id": "item-guide-0031",
     "name": "과일그물망",
     "similarItems": [
       "난좌",
@@ -395,6 +407,7 @@
     "features": []
   },
   {
+    "id": "item-guide-0032",
     "name": "한약 찌꺼기",
     "similarItems": [
       "아보카도씨",
@@ -420,6 +433,7 @@
     ]
   },
   {
+    "id": "item-guide-0033",
     "name": "육수팩",
     "similarItems": [
       "한약 찌꺼기",
@@ -447,6 +461,7 @@
     ]
   },
   {
+    "id": "item-guide-0034",
     "name": "스키신발",
     "similarItems": [
       "슬리퍼",
@@ -478,6 +493,7 @@
     ]
   },
   {
+    "id": "item-guide-0035",
     "name": "토너",
     "similarItems": [
       "스캐너",
@@ -502,6 +518,7 @@
     ]
   },
   {
+    "id": "item-guide-0036",
     "name": "은박 접시",
     "similarItems": [
       "일반종량제폐기물",
@@ -526,6 +543,7 @@
     ]
   },
   {
+    "id": "item-guide-0037",
     "name": "안경",
     "similarItems": [
       "천체망원경",
@@ -550,6 +568,7 @@
     ]
   },
   {
+    "id": "item-guide-0038",
     "name": "콜라겐 가루",
     "similarItems": [
       "감초가루",
@@ -578,6 +597,7 @@
     ]
   },
   {
+    "id": "item-guide-0039",
     "name": "인슐린주사기",
     "similarItems": [
       "바늘",
@@ -622,6 +642,7 @@
     ]
   },
   {
+    "id": "item-guide-0040",
     "name": "상장케이스",
     "similarItems": [
       "일반종량제폐기물",
@@ -647,6 +668,7 @@
     ]
   },
   {
+    "id": "item-guide-0041",
     "name": "닭뼈",
     "similarItems": [
       "아보카도씨",
@@ -675,6 +697,7 @@
     ]
   },
   {
+    "id": "item-guide-0042",
     "name": "침대커버",
     "similarItems": [
       "쿠션",
@@ -703,6 +726,7 @@
     ]
   },
   {
+    "id": "item-guide-0043",
     "name": "핸드크림",
     "similarItems": [
       "트리트먼트",
@@ -741,6 +765,7 @@
     ]
   },
   {
+    "id": "item-guide-0044",
     "name": "화장솜",
     "similarItems": [
       "행주",
@@ -764,6 +789,7 @@
     ]
   },
   {
+    "id": "item-guide-0045",
     "name": "비치볼",
     "similarItems": [
       "배구공",
@@ -801,6 +827,7 @@
     ]
   },
   {
+    "id": "item-guide-0046",
     "name": "쿠션",
     "similarItems": [
       "일반종량제폐기물",
@@ -831,6 +858,7 @@
     ]
   },
   {
+    "id": "item-guide-0047",
     "name": "영수증",
     "similarItems": [
       "택배 송장",
@@ -857,6 +885,7 @@
     ]
   },
   {
+    "id": "item-guide-0048",
     "name": "나무 쟁반",
     "similarItems": [
       "좌식테이블",
@@ -890,6 +919,7 @@
     ]
   },
   {
+    "id": "item-guide-0049",
     "name": "행주",
     "similarItems": [
       "청소 세제",
@@ -917,6 +947,7 @@
     ]
   },
   {
+    "id": "item-guide-0050",
     "name": "배구공",
     "similarItems": [
       "농구공",
@@ -947,6 +978,7 @@
     ]
   },
   {
+    "id": "item-guide-0051",
     "name": "농구공",
     "similarItems": [
       "배구공",
@@ -977,6 +1009,7 @@
     ]
   },
   {
+    "id": "item-guide-0052",
     "name": "치실",
     "similarItems": [
       "치간칫솔",
@@ -1003,6 +1036,7 @@
     ]
   },
   {
+    "id": "item-guide-0053",
     "name": "치간칫솔",
     "similarItems": [
       "치실",
@@ -1028,6 +1062,7 @@
     ]
   },
   {
+    "id": "item-guide-0054",
     "name": "슬리퍼",
     "similarItems": [
       "고무통",
@@ -1060,6 +1095,7 @@
     ]
   },
   {
+    "id": "item-guide-0055",
     "name": "공기청정기 필터",
     "similarItems": [
       "일반종량제폐기물",
@@ -1085,6 +1121,7 @@
     ]
   },
   {
+    "id": "item-guide-0056",
     "name": "고무통",
     "similarItems": [
       "일반종량제폐기물",
@@ -1120,6 +1157,7 @@
     ]
   },
   {
+    "id": "item-guide-0057",
     "name": "연필꽂이",
     "similarItems": [
       "만년필",
@@ -1163,6 +1201,7 @@
     ]
   },
   {
+    "id": "item-guide-0058",
     "name": "커팅매트",
     "similarItems": [
       "바닥매트",
@@ -1187,6 +1226,7 @@
     ]
   },
   {
+    "id": "item-guide-0059",
     "name": "택배 송장",
     "similarItems": [
       "영수증",
@@ -1212,6 +1252,7 @@
     ]
   },
   {
+    "id": "item-guide-0060",
     "name": "폼보드",
     "similarItems": [
       "일반종량제폐기물",
@@ -1233,6 +1274,7 @@
     ]
   },
   {
+    "id": "item-guide-0061",
     "name": "바늘",
     "similarItems": [
       "인슐린주사기",
@@ -1262,6 +1304,7 @@
     ]
   },
   {
+    "id": "item-guide-0062",
     "name": "만년필",
     "similarItems": [
       "일반종량제폐기물",
@@ -1290,6 +1333,7 @@
     ]
   },
   {
+    "id": "item-guide-0063",
     "name": "마스킹테이프",
     "similarItems": [
       "일반종량제폐기물",
@@ -1316,6 +1360,7 @@
     ]
   },
   {
+    "id": "item-guide-0064",
     "name": "바닥매트",
     "similarItems": [
       "커팅매트",
@@ -1353,6 +1398,7 @@
     ]
   },
   {
+    "id": "item-guide-0065",
     "name": "천체망원경",
     "similarItems": [
       "현미경",
@@ -1382,6 +1428,7 @@
     ]
   },
   {
+    "id": "item-guide-0066",
     "name": "칼",
     "similarItems": [
       "인슐린주사기",
@@ -1411,6 +1458,7 @@
     ]
   },
   {
+    "id": "item-guide-0067",
     "name": "현미경",
     "similarItems": [
       "천체망원경",
@@ -1440,6 +1488,7 @@
     ]
   },
   {
+    "id": "item-guide-0068",
     "name": "해열진통제",
     "similarItems": [
       "소화제",
@@ -1472,6 +1521,7 @@
     ]
   },
   {
+    "id": "item-guide-0069",
     "name": "소화제",
     "similarItems": [
       "해열진통제",
@@ -1504,6 +1554,7 @@
     ]
   },
   {
+    "id": "item-guide-0070",
     "name": "혈압계",
     "similarItems": [
       "생활계 유해폐기물",
@@ -1529,6 +1580,7 @@
     ]
   },
   {
+    "id": "item-guide-0071",
     "name": "살균제",
     "similarItems": [
       "살충제",
@@ -1555,6 +1607,7 @@
     ]
   },
   {
+    "id": "item-guide-0072",
     "name": "접착제",
     "similarItems": [
       "생활계 유해폐기물",
@@ -1582,6 +1635,7 @@
     ]
   },
   {
+    "id": "item-guide-0073",
     "name": "살충제",
     "similarItems": [
       "살균제",
@@ -1608,6 +1662,7 @@
     ]
   },
   {
+    "id": "item-guide-0074",
     "name": "안약",
     "similarItems": [
       "해열진통제",
@@ -1638,6 +1693,7 @@
     ]
   },
   {
+    "id": "item-guide-0075",
     "name": "세면대",
     "similarItems": [
       "공사장 생활폐기물",
@@ -1664,6 +1720,7 @@
     ]
   },
   {
+    "id": "item-guide-0076",
     "name": "디지털 체중계",
     "similarItems": [
       "전자피아노",
@@ -1699,6 +1756,7 @@
     ]
   },
   {
+    "id": "item-guide-0077",
     "name": "전자피아노",
     "similarItems": [
       "바이올린",
@@ -1730,6 +1788,7 @@
     ]
   },
   {
+    "id": "item-guide-0078",
     "name": "가스오븐레인지",
     "similarItems": [
       "전자피아노",
@@ -1754,6 +1813,7 @@
     ]
   },
   {
+    "id": "item-guide-0079",
     "name": "철봉 운동기구",
     "similarItems": [
       "스탭퍼",
@@ -1779,6 +1839,7 @@
     ]
   },
   {
+    "id": "item-guide-0080",
     "name": "스탭퍼",
     "similarItems": [
       "벤치프레스",
@@ -1802,6 +1863,7 @@
     ]
   },
   {
+    "id": "item-guide-0081",
     "name": "좌식테이블",
     "similarItems": [
       "테이블 프레임",
@@ -1836,6 +1898,7 @@
     ]
   },
   {
+    "id": "item-guide-0082",
     "name": "블라인드",
     "similarItems": [
       "커튼봉",
@@ -1865,6 +1928,7 @@
     ]
   },
   {
+    "id": "item-guide-0083",
     "name": "지팡이",
     "similarItems": [
       "좌식테이블",
@@ -1903,6 +1967,7 @@
     ]
   },
   {
+    "id": "item-guide-0084",
     "name": "캐리어",
     "similarItems": [
       "노트북 파우치",
@@ -1930,6 +1995,7 @@
     ]
   },
   {
+    "id": "item-guide-0085",
     "name": "테이블 프레임",
     "similarItems": [
       "좌식테이블",
@@ -1970,6 +2036,7 @@
     ]
   },
   {
+    "id": "item-guide-0086",
     "name": "행거",
     "similarItems": [
       "반려동물 케이지",
@@ -2004,6 +2071,7 @@
     ]
   },
   {
+    "id": "item-guide-0087",
     "name": "에어풀장",
     "similarItems": [
       "비치볼",
@@ -2039,6 +2107,7 @@
     ]
   },
   {
+    "id": "item-guide-0088",
     "name": "화장대",
     "similarItems": [
       "좌식테이블",
@@ -2075,6 +2144,7 @@
     ]
   },
   {
+    "id": "item-guide-0089",
     "name": "책상",
     "similarItems": [
       "좌식테이블",
@@ -2111,6 +2181,7 @@
     ]
   },
   {
+    "id": "item-guide-0090",
     "name": "의자",
     "similarItems": [
       "좌식테이블",
@@ -2147,6 +2218,7 @@
     ]
   },
   {
+    "id": "item-guide-0091",
     "name": "플라스틱 서랍장",
     "similarItems": [
       "대형폐기물",
@@ -2175,6 +2247,7 @@
     ]
   },
   {
+    "id": "item-guide-0092",
     "name": "폴딩카트",
     "similarItems": [
       "플라스틱 서랍장",
@@ -2206,6 +2279,7 @@
     ]
   },
   {
+    "id": "item-guide-0093",
     "name": "토퍼",
     "similarItems": [
       "침대커버",
@@ -2234,6 +2308,7 @@
     ]
   },
   {
+    "id": "item-guide-0094",
     "name": "책장",
     "similarItems": [
       "좌식테이블",
@@ -2269,6 +2344,7 @@
     ]
   },
   {
+    "id": "item-guide-0095",
     "name": "장식장",
     "similarItems": [
       "좌식테이블",
@@ -2302,6 +2378,7 @@
     ]
   },
   {
+    "id": "item-guide-0096",
     "name": "서랍장",
     "similarItems": [
       "좌식테이블",
@@ -2337,6 +2414,7 @@
     ]
   },
   {
+    "id": "item-guide-0097",
     "name": "이어폰",
     "similarItems": [
       "PMP",
@@ -2392,6 +2470,7 @@
     ]
   },
   {
+    "id": "item-guide-0098",
     "name": "PMP",
     "similarItems": [
       "이어폰",
@@ -2445,6 +2524,7 @@
     ]
   },
   {
+    "id": "item-guide-0099",
     "name": "케이블",
     "similarItems": [
       "이어폰",
@@ -2494,6 +2574,7 @@
     ]
   },
   {
+    "id": "item-guide-0100",
     "name": "공학용 계산기",
     "similarItems": [
       "이어폰",
@@ -2547,6 +2628,7 @@
     ]
   },
   {
+    "id": "item-guide-0101",
     "name": "착즙기",
     "similarItems": [
       "이어폰",
@@ -2605,6 +2687,7 @@
     ]
   },
   {
+    "id": "item-guide-0102",
     "name": "튀김기",
     "similarItems": [
       "이어폰",
@@ -2664,6 +2747,7 @@
     ]
   },
   {
+    "id": "item-guide-0103",
     "name": "제빵기",
     "similarItems": [
       "이어폰",
@@ -2724,6 +2808,7 @@
     ]
   },
   {
+    "id": "item-guide-0104",
     "name": "스팀다리미",
     "similarItems": [
       "이어폰",
@@ -2785,6 +2870,7 @@
     ]
   },
   {
+    "id": "item-guide-0105",
     "name": "스캐너",
     "similarItems": [
       "이어폰",
@@ -2847,6 +2933,7 @@
     ]
   },
   {
+    "id": "item-guide-0106",
     "name": "태블릿 PC",
     "similarItems": [
       "이어폰",
@@ -2910,6 +2997,7 @@
     ]
   },
   {
+    "id": "item-guide-0107",
     "name": "컴퓨터 본체",
     "similarItems": [
       "이어폰",
@@ -2974,6 +3062,7 @@
     ]
   },
   {
+    "id": "item-guide-0108",
     "name": "전기안마기",
     "similarItems": [
       "디지털 체중계",
@@ -3047,6 +3136,7 @@
     ]
   },
   {
+    "id": "item-guide-0109",
     "name": "온풍기",
     "similarItems": [
       "디지털 체중계",
@@ -3118,6 +3208,7 @@
     ]
   },
   {
+    "id": "item-guide-0110",
     "name": "식기건조기",
     "similarItems": [
       "디지털 체중계",
@@ -3195,6 +3286,7 @@
     ]
   },
   {
+    "id": "item-guide-0111",
     "name": "전기오븐",
     "similarItems": [
       "디지털 체중계",
@@ -3271,6 +3363,7 @@
     ]
   },
   {
+    "id": "item-guide-0112",
     "name": "제습기",
     "similarItems": [
       "디지털 체중계",
@@ -3349,6 +3442,7 @@
     ]
   },
   {
+    "id": "item-guide-0113",
     "name": "탈수기",
     "similarItems": [
       "디지털 체중계",
@@ -3420,6 +3514,7 @@
     ]
   },
   {
+    "id": "item-guide-0114",
     "name": "화장품 냉장고",
     "similarItems": [
       "디지털 체중계",
@@ -3502,6 +3597,7 @@
     ]
   },
   {
+    "id": "item-guide-0115",
     "name": "전축 세트",
     "similarItems": [
       "디지털 체중계",
@@ -3583,6 +3679,7 @@
     ]
   },
   {
+    "id": "item-guide-0116",
     "name": "PC세트",
     "similarItems": [
       "디지털 체중계",
@@ -3665,6 +3762,7 @@
     ]
   },
   {
+    "id": "item-guide-0117",
     "name": "스카프",
     "similarItems": [
       "샌들",
@@ -3705,6 +3803,7 @@
     ]
   },
   {
+    "id": "item-guide-0118",
     "name": "샌들",
     "similarItems": [
       "스키신발",
@@ -3744,6 +3843,7 @@
     ]
   },
   {
+    "id": "item-guide-0119",
     "name": "스니커즈",
     "similarItems": [
       "슬리퍼",
@@ -3782,6 +3882,7 @@
     ]
   },
   {
+    "id": "item-guide-0120",
     "name": "부츠",
     "similarItems": [
       "스키신발",
@@ -3819,6 +3920,7 @@
     ]
   },
   {
+    "id": "item-guide-0121",
     "name": "바지",
     "similarItems": [
       "스카프",
@@ -3862,6 +3964,7 @@
     ]
   },
   {
+    "id": "item-guide-0122",
     "name": "셔츠",
     "similarItems": [
       "스카프",
@@ -3905,6 +4008,7 @@
     ]
   },
   {
+    "id": "item-guide-0123",
     "name": "노트북 파우치",
     "similarItems": [
       "에코백",
@@ -3937,6 +4041,7 @@
     ]
   },
   {
+    "id": "item-guide-0124",
     "name": "에코백",
     "similarItems": [
       "노트북 파우치",
@@ -3969,6 +4074,7 @@
     ]
   },
   {
+    "id": "item-guide-0125",
     "name": "등산 가방",
     "similarItems": [
       "노트북 파우치",
@@ -4003,6 +4109,7 @@
     ]
   },
   {
+    "id": "item-guide-0126",
     "name": "감초가루",
     "similarItems": [
       "부침가루",
@@ -4030,6 +4137,7 @@
     ]
   },
   {
+    "id": "item-guide-0127",
     "name": "땅콩버터",
     "similarItems": [
       "들기름",
@@ -4056,6 +4164,7 @@
     ]
   },
   {
+    "id": "item-guide-0128",
     "name": "부침가루",
     "similarItems": [
       "음식물류폐기물",
@@ -4081,6 +4190,7 @@
     ]
   },
   {
+    "id": "item-guide-0129",
     "name": "생선",
     "similarItems": [
       "음식물류폐기물",
@@ -4104,6 +4214,7 @@
     ]
   },
   {
+    "id": "item-guide-0130",
     "name": "유통기한이 지난 음식",
     "similarItems": [
       "음식물류폐기물",
@@ -4128,6 +4239,7 @@
     ]
   },
   {
+    "id": "item-guide-0131",
     "name": "오렌지 껍질",
     "similarItems": [
       "음식물류폐기물",
@@ -4153,6 +4265,7 @@
     ]
   },
   {
+    "id": "item-guide-0132",
     "name": "냉면",
     "similarItems": [
       "국수",
@@ -4177,6 +4290,7 @@
     ]
   },
   {
+    "id": "item-guide-0133",
     "name": "국수",
     "similarItems": [
       "감초가루",
@@ -4219,6 +4333,7 @@
     ]
   },
   {
+    "id": "item-guide-0134",
     "name": "더덕",
     "similarItems": [
       "야관문",
@@ -4244,6 +4359,7 @@
     ]
   },
   {
+    "id": "item-guide-0135",
     "name": "야관문",
     "similarItems": [
       "더덕",
@@ -4269,6 +4385,7 @@
     ]
   },
   {
+    "id": "item-guide-0136",
     "name": "인삼",
     "similarItems": [
       "더덕",
@@ -4294,6 +4411,7 @@
     ]
   },
   {
+    "id": "item-guide-0137",
     "name": "들기름",
     "similarItems": [
       "유산지",
@@ -4318,6 +4436,7 @@
     ]
   },
   {
+    "id": "item-guide-0138",
     "name": "맥주병",
     "similarItems": [
       "유리병",
@@ -4350,6 +4469,7 @@
     ]
   },
   {
+    "id": "item-guide-0139",
     "name": "유색 스티로폼 용기",
     "similarItems": [
       "난좌",
@@ -4375,6 +4495,7 @@
     ]
   },
   {
+    "id": "item-guide-0140",
     "name": "난좌",
     "similarItems": [
       "택배 박스（스티로폼）",
@@ -4401,6 +4522,7 @@
     ]
   },
   {
+    "id": "item-guide-0141",
     "name": "택배 박스（스티로폼）",
     "similarItems": [
       "난좌",
@@ -4429,6 +4551,7 @@
     ]
   },
   {
+    "id": "item-guide-0142",
     "name": "CR 건전지",
     "similarItems": [
       "AAA건전지",
@@ -4455,6 +4578,7 @@
     ]
   },
   {
+    "id": "item-guide-0143",
     "name": "AAA건전지",
     "similarItems": [
       "CR 건전지",
@@ -4481,6 +4605,7 @@
     ]
   },
   {
+    "id": "item-guide-0144",
     "name": "생수",
     "similarItems": [
       "무색페트병",
@@ -4506,6 +4631,7 @@
     ]
   },
   {
+    "id": "item-guide-0145",
     "name": "마요네즈 용기",
     "similarItems": [
       "식용유 용기",
@@ -4534,6 +4660,7 @@
     ]
   },
   {
+    "id": "item-guide-0146",
     "name": "립스틱",
     "similarItems": [
       "플라스틱",
@@ -4561,6 +4688,7 @@
     ]
   },
   {
+    "id": "item-guide-0147",
     "name": "지퍼백",
     "similarItems": [
       "음료 파우치 팩",
@@ -4600,6 +4728,7 @@
     ]
   },
   {
+    "id": "item-guide-0148",
     "name": "음료 파우치 팩",
     "similarItems": [
       "지퍼백",
@@ -4647,6 +4776,7 @@
     ]
   },
   {
+    "id": "item-guide-0149",
     "name": "스틱봉지",
     "similarItems": [
       "지퍼백",
@@ -4689,6 +4819,7 @@
     ]
   },
   {
+    "id": "item-guide-0150",
     "name": "비닐약봉지",
     "similarItems": [
       "지퍼백",
@@ -4740,6 +4871,7 @@
     ]
   },
   {
+    "id": "item-guide-0151",
     "name": "사탕봉지",
     "similarItems": [
       "스틱봉지",
@@ -4767,6 +4899,7 @@
     ]
   },
   {
+    "id": "item-guide-0152",
     "name": "위생도마",
     "similarItems": [
       "칼",
@@ -4802,6 +4935,7 @@
     ]
   },
   {
+    "id": "item-guide-0153",
     "name": "유색봉지",
     "similarItems": [
       "아이스크림 봉지",
@@ -4830,6 +4964,7 @@
     ]
   },
   {
+    "id": "item-guide-0154",
     "name": "아이스크림 봉지",
     "similarItems": [
       "지퍼백",
@@ -4873,6 +5008,7 @@
     ]
   },
   {
+    "id": "item-guide-0155",
     "name": "라면 봉지",
     "similarItems": [
       "지퍼백",
@@ -4916,6 +5052,7 @@
     ]
   },
   {
+    "id": "item-guide-0156",
     "name": "과일봉지",
     "similarItems": [
       "지퍼백",
@@ -4959,6 +5096,7 @@
     ]
   },
   {
+    "id": "item-guide-0157",
     "name": "비닐 라벨",
     "similarItems": [
       "지퍼백",
@@ -4999,6 +5137,7 @@
     ]
   },
   {
+    "id": "item-guide-0158",
     "name": "오프너",
     "similarItems": [
       "맥주병",
@@ -5024,6 +5163,7 @@
     ]
   },
   {
+    "id": "item-guide-0159",
     "name": "반려동물 케이지",
     "similarItems": [
       "안전문",
@@ -5065,6 +5205,7 @@
     ]
   },
   {
+    "id": "item-guide-0160",
     "name": "음료캔",
     "similarItems": [
       "맥주캔",
@@ -5094,6 +5235,7 @@
     ]
   },
   {
+    "id": "item-guide-0161",
     "name": "맥주캔",
     "similarItems": [
       "음료캔",
@@ -5123,6 +5265,7 @@
     ]
   },
   {
+    "id": "item-guide-0162",
     "name": "법랑 주전자",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -5155,6 +5298,7 @@
     ]
   },
   {
+    "id": "item-guide-0163",
     "name": "못",
     "similarItems": [
       "볼트",
@@ -5184,6 +5328,7 @@
     ]
   },
   {
+    "id": "item-guide-0164",
     "name": "볼트",
     "similarItems": [
       "못",
@@ -5214,6 +5359,7 @@
     ]
   },
   {
+    "id": "item-guide-0165",
     "name": "너트",
     "similarItems": [
       "못",
@@ -5243,6 +5389,7 @@
     ]
   },
   {
+    "id": "item-guide-0166",
     "name": "렌치",
     "similarItems": [
       "못",
@@ -5275,6 +5422,7 @@
     ]
   },
   {
+    "id": "item-guide-0167",
     "name": "스패너",
     "similarItems": [
       "못",
@@ -5307,6 +5455,7 @@
     ]
   },
   {
+    "id": "item-guide-0168",
     "name": "니퍼",
     "similarItems": [
       "못",
@@ -5339,6 +5488,7 @@
     ]
   },
   {
+    "id": "item-guide-0169",
     "name": "모기 스프레이",
     "similarItems": [
       "스프레이 파스",
@@ -5364,6 +5514,7 @@
     ]
   },
   {
+    "id": "item-guide-0170",
     "name": "스프레이 파스",
     "similarItems": [
       "모기 스프레이",
@@ -5389,6 +5540,7 @@
     ]
   },
   {
+    "id": "item-guide-0171",
     "name": "헤어 스프레이",
     "similarItems": [
       "모기 스프레이",
@@ -5414,6 +5566,7 @@
     ]
   },
   {
+    "id": "item-guide-0172",
     "name": "보온병",
     "similarItems": [
       "금속",
@@ -5447,6 +5600,7 @@
     ]
   },
   {
+    "id": "item-guide-0173",
     "name": "포크",
     "similarItems": [
       "숟가락",
@@ -5478,6 +5632,7 @@
     ]
   },
   {
+    "id": "item-guide-0174",
     "name": "숟가락",
     "similarItems": [
       "포크",
@@ -5509,6 +5664,7 @@
     ]
   },
   {
+    "id": "item-guide-0175",
     "name": "젓가락",
     "similarItems": [
       "포크",
@@ -5540,6 +5696,7 @@
     ]
   },
   {
+    "id": "item-guide-0176",
     "name": "그레이터",
     "similarItems": [
       "칼",
@@ -5565,6 +5722,7 @@
     ]
   },
   {
+    "id": "item-guide-0177",
     "name": "식용유 용기",
     "similarItems": [
       "꿀 용기",
@@ -5598,6 +5756,7 @@
     ]
   },
   {
+    "id": "item-guide-0178",
     "name": "배추망",
     "similarItems": [
       "비닐",
@@ -5619,6 +5778,7 @@
     ]
   },
   {
+    "id": "item-guide-0179",
     "name": "세탁조 세정제",
     "similarItems": [
       "청소 세제",
@@ -5649,6 +5809,7 @@
     ]
   },
   {
+    "id": "item-guide-0180",
     "name": "청소 세제",
     "similarItems": [
       "세탁조 세정제",
@@ -5678,6 +5839,7 @@
     ]
   },
   {
+    "id": "item-guide-0181",
     "name": "욕실 세정제",
     "similarItems": [
       "세탁조 세정제",
@@ -5708,6 +5870,7 @@
     ]
   },
   {
+    "id": "item-guide-0182",
     "name": "치약",
     "similarItems": [
       "치실",
@@ -5737,6 +5900,7 @@
     ]
   },
   {
+    "id": "item-guide-0183",
     "name": "트리트먼트",
     "similarItems": [
       "핸드크림",
@@ -5766,6 +5930,7 @@
     ]
   },
   {
+    "id": "item-guide-0184",
     "name": "린스",
     "similarItems": [
       "핸드크림",
@@ -5795,6 +5960,7 @@
     ]
   },
   {
+    "id": "item-guide-0185",
     "name": "샴푸",
     "similarItems": [
       "핸드크림",
@@ -5824,6 +5990,7 @@
     ]
   },
   {
+    "id": "item-guide-0186",
     "name": "소품 정리함",
     "similarItems": [
       "플라스틱 서랍장",
@@ -5863,6 +6030,7 @@
     ]
   },
   {
+    "id": "item-guide-0187",
     "name": "화장품 정리함",
     "similarItems": [
       "플라스틱 서랍장",
@@ -5902,6 +6070,7 @@
     ]
   },
   {
+    "id": "item-guide-0188",
     "name": "쫄대 화일",
     "similarItems": [
       "포켓 홀더",
@@ -5932,6 +6101,7 @@
     ]
   },
   {
+    "id": "item-guide-0189",
     "name": "포켓 홀더",
     "similarItems": [
       "쫄대 화일",
@@ -5957,6 +6127,7 @@
     ]
   },
   {
+    "id": "item-guide-0190",
     "name": "아코디언 파일",
     "similarItems": [
       "쫄대 화일",
@@ -5982,6 +6153,7 @@
     ]
   },
   {
+    "id": "item-guide-0191",
     "name": "바인더",
     "similarItems": [
       "쫄대 화일",
@@ -6018,6 +6190,7 @@
     ]
   },
   {
+    "id": "item-guide-0192",
     "name": "금속 트로피",
     "similarItems": [
       "상장케이스",
@@ -6044,6 +6217,7 @@
     ]
   },
   {
+    "id": "item-guide-0193",
     "name": "디스펜서",
     "similarItems": [
       "대형폐기물",
@@ -6072,6 +6246,7 @@
     ]
   },
   {
+    "id": "item-guide-0194",
     "name": "안전문",
     "similarItems": [
       "네트망",
@@ -6102,6 +6277,7 @@
     ]
   },
   {
+    "id": "item-guide-0195",
     "name": "네트망",
     "similarItems": [
       "안전문",
@@ -6133,6 +6309,7 @@
     ]
   },
   {
+    "id": "item-guide-0196",
     "name": "안전가드",
     "similarItems": [
       "안전문",
@@ -6162,6 +6339,7 @@
     ]
   },
   {
+    "id": "item-guide-0197",
     "name": "그릴팬",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -6194,6 +6372,7 @@
     ]
   },
   {
+    "id": "item-guide-0198",
     "name": "욕실 코너선반",
     "similarItems": [
       "세면대",
@@ -6238,6 +6417,7 @@
     ]
   },
   {
+    "id": "item-guide-0199",
     "name": "수도꼭지",
     "similarItems": [
       "세면대",
@@ -6272,6 +6452,7 @@
     ]
   },
   {
+    "id": "item-guide-0200",
     "name": "연결관",
     "similarItems": [
       "수도꼭지",
@@ -6303,6 +6484,7 @@
     ]
   },
   {
+    "id": "item-guide-0201",
     "name": "벤치프레스",
     "similarItems": [
       "역기",
@@ -6324,6 +6506,7 @@
     ]
   },
   {
+    "id": "item-guide-0202",
     "name": "역기",
     "similarItems": [
       "벤치프레스",
@@ -6345,6 +6528,7 @@
     ]
   },
   {
+    "id": "item-guide-0203",
     "name": "커튼봉",
     "similarItems": [
       "대형폐기물",
@@ -6384,6 +6568,7 @@
     ]
   },
   {
+    "id": "item-guide-0204",
     "name": "책상 책꽂이",
     "similarItems": [
       "책장",
@@ -6425,6 +6610,7 @@
     ]
   },
   {
+    "id": "item-guide-0205",
     "name": "서랍 책꽂이",
     "similarItems": [
       "책장",
@@ -6466,6 +6652,7 @@
     ]
   },
   {
+    "id": "item-guide-0206",
     "name": "옷핀",
     "similarItems": [
       "못",
@@ -6497,6 +6684,7 @@
     ]
   },
   {
+    "id": "item-guide-0207",
     "name": "더블 클립",
     "similarItems": [
       "못",
@@ -6529,6 +6717,7 @@
     ]
   },
   {
+    "id": "item-guide-0208",
     "name": "스테인리스 솥",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -6565,6 +6754,7 @@
     ]
   },
   {
+    "id": "item-guide-0209",
     "name": "무쇠 주물냄비",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -6596,6 +6786,7 @@
     ]
   },
   {
+    "id": "item-guide-0210",
     "name": "프라이팬",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -6629,6 +6820,7 @@
     ]
   },
   {
+    "id": "item-guide-0211",
     "name": "꼬깔형 생수컵",
     "similarItems": [
       "위생 봉투컵",
@@ -6651,6 +6843,7 @@
     ]
   },
   {
+    "id": "item-guide-0212",
     "name": "위생 봉투컵",
     "similarItems": [
       "꼬깔형 생수컵",
@@ -6673,6 +6866,7 @@
     ]
   },
   {
+    "id": "item-guide-0213",
     "name": "치킨 박스",
     "similarItems": [
       "라면 박스",
@@ -6699,6 +6893,7 @@
     ]
   },
   {
+    "id": "item-guide-0214",
     "name": "종이가방",
     "similarItems": [
       "종이",
@@ -6723,6 +6918,7 @@
     ]
   },
   {
+    "id": "item-guide-0215",
     "name": "키친타올 심",
     "similarItems": [
       "화구통",
@@ -6751,6 +6947,7 @@
     ]
   },
   {
+    "id": "item-guide-0216",
     "name": "브로마이드",
     "similarItems": [
       "카달로그",
@@ -6780,6 +6977,7 @@
     ]
   },
   {
+    "id": "item-guide-0217",
     "name": "황화일",
     "similarItems": [
       "종이",
@@ -6801,6 +6999,7 @@
     ]
   },
   {
+    "id": "item-guide-0218",
     "name": "달력",
     "similarItems": [
       "수첩",
@@ -6826,6 +7025,7 @@
     ]
   },
   {
+    "id": "item-guide-0219",
     "name": "화구통",
     "similarItems": [
       "키친타올 심",
@@ -6855,6 +7055,7 @@
     ]
   },
   {
+    "id": "item-guide-0220",
     "name": "동화책",
     "similarItems": [
       "백과사전",
@@ -6881,6 +7082,7 @@
     ]
   },
   {
+    "id": "item-guide-0221",
     "name": "백과사전",
     "similarItems": [
       "동화책",
@@ -6907,6 +7109,7 @@
     ]
   },
   {
+    "id": "item-guide-0222",
     "name": "색지",
     "similarItems": [
       "색도화지",
@@ -6937,6 +7140,7 @@
     ]
   },
   {
+    "id": "item-guide-0223",
     "name": "색도화지",
     "similarItems": [
       "색지",
@@ -6969,6 +7173,7 @@
     ]
   },
   {
+    "id": "item-guide-0224",
     "name": "카달로그",
     "similarItems": [
       "브로마이드",
@@ -7001,6 +7206,7 @@
     ]
   },
   {
+    "id": "item-guide-0225",
     "name": "떡메모지",
     "similarItems": [
       "메모노트",
@@ -7025,6 +7231,7 @@
     ]
   },
   {
+    "id": "item-guide-0226",
     "name": "메모노트",
     "similarItems": [
       "떡메모지",
@@ -7049,6 +7256,7 @@
     ]
   },
   {
+    "id": "item-guide-0227",
     "name": "수첩",
     "similarItems": [
       "달력",
@@ -7077,6 +7285,7 @@
     ]
   },
   {
+    "id": "item-guide-0228",
     "name": "라면 박스",
     "similarItems": [
       "치킨 박스",
@@ -7106,6 +7315,7 @@
     ]
   },
   {
+    "id": "item-guide-0229",
     "name": "영농폐기물",
     "similarItems": [
       "하우스 비닐",
@@ -7131,6 +7341,7 @@
     ]
   },
   {
+    "id": "item-guide-0018",
     "name": "생활계 유해폐기물",
     "similarItems": [
       "해열진통제",
@@ -7194,6 +7405,7 @@
     ]
   },
   {
+    "id": "item-guide-0017",
     "name": "공사장 생활폐기물",
     "similarItems": [
       "대리석 상판",
@@ -7240,6 +7452,7 @@
     ]
   },
   {
+    "id": "item-guide-0015",
     "name": "불연성종량제폐기물",
     "similarItems": [
       "대리석 상판",
@@ -7289,6 +7502,7 @@
     ]
   },
   {
+    "id": "item-guide-0014",
     "name": "일반종량제폐기물",
     "similarItems": [
       "칼라타이",
@@ -7534,6 +7748,7 @@
     ]
   },
   {
+    "id": "item-guide-0013",
     "name": "음식물류폐기물",
     "similarItems": [
       "감초가루",
@@ -7581,6 +7796,7 @@
     ]
   },
   {
+    "id": "item-guide-0012",
     "name": "전기전자제품",
     "similarItems": [
       "디지털 체중계",
@@ -7671,6 +7887,7 @@
     ]
   },
   {
+    "id": "item-guide-0016",
     "name": "대형폐기물",
     "similarItems": [
       "책상유리",
@@ -7778,6 +7995,7 @@
     ]
   },
   {
+    "id": "item-guide-0011",
     "name": "조명제품",
     "similarItems": [
       "LED",
@@ -7805,6 +8023,7 @@
     ]
   },
   {
+    "id": "item-guide-0010",
     "name": "전지",
     "similarItems": [
       "CR 건전지",
@@ -7825,6 +8044,7 @@
     "features": []
   },
   {
+    "id": "item-guide-0230",
     "name": "의류, 원단",
     "similarItems": [
       "스카프",
@@ -7861,6 +8081,7 @@
     ]
   },
   {
+    "id": "item-guide-0231",
     "name": "금속",
     "similarItems": [
       "음료캔",
@@ -7891,6 +8112,7 @@
     ]
   },
   {
+    "id": "item-guide-0007",
     "name": "유리병",
     "similarItems": [
       "맥주병",
@@ -7925,6 +8147,7 @@
     ]
   },
   {
+    "id": "item-guide-0006",
     "name": "발포합성수지",
     "similarItems": [
       "과일그물망",
@@ -7956,6 +8179,7 @@
     ]
   },
   {
+    "id": "item-guide-0232",
     "name": "비닐",
     "similarItems": [
       "지퍼백",
@@ -7999,6 +8223,7 @@
     ]
   },
   {
+    "id": "item-guide-0233",
     "name": "플라스틱",
     "similarItems": [
       "꿀 용기",
@@ -8073,6 +8298,7 @@
     ]
   },
   {
+    "id": "item-guide-0003",
     "name": "무색페트병",
     "similarItems": [
       "생수",
@@ -8095,6 +8321,7 @@
     ]
   },
   {
+    "id": "item-guide-0002",
     "name": "종이팩",
     "similarItems": [
       "주스팩",
@@ -8126,6 +8353,7 @@
     ]
   },
   {
+    "id": "item-guide-0001",
     "name": "종이",
     "similarItems": [
       "주스팩",
@@ -8166,6 +8394,7 @@
     ]
   },
   {
+    "id": "item-guide-0234",
     "name": "고무신발 악세서리",
     "similarItems": [
       "스키신발",
@@ -8201,6 +8430,7 @@
     ]
   },
   {
+    "id": "item-guide-0235",
     "name": "보호대",
     "similarItems": [
       "일반종량제폐기물",
@@ -8222,6 +8452,7 @@
     ]
   },
   {
+    "id": "item-guide-0236",
     "name": "점착식 메모지",
     "similarItems": [
       "떡메모지",
@@ -8246,6 +8477,7 @@
     ]
   },
   {
+    "id": "item-guide-0237",
     "name": "약통 용기",
     "similarItems": [
       "꿀 용기",
@@ -8278,6 +8510,7 @@
     ]
   },
   {
+    "id": "item-guide-0238",
     "name": "주스팩",
     "similarItems": [
       "종이팩",
@@ -8311,6 +8544,7 @@
     ]
   },
   {
+    "id": "item-guide-0239",
     "name": "소주팩",
     "similarItems": [
       "종이팩",
@@ -8340,6 +8574,7 @@
     ]
   },
   {
+    "id": "item-guide-0240",
     "name": "캣타워",
     "similarItems": [
       "반려동물 케이지",
@@ -8374,6 +8609,7 @@
     ]
   },
   {
+    "id": "item-guide-0241",
     "name": "붓",
     "similarItems": [
       "만년필",
@@ -8403,6 +8639,7 @@
     ]
   },
   {
+    "id": "item-guide-0242",
     "name": "MP3",
     "similarItems": [
       "디지털 체중계",
@@ -8467,6 +8704,7 @@
     ]
   },
   {
+    "id": "item-guide-0243",
     "name": "조명 유리커버",
     "similarItems": [
       "책상유리",
@@ -8499,6 +8737,7 @@
     ]
   },
   {
+    "id": "item-guide-0244",
     "name": "타일",
     "similarItems": [
       "대리석 상판",
@@ -8543,6 +8782,7 @@
     ]
   },
   {
+    "id": "item-guide-0245",
     "name": "어항",
     "similarItems": [
       "대리석 상판",
@@ -8583,6 +8823,7 @@
     ]
   },
   {
+    "id": "item-guide-0246",
     "name": "화분 흙",
     "similarItems": [
       "불연성종량제폐기물",
@@ -8607,6 +8848,7 @@
     ]
   },
   {
+    "id": "item-guide-0247",
     "name": "화분",
     "similarItems": [
       "불연성종량제폐기물",
@@ -8638,6 +8880,7 @@
     ]
   },
   {
+    "id": "item-guide-0248",
     "name": "와인병",
     "similarItems": [
       "와인잔",
@@ -8681,6 +8924,7 @@
     ]
   },
   {
+    "id": "item-guide-0249",
     "name": "사기 그릇",
     "similarItems": [
       "책상유리",
@@ -8712,6 +8956,7 @@
     ]
   },
   {
+    "id": "item-guide-0250",
     "name": "벽돌",
     "similarItems": [
       "대리석 상판",
@@ -8750,6 +8995,7 @@
     ]
   },
   {
+    "id": "item-guide-0251",
     "name": "벤토나이트 모래",
     "similarItems": [
       "반려동물 케이지",
@@ -8779,6 +9025,7 @@
     ]
   },
   {
+    "id": "item-guide-0252",
     "name": "멜라민 그릇",
     "similarItems": [
       "와인잔",
@@ -8810,6 +9057,7 @@
     ]
   },
   {
+    "id": "item-guide-0253",
     "name": "메트로놈",
     "similarItems": [
       "바이올린",
@@ -8841,6 +9089,7 @@
     ]
   },
   {
+    "id": "item-guide-0254",
     "name": "메달(크리스탈)",
     "similarItems": [
       "와인잔",
@@ -8872,6 +9121,7 @@
     ]
   },
   {
+    "id": "item-guide-0255",
     "name": "유리컵",
     "similarItems": [
       "불연성종량제폐기물",
@@ -8902,6 +9152,7 @@
     ]
   },
   {
+    "id": "item-guide-0256",
     "name": "머그컵",
     "similarItems": [
       "대리석 상판",
@@ -8942,6 +9193,7 @@
     ]
   },
   {
+    "id": "item-guide-0257",
     "name": "뚝배기",
     "similarItems": [
       "대리석 상판",
@@ -8981,6 +9233,7 @@
     ]
   },
   {
+    "id": "item-guide-0258",
     "name": "내열냄비",
     "similarItems": [
       "대리석 상판",
@@ -9023,6 +9276,7 @@
     ]
   },
   {
+    "id": "item-guide-0259",
     "name": "내열식기",
     "similarItems": [
       "대리석 상판",
@@ -9060,6 +9314,7 @@
     ]
   },
   {
+    "id": "item-guide-0260",
     "name": "깨진 유리",
     "similarItems": [
       "대리석 상판",
@@ -9105,6 +9360,7 @@
     ]
   },
   {
+    "id": "item-guide-0261",
     "name": "계량컵",
     "similarItems": [
       "대리석 상판",
@@ -9162,6 +9418,7 @@
     ]
   },
   {
+    "id": "item-guide-0262",
     "name": "유리창",
     "similarItems": [
       "책상유리",
@@ -9205,6 +9462,7 @@
     ]
   },
   {
+    "id": "item-guide-0263",
     "name": "레진",
     "similarItems": [
       "일반종량제폐기물",
@@ -9230,6 +9488,7 @@
     ]
   },
   {
+    "id": "item-guide-0264",
     "name": "눈썹칼",
     "similarItems": [
       "바늘",
@@ -9262,6 +9521,7 @@
     ]
   },
   {
+    "id": "item-guide-0265",
     "name": "보자기",
     "similarItems": [
       "침대커버",
@@ -9290,6 +9550,7 @@
     ]
   },
   {
+    "id": "item-guide-0266",
     "name": "화장지",
     "similarItems": [
       "키친타올 심",
@@ -9317,6 +9578,7 @@
     ]
   },
   {
+    "id": "item-guide-0267",
     "name": "수영복",
     "similarItems": [
       "바지",
@@ -9346,6 +9608,7 @@
     ]
   },
   {
+    "id": "item-guide-0268",
     "name": "크레파스",
     "similarItems": [
       "만년필",
@@ -9373,6 +9636,7 @@
     ]
   },
   {
+    "id": "item-guide-0269",
     "name": "채칼",
     "similarItems": [
       "인슐린주사기",
@@ -9404,6 +9668,7 @@
     ]
   },
   {
+    "id": "item-guide-0270",
     "name": "인형",
     "similarItems": [
       "침대커버",
@@ -9437,6 +9702,7 @@
     ]
   },
   {
+    "id": "item-guide-0271",
     "name": "안경집",
     "similarItems": [
       "안경",
@@ -9461,6 +9727,7 @@
     ]
   },
   {
+    "id": "item-guide-0272",
     "name": "헬멧",
     "similarItems": [
       "일반종량제폐기물",
@@ -9487,6 +9754,7 @@
     ]
   },
   {
+    "id": "item-guide-0273",
     "name": "수세미",
     "similarItems": [
       "청소 세제",
@@ -9514,6 +9782,7 @@
     ]
   },
   {
+    "id": "item-guide-0274",
     "name": "핸드폰 케이스",
     "similarItems": [
       "태블릿 PC",
@@ -9539,6 +9808,7 @@
     ]
   },
   {
+    "id": "item-guide-0275",
     "name": "통장",
     "similarItems": [
       "택배 송장",
@@ -9571,6 +9841,7 @@
     ]
   },
   {
+    "id": "item-guide-0276",
     "name": "침낭",
     "similarItems": [
       "침대커버",
@@ -9603,6 +9874,7 @@
     ]
   },
   {
+    "id": "item-guide-0277",
     "name": "멜로디언",
     "similarItems": [
       "바이올린",
@@ -9633,6 +9905,7 @@
     ]
   },
   {
+    "id": "item-guide-0278",
     "name": "야구글러브",
     "similarItems": [
       "철봉 운동기구",
@@ -9662,6 +9935,7 @@
     ]
   },
   {
+    "id": "item-guide-0279",
     "name": "옥수수 식기",
     "similarItems": [
       "와인잔",
@@ -9691,6 +9965,7 @@
     ]
   },
   {
+    "id": "item-guide-0280",
     "name": "자석교구",
     "similarItems": [
       "일반종량제폐기물",
@@ -9713,6 +9988,7 @@
     ]
   },
   {
+    "id": "item-guide-0281",
     "name": "화이트보드",
     "similarItems": [
       "일반종량제폐기물",
@@ -9744,6 +10020,7 @@
     ]
   },
   {
+    "id": "item-guide-0282",
     "name": "키보드 스킨",
     "similarItems": [
       "상장케이스",
@@ -9772,6 +10049,7 @@
     ]
   },
   {
+    "id": "item-guide-0283",
     "name": "물엿 용기",
     "similarItems": [
       "꿀 용기",
@@ -9806,6 +10084,7 @@
     ]
   },
   {
+    "id": "item-guide-0284",
     "name": "죽부인",
     "similarItems": [
       "나무 쟁반",
@@ -9835,6 +10114,7 @@
     ]
   },
   {
+    "id": "item-guide-0285",
     "name": "핸들커버",
     "similarItems": [
       "침대커버",
@@ -9860,6 +10140,7 @@
     ]
   },
   {
+    "id": "item-guide-0286",
     "name": "숯",
     "similarItems": [
       "일반종량제폐기물",
@@ -9886,6 +10167,7 @@
     ]
   },
   {
+    "id": "item-guide-0287",
     "name": "투명 가림막",
     "similarItems": [
       "일반종량제폐기물",
@@ -9913,6 +10195,7 @@
     ]
   },
   {
+    "id": "item-guide-0288",
     "name": "스팸슬라이서",
     "similarItems": [
       "칼",
@@ -9937,6 +10220,7 @@
     ]
   },
   {
+    "id": "item-guide-0289",
     "name": "아이스박스",
     "similarItems": [
       "택배 박스（스티로폼）",
@@ -9964,6 +10248,7 @@
     ]
   },
   {
+    "id": "item-guide-0290",
     "name": "생선가시",
     "similarItems": [
       "아보카도씨",
@@ -9997,6 +10282,7 @@
     ]
   },
   {
+    "id": "item-guide-0291",
     "name": "폼롤러",
     "similarItems": [
       "철봉 운동기구",
@@ -10033,6 +10319,7 @@
     ]
   },
   {
+    "id": "item-guide-0292",
     "name": "양초",
     "similarItems": [
       "일반종량제폐기물",
@@ -10058,6 +10345,7 @@
     ]
   },
   {
+    "id": "item-guide-0293",
     "name": "쌀 마대자루",
     "similarItems": [
       "스틱봉지",
@@ -10090,6 +10378,7 @@
     ]
   },
   {
+    "id": "item-guide-0294",
     "name": "껌종이",
     "similarItems": [
       "택배 송장",
@@ -10116,6 +10405,7 @@
     ]
   },
   {
+    "id": "item-guide-0295",
     "name": "벽지",
     "similarItems": [
       "브로마이드",
@@ -10155,6 +10445,7 @@
     ]
   },
   {
+    "id": "item-guide-0296",
     "name": "전자시계",
     "similarItems": [
       "디지털 체중계",
@@ -10213,6 +10504,7 @@
     ]
   },
   {
+    "id": "item-guide-0297",
     "name": "밸런스볼",
     "similarItems": [
       "스키신발",
@@ -10256,6 +10548,7 @@
     ]
   },
   {
+    "id": "item-guide-0298",
     "name": "짐볼",
     "similarItems": [
       "비치볼",
@@ -10295,6 +10588,7 @@
     ]
   },
   {
+    "id": "item-guide-0299",
     "name": "빵끈",
     "similarItems": [
       "칼라타이",
@@ -10319,6 +10613,7 @@
     ]
   },
   {
+    "id": "item-guide-0300",
     "name": "액정보호필름",
     "similarItems": [
       "이어폰",
@@ -10346,6 +10641,7 @@
     ]
   },
   {
+    "id": "item-guide-0301",
     "name": "방습제",
     "similarItems": [
       "육수팩",
@@ -10369,6 +10665,7 @@
     ]
   },
   {
+    "id": "item-guide-0302",
     "name": "호두 껍데기",
     "similarItems": [
       "아보카도씨",
@@ -10399,6 +10696,7 @@
     ]
   },
   {
+    "id": "item-guide-0303",
     "name": "복숭아 씨",
     "similarItems": [
       "아보카도씨",
@@ -10427,6 +10725,7 @@
     ]
   },
   {
+    "id": "item-guide-0304",
     "name": "흡수패드",
     "similarItems": [
       "육수팩",
@@ -10453,6 +10752,7 @@
     ]
   },
   {
+    "id": "item-guide-0305",
     "name": "고무볼",
     "similarItems": [
       "고무통",
@@ -10481,6 +10781,7 @@
     ]
   },
   {
+    "id": "item-guide-0306",
     "name": "폭죽",
     "similarItems": [
       "일반종량제폐기물",
@@ -10506,6 +10807,7 @@
     ]
   },
   {
+    "id": "item-guide-0307",
     "name": "태블릿 케이스",
     "similarItems": [
       "태블릿 PC",
@@ -10533,6 +10835,7 @@
     ]
   },
   {
+    "id": "item-guide-0308",
     "name": "액자",
     "similarItems": [
       "일반종량제폐기물",
@@ -10572,6 +10875,7 @@
     ]
   },
   {
+    "id": "item-guide-0309",
     "name": "원목 블록",
     "similarItems": [
       "나무 쟁반",
@@ -10604,6 +10908,7 @@
     ]
   },
   {
+    "id": "item-guide-0310",
     "name": "손소독제",
     "similarItems": [
       "핸드크림",
@@ -10645,6 +10950,7 @@
     ]
   },
   {
+    "id": "item-guide-0311",
     "name": "파렛트",
     "similarItems": [
       "플라스틱 서랍장",
@@ -10682,6 +10988,7 @@
     ]
   },
   {
+    "id": "item-guide-0312",
     "name": "pvc배관",
     "similarItems": [
       "연결관",
@@ -10711,6 +11018,7 @@
     ]
   },
   {
+    "id": "item-guide-0313",
     "name": "잠자리채",
     "similarItems": [
       "안경",
@@ -10746,6 +11054,7 @@
     ]
   },
   {
+    "id": "item-guide-0314",
     "name": "실리콘 주걱",
     "similarItems": [
       "공갈젖꼭지",
@@ -10769,6 +11078,7 @@
     ]
   },
   {
+    "id": "item-guide-0315",
     "name": "아쿠아덤벨",
     "similarItems": [
       "철봉 운동기구",
@@ -10795,6 +11105,7 @@
     ]
   },
   {
+    "id": "item-guide-0316",
     "name": "유산지",
     "similarItems": [
       "치킨 박스",
@@ -10826,6 +11137,7 @@
     ]
   },
   {
+    "id": "item-guide-0317",
     "name": "녹말이쑤시개",
     "similarItems": [
       "일반종량제폐기물",
@@ -10848,6 +11160,7 @@
     ]
   },
   {
+    "id": "item-guide-0318",
     "name": "아크릴판",
     "similarItems": [
       "일반종량제폐기물",
@@ -10868,6 +11181,7 @@
     ]
   },
   {
+    "id": "item-guide-0319",
     "name": "우비",
     "similarItems": [
       "일반종량제폐기물",
@@ -10897,6 +11211,7 @@
     ]
   },
   {
+    "id": "item-guide-0320",
     "name": "고무신발",
     "similarItems": [
       "스키신발",
@@ -10931,6 +11246,7 @@
     ]
   },
   {
+    "id": "item-guide-0321",
     "name": "고무장화",
     "similarItems": [
       "슬리퍼",
@@ -10965,6 +11281,7 @@
     ]
   },
   {
+    "id": "item-guide-0322",
     "name": "석고방향제",
     "similarItems": [
       "대리석 상판",
@@ -11006,6 +11323,7 @@
     ]
   },
   {
+    "id": "item-guide-0323",
     "name": "스테이플러",
     "similarItems": [
       "안경",
@@ -11036,6 +11354,7 @@
     ]
   },
   {
+    "id": "item-guide-0324",
     "name": "캔버스",
     "similarItems": [
       "일반종량제폐기물",
@@ -11068,6 +11387,7 @@
     ]
   },
   {
+    "id": "item-guide-0325",
     "name": "플러그",
     "similarItems": [
       "이어폰",
@@ -11095,6 +11415,7 @@
     ]
   },
   {
+    "id": "item-guide-0326",
     "name": "우쿨렐레",
     "similarItems": [
       "바이올린",
@@ -11128,6 +11449,7 @@
     ]
   },
   {
+    "id": "item-guide-0327",
     "name": "화초",
     "similarItems": [
       "일반종량제폐기물",
@@ -11151,6 +11473,7 @@
     ]
   },
   {
+    "id": "item-guide-0328",
     "name": "헤어롤",
     "similarItems": [
       "헤어 스프레이",
@@ -11177,6 +11500,7 @@
     ]
   },
   {
+    "id": "item-guide-0329",
     "name": "카펫",
     "similarItems": [
       "바닥매트",
@@ -11207,6 +11531,7 @@
     ]
   },
   {
+    "id": "item-guide-0330",
     "name": "커튼",
     "similarItems": [
       "블라인드",
@@ -11243,6 +11568,7 @@
     ]
   },
   {
+    "id": "item-guide-0331",
     "name": "게 껍데기",
     "similarItems": [
       "아보카도씨",
@@ -11273,6 +11599,7 @@
     ]
   },
   {
+    "id": "item-guide-0332",
     "name": "조개 껍데기",
     "similarItems": [
       "아보카도씨",
@@ -11303,6 +11630,7 @@
     ]
   },
   {
+    "id": "item-guide-0333",
     "name": "신용카드",
     "similarItems": [
       "영수증",
@@ -11329,6 +11657,7 @@
     ]
   },
   {
+    "id": "item-guide-0334",
     "name": "고양이 두부모래",
     "similarItems": [
       "반려동물 케이지",
@@ -11356,6 +11685,7 @@
     ]
   },
   {
+    "id": "item-guide-0335",
     "name": "옥수수대",
     "similarItems": [
       "아보카도씨",
@@ -11386,6 +11716,7 @@
     ]
   },
   {
+    "id": "item-guide-0336",
     "name": "팬캡",
     "similarItems": [
       "과일그물망",
@@ -11411,6 +11742,7 @@
     ]
   },
   {
+    "id": "item-guide-0337",
     "name": "녹차잎",
     "similarItems": [
       "옥수수껍질",
@@ -11444,6 +11776,7 @@
     ]
   },
   {
+    "id": "item-guide-0338",
     "name": "티백",
     "similarItems": [
       "한약 찌꺼기",
@@ -11471,6 +11804,7 @@
     ]
   },
   {
+    "id": "item-guide-0339",
     "name": "다리미판",
     "similarItems": [
       "스팀다리미",
@@ -11497,6 +11831,7 @@
     ]
   },
   {
+    "id": "item-guide-0340",
     "name": "일회용 인공눈물",
     "similarItems": [
       "플라스틱",
@@ -11520,6 +11855,7 @@
     ]
   },
   {
+    "id": "item-guide-0341",
     "name": "아이스크림 숟가락",
     "similarItems": [
       "일반종량제폐기물",
@@ -11543,6 +11879,7 @@
     ]
   },
   {
+    "id": "item-guide-0342",
     "name": "워터댐",
     "similarItems": [
       "일반종량제폐기물",
@@ -11564,6 +11901,7 @@
     ]
   },
   {
+    "id": "item-guide-0343",
     "name": "매니큐어",
     "similarItems": [
       "립스틱",
@@ -11599,6 +11937,7 @@
     ]
   },
   {
+    "id": "item-guide-0344",
     "name": "인라인 스케이트",
     "similarItems": [
       "스키신발",
@@ -11634,6 +11973,7 @@
     ]
   },
   {
+    "id": "item-guide-0345",
     "name": "카트리지",
     "similarItems": [
       "토너",
@@ -11664,6 +12004,7 @@
     ]
   },
   {
+    "id": "item-guide-0346",
     "name": "개껌",
     "similarItems": [
       "반려동물 케이지",
@@ -11690,6 +12031,7 @@
     ]
   },
   {
+    "id": "item-guide-0347",
     "name": "종이호일",
     "similarItems": [
       "은박 접시",
@@ -11717,6 +12059,7 @@
     ]
   },
   {
+    "id": "item-guide-0348",
     "name": "알루미늄 호일",
     "similarItems": [
       "은박 접시",
@@ -11742,6 +12085,7 @@
     ]
   },
   {
+    "id": "item-guide-0349",
     "name": "찜질팩",
     "similarItems": [
       "일반종량제폐기물",
@@ -11764,6 +12108,7 @@
     ]
   },
   {
+    "id": "item-guide-0350",
     "name": "선글라스",
     "similarItems": [
       "안경",
@@ -11788,6 +12133,7 @@
     ]
   },
   {
+    "id": "item-guide-0351",
     "name": "종이 컵라면",
     "similarItems": [
       "치킨 박스",
@@ -11824,6 +12170,7 @@
     ]
   },
   {
+    "id": "item-guide-0352",
     "name": "규조토 발매트",
     "similarItems": [
       "대리석 상판",
@@ -11859,6 +12206,7 @@
     ]
   },
   {
+    "id": "item-guide-0353",
     "name": "단백질 가루",
     "similarItems": [
       "콜라겐 가루",
@@ -11887,6 +12235,7 @@
     ]
   },
   {
+    "id": "item-guide-0354",
     "name": "염색약",
     "similarItems": [
       "헤어 스프레이",
@@ -11919,6 +12268,7 @@
     ]
   },
   {
+    "id": "item-guide-0355",
     "name": "영양제",
     "similarItems": [
       "콜라겐 가루",
@@ -11948,6 +12298,7 @@
     ]
   },
   {
+    "id": "item-guide-0356",
     "name": "주사기",
     "similarItems": [
       "인슐린주사기",
@@ -11986,6 +12337,7 @@
     ]
   },
   {
+    "id": "item-guide-0357",
     "name": "알약 포장재",
     "similarItems": [
       "해열진통제",
@@ -12016,6 +12368,7 @@
     ]
   },
   {
+    "id": "item-guide-0358",
     "name": "가루세제",
     "similarItems": [
       "세탁조 세정제",
@@ -12042,6 +12395,7 @@
     ]
   },
   {
+    "id": "item-guide-0359",
     "name": "샤워커튼",
     "similarItems": [
       "블라인드",
@@ -12070,6 +12424,7 @@
     ]
   },
   {
+    "id": "item-guide-0360",
     "name": "샤워캡",
     "similarItems": [
       "지퍼백",
@@ -12121,6 +12476,7 @@
     ]
   },
   {
+    "id": "item-guide-0361",
     "name": "배수구 트랩",
     "similarItems": [
       "연결관",
@@ -12143,6 +12499,7 @@
     ]
   },
   {
+    "id": "item-guide-0362",
     "name": "샤워기",
     "similarItems": [
       "수도꼭지",
@@ -12170,6 +12527,7 @@
     ]
   },
   {
+    "id": "item-guide-0363",
     "name": "볼펜",
     "similarItems": [
       "만년필",
@@ -12198,6 +12556,7 @@
     ]
   },
   {
+    "id": "item-guide-0364",
     "name": "수영가방",
     "similarItems": [
       "캐리어",
@@ -12233,6 +12592,7 @@
     ]
   },
   {
+    "id": "item-guide-0365",
     "name": "일회용 손난로",
     "similarItems": [
       "일반종량제폐기물",
@@ -12257,6 +12617,7 @@
     ]
   },
   {
+    "id": "item-guide-0366",
     "name": "속옷",
     "similarItems": [
       "캐리어",
@@ -12288,6 +12649,7 @@
     ]
   },
   {
+    "id": "item-guide-0367",
     "name": "부직포 가방",
     "similarItems": [
       "육수팩",
@@ -12322,6 +12684,7 @@
     ]
   },
   {
+    "id": "item-guide-0368",
     "name": "생리대",
     "similarItems": [
       "일반종량제폐기물",
@@ -12345,6 +12708,7 @@
     ]
   },
   {
+    "id": "item-guide-0369",
     "name": "구명조끼",
     "similarItems": [
       "비치볼",
@@ -12377,6 +12741,7 @@
     ]
   },
   {
+    "id": "item-guide-0370",
     "name": "상패케이스",
     "similarItems": [
       "상장케이스",
@@ -12405,6 +12770,7 @@
     ]
   },
   {
+    "id": "item-guide-0371",
     "name": "사진",
     "similarItems": [
       "택배 송장",
@@ -12439,6 +12805,7 @@
     ]
   },
   {
+    "id": "item-guide-0372",
     "name": "돼지 뼈",
     "similarItems": [
       "아보카도씨",
@@ -12467,6 +12834,7 @@
     ]
   },
   {
+    "id": "item-guide-0373",
     "name": "빨대",
     "similarItems": [
       "포크",
@@ -12500,6 +12868,7 @@
     ]
   },
   {
+    "id": "item-guide-0374",
     "name": "빗자루",
     "similarItems": [
       "행주",
@@ -12531,6 +12900,7 @@
     ]
   },
   {
+    "id": "item-guide-0375",
     "name": "머리빗",
     "similarItems": [
       "헤어 스프레이",
@@ -12561,6 +12931,7 @@
     ]
   },
   {
+    "id": "item-guide-0376",
     "name": "보냉가방",
     "similarItems": [
       "택배 박스（스티로폼）",
@@ -12588,6 +12959,7 @@
     ]
   },
   {
+    "id": "item-guide-0377",
     "name": "배변패드",
     "similarItems": [
       "화장솜",
@@ -12619,6 +12991,7 @@
     ]
   },
   {
+    "id": "item-guide-0378",
     "name": "베개커버",
     "similarItems": [
       "침대커버",
@@ -12646,6 +13019,7 @@
     ]
   },
   {
+    "id": "item-guide-0379",
     "name": "바세린",
     "similarItems": [
       "핸드크림",
@@ -12683,6 +13057,7 @@
     ]
   },
   {
+    "id": "item-guide-0380",
     "name": "바둑판",
     "similarItems": [
       "테이블 프레임",
@@ -12713,6 +13088,7 @@
     ]
   },
   {
+    "id": "item-guide-0381",
     "name": "밀짚모자",
     "similarItems": [
       "일반종량제폐기물",
@@ -12737,6 +13113,7 @@
     ]
   },
   {
+    "id": "item-guide-0382",
     "name": "물티슈",
     "similarItems": [
       "화장솜",
@@ -12762,6 +13139,7 @@
     ]
   },
   {
+    "id": "item-guide-0383",
     "name": "튜브",
     "similarItems": [
       "비치볼",
@@ -12793,6 +13171,7 @@
     ]
   },
   {
+    "id": "item-guide-0384",
     "name": "수채화 물감",
     "similarItems": [
       "만년필",
@@ -12822,6 +13201,7 @@
     ]
   },
   {
+    "id": "item-guide-0385",
     "name": "모기장",
     "similarItems": [
       "블라인드",
@@ -12857,6 +13237,7 @@
     ]
   },
   {
+    "id": "item-guide-0386",
     "name": "목베개",
     "similarItems": [
       "침대커버",
@@ -12888,6 +13269,7 @@
     ]
   },
   {
+    "id": "item-guide-0387",
     "name": "머리끈",
     "similarItems": [
       "칼라타이",
@@ -12915,6 +13297,7 @@
     ]
   },
   {
+    "id": "item-guide-0388",
     "name": "일회용 마스크",
     "similarItems": [
       "화장솜",
@@ -12941,6 +13324,7 @@
     ]
   },
   {
+    "id": "item-guide-0389",
     "name": "로또용지",
     "similarItems": [
       "영수증",
@@ -12967,6 +13351,7 @@
     ]
   },
   {
+    "id": "item-guide-0390",
     "name": "렌즈케이스",
     "similarItems": [
       "일반종량제폐기물",
@@ -12990,6 +13375,7 @@
     ]
   },
   {
+    "id": "item-guide-0391",
     "name": "라텍스 장갑",
     "similarItems": [
       "고무통",
@@ -13022,6 +13408,7 @@
     ]
   },
   {
+    "id": "item-guide-0392",
     "name": "배드민턴 라켓",
     "similarItems": [
       "배구공",
@@ -13054,6 +13441,7 @@
     ]
   },
   {
+    "id": "item-guide-0393",
     "name": "일회용 라이터",
     "similarItems": [
       "일반종량제폐기물",
@@ -13080,6 +13468,7 @@
     ]
   },
   {
+    "id": "item-guide-0394",
     "name": "등산스틱",
     "similarItems": [
       "지팡이",
@@ -13105,6 +13494,7 @@
     ]
   },
   {
+    "id": "item-guide-0395",
     "name": "돗자리",
     "similarItems": [
       "일반종량제폐기물",
@@ -13127,6 +13517,7 @@
     ]
   },
   {
+    "id": "item-guide-0396",
     "name": "원목도마",
     "similarItems": [
       "나무 쟁반",
@@ -13162,6 +13553,7 @@
     ]
   },
   {
+    "id": "item-guide-0397",
     "name": "리코더",
     "similarItems": [
       "바이올린",
@@ -13198,6 +13590,7 @@
     ]
   },
   {
+    "id": "item-guide-0398",
     "name": "단소",
     "similarItems": [
       "바이올린",
@@ -13234,6 +13627,7 @@
     ]
   },
   {
+    "id": "item-guide-0399",
     "name": "비닐노끈",
     "similarItems": [
       "칼라타이",
@@ -13261,6 +13655,7 @@
     ]
   },
   {
+    "id": "item-guide-0400",
     "name": "플라스틱 노끈",
     "similarItems": [
       "칼라타이",
@@ -13286,6 +13681,7 @@
     ]
   },
   {
+    "id": "item-guide-0401",
     "name": "낚시대",
     "similarItems": [
       "지팡이",
@@ -13314,6 +13710,7 @@
     ]
   },
   {
+    "id": "item-guide-0402",
     "name": "낙엽",
     "similarItems": [
       "일반종량제폐기물",
@@ -13341,6 +13738,7 @@
     ]
   },
   {
+    "id": "item-guide-0403",
     "name": "자기 나침반",
     "similarItems": [
       "일반종량제폐기물",
@@ -13364,6 +13762,7 @@
     ]
   },
   {
+    "id": "item-guide-0404",
     "name": "나뭇가지",
     "similarItems": [
       "일반종량제폐기물",
@@ -13390,6 +13789,7 @@
     ]
   },
   {
+    "id": "item-guide-0405",
     "name": "깁스",
     "similarItems": [
       "일반종량제폐기물",
@@ -13412,6 +13812,7 @@
     ]
   },
   {
+    "id": "item-guide-0406",
     "name": "기저귀",
     "similarItems": [
       "화장솜",
@@ -13437,6 +13838,7 @@
     ]
   },
   {
+    "id": "item-guide-0407",
     "name": "기름종이",
     "similarItems": [
       "화장솜",
@@ -13466,6 +13868,7 @@
     ]
   },
   {
+    "id": "item-guide-0408",
     "name": "스마트폰 액세서리",
     "similarItems": [
       "노트북 파우치",
@@ -13489,6 +13892,7 @@
     ]
   },
   {
+    "id": "item-guide-0409",
     "name": "군복",
     "similarItems": [
       "일반종량제폐기물",
@@ -13517,6 +13921,7 @@
     ]
   },
   {
+    "id": "item-guide-0410",
     "name": "교복",
     "similarItems": [
       "일반종량제폐기물",
@@ -13543,6 +13948,7 @@
     ]
   },
   {
+    "id": "item-guide-0411",
     "name": "감자칩 용기",
     "similarItems": [
       "아이스크림 봉지",
@@ -13569,6 +13975,7 @@
     ]
   },
   {
+    "id": "item-guide-0412",
     "name": "돼지기름",
     "similarItems": [
       "들기름",
@@ -13599,6 +14006,7 @@
     ]
   },
   {
+    "id": "item-guide-0413",
     "name": "고무장갑",
     "similarItems": [
       "슬리퍼",
@@ -13629,6 +14037,7 @@
     ]
   },
   {
+    "id": "item-guide-0414",
     "name": "계란껍질(달걀껍질)",
     "similarItems": [
       "아보카도씨",
@@ -13660,6 +14069,7 @@
     ]
   },
   {
+    "id": "item-guide-0415",
     "name": "걸레",
     "similarItems": [
       "행주",
@@ -13683,6 +14093,7 @@
     ]
   },
   {
+    "id": "item-guide-0416",
     "name": "가스토치",
     "similarItems": [
       "일반종량제폐기물",
@@ -13709,6 +14120,7 @@
     ]
   },
   {
+    "id": "item-guide-0417",
     "name": "가발",
     "similarItems": [
       "일반종량제폐기물",
@@ -13734,6 +14146,7 @@
     ]
   },
   {
+    "id": "item-guide-0418",
     "name": "PVC 비닐",
     "similarItems": [
       "일반종량제폐기물",
@@ -13758,6 +14171,7 @@
     ]
   },
   {
+    "id": "item-guide-0419",
     "name": "축구공",
     "similarItems": [
       "비치볼",
@@ -13794,6 +14208,7 @@
     ]
   },
   {
+    "id": "item-guide-0420",
     "name": "골프망",
     "similarItems": [
       "과일그물망",
@@ -13821,6 +14236,7 @@
     ]
   },
   {
+    "id": "item-guide-0421",
     "name": "CD",
     "similarItems": [
       "이어폰",
@@ -13850,6 +14266,7 @@
     ]
   },
   {
+    "id": "item-guide-0422",
     "name": "칫솔 꽂이",
     "similarItems": [
       "치실",
@@ -13885,6 +14302,7 @@
     ]
   },
   {
+    "id": "item-guide-0423",
     "name": "칫솔",
     "similarItems": [
       "치실",
@@ -13911,6 +14329,7 @@
     ]
   },
   {
+    "id": "item-guide-0424",
     "name": "욕실화",
     "similarItems": [
       "슬리퍼",
@@ -13944,6 +14363,7 @@
     ]
   },
   {
+    "id": "item-guide-0425",
     "name": "연수필터",
     "similarItems": [
       "공기청정기 필터",
@@ -13968,6 +14388,7 @@
     ]
   },
   {
+    "id": "item-guide-0426",
     "name": "일회용면도기",
     "similarItems": [
       "바늘",
@@ -13996,6 +14417,7 @@
     ]
   },
   {
+    "id": "item-guide-0427",
     "name": "고무대야",
     "similarItems": [
       "슬리퍼",
@@ -14033,6 +14455,7 @@
     ]
   },
   {
+    "id": "item-guide-0428",
     "name": "필통",
     "similarItems": [
       "연필꽂이",
@@ -14069,6 +14492,7 @@
     ]
   },
   {
+    "id": "item-guide-0429",
     "name": "파쇄지",
     "similarItems": [
       "택배 송장",
@@ -14106,6 +14530,7 @@
     ]
   },
   {
+    "id": "item-guide-0430",
     "name": "털 귀마개",
     "similarItems": [
       "일반종량제폐기물",
@@ -14131,6 +14556,7 @@
     ]
   },
   {
+    "id": "item-guide-0431",
     "name": "마우스패드",
     "similarItems": [
       "커팅매트",
@@ -14163,6 +14589,7 @@
     ]
   },
   {
+    "id": "item-guide-0432",
     "name": "지우개",
     "similarItems": [
       "연필꽂이",
@@ -14193,6 +14620,7 @@
     ]
   },
   {
+    "id": "item-guide-0433",
     "name": "지로명세서",
     "similarItems": [
       "영수증",
@@ -14226,6 +14654,7 @@
     ]
   },
   {
+    "id": "item-guide-0434",
     "name": "줄자",
     "similarItems": [
       "일반종량제폐기물",
@@ -14252,6 +14681,7 @@
     ]
   },
   {
+    "id": "item-guide-0435",
     "name": "딱풀",
     "similarItems": [
       "마스킹테이프",
@@ -14278,6 +14708,7 @@
     ]
   },
   {
+    "id": "item-guide-0436",
     "name": "한지",
     "similarItems": [
       "마스킹테이프",
@@ -14307,6 +14738,7 @@
     ]
   },
   {
+    "id": "item-guide-0437",
     "name": "우드락",
     "similarItems": [
       "일반종량제폐기물",
@@ -14329,6 +14761,7 @@
     ]
   },
   {
+    "id": "item-guide-0438",
     "name": "양면테이프",
     "similarItems": [
       "마스킹테이프",
@@ -14352,6 +14785,7 @@
     ]
   },
   {
+    "id": "item-guide-0439",
     "name": "연필깍이",
     "similarItems": [
       "연필꽂이",
@@ -14384,6 +14818,7 @@
     ]
   },
   {
+    "id": "item-guide-0440",
     "name": "연필",
     "similarItems": [
       "연필꽂이",
@@ -14415,6 +14850,7 @@
     ]
   },
   {
+    "id": "item-guide-0441",
     "name": "압정",
     "similarItems": [
       "인슐린주사기",
@@ -14444,6 +14880,7 @@
     ]
   },
   {
+    "id": "item-guide-0442",
     "name": "결재판",
     "similarItems": [
       "쫄대 화일",
@@ -14470,6 +14907,7 @@
     ]
   },
   {
+    "id": "item-guide-0443",
     "name": "색연필",
     "similarItems": [
       "만년필",
@@ -14498,6 +14936,7 @@
     ]
   },
   {
+    "id": "item-guide-0444",
     "name": "분필",
     "similarItems": [
       "만년필",
@@ -14527,6 +14966,7 @@
     ]
   },
   {
+    "id": "item-guide-0445",
     "name": "명함지갑",
     "similarItems": [
       "캐리어",
@@ -14560,6 +15000,7 @@
     ]
   },
   {
+    "id": "item-guide-0446",
     "name": "마커펜",
     "similarItems": [
       "만년필",
@@ -14588,6 +15029,7 @@
     ]
   },
   {
+    "id": "item-guide-0447",
     "name": "종이테이프",
     "similarItems": [
       "마스킹테이프",
@@ -14614,6 +15056,7 @@
     ]
   },
   {
+    "id": "item-guide-0448",
     "name": "고무매트",
     "similarItems": [
       "고무통",
@@ -14659,6 +15102,7 @@
     ]
   },
   {
+    "id": "item-guide-0449",
     "name": "가위",
     "similarItems": [
       "인슐린주사기",
@@ -14688,6 +15132,7 @@
     ]
   },
   {
+    "id": "item-guide-0450",
     "name": "망원경",
     "similarItems": [
       "안경",
@@ -14718,6 +15163,7 @@
     ]
   },
   {
+    "id": "item-guide-0451",
     "name": "리빙박스(섬유 재질)",
     "similarItems": [
       "플라스틱 서랍장",
@@ -14750,6 +15196,7 @@
     ]
   },
   {
+    "id": "item-guide-0452",
     "name": "우산",
     "similarItems": [
       "지팡이",
@@ -14783,6 +15230,7 @@
     ]
   },
   {
+    "id": "item-guide-0453",
     "name": "포충기",
     "similarItems": [
       "디지털 체중계",
@@ -14856,6 +15304,7 @@
     ]
   },
   {
+    "id": "item-guide-0454",
     "name": "전동칫솔",
     "similarItems": [
       "디지털 체중계",
@@ -14931,6 +15380,7 @@
     ]
   },
   {
+    "id": "item-guide-0455",
     "name": "전기이발기",
     "similarItems": [
       "디지털 체중계",
@@ -14996,6 +15446,7 @@
     ]
   },
   {
+    "id": "item-guide-0456",
     "name": "블루투스 이어폰",
     "similarItems": [
       "디지털 체중계",
@@ -15071,6 +15522,7 @@
     ]
   },
   {
+    "id": "item-guide-0457",
     "name": "전자담배",
     "similarItems": [
       "디지털 체중계",
@@ -15163,6 +15615,7 @@
     ]
   },
   {
+    "id": "item-guide-0458",
     "name": "필링기",
     "similarItems": [
       "디지털 체중계",
@@ -15247,6 +15700,7 @@
     ]
   },
   {
+    "id": "item-guide-0459",
     "name": "테이블 스탠드",
     "similarItems": [
       "전기전자제품",
@@ -15280,6 +15734,7 @@
     ]
   },
   {
+    "id": "item-guide-0460",
     "name": "스탠드 조명",
     "similarItems": [
       "전기전자제품",
@@ -15313,6 +15768,7 @@
     ]
   },
   {
+    "id": "item-guide-0461",
     "name": "멀티탭",
     "similarItems": [
       "디지털 체중계",
@@ -15410,6 +15866,7 @@
     ]
   },
   {
+    "id": "item-guide-0462",
     "name": "전기 손난로",
     "similarItems": [
       "디지털 체중계",
@@ -15512,6 +15969,7 @@
     ]
   },
   {
+    "id": "item-guide-0463",
     "name": "청소기 배터리",
     "similarItems": [
       "디지털 체중계",
@@ -15603,6 +16061,7 @@
     ]
   },
   {
+    "id": "item-guide-0464",
     "name": "레이저 포인터",
     "similarItems": [
       "디지털 체중계",
@@ -15692,6 +16151,7 @@
     ]
   },
   {
+    "id": "item-guide-0465",
     "name": "리모컨",
     "similarItems": [
       "디지털 체중계",
@@ -15795,6 +16255,7 @@
     ]
   },
   {
+    "id": "item-guide-0466",
     "name": "전기모기채",
     "similarItems": [
       "디지털 체중계",
@@ -15888,6 +16349,7 @@
     ]
   },
   {
+    "id": "item-guide-0467",
     "name": "헤드폰",
     "similarItems": [
       "디지털 체중계",
@@ -15992,6 +16454,7 @@
     ]
   },
   {
+    "id": "item-guide-0468",
     "name": "전자드릴",
     "similarItems": [
       "디지털 체중계",
@@ -16099,6 +16562,7 @@
     ]
   },
   {
+    "id": "item-guide-0469",
     "name": "칫솔살균기",
     "similarItems": [
       "디지털 체중계",
@@ -16202,6 +16666,7 @@
     ]
   },
   {
+    "id": "item-guide-0470",
     "name": "에그쿠커",
     "similarItems": [
       "디지털 체중계",
@@ -16305,6 +16770,7 @@
     ]
   },
   {
+    "id": "item-guide-0471",
     "name": "토스트기",
     "similarItems": [
       "디지털 체중계",
@@ -16409,6 +16875,7 @@
     ]
   },
   {
+    "id": "item-guide-0472",
     "name": "게임 컨트롤러",
     "similarItems": [
       "디지털 체중계",
@@ -16511,6 +16978,7 @@
     ]
   },
   {
+    "id": "item-guide-0473",
     "name": "마우스",
     "similarItems": [
       "디지털 체중계",
@@ -16620,6 +17088,7 @@
     ]
   },
   {
+    "id": "item-guide-0474",
     "name": "키보드",
     "similarItems": [
       "디지털 체중계",
@@ -16726,6 +17195,7 @@
     ]
   },
   {
+    "id": "item-guide-0475",
     "name": "공유기",
     "similarItems": [
       "디지털 체중계",
@@ -16839,6 +17309,7 @@
     ]
   },
   {
+    "id": "item-guide-0476",
     "name": "녹즙기",
     "similarItems": [
       "디지털 체중계",
@@ -16947,6 +17418,7 @@
     ]
   },
   {
+    "id": "item-guide-0477",
     "name": "거품반죽기",
     "similarItems": [
       "디지털 체중계",
@@ -17055,6 +17527,7 @@
     ]
   },
   {
+    "id": "item-guide-0478",
     "name": "약탕기(전기)",
     "similarItems": [
       "디지털 체중계",
@@ -17162,6 +17635,7 @@
     ]
   },
   {
+    "id": "item-guide-0479",
     "name": "전기히터",
     "similarItems": [
       "디지털 체중계",
@@ -17269,6 +17743,7 @@
     ]
   },
   {
+    "id": "item-guide-0480",
     "name": "핸드폰 충전기",
     "similarItems": [
       "디지털 체중계",
@@ -17375,6 +17850,7 @@
     ]
   },
   {
+    "id": "item-guide-0481",
     "name": "핸드폰",
     "similarItems": [
       "디지털 체중계",
@@ -17484,6 +17960,7 @@
     ]
   },
   {
+    "id": "item-guide-0482",
     "name": "팩스",
     "similarItems": [
       "디지털 체중계",
@@ -17592,6 +18069,7 @@
     ]
   },
   {
+    "id": "item-guide-0483",
     "name": "빔프로젝터",
     "similarItems": [
       "디지털 체중계",
@@ -17701,6 +18179,7 @@
     ]
   },
   {
+    "id": "item-guide-0484",
     "name": "전기비데",
     "similarItems": [
       "디지털 체중계",
@@ -17810,6 +18289,7 @@
     ]
   },
   {
+    "id": "item-guide-0485",
     "name": "연수기",
     "similarItems": [
       "디지털 체중계",
@@ -17919,6 +18399,7 @@
     ]
   },
   {
+    "id": "item-guide-0486",
     "name": "청소기",
     "similarItems": [
       "디지털 체중계",
@@ -18029,6 +18510,7 @@
     ]
   },
   {
+    "id": "item-guide-0487",
     "name": "젖병살균소독기",
     "similarItems": [
       "디지털 체중계",
@@ -18140,6 +18622,7 @@
     ]
   },
   {
+    "id": "item-guide-0488",
     "name": "미싱",
     "similarItems": [
       "디지털 체중계",
@@ -18252,6 +18735,7 @@
     ]
   },
   {
+    "id": "item-guide-0489",
     "name": "식품건조기",
     "similarItems": [
       "디지털 체중계",
@@ -18364,6 +18848,7 @@
     ]
   },
   {
+    "id": "item-guide-0490",
     "name": "오디오 스피커",
     "similarItems": [
       "디지털 체중계",
@@ -18477,6 +18962,7 @@
     ]
   },
   {
+    "id": "item-guide-0491",
     "name": "에어프라이어",
     "similarItems": [
       "디지털 체중계",
@@ -18592,6 +19078,7 @@
     ]
   },
   {
+    "id": "item-guide-0492",
     "name": "커피메이커",
     "similarItems": [
       "디지털 체중계",
@@ -18708,6 +19195,7 @@
     ]
   },
   {
+    "id": "item-guide-0493",
     "name": "음식물처리기",
     "similarItems": [
       "디지털 체중계",
@@ -18824,6 +19312,7 @@
     ]
   },
   {
+    "id": "item-guide-0494",
     "name": "전기주전자",
     "similarItems": [
       "디지털 체중계",
@@ -18941,6 +19430,7 @@
     ]
   },
   {
+    "id": "item-guide-0495",
     "name": "전기다리미",
     "similarItems": [
       "디지털 체중계",
@@ -19058,6 +19548,7 @@
     ]
   },
   {
+    "id": "item-guide-0496",
     "name": "전기밥솥",
     "similarItems": [
       "디지털 체중계",
@@ -19156,6 +19647,7 @@
     ]
   },
   {
+    "id": "item-guide-0497",
     "name": "믹서기",
     "similarItems": [
       "디지털 체중계",
@@ -19273,6 +19765,7 @@
     ]
   },
   {
+    "id": "item-guide-0498",
     "name": "비디오 카메라",
     "similarItems": [
       "디지털 체중계",
@@ -19390,6 +19883,7 @@
     ]
   },
   {
+    "id": "item-guide-0499",
     "name": "프린터기",
     "similarItems": [
       "디지털 체중계",
@@ -19510,6 +20004,7 @@
     ]
   },
   {
+    "id": "item-guide-0500",
     "name": "무전기",
     "similarItems": [
       "디지털 체중계",
@@ -19628,6 +20123,7 @@
     ]
   },
   {
+    "id": "item-guide-0501",
     "name": "모니터",
     "similarItems": [
       "디지털 체중계",
@@ -19749,6 +20245,7 @@
     ]
   },
   {
+    "id": "item-guide-0502",
     "name": "에어컨",
     "similarItems": [
       "디지털 체중계",
@@ -19876,6 +20373,7 @@
     ]
   },
   {
+    "id": "item-guide-0503",
     "name": "식기세척기",
     "similarItems": [
       "디지털 체중계",
@@ -19999,6 +20497,7 @@
     ]
   },
   {
+    "id": "item-guide-0504",
     "name": "태양광패널",
     "similarItems": [
       "디지털 체중계",
@@ -20122,6 +20621,7 @@
     ]
   },
   {
+    "id": "item-guide-0505",
     "name": "복사기",
     "similarItems": [
       "디지털 체중계",
@@ -20247,6 +20747,7 @@
     ]
   },
   {
+    "id": "item-guide-0506",
     "name": "정수기",
     "similarItems": [
       "디지털 체중계",
@@ -20325,6 +20826,7 @@
     ]
   },
   {
+    "id": "item-guide-0507",
     "name": "전자레인지",
     "similarItems": [
       "디지털 체중계",
@@ -20407,6 +20909,7 @@
     ]
   },
   {
+    "id": "item-guide-0508",
     "name": "세탁기",
     "similarItems": [
       "디지털 체중계",
@@ -20497,6 +21000,7 @@
     ]
   },
   {
+    "id": "item-guide-0509",
     "name": "런닝머신",
     "similarItems": [
       "디지털 체중계",
@@ -20586,6 +21090,7 @@
     ]
   },
   {
+    "id": "item-guide-0510",
     "name": "라디오",
     "similarItems": [
       "디지털 체중계",
@@ -20675,6 +21180,7 @@
     ]
   },
   {
+    "id": "item-guide-0511",
     "name": "디지털 카메라",
     "similarItems": [
       "디지털 체중계",
@@ -20768,6 +21274,7 @@
     ]
   },
   {
+    "id": "item-guide-0512",
     "name": "휴대용 콘솔게임기",
     "similarItems": [
       "디지털 체중계",
@@ -20862,6 +21369,7 @@
     ]
   },
   {
+    "id": "item-guide-0513",
     "name": "노트북",
     "similarItems": [
       "디지털 체중계",
@@ -20959,6 +21467,7 @@
     ]
   },
   {
+    "id": "item-guide-0514",
     "name": "냉장고",
     "similarItems": [
       "디지털 체중계",
@@ -21059,6 +21568,7 @@
     ]
   },
   {
+    "id": "item-guide-0515",
     "name": "내비게이션",
     "similarItems": [
       "디지털 체중계",
@@ -21157,6 +21667,7 @@
     ]
   },
   {
+    "id": "item-guide-0516",
     "name": "고데기",
     "similarItems": [
       "디지털 체중계",
@@ -21228,6 +21739,7 @@
     ]
   },
   {
+    "id": "item-guide-0517",
     "name": "전선",
     "similarItems": [
       "디지털 체중계",
@@ -21306,6 +21818,7 @@
     ]
   },
   {
+    "id": "item-guide-0518",
     "name": "전기면도기",
     "similarItems": [
       "디지털 체중계",
@@ -21375,6 +21888,7 @@
     ]
   },
   {
+    "id": "item-guide-0519",
     "name": "전자사전",
     "similarItems": [
       "디지털 체중계",
@@ -21453,6 +21967,7 @@
     ]
   },
   {
+    "id": "item-guide-0520",
     "name": "VR 게임기",
     "similarItems": [
       "디지털 체중계",
@@ -21530,6 +22045,7 @@
     ]
   },
   {
+    "id": "item-guide-0521",
     "name": "족욕기",
     "similarItems": [
       "디지털 체중계",
@@ -21601,6 +22117,7 @@
     ]
   },
   {
+    "id": "item-guide-0522",
     "name": "선풍기",
     "similarItems": [
       "디지털 체중계",
@@ -21674,6 +22191,7 @@
     ]
   },
   {
+    "id": "item-guide-0523",
     "name": "공기청정기",
     "similarItems": [
       "디지털 체중계",
@@ -21753,6 +22271,7 @@
     ]
   },
   {
+    "id": "item-guide-0524",
     "name": "텔레비전",
     "similarItems": [
       "디지털 체중계",
@@ -21841,6 +22360,7 @@
     ]
   },
   {
+    "id": "item-guide-0525",
     "name": "와인셀러",
     "similarItems": [
       "디지털 체중계",
@@ -21930,6 +22450,7 @@
     ]
   },
   {
+    "id": "item-guide-0526",
     "name": "오디오세트",
     "similarItems": [
       "디지털 체중계",
@@ -22005,6 +22526,7 @@
     ]
   },
   {
+    "id": "item-guide-0527",
     "name": "항아리",
     "similarItems": [
       "수석",
@@ -22032,6 +22554,7 @@
     ]
   },
   {
+    "id": "item-guide-0528",
     "name": "금고",
     "similarItems": [
       "철봉 운동기구",
@@ -22064,6 +22587,7 @@
     ]
   },
   {
+    "id": "item-guide-0529",
     "name": "변기",
     "similarItems": [
       "세면대",
@@ -22097,6 +22621,7 @@
     ]
   },
   {
+    "id": "item-guide-0530",
     "name": "스파인코렉터",
     "similarItems": [
       "철봉 운동기구",
@@ -22128,6 +22653,7 @@
     ]
   },
   {
+    "id": "item-guide-0531",
     "name": "킥보드",
     "similarItems": [
       "철봉 운동기구",
@@ -22154,6 +22680,7 @@
     ]
   },
   {
+    "id": "item-guide-0532",
     "name": "유모차",
     "similarItems": [
       "대형폐기물",
@@ -22179,6 +22706,7 @@
     ]
   },
   {
+    "id": "item-guide-0533",
     "name": "장난감 피아노",
     "similarItems": [
       "바이올린",
@@ -22208,6 +22736,7 @@
     ]
   },
   {
+    "id": "item-guide-0534",
     "name": "실링팬",
     "similarItems": [
       "조명제품",
@@ -22235,6 +22764,7 @@
     ]
   },
   {
+    "id": "item-guide-0535",
     "name": "체중계",
     "similarItems": [
       "디지털 체중계",
@@ -22264,6 +22794,7 @@
     ]
   },
   {
+    "id": "item-guide-0536",
     "name": "카시트",
     "similarItems": [
       "대형폐기물",
@@ -22288,6 +22819,7 @@
     ]
   },
   {
+    "id": "item-guide-0537",
     "name": "미끄럼틀",
     "similarItems": [
       "철봉 운동기구",
@@ -22320,6 +22852,7 @@
     ]
   },
   {
+    "id": "item-guide-0538",
     "name": "피아노",
     "similarItems": [
       "바이올린",
@@ -22349,6 +22882,7 @@
     ]
   },
   {
+    "id": "item-guide-0539",
     "name": "안마의자",
     "similarItems": [
       "전기안마기",
@@ -22372,6 +22906,7 @@
     ]
   },
   {
+    "id": "item-guide-0540",
     "name": "가스레인지",
     "similarItems": [
       "전자피아노",
@@ -22399,6 +22934,7 @@
     ]
   },
   {
+    "id": "item-guide-0541",
     "name": "전기장판",
     "similarItems": [
       "커팅매트",
@@ -22436,6 +22972,7 @@
     ]
   },
   {
+    "id": "item-guide-0542",
     "name": "스노보드",
     "similarItems": [
       "스키신발",
@@ -22470,6 +23007,7 @@
     ]
   },
   {
+    "id": "item-guide-0543",
     "name": "소화기",
     "similarItems": [
       "철봉 운동기구",
@@ -22505,6 +23043,7 @@
     ]
   },
   {
+    "id": "item-guide-0544",
     "name": "삽",
     "similarItems": [
       "철봉 운동기구",
@@ -22543,6 +23082,7 @@
     ]
   },
   {
+    "id": "item-guide-0545",
     "name": "실내자전거",
     "similarItems": [
       "철봉 운동기구",
@@ -22578,6 +23118,7 @@
     ]
   },
   {
+    "id": "item-guide-0546",
     "name": "사다리",
     "similarItems": [
       "철봉 운동기구",
@@ -22610,6 +23151,7 @@
     ]
   },
   {
+    "id": "item-guide-0547",
     "name": "밥상",
     "similarItems": [
       "좌식테이블",
@@ -22646,6 +23188,7 @@
     ]
   },
   {
+    "id": "item-guide-0548",
     "name": "반려동물 캐리어",
     "similarItems": [
       "캐리어",
@@ -22679,6 +23222,7 @@
     ]
   },
   {
+    "id": "item-guide-0549",
     "name": "밀대 걸레",
     "similarItems": [
       "지팡이",
@@ -22704,6 +23248,7 @@
     ]
   },
   {
+    "id": "item-guide-0550",
     "name": "문발",
     "similarItems": [
       "블라인드",
@@ -22733,6 +23278,7 @@
     ]
   },
   {
+    "id": "item-guide-0551",
     "name": "목발",
     "similarItems": [
       "지팡이",
@@ -22758,6 +23304,7 @@
     ]
   },
   {
+    "id": "item-guide-0552",
     "name": "목검",
     "similarItems": [
       "지팡이",
@@ -22793,6 +23340,7 @@
     ]
   },
   {
+    "id": "item-guide-0553",
     "name": "그늘천막",
     "similarItems": [
       "에어풀장",
@@ -22817,6 +23365,7 @@
     ]
   },
   {
+    "id": "item-guide-0554",
     "name": "고양이 스크래쳐",
     "similarItems": [
       "반려동물 케이지",
@@ -22855,6 +23404,7 @@
     ]
   },
   {
+    "id": "item-guide-0555",
     "name": "골프가방",
     "similarItems": [
       "캐리어",
@@ -22887,6 +23437,7 @@
     ]
   },
   {
+    "id": "item-guide-0556",
     "name": "변기커버",
     "similarItems": [
       "세면대",
@@ -22914,6 +23465,7 @@
     ]
   },
   {
+    "id": "item-guide-0557",
     "name": "침대 프레임",
     "similarItems": [
       "침대커버",
@@ -22952,6 +23504,7 @@
     ]
   },
   {
+    "id": "item-guide-0558",
     "name": "파티션",
     "similarItems": [
       "좌식테이블",
@@ -22995,6 +23548,7 @@
     ]
   },
   {
+    "id": "item-guide-0559",
     "name": "전신거울",
     "similarItems": [
       "좌식테이블",
@@ -23047,6 +23601,7 @@
     ]
   },
   {
+    "id": "item-guide-0560",
     "name": "건조대",
     "similarItems": [
       "철봉 운동기구",
@@ -23081,6 +23636,7 @@
     ]
   },
   {
+    "id": "item-guide-0561",
     "name": "건식 반신욕기",
     "similarItems": [
       "대형폐기물",
@@ -23103,6 +23659,7 @@
     ]
   },
   {
+    "id": "item-guide-0562",
     "name": "이동식 욕조(플라스틱 재질)",
     "similarItems": [
       "플라스틱 서랍장",
@@ -23129,6 +23686,7 @@
     ]
   },
   {
+    "id": "item-guide-0563",
     "name": "욕조",
     "similarItems": [
       "세면대",
@@ -23162,6 +23720,7 @@
     ]
   },
   {
+    "id": "item-guide-0564",
     "name": "에어매트",
     "similarItems": [
       "침대커버",
@@ -23198,6 +23757,7 @@
     ]
   },
   {
+    "id": "item-guide-0565",
     "name": "식탁",
     "similarItems": [
       "대리석 상판",
@@ -23236,6 +23796,7 @@
     ]
   },
   {
+    "id": "item-guide-0566",
     "name": "소파",
     "similarItems": [
       "좌식테이블",
@@ -23272,6 +23833,7 @@
     ]
   },
   {
+    "id": "item-guide-0567",
     "name": "쌀통(플라스틱 재질)",
     "similarItems": [
       "플라스틱 서랍장",
@@ -23307,6 +23869,7 @@
     ]
   },
   {
+    "id": "item-guide-0568",
     "name": "수납장(플라스틱 재질)",
     "similarItems": [
       "플라스틱 서랍장",
@@ -23335,6 +23898,7 @@
     ]
   },
   {
+    "id": "item-guide-0569",
     "name": "마루",
     "similarItems": [
       "공사장 생활폐기물",
@@ -23370,6 +23934,7 @@
     ]
   },
   {
+    "id": "item-guide-0570",
     "name": "비닐장판",
     "similarItems": [
       "공사장 생활폐기물",
@@ -23402,6 +23967,7 @@
     ]
   },
   {
+    "id": "item-guide-0571",
     "name": "매트리스",
     "similarItems": [
       "침대커버",
@@ -23427,6 +23993,7 @@
     ]
   },
   {
+    "id": "item-guide-0572",
     "name": "리빙박스(합성수지 재질)",
     "similarItems": [
       "폴딩카트",
@@ -23456,6 +24023,7 @@
     ]
   },
   {
+    "id": "item-guide-0573",
     "name": "수납장(목재재질)",
     "similarItems": [
       "좌식테이블",
@@ -23491,6 +24059,7 @@
     ]
   },
   {
+    "id": "item-guide-0574",
     "name": "타이어",
     "similarItems": [
       "핸들커버",
@@ -23514,6 +24083,7 @@
     ]
   },
   {
+    "id": "item-guide-0575",
     "name": "아이스팩",
     "similarItems": [
       "일반종량제폐기물",
@@ -23538,6 +24108,7 @@
     ]
   },
   {
+    "id": "item-guide-0576",
     "name": "식용유",
     "similarItems": [
       "들기름",
@@ -23559,6 +24130,7 @@
     ]
   },
   {
+    "id": "item-guide-0577",
     "name": "연탄재",
     "similarItems": [
       "불연성종량제폐기물",
@@ -23588,6 +24160,7 @@
     ]
   },
   {
+    "id": "item-guide-0578",
     "name": "하우스 비닐",
     "similarItems": [
       "영농폐기물",
@@ -23612,6 +24185,7 @@
     ]
   },
   {
+    "id": "item-guide-0579",
     "name": "빈 농약용기",
     "similarItems": [
       "영농폐기물",
@@ -23636,6 +24210,7 @@
     ]
   },
   {
+    "id": "item-guide-0580",
     "name": "엿기름",
     "similarItems": [
       "들기름",
@@ -23664,6 +24239,7 @@
     ]
   },
   {
+    "id": "item-guide-0581",
     "name": "분유가루",
     "similarItems": [
       "콜라겐 가루",
@@ -23692,6 +24268,7 @@
     ]
   },
   {
+    "id": "item-guide-0582",
     "name": "라면스프",
     "similarItems": [
       "감초가루",
@@ -23742,6 +24319,7 @@
     ]
   },
   {
+    "id": "item-guide-0583",
     "name": "버터",
     "similarItems": [
       "감초가루",
@@ -23793,6 +24371,7 @@
     ]
   },
   {
+    "id": "item-guide-0584",
     "name": "고추장",
     "similarItems": [
       "감초가루",
@@ -23844,6 +24423,7 @@
     ]
   },
   {
+    "id": "item-guide-0585",
     "name": "마요네즈",
     "similarItems": [
       "감초가루",
@@ -23894,6 +24474,7 @@
     ]
   },
   {
+    "id": "item-guide-0586",
     "name": "어성초가루",
     "similarItems": [
       "콜라겐 가루",
@@ -23922,6 +24503,7 @@
     ]
   },
   {
+    "id": "item-guide-0587",
     "name": "밀가루",
     "similarItems": [
       "콜라겐 가루",
@@ -23951,6 +24533,7 @@
     ]
   },
   {
+    "id": "item-guide-0588",
     "name": "시리얼",
     "similarItems": [
       "감초가루",
@@ -23998,6 +24581,7 @@
     ]
   },
   {
+    "id": "item-guide-0589",
     "name": "고등어",
     "similarItems": [
       "감초가루",
@@ -24046,6 +24630,7 @@
     ]
   },
   {
+    "id": "item-guide-0590",
     "name": "상한 음식",
     "similarItems": [
       "감초가루",
@@ -24095,6 +24680,7 @@
     ]
   },
   {
+    "id": "item-guide-0591",
     "name": "비계",
     "similarItems": [
       "감초가루",
@@ -24145,6 +24731,7 @@
     ]
   },
   {
+    "id": "item-guide-0592",
     "name": "바나나껍질",
     "similarItems": [
       "감초가루",
@@ -24191,6 +24778,7 @@
     ]
   },
   {
+    "id": "item-guide-0593",
     "name": "다시마",
     "similarItems": [
       "감초가루",
@@ -24232,6 +24820,7 @@
     ]
   },
   {
+    "id": "item-guide-0594",
     "name": "말린 귤껍질",
     "similarItems": [
       "감초가루",
@@ -24278,6 +24867,7 @@
     ]
   },
   {
+    "id": "item-guide-0595",
     "name": "라면",
     "similarItems": [
       "감초가루",
@@ -24327,6 +24917,7 @@
     ]
   },
   {
+    "id": "item-guide-0596",
     "name": "매실주 건더기",
     "similarItems": [
       "더덕",
@@ -24352,6 +24943,7 @@
     ]
   },
   {
+    "id": "item-guide-0597",
     "name": "내장류",
     "similarItems": [
       "감초가루",
@@ -24400,6 +24992,7 @@
     ]
   },
   {
+    "id": "item-guide-0598",
     "name": "김치",
     "similarItems": [
       "감초가루",
@@ -24449,6 +25042,7 @@
     ]
   },
   {
+    "id": "item-guide-0599",
     "name": "재킷",
     "similarItems": [
       "스카프",
@@ -24484,6 +25078,7 @@
     ]
   },
   {
+    "id": "item-guide-0600",
     "name": "목도리",
     "similarItems": [
       "스카프",
@@ -24523,6 +25118,7 @@
     ]
   },
   {
+    "id": "item-guide-0601",
     "name": "운동화",
     "similarItems": [
       "샌들",
@@ -24560,6 +25156,7 @@
     ]
   },
   {
+    "id": "item-guide-0602",
     "name": "구두",
     "similarItems": [
       "스카프",
@@ -24602,6 +25199,7 @@
     ]
   },
   {
+    "id": "item-guide-0603",
     "name": "화장품 파우치",
     "similarItems": [
       "스카프",
@@ -24643,6 +25241,7 @@
     ]
   },
   {
+    "id": "item-guide-0604",
     "name": "가방",
     "similarItems": [
       "캐리어",
@@ -24688,6 +25287,7 @@
     ]
   },
   {
+    "id": "item-guide-0605",
     "name": "물약",
     "similarItems": [
       "해열진통제",
@@ -24718,6 +25318,7 @@
     ]
   },
   {
+    "id": "item-guide-0606",
     "name": "한약",
     "similarItems": [
       "해열진통제",
@@ -24745,6 +25346,7 @@
     ]
   },
   {
+    "id": "item-guide-0607",
     "name": "알약",
     "similarItems": [
       "인슐린주사기",
@@ -24779,6 +25381,7 @@
     ]
   },
   {
+    "id": "item-guide-0608",
     "name": "연고",
     "similarItems": [
       "해열진통제",
@@ -24809,6 +25412,7 @@
     ]
   },
   {
+    "id": "item-guide-0609",
     "name": "제초제",
     "similarItems": [
       "살균제",
@@ -24838,6 +25442,7 @@
     ]
   },
   {
+    "id": "item-guide-0610",
     "name": "엔진오일",
     "similarItems": [
       "생활계 유해폐기물",
@@ -24865,6 +25470,7 @@
     ]
   },
   {
+    "id": "item-guide-0611",
     "name": "수은 온도계",
     "similarItems": [
       "혈압계",
@@ -24890,6 +25496,7 @@
     ]
   },
   {
+    "id": "item-guide-0612",
     "name": "나잘스프레이",
     "similarItems": [
       "해열진통제",
@@ -24921,6 +25528,7 @@
     ]
   },
   {
+    "id": "item-guide-0613",
     "name": "감기약",
     "similarItems": [
       "해열진통제",
@@ -24954,6 +25562,7 @@
     ]
   },
   {
+    "id": "item-guide-0614",
     "name": "페인트",
     "similarItems": [
       "살균제",
@@ -24984,6 +25593,7 @@
     ]
   },
   {
+    "id": "item-guide-0615",
     "name": "라돈 침대(라돈 매트리스)",
     "similarItems": [
       "침대커버",
@@ -25016,6 +25626,7 @@
     ]
   },
   {
+    "id": "item-guide-0616",
     "name": "광택제",
     "similarItems": [
       "살균제",
@@ -25046,6 +25657,7 @@
     ]
   },
   {
+    "id": "item-guide-0617",
     "name": "LED",
     "similarItems": [
       "조명제품",
@@ -25073,6 +25685,7 @@
     ]
   },
   {
+    "id": "item-guide-0618",
     "name": "형광등",
     "similarItems": [
       "조명제품",
@@ -25099,6 +25712,7 @@
     ]
   },
   {
+    "id": "item-guide-0619",
     "name": "속눈썹 영양제",
     "similarItems": [
       "핸드크림",
@@ -25140,6 +25754,7 @@
     ]
   },
   {
+    "id": "item-guide-0620",
     "name": "향수병",
     "similarItems": [
       "맥주병",
@@ -25170,6 +25785,7 @@
     ]
   },
   {
+    "id": "item-guide-0621",
     "name": "드링크병",
     "similarItems": [
       "맥주병",
@@ -25198,6 +25814,7 @@
     ]
   },
   {
+    "id": "item-guide-0622",
     "name": "소스병",
     "similarItems": [
       "맥주병",
@@ -25225,6 +25842,7 @@
     ]
   },
   {
+    "id": "item-guide-0623",
     "name": "기름병",
     "similarItems": [
       "들기름",
@@ -25257,6 +25875,7 @@
     ]
   },
   {
+    "id": "item-guide-0624",
     "name": "소주병",
     "similarItems": [
       "맥주병",
@@ -25289,6 +25908,7 @@
     ]
   },
   {
+    "id": "item-guide-0625",
     "name": "음료수병",
     "similarItems": [
       "맥주병",
@@ -25321,6 +25941,7 @@
     ]
   },
   {
+    "id": "item-guide-0626",
     "name": "그물 무늬 스티로폼 용기",
     "similarItems": [
       "난좌",
@@ -25345,6 +25966,7 @@
     ]
   },
   {
+    "id": "item-guide-0627",
     "name": "단열스티로폼",
     "similarItems": [
       "난좌",
@@ -25369,6 +25991,7 @@
     ]
   },
   {
+    "id": "item-guide-0628",
     "name": "과일포장재(스티로폼)",
     "similarItems": [
       "난좌",
@@ -25397,6 +26020,7 @@
     ]
   },
   {
+    "id": "item-guide-0629",
     "name": "보조배터리",
     "similarItems": [
       "CR 건전지",
@@ -25421,6 +26045,7 @@
     ]
   },
   {
+    "id": "item-guide-0630",
     "name": "AA 건전지",
     "similarItems": [
       "CR 건전지",
@@ -25448,6 +26073,7 @@
     ]
   },
   {
+    "id": "item-guide-0631",
     "name": "음료 페트병",
     "similarItems": [
       "생수",
@@ -25475,6 +26101,7 @@
     ]
   },
   {
+    "id": "item-guide-0632",
     "name": "무색페트병(물병)",
     "similarItems": [
       "생수",
@@ -25500,6 +26127,7 @@
     ]
   },
   {
+    "id": "item-guide-0633",
     "name": "반찬통",
     "similarItems": [
       "보온병",
@@ -25554,6 +26182,7 @@
     ]
   },
   {
+    "id": "item-guide-0634",
     "name": "테이프 클리너",
     "similarItems": [
       "마스킹테이프",
@@ -25587,6 +26216,7 @@
     ]
   },
   {
+    "id": "item-guide-0635",
     "name": "랩",
     "similarItems": [
       "지퍼백",
@@ -25634,6 +26264,7 @@
     ]
   },
   {
+    "id": "item-guide-0636",
     "name": "커피생두봉투",
     "similarItems": [
       "지퍼백",
@@ -25678,6 +26309,7 @@
     ]
   },
   {
+    "id": "item-guide-0637",
     "name": "삼각커피우유",
     "similarItems": [
       "지퍼백",
@@ -25718,6 +26350,7 @@
     ]
   },
   {
+    "id": "item-guide-0638",
     "name": "쭈쭈바",
     "similarItems": [
       "지퍼백",
@@ -25755,6 +26388,7 @@
     ]
   },
   {
+    "id": "item-guide-0639",
     "name": "도시락 김 용기",
     "similarItems": [
       "꿀 용기",
@@ -25789,6 +26423,7 @@
     ]
   },
   {
+    "id": "item-guide-0640",
     "name": "케찹 용기",
     "similarItems": [
       "마요네즈 용기",
@@ -25817,6 +26452,7 @@
     ]
   },
   {
+    "id": "item-guide-0641",
     "name": "습기제거제",
     "similarItems": [
       "플라스틱 서랍장",
@@ -25841,6 +26477,7 @@
     ]
   },
   {
+    "id": "item-guide-0642",
     "name": "캔시머 용기",
     "similarItems": [
       "꿀 용기",
@@ -25874,6 +26511,7 @@
     ]
   },
   {
+    "id": "item-guide-0643",
     "name": "카페 일회용컵",
     "similarItems": [
       "꿀 용기",
@@ -25916,6 +26554,7 @@
     ]
   },
   {
+    "id": "item-guide-0644",
     "name": "립밤",
     "similarItems": [
       "립스틱",
@@ -25939,6 +26578,7 @@
     ]
   },
   {
+    "id": "item-guide-0645",
     "name": "위생팩",
     "similarItems": [
       "지퍼백",
@@ -25981,6 +26621,7 @@
     ]
   },
   {
+    "id": "item-guide-0646",
     "name": "일회용 비닐장갑",
     "similarItems": [
       "지퍼백",
@@ -26022,6 +26663,7 @@
     ]
   },
   {
+    "id": "item-guide-0647",
     "name": "세탁소 비닐",
     "similarItems": [
       "지퍼백",
@@ -26063,6 +26705,7 @@
     ]
   },
   {
+    "id": "item-guide-0648",
     "name": "에어캡",
     "similarItems": [
       "지퍼백",
@@ -26107,6 +26750,7 @@
     ]
   },
   {
+    "id": "item-guide-0649",
     "name": "스파우트파우치",
     "similarItems": [
       "지퍼백",
@@ -26152,6 +26796,7 @@
     ]
   },
   {
+    "id": "item-guide-0650",
     "name": "커피봉지",
     "similarItems": [
       "지퍼백",
@@ -26197,6 +26842,7 @@
     ]
   },
   {
+    "id": "item-guide-0651",
     "name": "스프봉지",
     "similarItems": [
       "지퍼백",
@@ -26246,6 +26892,7 @@
     ]
   },
   {
+    "id": "item-guide-0652",
     "name": "검정봉지",
     "similarItems": [
       "지퍼백",
@@ -26292,6 +26939,7 @@
     ]
   },
   {
+    "id": "item-guide-0653",
     "name": "워셔액",
     "similarItems": [
       "세탁조 세정제",
@@ -26320,6 +26968,7 @@
     ]
   },
   {
+    "id": "item-guide-0654",
     "name": "플라스틱 도마",
     "similarItems": [
       "나무 쟁반",
@@ -26352,6 +27001,7 @@
     ]
   },
   {
+    "id": "item-guide-0655",
     "name": "즉석밥 용기",
     "similarItems": [
       "꿀 용기",
@@ -26387,6 +27037,7 @@
     ]
   },
   {
+    "id": "item-guide-0656",
     "name": "과자봉지",
     "similarItems": [
       "지퍼백",
@@ -26424,6 +27075,7 @@
     ]
   },
   {
+    "id": "item-guide-0657",
     "name": "수분리성 라벨",
     "similarItems": [
       "지퍼백",
@@ -26461,6 +27113,7 @@
     ]
   },
   {
+    "id": "item-guide-0658",
     "name": "휴대용 가스버너",
     "similarItems": [
       "반려동물 케이지",
@@ -26516,6 +27169,7 @@
     ]
   },
   {
+    "id": "item-guide-0659",
     "name": "채망",
     "similarItems": [
       "네트망",
@@ -26544,6 +27198,7 @@
     ]
   },
   {
+    "id": "item-guide-0660",
     "name": "가스압력밥솥",
     "similarItems": [
       "전자피아노",
@@ -26575,6 +27230,7 @@
     ]
   },
   {
+    "id": "item-guide-0661",
     "name": "캔따개",
     "similarItems": [
       "오프너",
@@ -26607,6 +27263,7 @@
     ]
   },
   {
+    "id": "item-guide-0662",
     "name": "새장",
     "similarItems": [
       "반려동물 케이지",
@@ -26653,6 +27310,7 @@
     ]
   },
   {
+    "id": "item-guide-0663",
     "name": "와이퍼",
     "similarItems": [
       "일반종량제폐기물",
@@ -26693,6 +27351,7 @@
     ]
   },
   {
+    "id": "item-guide-0664",
     "name": "사료 캔",
     "similarItems": [
       "음료캔",
@@ -26722,6 +27381,7 @@
     ]
   },
   {
+    "id": "item-guide-0665",
     "name": "분유통",
     "similarItems": [
       "음료캔",
@@ -26755,6 +27415,7 @@
     ]
   },
   {
+    "id": "item-guide-0666",
     "name": "스마트폰 거치대",
     "similarItems": [
       "이어폰",
@@ -26794,6 +27455,7 @@
     ]
   },
   {
+    "id": "item-guide-0667",
     "name": "캔커피",
     "similarItems": [
       "음료캔",
@@ -26821,6 +27483,7 @@
     ]
   },
   {
+    "id": "item-guide-0668",
     "name": "통조림햄 캔",
     "similarItems": [
       "오프너",
@@ -26850,6 +27513,7 @@
     ]
   },
   {
+    "id": "item-guide-0669",
     "name": "참치캔",
     "similarItems": [
       "음료캔",
@@ -26877,6 +27541,7 @@
     ]
   },
   {
+    "id": "item-guide-0670",
     "name": "청소솔",
     "similarItems": [
       "일반종량제폐기물",
@@ -26915,6 +27580,7 @@
     ]
   },
   {
+    "id": "item-guide-0671",
     "name": "집게",
     "similarItems": [
       "위생도마",
@@ -26958,6 +27624,7 @@
     ]
   },
   {
+    "id": "item-guide-0672",
     "name": "법랑냄비",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -26991,6 +27658,7 @@
     ]
   },
   {
+    "id": "item-guide-0673",
     "name": "나사",
     "similarItems": [
       "못",
@@ -27019,6 +27687,7 @@
     ]
   },
   {
+    "id": "item-guide-0674",
     "name": "펜치",
     "similarItems": [
       "못",
@@ -27049,6 +27718,7 @@
     ]
   },
   {
+    "id": "item-guide-0675",
     "name": "부탄가스",
     "similarItems": [
       "모기 스프레이",
@@ -27074,6 +27744,7 @@
     ]
   },
   {
+    "id": "item-guide-0676",
     "name": "텀블러",
     "similarItems": [
       "음료캔",
@@ -27113,6 +27784,7 @@
     ]
   },
   {
+    "id": "item-guide-0677",
     "name": "후드 필터",
     "similarItems": [
       "네트망",
@@ -27140,6 +27812,7 @@
     ]
   },
   {
+    "id": "item-guide-0678",
     "name": "수저",
     "similarItems": [
       "포크",
@@ -27171,6 +27844,7 @@
     ]
   },
   {
+    "id": "item-guide-0679",
     "name": "요거트 용기",
     "similarItems": [
       "꿀 용기",
@@ -27206,6 +27880,7 @@
     ]
   },
   {
+    "id": "item-guide-0680",
     "name": "바나나우유",
     "similarItems": [
       "꿀 용기",
@@ -27242,6 +27917,7 @@
     ]
   },
   {
+    "id": "item-guide-0681",
     "name": "스노우체인",
     "similarItems": [
       "안전문",
@@ -27271,6 +27947,7 @@
     ]
   },
   {
+    "id": "item-guide-0682",
     "name": "L자 파일",
     "similarItems": [
       "쫄대 화일",
@@ -27305,6 +27982,7 @@
     ]
   },
   {
+    "id": "item-guide-0683",
     "name": "강판",
     "similarItems": [
       "인슐린주사기",
@@ -27341,6 +28019,7 @@
     ]
   },
   {
+    "id": "item-guide-0684",
     "name": "간장용기",
     "similarItems": [
       "꿀 용기",
@@ -27378,6 +28057,7 @@
     ]
   },
   {
+    "id": "item-guide-0685",
     "name": "PCR 플라스틱",
     "similarItems": [
       "세탁조 세정제",
@@ -27409,6 +28089,7 @@
     ]
   },
   {
+    "id": "item-guide-0686",
     "name": "양파망",
     "similarItems": [
       "과일그물망",
@@ -27433,6 +28114,7 @@
     ]
   },
   {
+    "id": "item-guide-0687",
     "name": "락스",
     "similarItems": [
       "세탁조 세정제",
@@ -27455,6 +28137,7 @@
     ]
   },
   {
+    "id": "item-guide-0688",
     "name": "클렌징 폼",
     "similarItems": [
       "립스틱",
@@ -27490,6 +28173,7 @@
     ]
   },
   {
+    "id": "item-guide-0689",
     "name": "바디로션",
     "similarItems": [
       "핸드크림",
@@ -27519,6 +28203,7 @@
     ]
   },
   {
+    "id": "item-guide-0690",
     "name": "정리함",
     "similarItems": [
       "소품 정리함",
@@ -27553,6 +28238,7 @@
     ]
   },
   {
+    "id": "item-guide-0691",
     "name": "클리어 파일",
     "similarItems": [
       "쫄대 화일",
@@ -27589,6 +28275,7 @@
     ]
   },
   {
+    "id": "item-guide-0692",
     "name": "세탁소 옷걸이",
     "similarItems": [
       "반려동물 케이지",
@@ -27616,6 +28303,7 @@
     ]
   },
   {
+    "id": "item-guide-0693",
     "name": "메달(도금)",
     "similarItems": [
       "상장케이스",
@@ -27643,6 +28331,7 @@
     ]
   },
   {
+    "id": "item-guide-0694",
     "name": "맥주케그",
     "similarItems": [
       "맥주병",
@@ -27675,6 +28364,7 @@
     ]
   },
   {
+    "id": "item-guide-0695",
     "name": "반려동물 펜스",
     "similarItems": [
       "반려동물 케이지",
@@ -27712,6 +28402,7 @@
     ]
   },
   {
+    "id": "item-guide-0696",
     "name": "석쇠",
     "similarItems": [
       "포크",
@@ -27742,6 +28433,7 @@
     ]
   },
   {
+    "id": "item-guide-0697",
     "name": "불판",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -27777,6 +28469,7 @@
     ]
   },
   {
+    "id": "item-guide-0698",
     "name": "바비큐 그릴",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -27812,6 +28505,7 @@
     ]
   },
   {
+    "id": "item-guide-0699",
     "name": "욕실선반",
     "similarItems": [
       "세면대",
@@ -27856,6 +28550,7 @@
     ]
   },
   {
+    "id": "item-guide-0700",
     "name": "수전",
     "similarItems": [
       "세면대",
@@ -27889,6 +28584,7 @@
     ]
   },
   {
+    "id": "item-guide-0701",
     "name": "수도배관",
     "similarItems": [
       "수도꼭지",
@@ -27922,6 +28618,7 @@
     ]
   },
   {
+    "id": "item-guide-0702",
     "name": "아령(덤벨)",
     "similarItems": [
       "철봉 운동기구",
@@ -27963,6 +28660,7 @@
     ]
   },
   {
+    "id": "item-guide-0703",
     "name": "압축봉",
     "similarItems": [
       "철봉 운동기구",
@@ -28005,6 +28703,7 @@
     ]
   },
   {
+    "id": "item-guide-0704",
     "name": "책꽂이",
     "similarItems": [
       "책상유리",
@@ -28056,6 +28755,7 @@
     ]
   },
   {
+    "id": "item-guide-0705",
     "name": "클립",
     "similarItems": [
       "옷핀",
@@ -28081,6 +28781,7 @@
     ]
   },
   {
+    "id": "item-guide-0706",
     "name": "철사",
     "similarItems": [
       "못",
@@ -28126,6 +28827,7 @@
     ]
   },
   {
+    "id": "item-guide-0707",
     "name": "가마솥",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -28161,6 +28863,7 @@
     ]
   },
   {
+    "id": "item-guide-0708",
     "name": "냄비",
     "similarItems": [
       "냄비뚜껑(내열)",
@@ -28194,6 +28897,7 @@
     ]
   },
   {
+    "id": "item-guide-0709",
     "name": "종이 퍼즐",
     "similarItems": [
       "종이",
@@ -28228,6 +28932,7 @@
     ]
   },
   {
+    "id": "item-guide-0710",
     "name": "아이스크림통",
     "similarItems": [
       "브로마이드",
@@ -28261,6 +28966,7 @@
     ]
   },
   {
+    "id": "item-guide-0711",
     "name": "종이 완충재",
     "similarItems": [
       "치킨 박스",
@@ -28292,6 +28998,7 @@
     ]
   },
   {
+    "id": "item-guide-0712",
     "name": "음수대용 종이컵",
     "similarItems": [
       "꼬깔형 생수컵",
@@ -28314,6 +29021,7 @@
     ]
   },
   {
+    "id": "item-guide-0713",
     "name": "종이 보냉박스",
     "similarItems": [
       "택배 송장",
@@ -28361,6 +29069,7 @@
     ]
   },
   {
+    "id": "item-guide-0714",
     "name": "담뱃갑",
     "similarItems": [
       "치킨 박스",
@@ -28389,6 +29098,7 @@
     ]
   },
   {
+    "id": "item-guide-0715",
     "name": "슈트리",
     "similarItems": [
       "키친타올 심",
@@ -28434,6 +29144,7 @@
     ]
   },
   {
+    "id": "item-guide-0716",
     "name": "피자박스",
     "similarItems": [
       "치킨 박스",
@@ -28461,6 +29172,7 @@
     ]
   },
   {
+    "id": "item-guide-0717",
     "name": "종이 쇼핑백",
     "similarItems": [
       "치킨 박스",
@@ -28491,6 +29203,7 @@
     ]
   },
   {
+    "id": "item-guide-0718",
     "name": "계란판",
     "similarItems": [
       "꿀 용기",
@@ -28538,6 +29251,7 @@
     ]
   },
   {
+    "id": "item-guide-0719",
     "name": "선거 포스터",
     "similarItems": [
       "브로마이드",
@@ -28566,6 +29280,7 @@
     ]
   },
   {
+    "id": "item-guide-0720",
     "name": "교과서",
     "similarItems": [
       "동화책",
@@ -28597,6 +29312,7 @@
     ]
   },
   {
+    "id": "item-guide-0721",
     "name": "그림",
     "similarItems": [
       "색도화지",
@@ -28629,6 +29345,7 @@
     ]
   },
   {
+    "id": "item-guide-0722",
     "name": "골판지 상자",
     "similarItems": [
       "치킨 박스",
@@ -28663,6 +29380,7 @@
     ]
   },
   {
+    "id": "item-guide-0723",
     "name": "휴지심",
     "similarItems": [
       "화장솜",
@@ -28696,6 +29414,7 @@
     ]
   },
   {
+    "id": "item-guide-0724",
     "name": "포스터",
     "similarItems": [
       "브로마이드",
@@ -28729,6 +29448,7 @@
     ]
   },
   {
+    "id": "item-guide-0725",
     "name": "정부화일",
     "similarItems": [
       "황화일",
@@ -28750,6 +29470,7 @@
     ]
   },
   {
+    "id": "item-guide-0726",
     "name": "탁상 달력",
     "similarItems": [
       "달력",
@@ -28779,6 +29500,7 @@
     ]
   },
   {
+    "id": "item-guide-0727",
     "name": "지관통",
     "similarItems": [
       "키친타올 심",
@@ -28807,6 +29529,7 @@
     ]
   },
   {
+    "id": "item-guide-0728",
     "name": "잡지책",
     "similarItems": [
       "달력",
@@ -28834,6 +29557,7 @@
     ]
   },
   {
+    "id": "item-guide-0729",
     "name": "색종이",
     "similarItems": [
       "색지",
@@ -28868,6 +29592,7 @@
     ]
   },
   {
+    "id": "item-guide-0730",
     "name": "전단지",
     "similarItems": [
       "브로마이드",
@@ -28901,6 +29626,7 @@
     ]
   },
   {
+    "id": "item-guide-0731",
     "name": "메모지",
     "similarItems": [
       "달력",
@@ -28928,6 +29654,7 @@
     ]
   },
   {
+    "id": "item-guide-0732",
     "name": "공책",
     "similarItems": [
       "달력",
@@ -28957,6 +29684,7 @@
     ]
   },
   {
+    "id": "item-guide-0733",
     "name": "택배 상자",
     "similarItems": [
       "치킨 박스",
@@ -28988,6 +29716,7 @@
     ]
   },
   {
+    "id": "item-guide-0734",
     "name": "뚜껑이 달린 우유팩",
     "similarItems": [
       "종이팩",
@@ -29018,6 +29747,7 @@
     ]
   },
   {
+    "id": "item-guide-0735",
     "name": "우유팩",
     "similarItems": [
       "종이팩",

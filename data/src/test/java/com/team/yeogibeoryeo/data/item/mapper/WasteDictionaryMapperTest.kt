@@ -11,6 +11,7 @@ class WasteDictionaryMapperTest {
     fun `무색페트병 경로는 플라스틱이 아니라 무색페트병 카테고리로 매핑한다`() {
         val result =
             WasteDictionaryItem(
+                id = "item-guide-test",
                 name = "무색페트병(물병)",
                 categoryPaths = listOf(listOf("재활용폐기물", "무색페트병")),
                 similarItems = emptyList(),
@@ -19,6 +20,7 @@ class WasteDictionaryMapperTest {
                 notes = emptyList(),
             ).toDomain()
 
+        assertEquals("item-guide-test", result.id)
         assertEquals(DisposalCategory.COLORLESS_PET, result.category)
     }
 
@@ -36,6 +38,7 @@ class WasteDictionaryMapperTest {
         cases.forEach { (path, expectedCategory) ->
             val result =
                 WasteDictionaryItem(
+                    id = "item-guide-test",
                     name = expectedCategory.name,
                     categoryPaths = listOf(path),
                     similarItems = emptyList(),
@@ -52,6 +55,7 @@ class WasteDictionaryMapperTest {
     fun `불연성 종량제봉투 품목은 일반 종량제봉투 장소로도 분류하지 않는다`() {
         val result =
             WasteDictionaryItem(
+                id = "item-guide-test",
                 name = "내열냄비",
                 categoryPaths = listOf(listOf("일반폐기물", "불연성종량제폐기물")),
                 similarItems = emptyList(),
@@ -67,6 +71,7 @@ class WasteDictionaryMapperTest {
     fun `서로 다른 배출 문장이 있으면 관련 장소를 모두 유지한다`() {
         val result =
             WasteDictionaryItem(
+                id = "item-guide-test",
                 name = "공사장 생활폐기물",
                 categoryPaths = listOf(listOf("공사장 생활폐기물")),
                 similarItems = emptyList(),
@@ -109,6 +114,7 @@ class WasteDictionaryMapperTest {
         cases.forEach { (name, categoryPaths, dischargeMethod) ->
             val result =
                 WasteDictionaryItem(
+                    id = "item-guide-test",
                     name = name,
                     categoryPaths = categoryPaths,
                     similarItems = emptyList(),
@@ -126,6 +132,7 @@ class WasteDictionaryMapperTest {
     fun `유해폐기물 전용 수거함 표현은 전용 수거함 장소로 분류하고 재활용 가능으로 보지 않는다`() {
         val result =
             WasteDictionaryItem(
+                id = "item-guide-test",
                 name = "폐의약품",
                 categoryPaths = listOf(listOf("생활계 유해폐기물", "폐의약품")),
                 similarItems = emptyList(),
@@ -142,6 +149,7 @@ class WasteDictionaryMapperTest {
     fun `품목사전 배출방법 특징 유의사항은 상세 섹션으로 매핑한다`() {
         val result =
             WasteDictionaryItem(
+                id = "item-guide-test",
                 name = "우유팩",
                 categoryPaths = listOf(listOf("재활용폐기물", "종이팩 일반팩")),
                 similarItems = emptyList(),
