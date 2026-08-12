@@ -562,6 +562,130 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `동일 검색어 후보 조회가 진행 중이면 중복 제출을 무시한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val candidateSearchResult = CompletableDeferred<List<Region>>()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidateProvider = { keyword ->
+                    if (keyword == "명동") {
+                        candidateSearchResult.await()
+                    } else {
+                        emptyList()
+                    }
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.searchByKeyword()
+
+            assertEquals(listOf("명동"), regionOptionsRepository.eupmyeondongKeywords)
+
+            candidateSearchResult.complete(emptyList())
+            advanceUntilIdle()
+
+            assertEquals(listOf("명동"), repository.keywords)
+        }
+
+    @Test
+    fun `앞뒤 공백만 다른 동일 검색어로 수정 후 재제출해도 진행 중인 검색을 유지한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val candidateSearchResult = CompletableDeferred<List<Region>>()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidateProvider = { keyword ->
+                    if (keyword == "명동") {
+                        candidateSearchResult.await()
+                    } else {
+                        emptyList()
+                    }
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged(" 명동 ")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+
+            assertEquals(listOf("명동"), regionOptionsRepository.eupmyeondongKeywords)
+
+            candidateSearchResult.complete(emptyList())
+            advanceUntilIdle()
+
+            assertEquals(listOf("명동"), repository.keywords)
+        }
+
+    @Test
+    fun `검색 중 다른 검색어를 제출하면 기존 후보 조회를 취소하고 새 검색을 실행한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val candidateSearchResult = CompletableDeferred<List<Region>>()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidateProvider = { keyword ->
+                    if (keyword == "명동") {
+                        candidateSearchResult.await()
+                    } else {
+                        emptyList()
+                    }
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.onSearchKeywordChanged("명동1가")
+            viewModel.searchByKeyword()
+            candidateSearchResult.complete(
+                listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동")),
+            )
+            advanceUntilIdle()
+
+            assertEquals(listOf("명동", "명동1가"), regionOptionsRepository.eupmyeondongKeywords)
+            assertEquals(listOf("명동1가"), repository.keywords)
+            assertEquals("명동1가", viewModel.uiState.value.searchKeyword)
+        }
+
+    @Test
+    fun `검색 완료 후 같은 검색어 재제출은 새로고침처럼 다시 실행한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("용답동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("용답동", "용답동"), repository.keywords)
+        }
+
+    @Test
     fun `지도 중심 검색은 전달된 카메라 중심 좌표로 수거 장소를 검색한다`() =
         runTest {
             val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)

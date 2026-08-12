@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.region
 
+import com.team.yeogibeoryeo.data.core.di.DefaultDispatcher
 import com.team.yeogibeoryeo.data.region.local.LegalAdminDongMappingLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.RegionOptionsLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.RegionalGuideAvailabilityLocalDataSource
@@ -9,87 +10,123 @@ import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class RegionOptionsRepositoryImpl @Inject constructor(
     private val localDataSource: RegionOptionsLocalDataSource,
     private val legalAdminDongMappingLocalDataSource: LegalAdminDongMappingLocalDataSource,
     private val regionalGuideAvailabilityLocalDataSource: RegionalGuideAvailabilityLocalDataSource,
-    private val regionalGuideRegionOptionsLocalDataSource: RegionalGuideRegionOptionsLocalDataSource
+    private val regionalGuideRegionOptionsLocalDataSource: RegionalGuideRegionOptionsLocalDataSource,
+    @param:DefaultDispatcher
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : RegionOptionsRepository {
 
     override suspend fun getSidoOptions(): List<String> {
-        return RegionOptionsMapper.getSidoOptions(
-            regionalGuideRegions = getAvailableRegionalGuideRegions()
-        )
+        val regionalGuideRegions = getAvailableRegionalGuideRegions()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.getSidoOptions(
+                regionalGuideRegions = regionalGuideRegions
+            )
+        }
     }
 
     override suspend fun getSigunguOptions(
         sido: String
     ): List<String> {
-        return RegionOptionsMapper.getSigunguOptions(
-            regionalGuideRegions = getAvailableRegionalGuideRegions(),
-            sido = sido
-        )
+        val regionalGuideRegions = getAvailableRegionalGuideRegions()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.getSigunguOptions(
+                regionalGuideRegions = regionalGuideRegions,
+                sido = sido
+            )
+        }
     }
 
     override suspend fun getEupmyeondongOptions(
         sido: String,
         sigungu: String
     ): List<String> {
-        return RegionOptionsMapper.getEupmyeondongOptions(
-            administrativeRegions = localDataSource.getRegions(),
-            sido = sido,
-            sigungu = sigungu
-        )
+        val administrativeRegions = localDataSource.getRegions()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.getEupmyeondongOptions(
+                administrativeRegions = administrativeRegions,
+                sido = sido,
+                sigungu = sigungu
+            )
+        }
     }
 
     override suspend fun findRegionsByEupmyeondongKeyword(
         keyword: String
     ): List<Region> {
-        return RegionOptionsMapper.findEupmyeondongRegions(
-            administrativeRegions = localDataSource.getRegions(),
-            legalAdminDongMappings = legalAdminDongMappingLocalDataSource.getMappings(),
-            keyword = keyword
-        )
+        val administrativeRegions = localDataSource.getRegions()
+        val legalAdminDongMappings = legalAdminDongMappingLocalDataSource.getMappings()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.findEupmyeondongRegions(
+                administrativeRegions = administrativeRegions,
+                legalAdminDongMappings = legalAdminDongMappings,
+                keyword = keyword
+            )
+        }
     }
 
     override suspend fun getRegionalGuideSigunguOptions(
         sido: String
     ): List<String> {
-        return RegionOptionsMapper.getRegionalGuideSigunguOptions(
-            regionalGuideRegions = getAvailableRegionalGuideRegions(),
-            sido = sido
-        )
+        val regionalGuideRegions = getAvailableRegionalGuideRegions()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.getRegionalGuideSigunguOptions(
+                regionalGuideRegions = regionalGuideRegions,
+                sido = sido
+            )
+        }
     }
 
     override suspend fun getRegionalGuideEupmyeondongOptions(
         sido: String,
         sigungu: String
     ): List<String> {
-        val options = RegionOptionsMapper.getRegionalGuideEupmyeondongOptions(
-            administrativeRegions = localDataSource.getRegions(),
-            sido = sido,
-            sigungu = sigungu
-        )
+        val administrativeRegions = localDataSource.getRegions()
+        val options = mapRegionOptions {
+            RegionOptionsMapper.getRegionalGuideEupmyeondongOptions(
+                administrativeRegions = administrativeRegions,
+                sido = sido,
+                sigungu = sigungu
+            )
+        }
         val availability = getRegionalGuideAvailability()
         if (availability.isEmpty()) return options
 
-        return RegionOptionsMapper.filterRegionalGuideEupmyeondongOptions(
-            options = options,
-            availability = availability,
-            sido = sido,
-            sigungu = sigungu,
-        )
+        return mapRegionOptions {
+            RegionOptionsMapper.filterRegionalGuideEupmyeondongOptions(
+                options = options,
+                availability = availability,
+                sido = sido,
+                sigungu = sigungu,
+            )
+        }
     }
 
     override suspend fun findRegionalGuideRegionsByEupmyeondongKeyword(
         keyword: String
     ): List<Region> {
-        return RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
-            administrativeRegions = localDataSource.getRegions(),
-            legalAdminDongMappings = legalAdminDongMappingLocalDataSource.getMappings(),
-            keyword = keyword
-        )
+        val administrativeRegions = localDataSource.getRegions()
+        val legalAdminDongMappings = legalAdminDongMappingLocalDataSource.getMappings()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+                administrativeRegions = administrativeRegions,
+                legalAdminDongMappings = legalAdminDongMappings,
+                keyword = keyword
+            )
+        }
     }
 
     override suspend fun findAvailableRegionalGuideRegionsByEupmyeondongKeyword(
@@ -106,49 +143,68 @@ class RegionOptionsRepositoryImpl @Inject constructor(
         val availability = getRegionalGuideAvailability()
         if (availability.isEmpty()) return regions
 
-        return RegionOptionsMapper.filterAvailableRegionalGuideRegions(
-            regions = regions,
-            availability = availability,
-        )
+        return mapRegionOptions {
+            RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+                regions = regions,
+                availability = availability,
+            )
+        }
     }
 
     override suspend fun findLegalDongKeywordsByRegion(
         region: Region,
         keyword: String
     ): List<String> {
-        return RegionOptionsMapper.findLegalDongKeywordsByRegion(
-            mappings = legalAdminDongMappingLocalDataSource.getMappings(),
-            region = region,
-            keyword = keyword
-        )
+        val mappings = legalAdminDongMappingLocalDataSource.getMappings()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.findLegalDongKeywordsByRegion(
+                mappings = mappings,
+                region = region,
+                keyword = keyword
+            )
+        }
     }
 
     override suspend fun findRegionsBySigunguKeyword(
         keyword: String
     ): List<Region> {
-        return RegionOptionsMapper.findSigunguRegions(
-            administrativeRegions = localDataSource.getRegions(),
-            regionalGuideRegions = getAvailableRegionalGuideRegions(),
-            keyword = keyword
-        )
+        val administrativeRegions = localDataSource.getRegions()
+        val regionalGuideRegions = getAvailableRegionalGuideRegions()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.findSigunguRegions(
+                administrativeRegions = administrativeRegions,
+                regionalGuideRegions = regionalGuideRegions,
+                keyword = keyword
+            )
+        }
     }
 
     override suspend fun normalizeRegionForRegionalGuide(
         region: Region
     ): Region {
-        return RegionOptionsMapper.normalizeRegionForRegionalGuide(
-            region = region,
-            regionalGuideRegions = getAvailableRegionalGuideRegions()
-        )
+        val regionalGuideRegions = getAvailableRegionalGuideRegions()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.normalizeRegionForRegionalGuide(
+                region = region,
+                regionalGuideRegions = regionalGuideRegions
+            )
+        }
     }
 
     override suspend fun findAdminDongCandidatesForLegalDong(
         region: Region
     ): List<Region> {
-        return RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
-            mappings = legalAdminDongMappingLocalDataSource.getMappings(),
-            region = region
-        )
+        val mappings = legalAdminDongMappingLocalDataSource.getMappings()
+
+        return mapRegionOptions {
+            RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+                mappings = mappings,
+                region = region
+            )
+        }
     }
 
     private suspend fun getAvailableRegionalGuideRegions(): List<RegionalGuideRegionDto> {
@@ -168,5 +224,10 @@ class RegionOptionsRepositoryImpl @Inject constructor(
 
     private suspend fun getRegionalGuideAvailability(): List<RegionalGuideAvailabilityDto> =
         regionalGuideAvailabilityLocalDataSource.getRegions()
+
+    private suspend fun <T> mapRegionOptions(block: () -> T): T =
+        withContext(defaultDispatcher) {
+            block()
+        }
 
 }

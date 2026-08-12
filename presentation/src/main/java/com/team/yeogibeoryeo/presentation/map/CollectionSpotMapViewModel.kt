@@ -68,6 +68,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     private var originalSpots: List<CollectionSpot> = emptyList()
     private var spotSearchJob: Job? = null
+    private var inFlightKeywordSearch: String? = null
     private var currentLocationRefreshJob: Job? = null
     private var currentLocationLoadingJob: Job? = null
     private var hasRequestedInitialCurrentLocationSearch = false
@@ -84,17 +85,18 @@ class CollectionSpotMapViewModel @Inject constructor(
     fun onSearchKeywordChanged(keyword: String) {
         currentLocationRefreshJob?.cancel()
 
+        val normalizedKeyword = keyword.trim()
+        val keepsInFlightKeywordSearch =
+            uiState.value.searchMode == MapSearchMode.KEYWORD &&
+                inFlightKeywordSearch == normalizedKeyword
         val shouldCancelSpotSearch =
             (uiState.value.isLoading || currentLocationLoadingJob?.isActive == true) &&
-                uiState.value.searchMode in setOf(
-                    MapSearchMode.KEYWORD,
-                    MapSearchMode.CURRENT_LOCATION,
-                    MapSearchMode.MAP_CENTER,
-                )
+                uiState.value.searchMode in KeywordEditableSearchModes &&
+                !keepsInFlightKeywordSearch
         val shouldCancelFavoriteSpotNearbySearch = uiState.value.isFavoriteSpotNearbyLoading
 
         if (shouldCancelSpotSearch || shouldCancelFavoriteSpotNearbySearch) {
-            spotSearchJob?.cancel()
+            cancelSpotSearchJob()
         }
         if (shouldCancelSpotSearch) {
             originalSpots = emptyList()
@@ -154,7 +156,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationLoadingJob?.cancel()
 
         if (keyword.isBlank()) {
-            spotSearchJob?.cancel()
+            cancelSpotSearchJob()
             originalSpots = emptyList()
 
             _uiState.update {
@@ -177,31 +179,40 @@ class CollectionSpotMapViewModel @Inject constructor(
             return
         }
 
-        spotSearchJob?.cancel()
+        if (spotSearchJob?.isActive == true && inFlightKeywordSearch == keyword) return
+
+        cancelSpotSearchJob()
+        inFlightKeywordSearch = keyword
         startKeywordSearchLoading()
         spotSearchJob = viewModelScope.launch {
-            when (val candidateResult = resolveMapRegionSearchCandidateUseCase(keyword)) {
-                is MapRegionSearchCandidateResult.NeedSelection -> {
-                    mapSearchTimingLogger.log(
-                        "keyword search candidate selection required query=$keyword " +
-                            "candidateCount=${candidateResult.candidates.size}",
-                    )
-                    showRegionSearchCandidates(candidateResult.candidates)
-                }
-
-                is MapRegionSearchCandidateResult.ReadyToSearch -> {
-                    val selectedCandidate = candidateResult.selectedCandidate
-                    if (selectedCandidate != null && selectedCandidate.hasDetailSearchOptions()) {
-                        showRegionDetailSearchOptions(
-                            candidate = selectedCandidate,
-                            previousCandidates = emptyList(),
+            try {
+                when (val candidateResult = resolveMapRegionSearchCandidateUseCase(keyword)) {
+                    is MapRegionSearchCandidateResult.NeedSelection -> {
+                        mapSearchTimingLogger.log(
+                            "keyword search candidate selection required query=$keyword " +
+                                "candidateCount=${candidateResult.candidates.size}",
                         )
-                    } else {
-                        searchByKeywordInternal(
-                            keyword = candidateResult.searchKeyword,
-                            selectedRegionCandidate = selectedCandidate,
-                        )
+                        showRegionSearchCandidates(candidateResult.candidates)
                     }
+
+                    is MapRegionSearchCandidateResult.ReadyToSearch -> {
+                        val selectedCandidate = candidateResult.selectedCandidate
+                        if (selectedCandidate != null && selectedCandidate.hasDetailSearchOptions()) {
+                            showRegionDetailSearchOptions(
+                                candidate = selectedCandidate,
+                                previousCandidates = emptyList(),
+                            )
+                        } else {
+                            searchByKeywordInternal(
+                                keyword = candidateResult.searchKeyword,
+                                selectedRegionCandidate = selectedCandidate,
+                            )
+                        }
+                    }
+                }
+            } finally {
+                if (inFlightKeywordSearch == keyword) {
+                    inFlightKeywordSearch = null
                 }
             }
         }
@@ -217,7 +228,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
 
         currentLocationRefreshJob?.cancel()
-        spotSearchJob?.cancel()
+        cancelSpotSearchJob()
         spotSearchJob = viewModelScope.launch {
             searchByKeywordInternal(
                 keyword = candidate.searchKeyword,
@@ -257,7 +268,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     ) {
         currentLocationRefreshJob?.cancel()
         currentLocationLoadingJob?.cancel()
-        spotSearchJob?.cancel()
+        cancelSpotSearchJob()
         _uiState.update {
             it.copy(searchKeyword = keyword)
         }
@@ -405,7 +416,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     fun searchByCurrentLocation() {
         currentLocationRefreshJob?.cancel()
-        spotSearchJob?.cancel()
+        cancelSpotSearchJob()
         val searchGeneration = ++currentLocationSearchGeneration
         _uiState.update {
             it.copy(searchKeyword = EMPTY_SEARCH_KEYWORD)
@@ -428,7 +439,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     fun searchByMapCenter(coordinate: Coordinate) {
         currentLocationRefreshJob?.cancel()
         currentLocationLoadingJob?.cancel()
-        spotSearchJob?.cancel()
+        cancelSpotSearchJob()
         spotSearchJob = viewModelScope.launch {
             val searchStartedAtNanos = System.nanoTime()
             mapSearchTimingLogger.log(
@@ -575,7 +586,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
         currentLocationRefreshJob?.cancel()
         currentLocationLoadingJob?.cancel()
-        spotSearchJob?.cancel()
+        cancelSpotSearchJob()
 
         val selectedSpot =
             originalSpots.firstOrNull { spot -> spot.id == request.targetId }
@@ -645,7 +656,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
         currentLocationRefreshJob?.cancel()
         currentLocationLoadingJob?.cancel()
-        spotSearchJob?.cancel()
+        cancelSpotSearchJob()
         originalSpots = emptyList()
         hasRequestedInitialCurrentLocationSearch = false
 
@@ -726,7 +737,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             return
         }
 
-        spotSearchJob?.cancel()
+        cancelSpotSearchJob()
         val searchGeneration = ++currentLocationSearchGeneration
         spotSearchJob = viewModelScope.launch {
             if (canStartInitialCurrentLocationSearch()) {
@@ -1211,12 +1222,22 @@ class CollectionSpotMapViewModel @Inject constructor(
             isBookmarked = targetId in favoriteSpotIds,
         )
 
+    private fun cancelSpotSearchJob() {
+        spotSearchJob?.cancel()
+        inFlightKeywordSearch = null
+    }
+
     private companion object {
         const val DEFAULT_RADIUS_METER = 500
         const val RECENT_LOCATION_CACHE_MAX_DISTANCE_METER = 200
         const val CURRENT_LOCATION_LOADING_DELAY_MILLIS = 300L
         const val EMPTY_SEARCH_KEYWORD = ""
         const val NO_SELECTED_REGION = "none"
+        val KeywordEditableSearchModes = setOf(
+            MapSearchMode.KEYWORD,
+            MapSearchMode.CURRENT_LOCATION,
+            MapSearchMode.MAP_CENTER,
+        )
     }
 }
 
