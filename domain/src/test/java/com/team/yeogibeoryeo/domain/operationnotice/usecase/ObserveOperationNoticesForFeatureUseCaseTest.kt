@@ -59,6 +59,18 @@ class ObserveOperationNoticesForFeatureUseCaseTest {
     }
 
     @Test
+    fun `닫힌 위험 공지는 최종 흐름에서도 표시된다`() = runBlocking {
+        val useCase = createUseCase(
+            notices = listOf(notice(id = "critical", severity = OperationNoticeSeverity.CRITICAL)),
+            dismissedRepository = FakeDismissedOperationNoticeRepository(setOf("critical")),
+        )
+
+        val result = useCase(OperationNoticeFeature.HOME).first()
+
+        assertEquals(listOf("critical"), result.map { it.id })
+    }
+
+    @Test
     fun `버전 범위 밖 공지는 표시하지 않는다`() = runBlocking {
         val useCase = createUseCase(
             notices = listOf(

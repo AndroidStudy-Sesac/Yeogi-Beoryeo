@@ -80,11 +80,28 @@ class OperationNoticeDisplayPolicyTest {
         assertEquals(listOf("경고높음", "경고낮음", "정보"), result.map(OperationNotice::id))
     }
 
+    @Test
+    fun 심각도와_우선순위가_같으면_최신_시작_시각_순으로_정렬한다() {
+        val result =
+            policy.visibleNotices(
+                notices =
+                    listOf(
+                        공지(id = "이전공지", startsAtMillis = 100L),
+                        공지(id = "최신공지", startsAtMillis = 200L),
+                    ),
+                feature = OperationNoticeFeature.HOME,
+                dismissedNoticeIds = emptySet(),
+            )
+
+        assertEquals(listOf("최신공지", "이전공지"), result.map(OperationNotice::id))
+    }
+
     private fun 공지(
         id: String,
         severity: OperationNoticeSeverity = OperationNoticeSeverity.INFO,
         priority: Int = 0,
         affectedFeatures: Set<OperationNoticeFeature> = emptySet(),
+        startsAtMillis: Long? = null,
     ): OperationNotice =
         OperationNotice(
             id = id,
@@ -93,7 +110,7 @@ class OperationNoticeDisplayPolicyTest {
             title = "운영 공지",
             message = "운영 공지 내용",
             affectedFeatures = affectedFeatures,
-            startsAtMillis = null,
+            startsAtMillis = startsAtMillis,
             endsAtMillis = null,
             minVersionCode = null,
             maxVersionCode = null,
