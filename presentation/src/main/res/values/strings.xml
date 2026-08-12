@@ -182,6 +182,7 @@
     <string name="regional_waste_schedule_place_expand_action">자세히 보기</string>
     <string name="regional_waste_schedule_place_collapse_action">접기</string>
     <string name="regional_guide_public_notice_cta">공공 안내에서 지자체 안내 링크 보기</string>
+    <string name="regional_guide_public_notice_cta_content_description">공공 안내에서 지자체 안내 링크 보기, 외부 공공 안내 페이지로 이동</string>
     <string name="item_guide_detail_not_found_title">품목 가이드를 찾을 수 없습니다</string>
     <string name="item_guide_detail_select_again_message">다시 검색해서 품목을 선택해 주세요.</string>
     <string name="item_guide_detail_load_failed_title">품목 정보를 불러오지 못했어요</string>
