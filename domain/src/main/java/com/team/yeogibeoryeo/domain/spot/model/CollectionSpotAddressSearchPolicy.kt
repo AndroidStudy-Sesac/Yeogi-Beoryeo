@@ -12,7 +12,8 @@ object CollectionSpotAddressSearchPolicy {
             return trimmedKeyword
         }
 
-        return tokens.lastOrNull { token -> token.hasEupMyeonDongShape() } ?: trimmedKeyword
+        val searchTokens = tokens.mergeSeparatedLegalDongGaTokens()
+        return searchTokens.lastOrNull { token -> token.hasEupMyeonDongShape() } ?: trimmedKeyword
     }
 
     fun tokenize(value: String): List<String> =
@@ -98,6 +99,33 @@ object CollectionSpotAddressSearchPolicy {
     private fun String.isLegalDongGaCandidate(): Boolean =
         LEGAL_DONG_GA_REGEX.matches(this)
 
+    private fun String.isSeparatedLegalDongGaSuffix(): Boolean =
+        SEPARATED_LEGAL_DONG_GA_REGEX.matches(this)
+
+    private fun List<String>.mergeSeparatedLegalDongGaTokens(): List<String> {
+        if (size < 2) return this
+
+        val mergedTokens = mutableListOf<String>()
+        var index = 0
+        while (index < size) {
+            val current = this[index]
+            val next = getOrNull(index + 1)
+            if (
+                next != null &&
+                current.hasEupMyeonDongShape() &&
+                next.isSeparatedLegalDongGaSuffix()
+            ) {
+                mergedTokens += current + next
+                index += 2
+            } else {
+                mergedTokens += current
+                index += 1
+            }
+        }
+
+        return mergedTokens
+    }
+
     private fun String.toNormalizedSidoName(): String? =
         RegionSidoAliasPolicy
             .normalizeSidoName(this)
@@ -120,5 +148,6 @@ object CollectionSpotAddressSearchPolicy {
     private val EUP_MYEON_DONG_REGEX =
         """[가-힣]+\d*[$EUP_SUFFIX$MYEON_SUFFIX$DONG_SUFFIX]""".toRegex()
     private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+$LEGAL_DONG_GA_SUFFIX""".toRegex()
+    private val SEPARATED_LEGAL_DONG_GA_REGEX = """\d+$LEGAL_DONG_GA_SUFFIX""".toRegex()
 
 }

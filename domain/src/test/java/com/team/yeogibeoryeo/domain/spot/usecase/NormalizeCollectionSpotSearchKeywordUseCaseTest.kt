@@ -48,8 +48,18 @@ class NormalizeCollectionSpotSearchKeywordUseCaseTest {
     }
 
     @Test
+    fun `공백으로 분리된 법정동 가 검색어는 붙여서 정규화한다`() {
+        assertEquals("명동1가", useCase("명동 1가"))
+    }
+
+    @Test
     fun `구 법정동 가 조합에서 법정동을 추출한다`() {
         assertEquals("금호동3가", useCase("성동구 금호동3가"))
+    }
+
+    @Test
+    fun `구 법정동 가 조합에 공백이 있어도 법정동을 붙여서 추출한다`() {
+        assertEquals("명동1가", useCase("중구 명동 1가"))
     }
 
     @Test
