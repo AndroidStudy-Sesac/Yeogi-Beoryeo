@@ -263,6 +263,31 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
+    fun onRegionSearchBack() {
+        currentLocationRefreshJob?.cancel()
+        currentLocationLoadingJob?.cancel()
+        cancelSpotSearchJob()
+        originalSpots = emptyList()
+
+        _uiState.update {
+            it.copy(
+                spots = emptyList(),
+                regionSearchCandidates = emptyList(),
+                regionDetailSearchCandidate = null,
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
+                locationNotice = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+            )
+        }
+    }
+
     private fun searchByRegionDetailSelection(
         candidate: MapRegionSearchCandidate,
         keyword: String,

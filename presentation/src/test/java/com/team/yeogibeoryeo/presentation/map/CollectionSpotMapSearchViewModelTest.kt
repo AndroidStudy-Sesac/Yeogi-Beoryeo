@@ -492,6 +492,47 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `지역 후보 목록에서 뒤로가면 검색 후보 상태를 종료한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+                legalDongKeywords = mapOf(
+                    "서울특별시|중구|명동|명동" to listOf("명동1가", "명동2가"),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionDetailSearchBack()
+            viewModel.onRegionSearchBack()
+
+            val state = viewModel.uiState.value
+            assertEquals("명동", state.searchKeyword)
+            assertEquals(emptyList<MapRegionSearchCandidate>(), state.regionSearchCandidates)
+            assertNull(state.regionDetailSearchCandidate)
+            assertEquals(emptyList<CollectionSpot>(), state.spots)
+            assertFalse(state.isLoading)
+            assertFalse(state.hasSearched)
+            assertNull(state.errorMessageResId)
+            assertEquals(emptyList<String>(), repository.keywords)
+        }
+
+    @Test
     fun `단일 후보의 세부 지역 선택지에서 뒤로가면 검색 전 상태로 돌아간다`() =
         runTest {
             val repository = FakeCollectionSpotRepository()

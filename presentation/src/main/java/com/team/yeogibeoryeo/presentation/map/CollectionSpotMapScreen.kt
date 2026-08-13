@@ -198,6 +198,7 @@ fun CollectionSpotMapScreen(
             onRegionDetailAllClick = viewModel::onRegionDetailSearchAllClick,
             onRegionDetailKeywordClick = viewModel::onRegionDetailSearchKeywordClick,
             onRegionDetailBackClick = viewModel::onRegionDetailSearchBack,
+            onRegionSearchBackClick = viewModel::onRegionSearchBack,
             onCurrentLocationClick = requestCurrentLocationSearch,
             onBlockedCurrentLocationClick = viewModel::onLocationPermissionDenied,
             onMapCenterSearchClick = viewModel::searchByMapCenter,
@@ -256,6 +257,7 @@ private fun CollectionSpotMapContent(
     onRegionDetailAllClick: () -> Unit,
     onRegionDetailKeywordClick: (String) -> Unit,
     onRegionDetailBackClick: () -> Unit,
+    onRegionSearchBackClick: () -> Unit,
     onCurrentLocationClick: () -> Unit,
     onBlockedCurrentLocationClick: () -> Unit,
     onMapCenterSearchClick: (Coordinate) -> Unit,
@@ -337,6 +339,12 @@ private fun CollectionSpotMapContent(
         }
     }
 
+    BackHandler(enabled = hasRegionCandidates && !hasRegionDetailSelection) {
+        onRegionSearchBackClick()
+        mapUiMode = MapUiMode.Browsing
+        sheetLevel = MapSheetLevel.Hidden
+    }
+
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
         val returnState =
@@ -352,7 +360,7 @@ private fun CollectionSpotMapContent(
         enabled = mapUiMode == MapUiMode.ResultList &&
             sheetLevel != MapSheetLevel.Hidden &&
             shouldShowBottomSheet &&
-            !hasRegionDetailSelection,
+            !hasRegionSelection,
     ) {
         mapUiMode = MapUiMode.Browsing
         sheetLevel = MapSheetLevel.Hidden
@@ -985,6 +993,7 @@ private fun CollectionSpotMapContentPreview() {
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},
                 onRegionDetailBackClick = {},
+                onRegionSearchBackClick = {},
                 onCurrentLocationClick = {},
                 onBlockedCurrentLocationClick = {},
                 onMapCenterSearchClick = {},
