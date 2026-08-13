@@ -480,6 +480,6 @@ jobs:
             exit 1
           fi
 
-      - name: Test focused coverage summary
+      - name: Test CI helper scripts
         run: |
-          python -X utf8 -m unittest discover -s .github/scripts -p 'test_focused_coverage_summary.py'
+          python -X utf8 -m unittest discover -s .github/scripts -p 'test_*.py'
