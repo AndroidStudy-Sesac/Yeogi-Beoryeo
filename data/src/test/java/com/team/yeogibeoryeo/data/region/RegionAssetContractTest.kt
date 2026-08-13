@@ -121,7 +121,7 @@ class RegionAssetContractTest {
             assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
         )
 
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = administrativeRegions,
             legalAdminDongMappings = mappings,
             keyword = "안양동"
