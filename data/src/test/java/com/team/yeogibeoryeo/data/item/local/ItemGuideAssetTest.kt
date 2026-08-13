@@ -7,6 +7,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -178,6 +179,53 @@ class ItemGuideAssetTest {
                 .keys
 
         assertTrue("중복된 품목사전 품목명: $duplicatedNames", duplicatedNames.isEmpty())
+    }
+
+    @Test
+    fun `컵라면 용기 종이 가이드는 익숙한 이름과 상태별 배출 방법을 안내한다`() {
+        val guides = parseArray("item_disposal_guides.json")
+        val guide =
+            guides.single { element ->
+                element.jsonObject["id"]!!.jsonPrimitive.content == "item-guide-0351"
+            }.jsonObject
+        val name = guide["name"]!!.jsonPrimitive.content
+        val legacyNames = guide["legacyNames"]!!.jsonArray.map { it.jsonPrimitive.content }
+        val similarItems = guide["similarItems"]!!.jsonArray.map { it.jsonPrimitive.content }
+        val dischargeMethods =
+            guide["dischargeMethods"]!!.jsonArray.map { it.jsonPrimitive.content }
+        val notes = guide["notes"]!!.jsonArray.map { it.jsonPrimitive.content }
+
+        assertEquals("컵라면 용기(종이)", name)
+        assertTrue("이전 표시 이름이 누락되었습니다: $legacyNames", "종이 컵라면" in legacyNames)
+        assertTrue("기존 검색어가 누락되었습니다: $similarItems", "종이 컵라면" in similarItems)
+        assertTrue("공식 품목명이 누락되었습니다: $similarItems", "종이컵라면 용기" in similarItems)
+        val oldNameSearchOwners =
+            guides
+                .filter { element ->
+                    element.jsonObject["similarItems"]!!
+                        .jsonArray
+                        .map { it.jsonPrimitive.content.filterNot(Char::isWhitespace) }
+                        .contains("종이컵라면")
+                }.map { element -> element.jsonObject["id"]!!.jsonPrimitive.content }
+        assertEquals(listOf("item-guide-0351"), oldNameSearchOwners)
+        assertTrue(
+            "세척 후 종이류 배출 안내가 없습니다: $dischargeMethods",
+            dischargeMethods.any { method ->
+                "헹" in method && "종이류" in method
+            },
+        )
+        assertTrue(
+            "오염 제거가 어려울 때의 종량제봉투 안내가 없습니다: $dischargeMethods",
+            dischargeMethods.any { method ->
+                "제거되지" in method && "종량제봉투" in method
+            },
+        )
+        assertTrue(
+            "용기와 다른 재질을 분리하는 안내가 없습니다: $notes",
+            notes.any { note ->
+                "다른 재질" in note && "분리" in note
+            },
+        )
     }
 
     @Test
