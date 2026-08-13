@@ -484,7 +484,7 @@ private fun CollectionSpotMapContent(
             navigationBarBottomPadding,
             safeDrawingBottomPadding,
         )
-        val bottomSheetMaxExpandedHeight = bottomSheetMaxExpandedHeight(
+        val bottomSheetMaxExpandedHeight = MapBottomSheetHeightPolicy.maxExpandedHeight(
             mapUiMode = mapUiMode,
             hasRegionSelection = hasRegionSelection,
             hasStateMessageContent = hasStateMessageContent,
@@ -495,7 +495,7 @@ private fun CollectionSpotMapContent(
             canNavigateBackToRegionCandidates = hasRegionCandidates,
             fontScale = density.fontScale,
         )
-        val bottomSheetMediumVisibleHeight = bottomSheetMediumVisibleHeight(
+        val bottomSheetMediumVisibleHeight = MapBottomSheetHeightPolicy.mediumVisibleHeight(
             hasStateMessageContent = hasStateMessageContent,
             maxHeight = maxHeight,
             bottomContentPadding = bottomContentPadding,
@@ -803,113 +803,6 @@ internal fun mapDetailCloseReturnState(
             )
     }
 
-private fun bottomSheetMaxExpandedHeight(
-    mapUiMode: MapUiMode,
-    hasRegionSelection: Boolean,
-    hasStateMessageContent: Boolean,
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    regionCandidateCount: Int,
-    regionDetailCandidate: MapRegionSearchCandidate?,
-    canNavigateBackToRegionCandidates: Boolean,
-    fontScale: Float,
-): Dp? {
-    return when {
-        mapUiMode == MapUiMode.SpotDetail -> null
-        hasRegionSelection -> regionSelectionContentFitHeight(
-            maxHeight = maxHeight,
-            bottomContentPadding = bottomContentPadding,
-            candidateCount = regionCandidateCount,
-            detailCandidate = regionDetailCandidate,
-            canNavigateBackToRegionCandidates = canNavigateBackToRegionCandidates,
-            fontScale = fontScale,
-        )
-        hasStateMessageContent -> stateMessageContentFitHeight(
-            maxHeight = maxHeight,
-            bottomContentPadding = bottomContentPadding,
-            fontScale = fontScale,
-        )
-        else -> null
-    }
-}
-
-private fun regionSelectionContentFitHeight(
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    candidateCount: Int,
-    detailCandidate: MapRegionSearchCandidate?,
-    canNavigateBackToRegionCandidates: Boolean,
-    fontScale: Float,
-): Dp {
-    val heightScale = fontScale.coerceIn(1f, MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE)
-    val contentHeight = if (detailCandidate == null) {
-        MapBottomSheetHeaderEstimatedHeight +
-            MapRegionSelectionDescriptionEstimatedHeight * heightScale +
-            MapRegionSelectionRowEstimatedHeight * candidateCount.toFloat() * heightScale +
-            bottomContentPadding +
-            MapRegionSelectionBottomExtraPadding
-    } else {
-        val detailKeywordCount = detailCandidate.searchKeywords
-            .filterNot { keyword -> keyword == detailCandidate.searchKeyword }
-            .distinct()
-            .size
-        val backButtonHeight = if (canNavigateBackToRegionCandidates) {
-            MapRegionDetailBackButtonEstimatedHeight
-        } else {
-            0.dp
-        }
-
-        MapBottomSheetHeaderEstimatedHeight +
-            backButtonHeight * heightScale +
-            MapRegionDetailDescriptionEstimatedHeight * heightScale +
-            MapRegionSelectionRowEstimatedHeight * detailKeywordCount.toFloat() * heightScale +
-            MapRegionDetailAllRowEstimatedHeight * heightScale +
-            bottomContentPadding +
-            MapRegionSelectionBottomExtraPadding
-    }
-    val maxContentFitHeight = maxHeight * MapRegionSelectionMaxExpandedRatio
-
-    return contentHeight
-        .coerceAtLeast(MapResultBottomSheetPeekHeight)
-        .coerceAtMost(maxContentFitHeight)
-}
-
-private fun stateMessageContentFitHeight(
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    fontScale: Float,
-): Dp {
-    val fontScaleProgress = ((fontScale - 1f) / (MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE - 1f))
-        .coerceIn(0f, 1f)
-    val maxExpandedRatio = MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO +
-        (MAP_STATE_MESSAGE_LARGE_FONT_MAX_EXPANDED_RATIO - MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO) *
-        fontScaleProgress
-    val contentHeight = MapStateMessageBaseExpandedHeight +
-        MapStateMessageLargeFontExtraExpandedHeight * fontScaleProgress +
-        bottomContentPadding
-
-    return contentHeight
-        .coerceAtLeast(MapResultBottomSheetPeekHeight)
-        .coerceAtMost(maxHeight * maxExpandedRatio)
-}
-
-private fun bottomSheetMediumVisibleHeight(
-    hasStateMessageContent: Boolean,
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    fontScale: Float,
-): Dp {
-    return if (hasStateMessageContent) {
-        stateMessageContentFitHeight(
-            maxHeight = maxHeight,
-            bottomContentPadding = bottomContentPadding,
-            fontScale = fontScale,
-        )
-    } else {
-        MapSpotDetailBottomSheetPeekHeight
-    }
-}
-
 private fun myLocationButtonBottomPadding(
     sheetLevel: MapSheetLevel,
     shouldShowBottomSheet: Boolean,
@@ -1022,20 +915,6 @@ private val MapSearchOverlayLogoGap = 8.dp
 private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
 private val FavoriteSnackbarIconSize = 20.dp
-private const val MapRegionSelectionMaxExpandedRatio = 0.88f
-private val MapBottomSheetHeaderEstimatedHeight = 57.dp
-private val MapRegionSelectionDescriptionEstimatedHeight = 92.dp
-private val MapRegionDetailDescriptionEstimatedHeight = 150.dp
-private val MapRegionDetailBackButtonEstimatedHeight = 60.dp
-private val MapRegionSelectionRowEstimatedHeight = 68.dp
-private val MapRegionDetailAllRowEstimatedHeight = 92.dp
-private val MapRegionSelectionBottomExtraPadding = 24.dp
-private const val MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE = 2f
-private const val MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO = 0.52f
-private const val MAP_STATE_MESSAGE_LARGE_FONT_MAX_EXPANDED_RATIO = 0.72f
-private val MapStateMessageBaseExpandedHeight = 360.dp
-private val MapStateMessageLargeFontExtraExpandedHeight = 160.dp
-
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
     return when (this) {
         MapLocationNoticeAction.RequestLocationPermission -> error(
