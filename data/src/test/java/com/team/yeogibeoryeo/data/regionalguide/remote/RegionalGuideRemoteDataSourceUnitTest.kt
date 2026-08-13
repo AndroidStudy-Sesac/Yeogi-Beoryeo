@@ -8,9 +8,12 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideResponse
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideRootDto
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import retrofit2.Response
 import java.io.IOException
@@ -36,7 +39,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         assertTrue(result.isSuccess)
         assertEquals(listOf(1), apiService.requestedPageNos)
-        assertEquals(listOf("1페이지"), result.getOrThrow().map { item -> item.managementZoneName })
+        assertEquals(listOf("1페이지"), result.getOrThrow().items.map { item -> item.managementZoneName })
     }
 
     @Test
@@ -71,7 +74,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
         assertEquals(
             listOf("1페이지-1", "1페이지-2", "2페이지-1"),
-            result.getOrThrow().map { item -> item.managementZoneName },
+            result.getOrThrow().items.map { item -> item.managementZoneName },
         )
     }
 
@@ -110,7 +113,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
         assertEquals(listOf(1, 2, 3), apiService.requestedPageNos)
         assertEquals(
             listOf("1페이지", "2페이지", "3페이지"),
-            result.getOrThrow().map { item -> item.managementZoneName },
+            result.getOrThrow().items.map { item -> item.managementZoneName },
         )
     }
 
@@ -149,7 +152,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
         assertEquals(listOf(1, 2, 3), apiService.requestedPageNos)
         assertEquals(
             listOf("1페이지", "2페이지", "3페이지"),
-            result.getOrThrow().map { item -> item.managementZoneName },
+            result.getOrThrow().items.map { item -> item.managementZoneName },
         )
     }
 
@@ -182,7 +185,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
         assertEquals(
             listOf("1페이지", "2페이지"),
-            result.getOrThrow().map { item -> item.managementZoneName },
+            result.getOrThrow().items.map { item -> item.managementZoneName },
         )
     }
 
@@ -205,7 +208,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         assertTrue(result.isSuccess)
         assertEquals(listOf(1), apiService.requestedPageNos)
-        assertEquals(emptyList<RegionalGuideItemDto>(), result.getOrThrow())
+        assertEquals(emptyList<RegionalGuideItemDto>(), result.getOrThrow().items)
     }
 
     @Test
@@ -247,7 +250,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         assertTrue(result.isSuccess)
         assertEquals(listOf(1), apiService.requestedPageNos)
-        assertEquals(listOf("1페이지"), result.getOrThrow().map { item -> item.managementZoneName })
+        assertEquals(listOf("1페이지"), result.getOrThrow().items.map { item -> item.managementZoneName })
     }
 
     @Test
@@ -277,7 +280,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         assertTrue(result.isSuccess)
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
-        assertEquals(listOf("1페이지", "2페이지"), result.getOrThrow().map { item -> item.managementZoneName })
+        assertEquals(listOf("1페이지", "2페이지"), result.getOrThrow().items.map { item -> item.managementZoneName })
     }
 
     @Test
@@ -299,7 +302,7 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         assertTrue(result.isSuccess)
         assertEquals(listOf(1), apiService.requestedPageNos)
-        assertEquals(listOf("1페이지"), result.getOrThrow().map { item -> item.managementZoneName })
+        assertEquals(listOf("1페이지"), result.getOrThrow().items.map { item -> item.managementZoneName })
     }
 
     @Test
@@ -318,17 +321,122 @@ class RegionalGuideRemoteDataSourceUnitTest {
             keyProvider = FakePublicDataKeyProvider,
         )
 
-        val result = dataSource.fetchRegionalGuides(SIGUNGU_NAME)
-        val exception = result.exceptionOrNull() as RegionalGuideLookupException
+        val result = dataSource.fetchRegionalGuides(SIGUNGU_NAME).getOrThrow()
 
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
-        assertEquals(RegionalGuideFailureReason.NETWORK, exception.reason)
+        assertEquals(RegionalGuidePartialResultReason.NETWORK, result.partialReason)
+        assertEquals(listOf("1페이지"), result.items.map { item -> item.managementZoneName })
+    }
+
+    @Test
+    fun `첫 페이지 실패 시 실패 결과를 반환한다`() = runBlocking {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 100,
+                totalCount = 1,
+                items = emptyList(),
+            ),
+            failurePages = setOf(1),
+        )
+        val result = RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+            .fetchRegionalGuides(SIGUNGU_NAME)
+
+        assertTrue(result.isFailure)
+        assertEquals(listOf(1), apiService.requestedPageNos)
+    }
+
+    @Test
+    fun `전체 건수가 상한을 넘으면 최대 다섯 페이지만 반환한다`() = runBlocking {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 100,
+                totalCount = 501,
+                items = listOf(regionalGuideItem("페이지")),
+            ),
+        )
+        val result = RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+            .fetchRegionalGuides(SIGUNGU_NAME)
+            .getOrThrow()
+
+        assertEquals(listOf(1, 2, 3, 4, 5), apiService.requestedPageNos)
+        assertEquals(RegionalGuidePartialResultReason.PAGE_LIMIT, result.partialReason)
+        assertEquals(5, result.items.size)
+    }
+
+    @Test
+    fun `수신 건수가 전체 건수보다 부족하고 빈 페이지면 부분 결과를 반환한다`() = runBlocking {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 3,
+                items = listOf(regionalGuideItem("첫 페이지")),
+            ),
+            responsesByPage = mapOf(
+                2 to regionalGuideResponse(
+                    pageNo = 2,
+                    numOfRows = 2,
+                    totalCount = 3,
+                    items = emptyList(),
+                ),
+            ),
+        )
+        val result = RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+            .fetchRegionalGuides(SIGUNGU_NAME)
+            .getOrThrow()
+
+        assertEquals(RegionalGuidePartialResultReason.INCONSISTENT_RESPONSE, result.partialReason)
+        assertEquals(listOf("첫 페이지"), result.items.map { item -> item.managementZoneName })
+    }
+
+    @Test
+    fun `후속 페이지 시간이 초과되면 앞 페이지를 부분 결과로 반환한다`() = runBlocking {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 3,
+                items = listOf(regionalGuideItem("첫 페이지")),
+            ),
+            delayByPage = mapOf(2 to 2_100L),
+        )
+        val result = RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+            .fetchRegionalGuides(SIGUNGU_NAME)
+            .getOrThrow()
+
+        assertEquals(RegionalGuidePartialResultReason.TIMEOUT, result.partialReason)
+        assertEquals(listOf("첫 페이지"), result.items.map { item -> item.managementZoneName })
+    }
+
+    @Test
+    fun `후속 페이지의 취소는 결과로 변환하지 않고 전파한다`() = runBlocking {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 2,
+                totalCount = 3,
+                items = listOf(regionalGuideItem("첫 페이지")),
+            ),
+            cancellationPages = setOf(2),
+        )
+
+        try {
+            RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+                .fetchRegionalGuides(SIGUNGU_NAME)
+            fail("취소 예외가 전파되어야 합니다")
+        } catch (_: CancellationException) {
+            assertEquals(listOf(1, 2), apiService.requestedPageNos)
+        }
     }
 
     private class FakeRegionalGuideApiService(
         private val response: Response<RegionalGuideRootDto>,
         private val responsesByPage: Map<Int, Response<RegionalGuideRootDto>> = emptyMap(),
         private val failurePages: Set<Int> = emptySet(),
+        private val delayByPage: Map<Int, Long> = emptyMap(),
+        private val cancellationPages: Set<Int> = emptySet(),
     ) : RegionalGuideApiService {
 
         val requestedPageNos = mutableListOf<Int>()
@@ -341,6 +449,12 @@ class RegionalGuideRemoteDataSourceUnitTest {
             sigunguName: String,
         ): Response<RegionalGuideRootDto> {
             requestedPageNos += pageNo
+
+            delayByPage[pageNo]?.let { delayMillis -> delay(delayMillis) }
+
+            if (pageNo in cancellationPages) {
+                throw CancellationException("page cancelled")
+            }
 
             if (pageNo in failurePages) {
                 throw IOException("page failed")

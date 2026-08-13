@@ -71,7 +71,7 @@ class RegionalGuideRemoteDataSourceTest {
 
         assertTrue("API 통신 실패: ${result.exceptionOrNull()?.message}", result.isSuccess)
 
-        val items = result.getOrNull()
+        val items = result.getOrNull()?.items
 
         println(
             """
