@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.domain.app.AppVersionProvider
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNotice
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeFeature
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverity
+import com.team.yeogibeoryeo.domain.operationnotice.policy.OperationNoticeDisplayPolicy
 import com.team.yeogibeoryeo.domain.operationnotice.repository.DismissedOperationNoticeRepository
 import com.team.yeogibeoryeo.domain.operationnotice.repository.OperationNoticeRepository
 import com.team.yeogibeoryeo.domain.operationnotice.usecase.DismissOperationNoticeUseCase
@@ -93,6 +94,7 @@ class OperationNoticeViewModelTest {
             dismissedOperationNoticeRepository = FakeDismissedRepository(),
             timeProvider = FakeTimeProvider,
             appVersionProvider = FakeAppVersionProvider,
+            operationNoticeDisplayPolicy = OperationNoticeDisplayPolicy(),
         )
 
     private fun notice(

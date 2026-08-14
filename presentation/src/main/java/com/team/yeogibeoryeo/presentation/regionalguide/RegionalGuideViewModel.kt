@@ -938,7 +938,8 @@ class RegionalGuideViewModel @Inject constructor(
                             query = query,
                             titleResId = R.string.regional_guide_empty_info_not_found_title,
                             messageResId = R.string.regional_guide_empty_info_not_found_message,
-                            action = selectRegionAction()
+                            action = selectRegionAction(),
+                            showsPublicNoticeCta = true,
                         )
                 }
             }
@@ -954,7 +955,8 @@ class RegionalGuideViewModel @Inject constructor(
                             query = query,
                             titleResId = R.string.regional_guide_empty_candidate_not_found_title,
                             messageResId = R.string.regional_guide_empty_candidate_not_found_message,
-                            action = selectRegionAction()
+                            action = selectRegionAction(),
+                            showsPublicNoticeCta = true,
                         )
                 }
             }
@@ -1014,6 +1016,7 @@ class RegionalGuideViewModel @Inject constructor(
             titleResId = R.string.regional_guide_empty_unavailable_eupmyeondong_title,
             messageResId = R.string.regional_guide_empty_unavailable_eupmyeondong_message,
             action = selectRegionAction(),
+            showsPublicNoticeCta = true,
         )
 
     private fun Region.toCandidateUiModel(): RegionSearchCandidateUiModel =

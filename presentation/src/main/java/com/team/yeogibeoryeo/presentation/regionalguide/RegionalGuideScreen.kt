@@ -546,6 +546,11 @@ private fun RegionalGuideContent(
                 title = stringResource(id = uiState.titleResId),
                 message = stringResource(id = uiState.messageResId),
                 modifier = modifier,
+                onPublicNoticeCtaClick = if (uiState.showsPublicNoticeCta) {
+                    onPublicNoticeClick
+                } else {
+                    null
+                },
                 actionLabel = action?.let { stringResource(id = it.labelResId) },
                 onActionClick = action?.let {
                     { onEmptyActionClick(action.type) }

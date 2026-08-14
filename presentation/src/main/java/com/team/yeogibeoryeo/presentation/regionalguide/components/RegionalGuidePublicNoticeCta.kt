@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -26,6 +28,8 @@ fun RegionalGuidePublicNoticeCta(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val accessibilityDescription =
+        stringResource(R.string.regional_guide_public_notice_cta_content_description)
     val content: @Composable RowScope.() -> Unit = {
         Icon(
             painter = painterResource(id = CommonR.drawable.ic_action_search),
@@ -49,7 +53,8 @@ fun RegionalGuidePublicNoticeCta(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = PublicNoticeCtaMinHeight),
+            .heightIn(min = PublicNoticeCtaMinHeight)
+            .semantics { contentDescription = accessibilityDescription },
         shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,

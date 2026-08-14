@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.domain.operationnotice.usecase
 import com.team.yeogibeoryeo.domain.app.AppVersionProvider
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNotice
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeFeature
+import com.team.yeogibeoryeo.domain.operationnotice.policy.OperationNoticeDisplayPolicy
 import com.team.yeogibeoryeo.domain.operationnotice.repository.DismissedOperationNoticeRepository
 import com.team.yeogibeoryeo.domain.operationnotice.repository.OperationNoticeRepository
 import com.team.yeogibeoryeo.domain.time.TimeProvider
@@ -22,6 +23,7 @@ constructor(
     private val dismissedOperationNoticeRepository: DismissedOperationNoticeRepository,
     private val timeProvider: TimeProvider,
     private val appVersionProvider: AppVersionProvider,
+    private val operationNoticeDisplayPolicy: OperationNoticeDisplayPolicy,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(feature: OperationNoticeFeature): Flow<List<OperationNotice>> =
@@ -50,25 +52,30 @@ constructor(
         feature: OperationNoticeFeature,
         nowMillis: Long,
     ): List<OperationNotice> =
-        candidates(feature)
+        candidates()
             .filter { notice -> notice.isActive(nowMillis = nowMillis) }
-            .sortedWith(OperationNoticeDisplayComparator)
             .toList()
+            .let { notices ->
+                operationNoticeDisplayPolicy.visibleNotices(
+                    notices = notices,
+                    feature = feature,
+                    dismissedNoticeIds = dismissedIds,
+                )
+            }
 
     private fun OperationNoticeSource.nextEvaluationDelayMillis(
         feature: OperationNoticeFeature,
         nowMillis: Long,
     ): Long? =
-        candidates(feature)
+        operationNoticeDisplayPolicy
+            .applicableNotices(notices = candidates().toList(), feature = feature)
             .mapNotNull { notice -> notice.nextBoundaryDelayMillis(nowMillis) }
             .minOrNull()
 
-    private fun OperationNoticeSource.candidates(feature: OperationNoticeFeature): Sequence<OperationNotice> =
+    private fun OperationNoticeSource.candidates(): Sequence<OperationNotice> =
         notices
             .asSequence()
-            .filter { notice -> notice.id !in dismissedIds }
             .filter { notice -> notice.matchesVersion(appVersionProvider.versionCode) }
-            .filter { notice -> notice.matchesFeature(feature) }
 
     private fun OperationNotice.isActive(nowMillis: Long): Boolean {
         if (startsAtMillis != null && nowMillis < startsAtMillis) return false
@@ -82,18 +89,6 @@ constructor(
         return true
     }
 
-    private fun OperationNotice.matchesFeature(feature: OperationNoticeFeature): Boolean =
-        when {
-            affectedFeatures.isEmpty() -> feature == OperationNoticeFeature.HOME
-            else -> feature in affectedFeatures
-        }
-
-    private companion object {
-        val OperationNoticeDisplayComparator =
-            compareByDescending<OperationNotice> { it.severity.sortRank }
-                .thenByDescending { it.priority }
-                .thenByDescending { it.startsAtMillis ?: Long.MIN_VALUE }
-    }
 }
 
 private data class OperationNoticeSource(

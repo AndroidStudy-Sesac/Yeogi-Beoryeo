@@ -619,6 +619,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
+        assertTrue(state.showsPublicNoticeCta)
         assertEquals("김천시", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {
@@ -728,6 +729,7 @@ class RegionalGuideKeywordSearchViewModelTest {
 
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_title, state.titleResId)
         assertEquals(R.string.regional_guide_empty_unavailable_eupmyeondong_message, state.messageResId)
+        assertTrue(state.showsPublicNoticeCta)
         assertEquals("김천시", regionalGuideRepository.queries.single().sigunguQuery)
 
         with(viewModel.regionSelectorUiState.value) {

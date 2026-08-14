@@ -31,8 +31,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverity
 import com.team.yeogibeoryeo.presentation.R
@@ -80,7 +81,10 @@ fun OperationNoticeBanner(
                 )
 
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .semantics { contentDescription = notice.accessibilityDescription },
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
@@ -88,15 +92,11 @@ fun OperationNoticeBanner(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.contentColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = notice.message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.contentColor,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
                     )
                     if (notice.actionLabel != null && notice.actionUrl != null) {
                         TextButton(
@@ -129,6 +129,9 @@ fun OperationNoticeBanner(
         }
     }
 }
+
+private val OperationNoticeUiModel.accessibilityDescription: String
+    get() = "$title, $message"
 
 private data class OperationNoticeBannerColors(
     val containerColor: Color,
