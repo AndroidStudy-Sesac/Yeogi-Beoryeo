@@ -284,6 +284,7 @@ private fun CollectionSpotMapContent(
     var mapUiMode by remember { mutableStateOf(MapUiMode.Browsing) }
     var sheetLevel by remember { mutableStateOf(MapSheetLevel.Hidden) }
     var sheetRevealRequest by remember { mutableIntStateOf(0) }
+    var shouldKeepRegionBackCurrentLocationSheetHidden by remember { mutableStateOf(false) }
     var mapCenterCoordinate by remember { mutableStateOf<Coordinate?>(null) }
     var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
     var currentLocationButtonBounds by remember { mutableStateOf<Rect?>(null) }
@@ -340,6 +341,7 @@ private fun CollectionSpotMapContent(
     }
 
     BackHandler(enabled = hasRegionCandidates && !hasRegionDetailSelection) {
+        shouldKeepRegionBackCurrentLocationSheetHidden = true
         onRegionSearchBackClick()
         mapUiMode = MapUiMode.Browsing
         sheetLevel = MapSheetLevel.Hidden
@@ -384,6 +386,7 @@ private fun CollectionSpotMapContent(
         uiState.regionDetailSearchCandidate,
         isCurrentLocationGuideReady,
         showCurrentLocationGuide,
+        shouldKeepRegionBackCurrentLocationSheetHidden,
     ) {
         if (shouldDeferBottomSheetForGuide) return@LaunchedEffect
         if (
@@ -404,12 +407,25 @@ private fun CollectionSpotMapContent(
                 sheetLevel = MapSheetLevel.Expanded
             }
 
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepRegionBackCurrentLocationSheetHidden = shouldKeepRegionBackCurrentLocationSheetHidden,
+                searchMode = uiState.searchMode,
+                hasNoticeOrError = hasNoticeOrError,
+                hasRegionSelection = hasRegionSelection,
+            ) -> {
+                mapUiMode = MapUiMode.Browsing
+                sheetLevel = MapSheetLevel.Hidden
+            }
+
             isSpotSearchLoading -> {
                 mapUiMode = MapUiMode.Browsing
                 sheetLevel = MapSheetLevel.Hidden
             }
 
             uiState.isLoading || hasNoticeOrError -> {
+                if (hasNoticeOrError) {
+                    shouldKeepRegionBackCurrentLocationSheetHidden = false
+                }
                 mapUiMode = MapUiMode.ResultList
                 sheetLevel = when {
                     hasLocationNotice || hasOperationNotice -> MapSheetLevel.Medium
@@ -550,6 +566,7 @@ private fun CollectionSpotMapContent(
                     onSpotClick(spot)
                 },
                 onMapClick = {
+                    shouldKeepRegionBackCurrentLocationSheetHidden = false
                     onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                     when (mapUiMode) {
                         MapUiMode.Browsing -> {
@@ -585,6 +602,7 @@ private fun CollectionSpotMapContent(
                     keyword = uiState.searchKeyword,
                     onKeywordChanged = onKeywordChanged,
                     onSearchClick = {
+                        shouldKeepRegionBackCurrentLocationSheetHidden = false
                         onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                         shouldShowMapCenterSearchButton = false
                         mapUiMode = MapUiMode.ResultList
@@ -604,6 +622,7 @@ private fun CollectionSpotMapContent(
                 MapCenterSearchButton(
                     onClick = {
                         val coordinate = mapCenterCoordinate ?: return@MapCenterSearchButton
+                        shouldKeepRegionBackCurrentLocationSheetHidden = false
                         shouldShowMapCenterSearchButton = false
                         onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                         mapUiMode = MapUiMode.ResultList
@@ -634,6 +653,7 @@ private fun CollectionSpotMapContent(
                     MyLocationButton(
                         isTracking = mapLocationTrackingMode == LocationTrackingMode.Follow,
                         onClick = {
+                            shouldKeepRegionBackCurrentLocationSheetHidden = false
                             if (isLocationPermissionGranted) {
                                 onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                                 shouldShowMapCenterSearchButton = false
@@ -783,6 +803,17 @@ internal fun shouldKeepSpotDetailOnOperationNotice(
         !hasLocationNotice &&
         !hasError &&
         !isLoading
+
+internal fun shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+    shouldKeepRegionBackCurrentLocationSheetHidden: Boolean,
+    searchMode: MapSearchMode,
+    hasNoticeOrError: Boolean,
+    hasRegionSelection: Boolean,
+): Boolean =
+    shouldKeepRegionBackCurrentLocationSheetHidden &&
+        searchMode == MapSearchMode.CURRENT_LOCATION &&
+        !hasNoticeOrError &&
+        !hasRegionSelection
 
 internal data class MapDetailReturnState(
     val mapUiMode: MapUiMode,

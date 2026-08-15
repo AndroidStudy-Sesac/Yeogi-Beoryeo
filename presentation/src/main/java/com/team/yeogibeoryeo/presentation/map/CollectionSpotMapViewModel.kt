@@ -268,10 +268,12 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationLoadingJob?.cancel()
         cancelSpotSearchJob()
         originalSpots = emptyList()
+        hasRequestedInitialCurrentLocationSearch = false
 
         _uiState.update {
             it.copy(
                 spots = emptyList(),
+                searchKeyword = EMPTY_SEARCH_KEYWORD,
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 selectedSpot = null,
@@ -286,6 +288,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 searchMode = MapSearchMode.KEYWORD,
             )
         }
+
+        searchByCurrentLocationOnMapEntryIfPermitted()
     }
 
     private fun searchByRegionDetailSelection(
