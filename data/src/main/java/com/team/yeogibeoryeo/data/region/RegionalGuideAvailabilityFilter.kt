@@ -15,8 +15,9 @@ internal object RegionalGuideAvailabilityFilter {
         sido: String,
         sigungu: String,
     ): List<String> {
+        val scopeRegion = Region(sido = sido, sigungu = sigungu)
         val scopedAvailability = availability.filter { availableRegion ->
-            availableRegion.matchesRegionalGuideScope(Region(sido = sido, sigungu = sigungu))
+            availableRegion.matchesRegionalGuideScope(scopeRegion)
         }
         val availableOptions = options.filter { option ->
             scopedAvailability.any { availableRegion ->
