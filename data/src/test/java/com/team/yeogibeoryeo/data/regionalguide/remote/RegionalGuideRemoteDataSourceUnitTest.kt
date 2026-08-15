@@ -11,6 +11,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupExcep
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -344,6 +345,71 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         assertTrue(result.isFailure)
         assertEquals(listOf(1), apiService.requestedPageNos)
+    }
+
+    @Test
+    fun `첫 페이지 시간이 초과되면 실패 결과를 반환한다`() = runTest {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 100,
+                totalCount = 1,
+                items = listOf(regionalGuideItem("첫 페이지")),
+            ),
+            delayByPage = mapOf(1 to 2_100L),
+        )
+
+        val result = RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+            .fetchRegionalGuides(SIGUNGU_NAME)
+
+        assertTrue(result.isFailure)
+        assertEquals(listOf(1), apiService.requestedPageNos)
+    }
+
+    @Test
+    fun `페이지별 시간은 지키지만 전체 조회 시간이 초과되면 부분 결과를 반환한다`() = runTest {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 100,
+                totalCount = 401,
+                items = listOf(regionalGuideItem("1페이지")),
+            ),
+            responsesByPage = mapOf(
+                2 to regionalGuideResponse(
+                    pageNo = 2,
+                    numOfRows = 100,
+                    totalCount = 401,
+                    items = listOf(regionalGuideItem("2페이지")),
+                ),
+                3 to regionalGuideResponse(
+                    pageNo = 3,
+                    numOfRows = 100,
+                    totalCount = 401,
+                    items = listOf(regionalGuideItem("3페이지")),
+                ),
+                4 to regionalGuideResponse(
+                    pageNo = 4,
+                    numOfRows = 100,
+                    totalCount = 401,
+                    items = listOf(regionalGuideItem("4페이지")),
+                ),
+            ),
+            delayByPage = mapOf(
+                1 to 1_500L,
+                2 to 1_500L,
+                3 to 1_500L,
+                4 to 1_500L,
+            ),
+        )
+
+        val result = RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+            .fetchRegionalGuides(SIGUNGU_NAME)
+            .getOrThrow()
+
+        assertEquals(listOf(1, 2, 3, 4), apiService.requestedPageNos)
+        assertEquals(RegionalGuidePartialResultReason.TIMEOUT, result.partialReason)
+        assertEquals(listOf("1페이지", "2페이지", "3페이지"), result.items.map { item -> item.managementZoneName })
     }
 
     @Test
