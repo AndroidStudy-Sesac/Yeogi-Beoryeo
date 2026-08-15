@@ -427,6 +427,39 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `컵라면 용기 종이는 기존 이름과 공식 품목명으로 검색하면 대상 품목 하나만 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0351",
+                                        name = "컵라면 용기(종이)",
+                                        similarItems = listOf("종이 컵라면", "종이컵라면 용기"),
+                                        categoryPaths = listOf(listOf("재활용폐기물", "종이류")),
+                                        dischargeMethods = listOf("종이류로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "컵라면 뚜껑",
+                                        similarItems = listOf("종이컵라면 용기 뚜껑"),
+                                        categoryPaths = listOf(listOf("일반폐기물", "일반종량제폐기물")),
+                                        dischargeMethods = listOf("종량제봉투로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            listOf("종이 컵라면", "종이컵라면 용기").forEach { query ->
+                val results = repository.searchItemGuides(query)
+
+                assertEquals("검색어: $query", listOf("item-guide-0351"), results.map { it.id })
+            }
+        }
+
+    @Test
     fun `searchItemGuides는 표시명이 같아도 안정 ID가 다르면 모두 유지한다`() =
         runBlocking {
             val repository =
