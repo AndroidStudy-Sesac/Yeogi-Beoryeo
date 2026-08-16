@@ -259,7 +259,7 @@ def render_chart_number(value: float) -> str:
     return "0.00" if abs(value) < 0.005 else f"{value:.2f}"
 
 
-def render_delta_chart(
+def render_delta_charts(
     module_lines: dict[str, Metric],
     module_line_baselines: dict[str, tuple[int, int]],
     module_branches: dict[str, Metric],
@@ -275,28 +275,29 @@ def render_delta_chart(
         for module in modules
     ]
     axis_limit = max(1, math.ceil(max(map(abs, line_deltas + branch_deltas))))
-    description = "; ".join(
-        f"{module} Line {render_chart_number(line_delta)} and Branch "
-        f"{render_chart_number(branch_delta)}"
-        for module, line_delta, branch_delta in zip(
-            modules,
-            line_deltas,
-            branch_deltas,
-            strict=True,
+    def render_chart(metric: str, deltas: list[float]) -> list[str]:
+        description = "; ".join(
+            f"{module} {render_chart_number(delta)}"
+            for module, delta in zip(modules, deltas, strict=True)
         )
-    )
+        return [
+            f"#### {metric}",
+            "",
+            "```mermaid",
+            "xychart",
+            f"  accTitle: {metric} coverage changes from baseline",
+            f"  accDescr: {metric} percentage point changes from baseline. "
+            f"{description}.",
+            f"  x-axis [{', '.join(modules)}]",
+            f'  y-axis "pp" -{axis_limit} --> {axis_limit}',
+            f"  bar [{', '.join(map(render_chart_number, deltas))}]",
+            "```",
+        ]
 
     return [
-        "```mermaid",
-        "xychart",
-        "  accTitle: Module coverage changes from baseline",
-        "  accDescr: The first bar is Line and the second bar is Branch. "
-        f"Values are percentage points. {description}.",
-        f"  x-axis [{', '.join(modules)}]",
-        f'  y-axis "pp" -{axis_limit} --> {axis_limit}',
-        f"  bar [{', '.join(map(render_chart_number, line_deltas))}]",
-        f"  bar [{', '.join(map(render_chart_number, branch_deltas))}]",
-        "```",
+        *render_chart("Line", line_deltas),
+        "",
+        *render_chart("Branch", branch_deltas),
     ]
 
 
@@ -378,10 +379,10 @@ def main() -> None:
         "",
         "### 모듈별 baseline 대비 변화",
         "",
-        "모듈마다 첫 번째 막대는 Line, 두 번째 막대는 Branch입니다. "
+        "각 차트는 모듈별 baseline 대비 변화를 표시합니다. "
         "0보다 작으면 baseline보다 낮으며, 단위는 pp입니다.",
         "",
-        *render_delta_chart(
+        *render_delta_charts(
             module_lines,
             module_line_baselines,
             module_branches,

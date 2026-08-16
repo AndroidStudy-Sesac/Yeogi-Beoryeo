@@ -39,7 +39,7 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
         self.assertEqual("░░░░░░░░░░", MODULE.render_bar(0.0))
         self.assertEqual("██████████", MODULE.render_bar(100.0))
 
-    def test_모듈별_증감을_mermaid_막대_chart로_표시한다(self) -> None:
+    def test_line과_branch_증감을_별도_mermaid_chart로_표시한다(self) -> None:
         module_lines = {
             "app": (2, 4, 50.0),
             "data": (3, 4, 75.0),
@@ -66,7 +66,7 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
         }
 
         chart = "\n".join(
-            MODULE.render_delta_chart(
+            MODULE.render_delta_charts(
                 module_lines,
                 module_line_baselines,
                 module_branches,
@@ -74,11 +74,15 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             )
         )
 
-        self.assertIn("```mermaid\nxychart", chart)
+        self.assertEqual(2, chart.count("```mermaid\nxychart"))
+        self.assertIn("#### Line", chart)
+        self.assertIn("#### Branch", chart)
         self.assertIn("x-axis [app, data, domain, presentation]", chart)
-        self.assertIn('y-axis "pp" -25 --> 25', chart)
+        self.assertEqual(2, chart.count('y-axis "pp" -25 --> 25'))
         self.assertIn("bar [0.00, 25.00, 25.00, -25.00]", chart)
         self.assertIn("bar [-25.00, 0.00, 25.00, 25.00]", chart)
+        self.assertEqual(2, chart.count("  bar ["))
+        self.assertNotIn("first bar", chart)
         self.assertIn("accTitle:", chart)
         self.assertIn("accDescr:", chart)
 
@@ -253,9 +257,12 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             )
             self.assertIn("### 모듈별 coverage", summary)
             self.assertIn("### 모듈별 baseline 대비 변화", summary)
-            self.assertIn("```mermaid\nxychart", summary)
+            self.assertEqual(2, summary.count("```mermaid\nxychart"))
+            self.assertIn("#### Line", summary)
+            self.assertIn("#### Branch", summary)
             self.assertIn("bar [-33.33, -33.33, 0.00, 0.00]", summary)
             self.assertIn("bar [-50.00, -50.00, 0.00, 0.00]", summary)
+            self.assertNotIn("첫 번째 막대", summary)
             self.assertIn(
                 "| `app` | 100.00% → **66.67%** (-33.33pp) | "
                 "100.00% → **50.00%** (-50.00pp) | ⚠️ 확인 필요 |",
