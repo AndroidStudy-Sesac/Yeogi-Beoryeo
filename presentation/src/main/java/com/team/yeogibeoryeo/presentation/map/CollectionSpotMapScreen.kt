@@ -62,7 +62,6 @@ import com.team.yeogibeoryeo.presentation.map.components.MapOverlayControls
 import com.team.yeogibeoryeo.presentation.map.components.MapResultBottomSheetPeekHeight
 import com.team.yeogibeoryeo.presentation.map.components.MapSearchLoadingOverlay
 import com.team.yeogibeoryeo.presentation.map.components.MapSheetLevel
-import com.team.yeogibeoryeo.presentation.map.components.MapSpotDetailBottomSheetPeekHeight
 import com.team.yeogibeoryeo.presentation.map.components.MyLocationButton
 import com.team.yeogibeoryeo.presentation.map.components.SpotBottomSheetContent
 import com.team.yeogibeoryeo.presentation.map.components.SpotDetailBottomSheetContent
