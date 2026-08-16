@@ -168,7 +168,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 행정구역보다 정보 제공 도시 지역을 우선한다`() {
-        val regions = RegionOptionsMapper.findSigunguRegions(
+        val regions = RegionSearchCandidateMapper.findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -203,7 +203,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 정보 지역이 없으면 행정구역으로 대체한다`() {
-        val regions = RegionOptionsMapper.findSigunguRegions(
+        val regions = RegionSearchCandidateMapper.findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -239,7 +239,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 행정구역을 상위 정보 조회 키로 매핑한다`() {
-        val regions = RegionOptionsMapper.findSigunguRegions(
+        val regions = RegionSearchCandidateMapper.findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -405,7 +405,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 시 접미사 없이 공식 도시 키워드를 정보 키로 매핑한다`() {
-        val regions = RegionOptionsMapper.findSigunguRegions(
+        val regions = RegionSearchCandidateMapper.findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -487,7 +487,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 조회는 시도 시군구 법정동 정확 일치 기준으로 매핑된 행정동을 반환한다`() {
-        val regions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+        val regions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
             mappings = listOf(
                 legalAdminMapping(
                     sidoName = "서울특별시",
@@ -553,11 +553,11 @@ class RegionOptionsMapperTest {
             )
         )
 
-        val haggyeRegions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+        val haggyeRegions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
             mappings = mappings,
             region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계동")
         )
-        val gongneungRegions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+        val gongneungRegions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
             mappings = mappings,
             region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "공릉동")
         )
@@ -571,7 +571,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 조회는 정확 일치가 없으면 빈 목록을 반환한다`() {
-        val regions = RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+        val regions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
             mappings = listOf(
                 legalAdminMapping(
                     sidoName = "서울특별시",
@@ -592,7 +592,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `읍면동 조회는 행정동 접미사가 있는 법정동 후보를 포함한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "전라남도",
@@ -641,7 +641,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 후보 생성 시 법정 행정 시군구 코드가 다른 후보는 제외한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = emptyList(),
             legalAdminDongMappings = listOf(
                 legalAdminMapping(
@@ -674,7 +674,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `접미사 없는 동 검색어도 행정동 후보로 반환한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "부산광역시",
@@ -709,7 +709,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `번호가 생략된 동 검색어는 번호 행정동 후보를 반환한다`() {
-        val regions = RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -761,7 +761,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `제 번호가 붙은 행정동도 번호가 생략된 동 검색어로 찾을 수 있다`() {
-        val regions = RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "부산광역시",
@@ -789,7 +789,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `사천 검색은 제공 가능 시군구인 경상남도 사천시 후보를 반환한다`() {
-        val regions = RegionOptionsMapper.findSigunguRegions(
+        val regions = RegionSearchCandidateMapper.findSigunguRegions(
             administrativeRegions = emptyList(),
             regionalGuideRegions = listOf(
                 RegionalGuideRegionDto(
@@ -808,7 +808,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `다른 지역에 정확한 행정동이 있어도 같은 지역의 번호 행정동 별칭은 후보로 반환한다`() {
-        val regions = RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -867,7 +867,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 매핑 행정동이 번호형이 아니면 번호 행정동 별칭으로 확장하지 않는다`() {
-        val regions = RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -896,7 +896,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `접미사 없는 법정동 검색어는 실제 법정동 이름을 후보에 유지한다`() {
-        val regions = RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
             administrativeRegions = emptyList(),
             legalAdminDongMappings = listOf(
                 legalAdminMapping(
@@ -925,7 +925,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 키워드 조회는 가 별칭을 반환하고 리 별칭은 제외한다`() {
-        val keywords = RegionOptionsMapper.findLegalDongKeywordsByRegion(
+        val keywords = RegionSearchCandidateMapper.findLegalDongKeywordsByRegion(
             mappings = listOf(
                 legalAdminMapping(
                     sidoName = "서울특별시",
@@ -955,7 +955,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `문자 점 묶음 행정동 부분 검색은 에셋 원본 지역명 후보로 반환한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대구광역시",
@@ -977,7 +977,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `문자 점 묶음 행정동 붙여쓴 검색어는 에셋 원본 지역명 후보로 반환한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "충청북도",
@@ -999,7 +999,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `문자 점 묶음 행정동 원본 검색어도 에셋 원본 지역명 후보로 반환한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대구광역시",
@@ -1021,7 +1021,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `숫자 점 묶음 행정동 검색 후보는 기존 행정동 표기를 유지한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "서울특별시",
@@ -1043,7 +1043,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `공용 읍면동 검색은 번호 행정동 별칭 대신 법정동 후보를 유지한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -1072,7 +1072,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `지역 가이드 읍면동 검색 후보는 숫자를 자연 순서로 정렬한다`() {
-        val regions = RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -1100,7 +1100,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `공용 읍면동 검색 후보는 기존 문자 순서를 유지한다`() {
-        val regions = RegionOptionsMapper.findEupmyeondongRegions(
+        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -1128,7 +1128,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `지역 가이드 제공 가능 대상지역명에 맞는 검색 후보만 유지한다`() {
-        val regions = RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+        val regions = RegionalGuideAvailabilityFilter.filterRegions(
             regions = listOf(
                 Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "반석동"),
                 Region(sido = "대전광역시", sigungu = "유성구", eupmyeondong = "대동"),
@@ -1151,7 +1151,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `지역 가이드 제공 가능 정보가 없으면 읍면동 선택지에서 제외한다`() {
-        val options = RegionOptionsMapper.filterRegionalGuideEupmyeondongOptions(
+        val options = RegionalGuideAvailabilityFilter.filterEupmyeondongOptions(
             options = listOf("노은1동", "노은2동", "대동"),
             availability = listOf(
                 regionalGuideAvailability(
@@ -1182,7 +1182,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `번호 범위 대상지역명에 포함된 괴정 행정동 검색 후보를 유지한다`() {
-        val regions = RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+        val regions = RegionalGuideAvailabilityFilter.filterRegions(
             regions = listOf(
                 Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "괴정제1동"),
                 Region(sido = "부산광역시", sigungu = "사하구", eupmyeondong = "괴정제4동"),
@@ -1231,7 +1231,7 @@ class RegionOptionsMapperTest {
             ),
         )
 
-        val candidates = RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+        val candidates = RegionalGuideAvailabilityFilter.filterRegions(
             regions = listOf(
                 Region(
                     sido = "강원특별자치도",
@@ -1241,7 +1241,7 @@ class RegionOptionsMapperTest {
             ),
             availability = availability,
         )
-        val options = RegionOptionsMapper.filterRegionalGuideEupmyeondongOptions(
+        val options = RegionalGuideAvailabilityFilter.filterEupmyeondongOptions(
             options = listOf("사천면", "주문진읍"),
             availability = availability,
             sido = "강원특별자치도",
@@ -1272,14 +1272,14 @@ class RegionOptionsMapperTest {
             ),
         )
 
-        val candidates = RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+        val candidates = RegionalGuideAvailabilityFilter.filterRegions(
             regions = listOf(
                 Region(sido = "울산광역시", sigungu = "울주군", eupmyeondong = "온양읍"),
                 Region(sido = "울산광역시", sigungu = "울주군", eupmyeondong = "두동면"),
             ),
             availability = availability,
         )
-        val options = RegionOptionsMapper.filterRegionalGuideEupmyeondongOptions(
+        val options = RegionalGuideAvailabilityFilter.filterEupmyeondongOptions(
             options = listOf("두동면", "온양읍"),
             availability = availability,
             sido = "울산광역시",
@@ -1310,14 +1310,14 @@ class RegionOptionsMapperTest {
             ),
         )
 
-        val candidates = RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+        val candidates = RegionalGuideAvailabilityFilter.filterRegions(
             regions = listOf(
                 Region(sido = "경기도", sigungu = "의왕시", eupmyeondong = "부곡동"),
                 Region(sido = "경기도", sigungu = "의왕시", eupmyeondong = "오전동"),
             ),
             availability = availability,
         )
-        val options = RegionOptionsMapper.filterRegionalGuideEupmyeondongOptions(
+        val options = RegionalGuideAvailabilityFilter.filterEupmyeondongOptions(
             options = listOf("부곡동", "오전동"),
             availability = availability,
             sido = "경기도",
@@ -1333,7 +1333,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `전남광주통합특별시 제공 가능 정보는 광주와 전남 행정동에 적용한다`() {
-        val regions = RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+        val regions = RegionalGuideAvailabilityFilter.filterRegions(
             regions = listOf(
                 Region(sido = "광주광역시", sigungu = "동구", eupmyeondong = "충장동"),
                 Region(sido = "전라남도", sigungu = "나주시", eupmyeondong = "빛가람동"),

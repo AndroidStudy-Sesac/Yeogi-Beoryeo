@@ -1,5 +1,6 @@
 plugins {
     id("java-library")
+    id("com.android.lint")
     alias(libs.plugins.jetbrains.kotlin.jvm)
     alias(libs.plugins.kover)
 }
