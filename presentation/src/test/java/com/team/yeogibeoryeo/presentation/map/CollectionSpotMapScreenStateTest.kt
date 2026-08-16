@@ -54,10 +54,12 @@ class CollectionSpotMapScreenStateTest {
     fun `지역 후보 뒤로가기 후 현재 위치 결과 바텀시트 자동 노출을 막는다`() {
         val shouldKeepHidden =
             shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
-                shouldKeepRegionBackCurrentLocationSheetHidden = true,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
                 hasNoticeOrError = false,
                 hasRegionSelection = false,
+                hasEmptyResult = false,
             )
 
         assertTrue(shouldKeepHidden)
@@ -67,10 +69,12 @@ class CollectionSpotMapScreenStateTest {
     fun `지역 후보 뒤로가기 후 위치 안내는 바텀시트로 노출한다`() {
         val shouldKeepHidden =
             shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
-                shouldKeepRegionBackCurrentLocationSheetHidden = true,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
                 searchMode = MapSearchMode.KEYWORD,
                 hasNoticeOrError = true,
                 hasRegionSelection = false,
+                hasEmptyResult = false,
             )
 
         assertFalse(shouldKeepHidden)
@@ -80,10 +84,12 @@ class CollectionSpotMapScreenStateTest {
     fun `지역 후보 뒤로가기 숨김 상태는 현재 위치 결과에만 적용한다`() {
         val shouldKeepHidden =
             shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
-                shouldKeepRegionBackCurrentLocationSheetHidden = true,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
                 searchMode = MapSearchMode.KEYWORD,
                 hasNoticeOrError = false,
                 hasRegionSelection = false,
+                hasEmptyResult = false,
             )
 
         assertFalse(shouldKeepHidden)
@@ -93,10 +99,42 @@ class CollectionSpotMapScreenStateTest {
     fun `지역 선택 상태가 남아 있으면 후보 바텀시트 노출을 허용한다`() {
         val shouldKeepHidden =
             shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
-                shouldKeepRegionBackCurrentLocationSheetHidden = true,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
                 hasNoticeOrError = false,
                 hasRegionSelection = true,
+                hasEmptyResult = false,
+            )
+
+        assertFalse(shouldKeepHidden)
+    }
+
+    @Test
+    fun `지역 후보 뒤로가기 숨김 상태여도 빈 결과는 바텀시트로 노출한다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
+                hasEmptyResult = true,
+            )
+
+        assertFalse(shouldKeepHidden)
+    }
+
+    @Test
+    fun `장소 상세 화면에서는 지역 후보 뒤로가기 숨김 상태를 적용하지 않는다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.SpotDetail,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
+                hasEmptyResult = false,
             )
 
         assertFalse(shouldKeepHidden)

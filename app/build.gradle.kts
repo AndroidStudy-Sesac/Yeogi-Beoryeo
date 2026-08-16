@@ -133,6 +133,10 @@ android {
         buildConfig = true
     }
 
+    lint {
+        checkDependencies = true
+    }
+
     testOptions {
         managedDevices {
             localDevices {

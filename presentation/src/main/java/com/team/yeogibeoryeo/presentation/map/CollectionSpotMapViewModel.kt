@@ -147,6 +147,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 } else {
                     it.searchMode
                 },
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -175,6 +176,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     regionDetailSearchCandidate = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
+                    shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
                 )
             }
             return
@@ -286,10 +288,17 @@ class CollectionSpotMapViewModel @Inject constructor(
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
             )
         }
 
         searchByCurrentLocationOnMapEntryIfPermitted()
+    }
+
+    fun clearRegionBackCurrentLocationSheetHidden() {
+        _uiState.update {
+            it.copy(shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false)
+        }
     }
 
     private fun searchByRegionDetailSelection(
@@ -360,6 +369,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -416,6 +426,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -441,6 +452,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -450,7 +462,10 @@ class CollectionSpotMapViewModel @Inject constructor(
         cancelSpotSearchJob()
         val searchGeneration = ++currentLocationSearchGeneration
         _uiState.update {
-            it.copy(searchKeyword = EMPTY_SEARCH_KEYWORD)
+            it.copy(
+                searchKeyword = EMPTY_SEARCH_KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
+            )
         }
         spotSearchJob = viewModelScope.launch {
             if (!locationPermissionChecker.hasFineLocationPermission()) {
@@ -491,6 +506,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.MAP_CENTER,
+                    shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
                 )
             }
 
@@ -580,6 +596,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     filteredSpots = filteredSpots,
                     selectedTypes = updatedTypes,
                 ),
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -596,13 +613,17 @@ class CollectionSpotMapViewModel @Inject constructor(
                 spots = filteredSpots,
                 selectedSpot = null,
                 isFilterResultEmpty = false,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
 
     fun onSpotClick(spot: CollectionSpot) {
         _uiState.update {
-            it.copy(selectedSpot = spot)
+            it.copy(
+                selectedSpot = spot,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
+            )
         }
     }
 
@@ -640,6 +661,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 favoriteSpotMoveRequestId = request.targetId,
                 favoriteSpotMoveRequestSequence = it.favoriteSpotMoveRequestSequence + 1,
                 isFavoriteSpotNearbyLoading = true,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
 
@@ -707,6 +729,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -736,6 +759,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -800,6 +824,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     filteredSpots = filteredSpots,
                     selectedTypes = selectedTypes,
                 ),
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -824,6 +849,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -848,6 +874,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -893,6 +920,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack =
+                    it.shouldKeepCurrentLocationSheetHiddenAfterRegionBack &&
+                        it.searchMode == MapSearchMode.CURRENT_LOCATION &&
+                        filteredSpots.isNotEmpty(),
             )
         }
         mapSearchTimingLogger.log(
@@ -942,6 +973,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                         regionSearchCandidates = emptyList(),
                         regionDetailSearchCandidate = null,
                         searchMode = MapSearchMode.CURRENT_LOCATION,
+                        shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
                     )
                 }
             }.onFailure { throwable ->
@@ -972,6 +1004,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -1050,6 +1083,9 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack =
+                    it.shouldKeepCurrentLocationSheetHiddenAfterRegionBack &&
+                        filteredSpots.isNotEmpty(),
             )
         }
     }

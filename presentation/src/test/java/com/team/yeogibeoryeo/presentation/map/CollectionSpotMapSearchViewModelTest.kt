@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -574,7 +575,98 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertNull(state.regionDetailSearchCandidate)
             assertEquals(listOf(locationSpot).withDistanceFrom(currentCoordinate), state.spots)
             assertEquals(MapSearchMode.CURRENT_LOCATION, state.searchMode)
+            assertTrue(state.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
             assertEquals(2, repository.locationSearchCallCount)
+        }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 현재 위치 필터 결과가 없으면 빈 결과 노출을 허용한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(locationSpot),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSpotTypeClick(CollectionSpotType.BATTERY_BIN)
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionSearchBack()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(emptyList<CollectionSpot>(), state.spots)
+            assertTrue(state.hasSearched)
+            assertTrue(state.isFilterResultEmpty)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, state.searchMode)
+            assertFalse(state.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+        }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 마커 상세에서 즐겨찾기를 눌러도 상세 선택을 유지한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(locationSpot),
+            )
+            val favoriteRepository = FakeFavoriteRepository()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+                favoriteRepository = favoriteRepository,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionSearchBack()
+            advanceUntilIdle()
+
+            val spot = viewModel.uiState.value.spots.first()
+            assertTrue(viewModel.uiState.value.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+
+            viewModel.onSpotClick(spot)
+            assertFalse(viewModel.uiState.value.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+
+            viewModel.onSpotFavoriteClick(spot)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(spot.id, state.selectedSpot?.id)
+            assertTrue(state.selectedSpot?.isBookmarked == true)
+            assertFalse(state.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
         }
 
     @Test

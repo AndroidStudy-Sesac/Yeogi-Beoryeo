@@ -11,10 +11,10 @@ import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 class RegionOptionsRepositoryImpl internal constructor(
     private val getAdministrativeRegions: suspend () -> List<AdministrativeRegionDto>,
@@ -85,7 +85,7 @@ class RegionOptionsRepositoryImpl internal constructor(
         val legalAdminDongMappings = getLegalAdminDongMappings()
 
         return mapRegionOptions {
-            RegionOptionsMapper.findEupmyeondongRegions(
+            RegionSearchCandidateMapper.findEupmyeondongRegions(
                 administrativeRegions = administrativeRegions,
                 legalAdminDongMappings = legalAdminDongMappings,
                 keyword = keyword
@@ -122,7 +122,7 @@ class RegionOptionsRepositoryImpl internal constructor(
         if (availability.isEmpty()) return options
 
         return mapRegionOptions {
-            RegionOptionsMapper.filterRegionalGuideEupmyeondongOptions(
+            RegionalGuideAvailabilityFilter.filterEupmyeondongOptions(
                 options = options,
                 availability = availability,
                 sido = sido,
@@ -138,7 +138,7 @@ class RegionOptionsRepositoryImpl internal constructor(
         val legalAdminDongMappings = getLegalAdminDongMappings()
 
         return mapRegionOptions {
-            RegionOptionsMapper.findRegionalGuideEupmyeondongRegions(
+            RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
                 administrativeRegions = administrativeRegions,
                 legalAdminDongMappings = legalAdminDongMappings,
                 keyword = keyword
@@ -161,7 +161,7 @@ class RegionOptionsRepositoryImpl internal constructor(
         if (availability.isEmpty()) return regions
 
         return mapRegionOptions {
-            RegionOptionsMapper.filterAvailableRegionalGuideRegions(
+            RegionalGuideAvailabilityFilter.filterRegions(
                 regions = regions,
                 availability = availability,
             )
@@ -175,7 +175,7 @@ class RegionOptionsRepositoryImpl internal constructor(
         val mappings = getLegalAdminDongMappings()
 
         return mapRegionOptions {
-            RegionOptionsMapper.findLegalDongKeywordsByRegion(
+            RegionSearchCandidateMapper.findLegalDongKeywordsByRegion(
                 mappings = mappings,
                 region = region,
                 keyword = keyword
@@ -190,7 +190,7 @@ class RegionOptionsRepositoryImpl internal constructor(
         val regionalGuideRegions = getAvailableRegionalGuideRegions()
 
         return mapRegionOptions {
-            RegionOptionsMapper.findSigunguRegions(
+            RegionSearchCandidateMapper.findSigunguRegions(
                 administrativeRegions = administrativeRegions,
                 regionalGuideRegions = regionalGuideRegions,
                 keyword = keyword
@@ -217,7 +217,7 @@ class RegionOptionsRepositoryImpl internal constructor(
         val mappings = getLegalAdminDongMappings()
 
         return mapRegionOptions {
-            RegionOptionsMapper.findAdminDongCandidatesForLegalDong(
+            RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
                 mappings = mappings,
                 region = region
             )
