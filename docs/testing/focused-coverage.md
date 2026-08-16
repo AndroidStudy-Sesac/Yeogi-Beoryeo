@@ -99,11 +99,12 @@ Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행
 
 `Focused Coverage`는 coverage 수치만으로 CI check를 실패시키지 않습니다. Unit test, report 생성, XML 파싱이나 baseline 입력 검증이 실패하면 check에도 반영됩니다.
 
-1. `현재`: 해당 commit의 covered/total과 coverage 비율
+1. `현재`: 해당 commit의 covered/total, coverage 비율과 10칸 막대
 2. `baseline`: 최초로 확정한 coverage 비율
 3. `차이`: baseline 대비 percentage point 변화
-4. `모듈별 coverage`: `app`, `data`, `domain`, `presentation`의 Line·Branch 현재 수치와 baseline 대비 변화
-5. `상태`: Line이나 Branch가 baseline보다 낮으면 merge 차단 없이 `확인 필요`로 표시
+4. `모듈별 coverage`: `app`, `data`, `domain`, `presentation`의 Line·Branch를 `baseline → 현재` 순서로 비교
+5. `상태`: Line이나 Branch가 baseline보다 낮으면 merge 차단 없이 `⚠️ 확인 필요`로 표시
+6. `raw covered/total`: 모듈별 현재값과 baseline의 분자·분모
 
 `Line`은 실행된 source line 비율입니다. `Branch`는 조건문의 각 경로가 실행된 비율입니다. 조건 분기 회귀를 볼 때는 Branch를 먼저 확인합니다.
 

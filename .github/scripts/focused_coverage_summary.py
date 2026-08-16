@@ -18,6 +18,7 @@ MODULE_PACKAGE_PREFIXES = {
     "domain": ("com/team/yeogibeoryeo/domain",),
     "presentation": ("com/team/yeogibeoryeo/presentation",),
 }
+BAR_WIDTH = 10
 
 
 def parse_args() -> argparse.Namespace:
@@ -219,8 +220,34 @@ def render_row(
         baseline_total,
     )
     return (
-        f"| {name} | {current_text} | {baseline_text} | {delta_text} |"
+        f"| {name} | `{render_bar(current)}` **{current_text}** | "
+        f"{baseline_text} | {delta_text} |"
     )
+
+
+def render_bar(percent: float) -> str:
+    filled = min(BAR_WIDTH, max(0, int(percent * BAR_WIDTH / 100 + 0.5)))
+    if percent < 100:
+        filled = min(filled, BAR_WIDTH - 1)
+    return "█" * filled + "░" * (BAR_WIDTH - filled)
+
+
+def render_change(metric: Metric, baseline: tuple[int, int]) -> str:
+    _, _, delta_text = render_cells(*metric, *baseline)
+    baseline_percent = baseline[0] * 100 / baseline[1]
+    return f"{baseline_percent:.2f}% → **{metric[2]:.2f}%** ({delta_text})"
+
+
+def render_status(
+    line: Metric,
+    line_baseline: tuple[int, int],
+    branch: Metric,
+    branch_baseline: tuple[int, int],
+) -> str:
+    needs_review = is_below_baseline(line[0], line[1], *line_baseline) or (
+        is_below_baseline(branch[0], branch[1], *branch_baseline)
+    )
+    return "⚠️ 확인 필요" if needs_review else "✅ 기준 이상"
 
 
 def render_module_row(
@@ -230,13 +257,26 @@ def render_module_row(
     branch: Metric,
     branch_baseline: tuple[int, int],
 ) -> str:
-    line_cells = render_cells(*line, *line_baseline)
-    branch_cells = render_cells(*branch, *branch_baseline)
-    needs_review = is_below_baseline(line[0], line[1], *line_baseline) or (
-        is_below_baseline(branch[0], branch[1], *branch_baseline)
+    return (
+        f"| `{module}` | {render_change(line, line_baseline)} | "
+        f"{render_change(branch, branch_baseline)} | "
+        f"{render_status(line, line_baseline, branch, branch_baseline)} |"
     )
-    status = "확인 필요" if needs_review else "기준 이상"
-    return f"| `{module}` | {' | '.join((*line_cells, *branch_cells, status))} |"
+
+
+def render_raw_module_row(
+    module: str,
+    line: Metric,
+    line_baseline: tuple[int, int],
+    branch: Metric,
+    branch_baseline: tuple[int, int],
+) -> str:
+    return (
+        f"| `{module}` | {line[0]:,}/{line[1]:,} | "
+        f"{line_baseline[0]:,}/{line_baseline[1]:,} | "
+        f"{branch[0]:,}/{branch[1]:,} | "
+        f"{branch_baseline[0]:,}/{branch_baseline[1]:,} |"
+    )
 
 
 def main() -> None:
@@ -263,9 +303,16 @@ def main() -> None:
     validate_baseline_total("Line", line_baseline, module_line_baselines)
     validate_baseline_total("Branch", branch_baseline, module_branch_baselines)
 
-    lines = [
-        "## Focused coverage",
-        "",
+    lines = ["## Focused coverage", ""]
+    links = []
+    if args.artifact_url:
+        links.append(f"[상세 HTML·XML report]({args.artifact_url})")
+    if args.policy_url:
+        links.append(f"[운영 정책]({args.policy_url})")
+    if links:
+        lines.extend((" · ".join(links), ""))
+
+    lines += [
         "| 지표 | 현재 | baseline | 차이 |",
         "|---|---:|---:|---:|",
         render_row(
@@ -281,10 +328,25 @@ def main() -> None:
         "",
         "### 모듈별 coverage",
         "",
-        "| 모듈 | Line 현재 | Line baseline | Line 차이 | Branch 현재 | Branch baseline | Branch 차이 | 상태 |",
-        "|---|---:|---:|---:|---:|---:|---:|---|",
+        "| 모듈 | Line baseline → 현재 | Branch baseline → 현재 | 상태 |",
+        "|---|---:|---:|---|",
         *(
             render_module_row(
+                module,
+                module_lines[module],
+                module_line_baselines[module],
+                module_branches[module],
+                module_branch_baselines[module],
+            )
+            for module in MODULE_PACKAGE_PREFIXES
+        ),
+        "",
+        "### raw covered/total",
+        "",
+        "| 모듈 | Line 현재 | Line baseline | Branch 현재 | Branch baseline |",
+        "|---|---:|---:|---:|---:|",
+        *(
+            render_raw_module_row(
                 module,
                 module_lines[module],
                 module_line_baselines[module],
@@ -300,10 +362,6 @@ def main() -> None:
 
     if args.commit:
         lines.extend(("", f"측정 commit: `{args.commit}`"))
-    if args.artifact_url:
-        lines.append(f"상세 HTML·XML report: [artifact 다운로드]({args.artifact_url})")
-    if args.policy_url:
-        lines.append(f"측정 범위와 하락 대응: [focused coverage 운영 정책]({args.policy_url})")
 
     print("\n".join(lines))
 

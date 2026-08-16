@@ -33,6 +33,12 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
     def test_미실행_라인이_추가되면_기준선보다_낮아진다(self) -> None:
         self.assertTrue(MODULE.is_below_baseline(5658, 6357, 5658, 6292))
 
+    def test_coverage_비율을_열_칸_막대로_표시한다(self) -> None:
+        self.assertEqual("█████████░", MODULE.render_bar(91.02))
+        self.assertEqual("█████████░", MODULE.render_bar(95.86))
+        self.assertEqual("░░░░░░░░░░", MODULE.render_bar(0.0))
+        self.assertEqual("██████████", MODULE.render_bar(100.0))
+
     def test_기준선_분모가_올바르지_않으면_실패한다(self) -> None:
         properties = {
             "focusedCoverageLineBaselineCovered": "1",
@@ -179,6 +185,10 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
                 str(report),
                 "--properties",
                 str(properties),
+                "--artifact-url",
+                "https://example.test/report",
+                "--policy-url",
+                "https://example.test/policy",
             ]
 
             output = io.StringIO()
@@ -188,15 +198,25 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
                 MODULE.main()
 
             summary = output.getvalue()
+            self.assertLess(
+                summary.index("[상세 HTML·XML report]"),
+                summary.index("| 지표 | 현재 | baseline | 차이 |"),
+            )
             self.assertIn("| 지표 | 현재 | baseline | 차이 |", summary)
             self.assertIn(
-                "| Line | 66.67% (8/12) | 83.33% (10/12) | -16.67pp |",
+                "| Line | `███████░░░` **66.67% (8/12)** | "
+                "83.33% (10/12) | -16.67pp |",
                 summary,
             )
             self.assertIn("### 모듈별 coverage", summary)
             self.assertIn(
-                "| `app` | 66.67% (2/3) | 100.00% (3/3) | -33.33pp | "
-                "50.00% (1/2) | 100.00% (2/2) | -50.00pp | 확인 필요 |",
+                "| `app` | 100.00% → **66.67%** (-33.33pp) | "
+                "100.00% → **50.00%** (-50.00pp) | ⚠️ 확인 필요 |",
+                summary,
+            )
+            self.assertIn("### raw covered/total", summary)
+            self.assertIn(
+                "| `app` | 2/3 | 3/3 | 1/2 | 2/2 |",
                 summary,
             )
             self.assertNotIn("검증 기준", summary)
