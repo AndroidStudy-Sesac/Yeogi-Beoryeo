@@ -160,6 +160,49 @@ class RegionOptionsRepositoryImplTest {
             assertNotSame(callingThread, availabilityIterationThread)
         }
 
+    @Test
+    fun `지역 검색 인덱스는 주입한 dispatcher에서 한 번 생성해 재사용한다`() =
+        runBlocking {
+            val callingThread = Thread.currentThread()
+            var administrativeRegionAccessThread: Thread? = null
+            var administrativeRegionAccessCount = 0
+            val administrativeRegions = object : AbstractList<AdministrativeRegionDto>() {
+                private val items = sampleAdministrativeRegions()
+
+                override val size: Int
+                    get() = items.size
+
+                override fun get(index: Int): AdministrativeRegionDto {
+                    administrativeRegionAccessThread = Thread.currentThread()
+                    administrativeRegionAccessCount++
+                    return items[index]
+                }
+            }
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val repository = createRepository(
+                    administrativeRegions = administrativeRegions,
+                    defaultDispatcher = dispatcher,
+                )
+
+                assertEquals(
+                    listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동")),
+                    repository.findRegionsByEupmyeondongKeyword("명동"),
+                )
+                val accessCountAfterFirstSearch = administrativeRegionAccessCount
+
+                assertEquals(
+                    listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동")),
+                    repository.findRegionsByEupmyeondongKeyword("명동"),
+                )
+
+                assertEquals(accessCountAfterFirstSearch, administrativeRegionAccessCount)
+            }
+
+            assertNotNull(administrativeRegionAccessThread)
+            assertNotSame(callingThread, administrativeRegionAccessThread)
+        }
+
     private fun createRepository(
         administrativeRegions: List<AdministrativeRegionDto> = sampleAdministrativeRegions(),
         legalAdminDongMappings: List<LegalAdminDongMappingDto> = sampleLegalAdminDongMappings(),

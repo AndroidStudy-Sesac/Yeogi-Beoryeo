@@ -13,6 +13,8 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -23,6 +25,9 @@ class RegionOptionsRepositoryImpl internal constructor(
     private val getRegionalGuideRegionOptions: suspend () -> List<RegionalGuideRegionDto>,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : RegionOptionsRepository {
+
+    private val regionSearchIndexMutex = Mutex()
+    private var regionSearchIndex: RegionSearchIndex? = null
 
     @Inject constructor(
         localDataSource: RegionOptionsLocalDataSource,
@@ -80,18 +85,10 @@ class RegionOptionsRepositoryImpl internal constructor(
 
     override suspend fun findRegionsByEupmyeondongKeyword(
         keyword: String
-    ): List<Region> {
-        val administrativeRegions = getAdministrativeRegions()
-        val legalAdminDongMappings = getLegalAdminDongMappings()
-
-        return mapRegionOptions {
-            RegionSearchCandidateMapper.findEupmyeondongRegions(
-                administrativeRegions = administrativeRegions,
-                legalAdminDongMappings = legalAdminDongMappings,
-                keyword = keyword
-            )
+    ): List<Region> =
+        mapRegionOptions {
+            getRegionSearchIndex().findEupmyeondongRegions(keyword)
         }
-    }
 
     override suspend fun getRegionalGuideSigunguOptions(
         sido: String
@@ -133,18 +130,10 @@ class RegionOptionsRepositoryImpl internal constructor(
 
     override suspend fun findRegionalGuideRegionsByEupmyeondongKeyword(
         keyword: String
-    ): List<Region> {
-        val administrativeRegions = getAdministrativeRegions()
-        val legalAdminDongMappings = getLegalAdminDongMappings()
-
-        return mapRegionOptions {
-            RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
-                administrativeRegions = administrativeRegions,
-                legalAdminDongMappings = legalAdminDongMappings,
-                keyword = keyword
-            )
+    ): List<Region> =
+        mapRegionOptions {
+            getRegionSearchIndex().findRegionalGuideEupmyeondongRegions(keyword)
         }
-    }
 
     override suspend fun findAvailableRegionalGuideRegionsByEupmyeondongKeyword(
         keyword: String
@@ -171,32 +160,17 @@ class RegionOptionsRepositoryImpl internal constructor(
     override suspend fun findLegalDongKeywordsByRegion(
         region: Region,
         keyword: String
-    ): List<String> {
-        val mappings = getLegalAdminDongMappings()
-
-        return mapRegionOptions {
-            RegionSearchCandidateMapper.findLegalDongKeywordsByRegion(
-                mappings = mappings,
-                region = region,
-                keyword = keyword
-            )
+    ): List<String> =
+        mapRegionOptions {
+            getRegionSearchIndex().findLegalDongKeywordsByRegion(region, keyword)
         }
-    }
 
     override suspend fun findRegionsBySigunguKeyword(
         keyword: String
-    ): List<Region> {
-        val administrativeRegions = getAdministrativeRegions()
-        val regionalGuideRegions = getAvailableRegionalGuideRegions()
-
-        return mapRegionOptions {
-            RegionSearchCandidateMapper.findSigunguRegions(
-                administrativeRegions = administrativeRegions,
-                regionalGuideRegions = regionalGuideRegions,
-                keyword = keyword
-            )
+    ): List<Region> =
+        mapRegionOptions {
+            getRegionSearchIndex().findSigunguRegions(keyword)
         }
-    }
 
     override suspend fun normalizeRegionForRegionalGuide(
         region: Region
@@ -213,16 +187,21 @@ class RegionOptionsRepositoryImpl internal constructor(
 
     override suspend fun findAdminDongCandidatesForLegalDong(
         region: Region
-    ): List<Region> {
-        val mappings = getLegalAdminDongMappings()
-
-        return mapRegionOptions {
-            RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
-                mappings = mappings,
-                region = region
-            )
+    ): List<Region> =
+        mapRegionOptions {
+            getRegionSearchIndex().findAdminDongCandidatesForLegalDong(region)
         }
-    }
+
+    private suspend fun getRegionSearchIndex(): RegionSearchIndex =
+        regionSearchIndex ?: regionSearchIndexMutex.withLock {
+            regionSearchIndex ?: RegionSearchIndex.create(
+                administrativeRegions = getAdministrativeRegions(),
+                legalAdminDongMappings = getLegalAdminDongMappings(),
+                regionalGuideRegions = getAvailableRegionalGuideRegions(),
+            ).also { index ->
+                regionSearchIndex = index
+            }
+        }
 
     private suspend fun getAvailableRegionalGuideRegions(): List<RegionalGuideRegionDto> {
         val availability = getRegionalGuideAvailability()
@@ -244,7 +223,7 @@ class RegionOptionsRepositoryImpl internal constructor(
     private suspend fun getRegionalGuideAvailability(): List<RegionalGuideAvailabilityDto> =
         getRegionalGuideAvailabilityRegions()
 
-    private suspend fun <T> mapRegionOptions(block: () -> T): T =
+    private suspend fun <T> mapRegionOptions(block: suspend () -> T): T =
         withContext(defaultDispatcher) {
             block()
         }
