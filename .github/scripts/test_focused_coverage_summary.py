@@ -74,7 +74,7 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             )
         )
 
-        self.assertIn("```mermaid\nxychart-beta", chart)
+        self.assertIn("```mermaid\nxychart", chart)
         self.assertIn("x-axis [app, data, domain, presentation]", chart)
         self.assertIn('y-axis "pp" -25 --> 25', chart)
         self.assertIn("bar [0.00, 25.00, 25.00, -25.00]", chart)
@@ -253,7 +253,7 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             )
             self.assertIn("### 모듈별 coverage", summary)
             self.assertIn("### 모듈별 baseline 대비 변화", summary)
-            self.assertIn("```mermaid\nxychart-beta", summary)
+            self.assertIn("```mermaid\nxychart", summary)
             self.assertIn("bar [-33.33, -33.33, 0.00, 0.00]", summary)
             self.assertIn("bar [-50.00, -50.00, 0.00, 0.00]", summary)
             self.assertIn(

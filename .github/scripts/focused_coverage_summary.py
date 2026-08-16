@@ -288,7 +288,7 @@ def render_delta_chart(
 
     return [
         "```mermaid",
-        "xychart-beta",
+        "xychart",
         "  accTitle: Module coverage changes from baseline",
         "  accDescr: The first bar is Line and the second bar is Branch. "
         f"Values are percentage points. {description}.",
