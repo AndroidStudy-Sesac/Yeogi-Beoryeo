@@ -39,6 +39,49 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
         self.assertEqual("░░░░░░░░░░", MODULE.render_bar(0.0))
         self.assertEqual("██████████", MODULE.render_bar(100.0))
 
+    def test_모듈별_증감을_mermaid_막대_chart로_표시한다(self) -> None:
+        module_lines = {
+            "app": (2, 4, 50.0),
+            "data": (3, 4, 75.0),
+            "domain": (4, 4, 100.0),
+            "presentation": (1, 4, 25.0),
+        }
+        module_line_baselines = {
+            "app": (2, 4),
+            "data": (2, 4),
+            "domain": (3, 4),
+            "presentation": (2, 4),
+        }
+        module_branches = {
+            "app": (1, 4, 25.0),
+            "data": (2, 4, 50.0),
+            "domain": (3, 4, 75.0),
+            "presentation": (4, 4, 100.0),
+        }
+        module_branch_baselines = {
+            "app": (2, 4),
+            "data": (2, 4),
+            "domain": (2, 4),
+            "presentation": (3, 4),
+        }
+
+        chart = "\n".join(
+            MODULE.render_delta_chart(
+                module_lines,
+                module_line_baselines,
+                module_branches,
+                module_branch_baselines,
+            )
+        )
+
+        self.assertIn("```mermaid\nxychart-beta", chart)
+        self.assertIn("x-axis [app, data, domain, presentation]", chart)
+        self.assertIn('y-axis "pp" -25 --> 25', chart)
+        self.assertIn("bar [0.00, 25.00, 25.00, -25.00]", chart)
+        self.assertIn("bar [-25.00, 0.00, 25.00, 25.00]", chart)
+        self.assertIn("accTitle:", chart)
+        self.assertIn("accDescr:", chart)
+
     def test_기준선_분모가_올바르지_않으면_실패한다(self) -> None:
         properties = {
             "focusedCoverageLineBaselineCovered": "1",
@@ -199,7 +242,7 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
 
             summary = output.getvalue()
             self.assertLess(
-                summary.index("[상세 HTML·XML report]"),
+                summary.index("[상세 HTML/XML report]"),
                 summary.index("| 지표 | 현재 | baseline | 차이 |"),
             )
             self.assertIn("| 지표 | 현재 | baseline | 차이 |", summary)
@@ -209,16 +252,23 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
                 summary,
             )
             self.assertIn("### 모듈별 coverage", summary)
+            self.assertIn("### 모듈별 baseline 대비 변화", summary)
+            self.assertIn("```mermaid\nxychart-beta", summary)
+            self.assertIn("bar [-33.33, -33.33, 0.00, 0.00]", summary)
+            self.assertIn("bar [-50.00, -50.00, 0.00, 0.00]", summary)
             self.assertIn(
                 "| `app` | 100.00% → **66.67%** (-33.33pp) | "
                 "100.00% → **50.00%** (-50.00pp) | ⚠️ 확인 필요 |",
                 summary,
             )
-            self.assertIn("### raw covered/total", summary)
+            self.assertIn("<details>", summary)
+            self.assertIn("<summary>raw covered/total과 측정 정보</summary>", summary)
             self.assertIn(
                 "| `app` | 2/3 | 3/3 | 1/2 | 2/2 |",
                 summary,
             )
+            self.assertIn("</details>", summary)
+            self.assertNotIn("\u00b7", summary)
             self.assertNotIn("검증 기준", summary)
             self.assertNotIn("통과", summary)
             self.assertNotIn("실패", summary)

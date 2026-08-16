@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -250,6 +251,55 @@ def render_status(
     return "⚠️ 확인 필요" if needs_review else "✅ 기준 이상"
 
 
+def coverage_delta(metric: Metric, baseline: tuple[int, int]) -> float:
+    return metric[2] - baseline[0] * 100 / baseline[1]
+
+
+def render_chart_number(value: float) -> str:
+    return "0.00" if abs(value) < 0.005 else f"{value:.2f}"
+
+
+def render_delta_chart(
+    module_lines: dict[str, Metric],
+    module_line_baselines: dict[str, tuple[int, int]],
+    module_branches: dict[str, Metric],
+    module_branch_baselines: dict[str, tuple[int, int]],
+) -> list[str]:
+    modules = list(MODULE_PACKAGE_PREFIXES)
+    line_deltas = [
+        coverage_delta(module_lines[module], module_line_baselines[module])
+        for module in modules
+    ]
+    branch_deltas = [
+        coverage_delta(module_branches[module], module_branch_baselines[module])
+        for module in modules
+    ]
+    axis_limit = max(1, math.ceil(max(map(abs, line_deltas + branch_deltas))))
+    description = "; ".join(
+        f"{module} Line {render_chart_number(line_delta)} and Branch "
+        f"{render_chart_number(branch_delta)}"
+        for module, line_delta, branch_delta in zip(
+            modules,
+            line_deltas,
+            branch_deltas,
+            strict=True,
+        )
+    )
+
+    return [
+        "```mermaid",
+        "xychart-beta",
+        "  accTitle: Module coverage changes from baseline",
+        "  accDescr: The first bar is Line and the second bar is Branch. "
+        f"Values are percentage points. {description}.",
+        f"  x-axis [{', '.join(modules)}]",
+        f'  y-axis "pp" -{axis_limit} --> {axis_limit}',
+        f"  bar [{', '.join(map(render_chart_number, line_deltas))}]",
+        f"  bar [{', '.join(map(render_chart_number, branch_deltas))}]",
+        "```",
+    ]
+
+
 def render_module_row(
     module: str,
     line: Metric,
@@ -306,11 +356,11 @@ def main() -> None:
     lines = ["## Focused coverage", ""]
     links = []
     if args.artifact_url:
-        links.append(f"[상세 HTML·XML report]({args.artifact_url})")
+        links.append(f"[상세 HTML/XML report]({args.artifact_url})")
     if args.policy_url:
         links.append(f"[운영 정책]({args.policy_url})")
     if links:
-        lines.extend((" · ".join(links), ""))
+        lines.extend((" / ".join(links), ""))
 
     lines += [
         "| 지표 | 현재 | baseline | 차이 |",
@@ -324,6 +374,18 @@ def main() -> None:
             "Branch",
             *branch,
             *branch_baseline,
+        ),
+        "",
+        "### 모듈별 baseline 대비 변화",
+        "",
+        "모듈마다 첫 번째 막대는 Line, 두 번째 막대는 Branch입니다. "
+        "0보다 작으면 baseline보다 낮으며, 단위는 pp입니다.",
+        "",
+        *render_delta_chart(
+            module_lines,
+            module_line_baselines,
+            module_branches,
+            module_branch_baselines,
         ),
         "",
         "### 모듈별 coverage",
@@ -341,7 +403,8 @@ def main() -> None:
             for module in MODULE_PACKAGE_PREFIXES
         ),
         "",
-        "### raw covered/total",
+        "<details>",
+        "<summary>raw covered/total과 측정 정보</summary>",
         "",
         "| 모듈 | Line 현재 | Line baseline | Branch 현재 | Branch baseline |",
         "|---|---:|---:|---:|---:|",
@@ -356,12 +419,14 @@ def main() -> None:
             for module in MODULE_PACKAGE_PREFIXES
         ),
         "",
-        "`app`, `data`, `domain`, `presentation`의 business logic과 순수 상태·계산 helper를 JVM unit test로 측정합니다.",
+        "`app`, `data`, `domain`, `presentation`의 business logic과 순수 상태, 계산 helper를 JVM unit test로 측정합니다.",
         "Android instrumented test 결과와 `@Composable` 렌더링 declaration은 포함되지 않습니다.",
     ]
 
     if args.commit:
         lines.extend(("", f"측정 commit: `{args.commit}`"))
+
+    lines.extend(("", "</details>"))
 
     print("\n".join(lines))
 
