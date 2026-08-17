@@ -582,6 +582,16 @@ private fun CollectionSpotMapContent(
                         sheetLevel = MapSheetLevel.Peek
                         onSearchClick()
                     },
+                    onSearchFocus = {
+                        onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                        shouldShowMapCenterSearchButton = false
+                        val returnState = mapSearchFocusReturnState(
+                            mapUiMode = mapUiMode,
+                            sheetLevel = sheetLevel,
+                        )
+                        mapUiMode = returnState.mapUiMode
+                        sheetLevel = returnState.sheetLevel
+                    },
                     topPadding = searchBarTopPadding,
                 )
             }
@@ -800,6 +810,24 @@ internal fun mapDetailCloseReturnState(
                 mapUiMode = MapUiMode.Browsing,
                 sheetLevel = MapSheetLevel.Hidden,
             )
+    }
+
+internal fun mapSearchFocusReturnState(
+    mapUiMode: MapUiMode,
+    sheetLevel: MapSheetLevel,
+): MapDetailReturnState =
+    when (mapUiMode) {
+        MapUiMode.SpotDetail -> MapDetailReturnState(
+            mapUiMode = mapUiMode,
+            sheetLevel = sheetLevel,
+        )
+
+        MapUiMode.Browsing,
+        MapUiMode.ResultList,
+        -> MapDetailReturnState(
+            mapUiMode = MapUiMode.Browsing,
+            sheetLevel = MapSheetLevel.Hidden,
+        )
     }
 
 private fun myLocationButtonBottomPadding(

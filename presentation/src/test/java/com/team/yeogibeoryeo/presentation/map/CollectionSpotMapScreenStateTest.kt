@@ -85,4 +85,28 @@ class CollectionSpotMapScreenStateTest {
         assertEquals(MapUiMode.ResultList, returnState.mapUiMode)
         assertEquals(MapSheetLevel.Peek, returnState.sheetLevel)
     }
+
+    @Test
+    fun `검색창이 포커스되면 결과 바텀시트를 숨기고 탐색 상태로 전환한다`() {
+        val returnState =
+            mapSearchFocusReturnState(
+                mapUiMode = MapUiMode.ResultList,
+                sheetLevel = MapSheetLevel.Expanded,
+            )
+
+        assertEquals(MapUiMode.Browsing, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Hidden, returnState.sheetLevel)
+    }
+
+    @Test
+    fun `검색창 포커스는 장소 상세 상태를 변경하지 않는다`() {
+        val returnState =
+            mapSearchFocusReturnState(
+                mapUiMode = MapUiMode.SpotDetail,
+                sheetLevel = MapSheetLevel.Medium,
+            )
+
+        assertEquals(MapUiMode.SpotDetail, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Medium, returnState.sheetLevel)
+    }
 }
