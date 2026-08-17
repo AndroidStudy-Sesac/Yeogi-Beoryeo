@@ -14,12 +14,14 @@ import com.naver.maps.map.compose.DisposableMapEffect
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.Overlay
+import com.naver.maps.map.overlay.OverlayImage
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 internal fun CollectionSpotClusterOverlay(
     spots: List<CollectionSpot>,
+    markerIcon: OverlayImage,
     markerColor: Int,
     onSpotClick: (CollectionSpot) -> Unit,
     onClusterClick: (LatLng, Int, Double) -> Unit,
@@ -28,10 +30,11 @@ internal fun CollectionSpotClusterOverlay(
         spots.associateBy { spot -> spot.toClusterKey() }
     }
 
-    DisposableMapEffect(clusterItems, markerColor) { naverMap ->
+    DisposableMapEffect(clusterItems, markerIcon, markerColor) { naverMap ->
         val clusterer = Clusterer.Builder<CollectionSpotClusterKey>()
             .leafMarkerUpdater(
                 CollectionSpotLeafMarkerUpdater(
+                    markerIcon = markerIcon,
                     markerColor = markerColor,
                     onSpotClick = onSpotClick,
                 ),
@@ -60,6 +63,7 @@ internal fun CollectionSpotClusterOverlay(
 }
 
 private class CollectionSpotLeafMarkerUpdater(
+    private val markerIcon: OverlayImage,
     private val markerColor: Int,
     private val onSpotClick: (CollectionSpot) -> Unit,
 ) : LeafMarkerUpdater {
@@ -69,6 +73,7 @@ private class CollectionSpotLeafMarkerUpdater(
         defaultUpdater.updateLeafMarker(info, marker)
 
         val spot = info.tag as? CollectionSpot
+        marker.icon = markerIcon
         marker.iconTintColor = markerColor
         marker.zIndex = DEFAULT_MARKER_Z_INDEX
         marker.captionText = spot?.name.orEmpty()
