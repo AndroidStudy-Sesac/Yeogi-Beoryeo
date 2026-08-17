@@ -9,9 +9,11 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideRootDto
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -364,6 +366,29 @@ class RegionalGuideRemoteDataSourceUnitTest {
 
         assertTrue(result.isFailure)
         assertEquals(listOf(1), apiService.requestedPageNos)
+    }
+
+    @Test
+    fun `호출자 시간 초과 취소는 결과로 변환하지 않고 전파한다`() = runTest {
+        val apiService = FakeRegionalGuideApiService(
+            response = regionalGuideResponse(
+                pageNo = 1,
+                numOfRows = 100,
+                totalCount = 1,
+                items = listOf(regionalGuideItem("첫 페이지")),
+            ),
+            delayByPage = mapOf(1 to 100L),
+        )
+
+        try {
+            withTimeout(50L) {
+                RegionalGuideRemoteDataSource(apiService, FakePublicDataKeyProvider)
+                    .fetchRegionalGuides(SIGUNGU_NAME)
+            }
+            fail("호출자 시간 초과 취소가 전파되어야 합니다")
+        } catch (_: TimeoutCancellationException) {
+            assertEquals(listOf(1), apiService.requestedPageNos)
+        }
     }
 
     @Test

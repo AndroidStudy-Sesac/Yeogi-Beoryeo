@@ -6,6 +6,8 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideFailureReas
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeout
 import java.io.IOException
 import javax.inject.Inject
@@ -71,6 +73,8 @@ class RegionalGuideRemoteDataSource @Inject constructor(
                             numOfRows = DEFAULT_NUM_OF_ROWS,
                         )
                     } catch (_: TimeoutCancellationException) {
+                        currentCoroutineContext().ensureActive()
+
                         return@withTimeout items.toPartialResult(
                             RegionalGuidePartialResultReason.TIMEOUT,
                         )
@@ -112,6 +116,8 @@ class RegionalGuideRemoteDataSource @Inject constructor(
 
             Result.success(result)
         } catch (e: TimeoutCancellationException) {
+            currentCoroutineContext().ensureActive()
+
             if (firstPageFetched) {
                 Result.success(items.toPartialResult(RegionalGuidePartialResultReason.TIMEOUT))
             } else {
