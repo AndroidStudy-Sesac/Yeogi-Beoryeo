@@ -59,7 +59,6 @@ class CollectionSpotMapScreenStateTest {
                 searchMode = MapSearchMode.CURRENT_LOCATION,
                 hasNoticeOrError = false,
                 hasRegionSelection = false,
-                hasEmptyResult = false,
             )
 
         assertTrue(shouldKeepHidden)
@@ -74,7 +73,6 @@ class CollectionSpotMapScreenStateTest {
                 searchMode = MapSearchMode.KEYWORD,
                 hasNoticeOrError = true,
                 hasRegionSelection = false,
-                hasEmptyResult = false,
             )
 
         assertFalse(shouldKeepHidden)
@@ -89,7 +87,6 @@ class CollectionSpotMapScreenStateTest {
                 searchMode = MapSearchMode.KEYWORD,
                 hasNoticeOrError = false,
                 hasRegionSelection = false,
-                hasEmptyResult = false,
             )
 
         assertFalse(shouldKeepHidden)
@@ -104,14 +101,13 @@ class CollectionSpotMapScreenStateTest {
                 searchMode = MapSearchMode.CURRENT_LOCATION,
                 hasNoticeOrError = false,
                 hasRegionSelection = true,
-                hasEmptyResult = false,
             )
 
         assertFalse(shouldKeepHidden)
     }
 
     @Test
-    fun `지역 후보 뒤로가기 숨김 상태여도 빈 결과는 바텀시트로 노출한다`() {
+    fun `지역 후보 뒤로가기 후 현재 위치 응답 대기 중에는 빈 결과처럼 보여도 숨김을 유지한다`() {
         val shouldKeepHidden =
             shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
                 shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
@@ -119,7 +115,20 @@ class CollectionSpotMapScreenStateTest {
                 searchMode = MapSearchMode.CURRENT_LOCATION,
                 hasNoticeOrError = false,
                 hasRegionSelection = false,
-                hasEmptyResult = true,
+            )
+
+        assertTrue(shouldKeepHidden)
+    }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 최종 빈 결과는 숨김 상태가 해제되어 바텀시트 노출을 허용한다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
             )
 
         assertFalse(shouldKeepHidden)
@@ -134,7 +143,6 @@ class CollectionSpotMapScreenStateTest {
                 searchMode = MapSearchMode.CURRENT_LOCATION,
                 hasNoticeOrError = false,
                 hasRegionSelection = false,
-                hasEmptyResult = false,
             )
 
         assertFalse(shouldKeepHidden)

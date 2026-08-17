@@ -414,7 +414,6 @@ private fun CollectionSpotMapContent(
                 searchMode = uiState.searchMode,
                 hasNoticeOrError = hasNoticeOrError,
                 hasRegionSelection = hasRegionSelection,
-                hasEmptyResult = hasEmptyResult,
             ) -> {
                 mapUiMode = MapUiMode.Browsing
                 sheetLevel = MapSheetLevel.Hidden
@@ -810,14 +809,12 @@ internal fun shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
     searchMode: MapSearchMode,
     hasNoticeOrError: Boolean,
     hasRegionSelection: Boolean,
-    hasEmptyResult: Boolean,
 ): Boolean =
     shouldKeepCurrentLocationSheetHiddenAfterRegionBack &&
         mapUiMode != MapUiMode.SpotDetail &&
         searchMode == MapSearchMode.CURRENT_LOCATION &&
         !hasNoticeOrError &&
-        !hasRegionSelection &&
-        !hasEmptyResult
+        !hasRegionSelection
 
 internal data class MapDetailReturnState(
     val mapUiMode: MapUiMode,

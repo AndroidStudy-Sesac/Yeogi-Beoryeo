@@ -891,6 +891,10 @@ class CollectionSpotMapViewModel @Inject constructor(
             spots = originalSpots,
             selectedTypes = uiState.value.selectedTypes,
         )
+        val selectedSpotId = uiState.value.selectedSpot?.id
+        val updatedSelectedSpot = selectedSpotId?.let { id ->
+            filteredSpots.firstOrNull { spot -> spot.id == id }
+        }
 
         if (searchStartedAtNanos != null) {
             mapSearchTimingLogger.log(
@@ -902,7 +906,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 spots = filteredSpots,
-                selectedSpot = null,
+                selectedSpot = updatedSelectedSpot,
                 isLoading = false,
                 hasSearched = true,
                 errorMessageResId = null,
