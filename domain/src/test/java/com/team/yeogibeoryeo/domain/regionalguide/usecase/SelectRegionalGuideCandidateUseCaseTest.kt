@@ -8,13 +8,57 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResul
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideSourceMetadata
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SelectRegionalGuideDirectMatchUseCaseTest {
 
     private val useCase = SelectRegionalGuideCandidateUseCase()
+
+    @Test
+    fun `지역 가이드 후보 선택은 주입한 dispatcher에서 실행한다`() =
+        runBlocking {
+            val callingThread = Thread.currentThread()
+            var candidateAccessThread: Thread? = null
+            val candidates = object : AbstractList<RegionalDisposalGuide>() {
+                private val items = listOf(
+                    regionalDisposalGuide(
+                        sido = "서울특별시",
+                        sigungu = "중구",
+                        targetRegionName = "중구 전체",
+                    )
+                )
+
+                override val size: Int
+                    get() = items.size
+
+                override fun get(index: Int): RegionalDisposalGuide {
+                    candidateAccessThread = Thread.currentThread()
+                    return items[index]
+                }
+            }
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val result = SelectRegionalGuideCandidateUseCase(dispatcher).select(
+                    candidates = candidates,
+                    query = regionalGuideQuery(
+                        displayRegion = Region(sido = "서울특별시", sigungu = "중구"),
+                        sigunguQuery = "중구",
+                    ),
+                )
+
+                assertTrue(result is RegionalGuideLookupResult.Success)
+            }
+
+            assertNotNull(candidateAccessThread)
+            assertNotSame(callingThread, candidateAccessThread)
+        }
 
     @Test
     fun `후보가 없으면 찾지 못함을 반환한다`() {

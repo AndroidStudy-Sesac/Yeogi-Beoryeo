@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
+import com.team.yeogibeoryeo.domain.core.di.DefaultDispatcher
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
@@ -11,10 +12,36 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResul
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import javax.inject.Inject
 
-class SelectRegionalGuideCandidateUseCase @Inject constructor() {
+class SelectRegionalGuideCandidateUseCase @Inject constructor(
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
+) {
+
+    constructor() : this(Dispatchers.Default)
+
+    suspend fun select(
+        candidates: List<RegionalDisposalGuide>,
+        query: RegionalGuideQuery,
+        preferredTargetRegionName: String? = null,
+        preferredManagementZoneName: String? = null,
+        favoriteKey: RegionalGuideFavoriteKey? = null,
+        mappedAdminDongCandidates: List<Region> = emptyList(),
+    ): RegionalGuideLookupResult =
+        withContext(defaultDispatcher) {
+            selectCandidates(
+                candidates = candidates,
+                query = query,
+                preferredTargetRegionName = preferredTargetRegionName,
+                preferredManagementZoneName = preferredManagementZoneName,
+                favoriteKey = favoriteKey,
+                mappedAdminDongCandidates = mappedAdminDongCandidates,
+            )
+        }
 
     operator fun invoke(
         candidates: List<RegionalDisposalGuide>,
@@ -23,6 +50,23 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         preferredManagementZoneName: String? = null,
         favoriteKey: RegionalGuideFavoriteKey? = null,
         mappedAdminDongCandidates: List<Region> = emptyList(),
+    ): RegionalGuideLookupResult =
+        selectCandidates(
+            candidates = candidates,
+            query = query,
+            preferredTargetRegionName = preferredTargetRegionName,
+            preferredManagementZoneName = preferredManagementZoneName,
+            favoriteKey = favoriteKey,
+            mappedAdminDongCandidates = mappedAdminDongCandidates,
+        )
+
+    private fun selectCandidates(
+        candidates: List<RegionalDisposalGuide>,
+        query: RegionalGuideQuery,
+        preferredTargetRegionName: String?,
+        preferredManagementZoneName: String?,
+        favoriteKey: RegionalGuideFavoriteKey?,
+        mappedAdminDongCandidates: List<Region>,
     ): RegionalGuideLookupResult {
         if (candidates.isEmpty()) return RegionalGuideLookupResult.NotFound
 

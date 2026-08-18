@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.data.region
 
-import com.team.yeogibeoryeo.data.core.di.DefaultDispatcher
 import com.team.yeogibeoryeo.data.region.local.LegalAdminDongMappingLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.RegionOptionsLocalDataSource
 import com.team.yeogibeoryeo.data.region.local.RegionalGuideAvailabilityLocalDataSource
@@ -9,6 +8,7 @@ import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
+import com.team.yeogibeoryeo.domain.core.di.DefaultDispatcher
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.repository.RegionOptionsRepository
 import kotlinx.coroutines.CoroutineDispatcher
