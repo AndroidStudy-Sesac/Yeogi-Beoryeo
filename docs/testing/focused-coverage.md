@@ -21,6 +21,13 @@ Focused coverage는 JVM unit test로 검증할 business logic의 현재 상태�
 
 Baseline은 최초 측정의 covered/total을 참고 기준으로 보존합니다. CI는 현재 수치와 baseline 대비 증감을 표시하며, coverage 수치만으로 check를 실패시키지 않습니다.
 
+| 모듈 | Line | Branch |
+|---|---:|---:|
+| `app` | 83.33% (205/246) | 77.61% (104/134) |
+| `data` | 77.78% (1,278/1,643) | 65.30% (542/830) |
+| `domain` | 95.67% (1,946/2,034) | 79.33% (971/1,224) |
+| `presentation` | 94.09% (2,229/2,369) | 77.39% (835/1,079) |
+
 Baseline은 표의 production·test source와 filter로 생성했습니다. 각 CI 실행에서 측정한 정확한 commit은 Actions Summary에 표시합니다. 측정 범위가 바뀌면 변경 이유와 전후 수치를 같은 PR에 기록하고 새 baseline을 확정합니다.
 
 ## 측정 대상
@@ -59,7 +66,7 @@ ViewModel, mapper, policy, formatter와 화면 결과를 결정하는 순수 상
 
 프로젝트에 필요한 `local.properties`와 debug Firebase 설정을 준비한 뒤 실행합니다.
 
-Kover와 Gradle은 HTML·XML report를 생성합니다. Python script는 raw covered/total baseline과 현재 수치의 차이를 계산해 Actions Summary를 만듭니다.
+Kover와 Gradle은 HTML·XML report를 생성합니다. Python script는 전체와 모듈별 raw covered/total을 집계하고 baseline과 현재 수치의 차이를 계산해 Actions Summary를 만듭니다.
 
 ```shell
 ./gradlew :koverXmlReportFocused :koverHtmlReportFocused
@@ -92,9 +99,12 @@ Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행
 
 `Focused Coverage`는 coverage 수치만으로 CI check를 실패시키지 않습니다. Unit test, report 생성, XML 파싱이나 baseline 입력 검증이 실패하면 check에도 반영됩니다.
 
-1. `현재`: 해당 commit의 covered/total과 coverage 비율
+1. `현재`: 해당 commit의 covered/total, coverage 비율과 10칸 막대
 2. `baseline`: 최초로 확정한 coverage 비율
 3. `차이`: baseline 대비 percentage point 변화
+4. `모듈별 coverage`: `app`, `data`, `domain`, `presentation`의 Line·Branch를 `baseline → 현재` 순서로 비교
+5. `상태`: Line이나 Branch가 baseline보다 낮으면 merge 차단 없이 `⚠️ 확인 필요`로 표시
+6. `raw covered/total`: 모듈별 현재값과 baseline의 분자·분모
 
 `Line`은 실행된 source line 비율입니다. `Branch`는 조건문의 각 경로가 실행된 비율입니다. 조건 분기 회귀를 볼 때는 Branch를 먼저 확인합니다.
 
@@ -149,6 +159,7 @@ Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행
 1. 새 business logic이 기존 allowlist에 포함되는지 PR에서 확인합니다.
 2. Filter 변경은 coverage 수치 변경과 같은 수준으로 리뷰합니다.
 3. 측정 대상 추가로 수치가 낮아져도 기존 위험을 숨기기 위해 제외하지 않습니다.
-4. Baseline을 갱신하면 이전 값, 새 값, 변경 이유와 기준 commit을 문서에 함께 기록합니다.
-5. Coverage는 test 품질의 보조 지표입니다. 사용자 결과와 실패 경로를 보호하는 assertion을 우선합니다.
-6. Baseline required check나 모듈별 strict gate는 허용 하락 폭, 적용 범위와 예외 기준을 팀에서 합의한 뒤 별도 이슈로 도입합니다.
+4. 측정 source, Kover filter나 모듈 package mapping이 의도적으로 바뀔 때만 baseline을 갱신합니다. Test 추가나 coverage 하락만으로 baseline을 바꾸지 않습니다.
+5. Baseline을 갱신하면 영향받은 모듈, 이전·새 raw covered/total, 변경 이유와 기준 commit을 문서에 함께 기록합니다.
+6. Coverage는 test 품질의 보조 지표입니다. 사용자 결과와 실패 경로를 보호하는 assertion을 우선합니다.
+7. Baseline required check나 모듈별 strict gate는 허용 하락 폭, 적용 범위와 예외 기준을 팀에서 합의한 뒤 별도 이슈로 도입합니다.
