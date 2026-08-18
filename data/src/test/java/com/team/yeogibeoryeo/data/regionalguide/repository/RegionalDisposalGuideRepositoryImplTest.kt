@@ -6,10 +6,14 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuidePartialResul
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -20,10 +24,14 @@ class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     var delayMillis: Long = 0L
     var calledSigunguName: String? = null
     val calledSigunguNames = mutableListOf<String>()
+    val fetchStartedSignals = mutableMapOf<String, CompletableDeferred<Unit>>()
+    val responseGates = mutableMapOf<String, CompletableDeferred<Unit>>()
 
     override suspend fun fetchRegionalGuides(sigunguName: String): Result<RegionalGuideFetchResult> {
         calledSigunguName = sigunguName
         calledSigunguNames += sigunguName
+        fetchStartedSignals[sigunguName]?.complete(Unit)
+        responseGates[sigunguName]?.await()
         if (delayMillis > 0) delay(delayMillis)
         return mockResult
     }
@@ -203,6 +211,70 @@ class RegionalDisposalGuideRepositoryImplTest {
 
         assertTrue(results.all { result -> result.isSuccess })
         assertEquals(listOf("김천시"), fakeDataSource.calledSigunguNames)
+    }
+
+    @Test
+    fun `서로 다른 조회 키는 진행 중인 요청과 관계없이 원격 데이터를 동시에 호출한다`() = runBlocking {
+        val firstQuery = "김천시"
+        val secondQuery = "구미시"
+        fakeDataSource.fetchStartedSignals[firstQuery] = CompletableDeferred()
+        fakeDataSource.fetchStartedSignals[secondQuery] = CompletableDeferred()
+        fakeDataSource.responseGates[firstQuery] = CompletableDeferred()
+        fakeDataSource.responseGates[secondQuery] = CompletableDeferred()
+
+        coroutineScope {
+            val firstRequest = async {
+                repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(firstQuery))
+            }
+            fakeDataSource.fetchStartedSignals.getValue(firstQuery).await()
+
+            val secondRequest = async {
+                repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(secondQuery))
+            }
+            withTimeout(1_000) {
+                fakeDataSource.fetchStartedSignals.getValue(secondQuery).await()
+            }
+
+            fakeDataSource.responseGates.getValue(firstQuery).complete(Unit)
+            fakeDataSource.responseGates.getValue(secondQuery).complete(Unit)
+
+            assertTrue(firstRequest.await().isSuccess)
+            assertTrue(secondRequest.await().isSuccess)
+        }
+
+        assertEquals(listOf(firstQuery, secondQuery), fakeDataSource.calledSigunguNames)
+    }
+
+    @Test
+    fun `실패한 조회 키는 진행 중 요청에서 제거해 다음 요청을 새로 시작한다`() = runBlocking {
+        val query = regionalGuideQuery(sigunguQuery = "김천시")
+        fakeDataSource.mockResult = Result.failure(IllegalStateException("network error"))
+
+        assertTrue(repository.getRegionalDisposalGuideCandidates(query).isFailure)
+
+        fakeDataSource.mockResult = Result.success(RegionalGuideFetchResult(emptyList()))
+
+        assertTrue(repository.getRegionalDisposalGuideCandidates(query).isSuccess)
+        assertEquals(listOf("김천시", "김천시"), fakeDataSource.calledSigunguNames)
+    }
+
+    @Test
+    fun `취소된 조회 키는 진행 중 요청에서 제거해 다음 요청을 새로 시작한다`() = runBlocking {
+        val sigunguQuery = "김천시"
+        fakeDataSource.fetchStartedSignals[sigunguQuery] = CompletableDeferred()
+        fakeDataSource.responseGates[sigunguQuery] = CompletableDeferred()
+
+        val cancelledRequest = launch {
+            repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery))
+        }
+        fakeDataSource.fetchStartedSignals.getValue(sigunguQuery).await()
+
+        cancelledRequest.cancelAndJoin()
+        fakeDataSource.responseGates.remove(sigunguQuery)
+        fakeDataSource.mockResult = Result.success(RegionalGuideFetchResult(emptyList()))
+
+        assertTrue(repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery)).isSuccess)
+        assertEquals(listOf(sigunguQuery, sigunguQuery), fakeDataSource.calledSigunguNames)
     }
 
     @Test

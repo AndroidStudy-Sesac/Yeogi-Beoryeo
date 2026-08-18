@@ -6,6 +6,10 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
+import kotlinx.coroutines.CoroutineStart.LAZY
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -20,6 +24,7 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
 
     private val cacheMutex = Mutex()
     private var recentCandidatesCache: CachedRegionalGuideItems? = null
+    private val inFlightRequests = mutableMapOf<String, Deferred<Result<List<RegionalGuideItemDto>>>>()
 
     override suspend fun getRegionalDisposalGuideCandidates(
         query: RegionalGuideQuery
@@ -39,22 +44,43 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
     }
 
     private suspend fun fetchRegionalGuideItems(
-        sigunguQuery: String
-    ): Result<List<RegionalGuideItemDto>> = cacheMutex.withLock {
-        recentCandidatesCache
-            ?.takeIf { cache -> cache.sigunguQuery == sigunguQuery }
-            ?.let { cache -> return@withLock Result.success(cache.items) }
+        sigunguQuery: String,
+    ): Result<List<RegionalGuideItemDto>> = coroutineScope {
+        val request = cacheMutex.withLock {
+            recentCandidatesCache
+                ?.takeIf { cache -> cache.sigunguQuery == sigunguQuery }
+                ?.let { cache -> return@coroutineScope Result.success(cache.items) }
 
+            inFlightRequests[sigunguQuery]
+                ?: async(start = LAZY) {
+                    fetchAndCacheRegionalGuideItems(sigunguQuery)
+                }.also { request ->
+                    inFlightRequests[sigunguQuery] = request
+                }
+        }
+
+        request.await()
+    }
+
+    private suspend fun fetchAndCacheRegionalGuideItems(
+        sigunguQuery: String,
+    ): Result<List<RegionalGuideItemDto>> = try {
         remoteDataSource.fetchRegionalGuides(sigunguQuery)
             .onSuccess { result ->
                 if (!result.isPartial) {
-                    recentCandidatesCache = CachedRegionalGuideItems(
-                        sigunguQuery = sigunguQuery,
-                        items = result.items,
-                    )
+                    cacheMutex.withLock {
+                        recentCandidatesCache = CachedRegionalGuideItems(
+                            sigunguQuery = sigunguQuery,
+                            items = result.items,
+                        )
+                    }
                 }
             }
             .map { result -> result.items }
+    } finally {
+        cacheMutex.withLock {
+            inFlightRequests -= sigunguQuery
+        }
     }
 
     private data class CachedRegionalGuideItems(
