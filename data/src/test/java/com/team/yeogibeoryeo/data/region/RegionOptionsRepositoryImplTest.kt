@@ -8,7 +8,9 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.async
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CoroutineDispatcher
@@ -211,21 +213,21 @@ class RegionOptionsRepositoryImplTest {
         }
 
     @Test
-    fun `취소된 지역 검색 인덱스 생성은 다음 검색을 막지 않는다`() =
+    fun `초기 매핑 이후 취소된 지역 검색 인덱스 생성은 다음 검색을 막지 않는다`() =
         runBlocking {
-            val regionAccessStarted = CountDownLatch(1)
+            val initialMappingCompleted = CountDownLatch(1)
+            val allowGrouping = CountDownLatch(1)
             val regionAccessCount = AtomicInteger()
-            var delaysEnabled = true
+            val waitsForGrouping = AtomicBoolean(true)
             val administrativeRegion = sampleAdministrativeRegions().first()
             val administrativeRegions = object : AbstractList<AdministrativeRegionDto>() {
                 override val size: Int = 10_000
 
                 override fun get(index: Int): AdministrativeRegionDto {
-                    if (regionAccessCount.incrementAndGet() == 65) {
-                        regionAccessStarted.countDown()
-                    }
-                    if (delaysEnabled) {
-                        Thread.sleep(1)
+                    regionAccessCount.incrementAndGet()
+                    if (index == size - 1 && waitsForGrouping.compareAndSet(true, false)) {
+                        initialMappingCompleted.countDown()
+                        check(allowGrouping.await(3, TimeUnit.SECONDS))
                     }
                     return administrativeRegion
                 }
@@ -236,23 +238,27 @@ class RegionOptionsRepositoryImplTest {
                     administrativeRegions = administrativeRegions,
                     defaultDispatcher = dispatcher,
                 )
-                val job = launch(dispatcher) {
+                val initialSearch = launch(dispatcher) {
                     repository.findRegionsByEupmyeondongKeyword("명동")
                 }
 
-                assertTrue(regionAccessStarted.await(3, TimeUnit.SECONDS))
-                job.cancelAndJoin()
-                delaysEnabled = false
+                assertTrue(initialMappingCompleted.await(3, TimeUnit.SECONDS))
+                initialSearch.cancel()
+                val nextSearch = async(dispatcher) {
+                    repository.findRegionsByEupmyeondongKeyword("명동")
+                }
+                allowGrouping.countDown()
+                initialSearch.cancelAndJoin()
 
                 assertEquals(
                     listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동")),
                     withTimeout(3_000) {
-                        repository.findRegionsByEupmyeondongKeyword("명동")
+                        nextSearch.await()
                     },
                 )
             }
 
-            assertTrue(regionAccessCount.get() < administrativeRegions.size * 2)
+            assertTrue(regionAccessCount.get() >= administrativeRegions.size * 2)
         }
 
     private fun createRepository(

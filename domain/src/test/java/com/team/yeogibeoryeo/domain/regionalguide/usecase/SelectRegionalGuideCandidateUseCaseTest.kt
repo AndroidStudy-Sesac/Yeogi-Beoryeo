@@ -17,6 +17,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
@@ -89,9 +90,10 @@ class SelectRegionalGuideDirectMatchUseCaseTest : SelectRegionalGuideCandidateUs
         }
 
     @Test
-    fun `취소된 지역 가이드 후보 선택은 이후 후보 접근을 중단한다`() =
+    fun `시군구 필터 이후 취소된 지역 가이드 후보 선택은 병합을 중단한다`() =
         runBlocking {
-            val candidateAccessStarted = CountDownLatch(1)
+            val sigunguFilterCompleted = CountDownLatch(1)
+            val allowCandidateMerge = CountDownLatch(1)
             val candidateAccessCount = AtomicInteger()
             val candidate = regionalDisposalGuide(
                 sido = "서울특별시",
@@ -99,13 +101,14 @@ class SelectRegionalGuideDirectMatchUseCaseTest : SelectRegionalGuideCandidateUs
                 targetRegionName = "중구 전체",
             )
             val candidates = object : AbstractList<RegionalDisposalGuide>() {
-                override val size: Int = 10_000
+                override val size: Int = 1_000_000
 
                 override fun get(index: Int): RegionalDisposalGuide {
-                    if (candidateAccessCount.incrementAndGet() == 65) {
-                        candidateAccessStarted.countDown()
+                    candidateAccessCount.incrementAndGet()
+                    if (index == size - 1) {
+                        sigunguFilterCompleted.countDown()
+                        check(allowCandidateMerge.await(3, TimeUnit.SECONDS))
                     }
-                    Thread.sleep(1)
                     return candidate
                 }
             }
@@ -115,17 +118,22 @@ class SelectRegionalGuideDirectMatchUseCaseTest : SelectRegionalGuideCandidateUs
                     SelectRegionalGuideCandidateUseCase(dispatcher)(
                         candidates = candidates,
                         query = regionalGuideQuery(
-                            displayRegion = Region(sido = "서울특별시", sigungu = "중구"),
+                            // 시도 조건은 통과시키고, 시군구 필터를 마친 직후 병합 단계에서 취소한다.
+                            displayRegion = Region(sigungu = "중구"),
                             sigunguQuery = "중구",
                         ),
                     )
                 }
 
-                assertTrue(candidateAccessStarted.await(3, TimeUnit.SECONDS))
-                job.cancelAndJoin()
+                assertTrue(sigunguFilterCompleted.await(3, TimeUnit.SECONDS))
+                job.cancel()
+                allowCandidateMerge.countDown()
+                withTimeout(500) {
+                    job.cancelAndJoin()
+                }
             }
 
-            assertTrue(candidateAccessCount.get() < candidates.size)
+            assertEquals(candidates.size, candidateAccessCount.get())
         }
 
     @Test
