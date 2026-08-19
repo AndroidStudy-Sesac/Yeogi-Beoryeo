@@ -7,6 +7,39 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-19
+
+### Added
+
+- 컵라면 용기의 상태별 분리배출 안내와 품목 검색 오탈자·별칭 지원
+
+### Changed
+
+- 지도 검색 바텀시트에서 결과 없음, 네트워크 오류, 외부 API 오류를 구분하고 마지막 검색 조건으로 다시 시도하는 흐름 추가
+- 같은 지역의 동시 지역 가이드 요청을 하나로 합치고, 서로 다른 지역 조회는 병렬로 처리하도록 요청·캐시 정책 개선
+- 다크 모드 지도 마커의 색상·크기·표시 우선순위를 지도 배경에 맞게 조정
+- 변경 모듈 기반 계측 테스트 선택과 focused coverage 요약을 보강해 CI 결과 확인성 개선
+
+### Fixed
+
+- 지도 지역 후보 선택 흐름을 종료한 뒤 기본 지도 상태로 복원되지 않거나 검색창 포커스 시 키보드가 유지되지 않는 문제 수정
+- 공백이 포함된 법정동 검색, 지역 가이드 페이지 조회 복구, 운영 공지 노출 중 검색 재시도 흐름 보완
+
+## [0.3.0] - 2026-08-12
+
+### Added
+
+- Firestore 기반 공지사항과 Firebase Remote Config 기반 긴급 운영 공지
+- 지역 가이드 결과가 없을 때 공식 공공 안내로 이동할 수 있는 CTA
+
+### Changed
+
+- 운영 공지 표시 정책, 지역 가이드 제공 범위, focused coverage와 계측 테스트 CI 검증 흐름 정리
+
+### Fixed
+
+- 품목 상세 즐겨찾기 중복 요청과 지도 검색 요청 경합 방지
+
 ## [0.2.0] - 2026-07-24
 
 ### Added
@@ -78,7 +111,9 @@
 
 - 저장소 밖의 업로드 키로 서명된 Google Play 배포용 AAB 생성 절차
 
-[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.3.0...v1.0.0
+[0.3.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/releases/tag/v0.1.0
