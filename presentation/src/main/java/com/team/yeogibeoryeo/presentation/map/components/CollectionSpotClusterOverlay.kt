@@ -2,6 +2,9 @@ package com.team.yeogibeoryeo.presentation.map.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.clustering.ClusterMarkerInfo
 import com.naver.maps.map.clustering.ClusterMarkerUpdater
@@ -14,25 +17,30 @@ import com.naver.maps.map.compose.DisposableMapEffect
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.Overlay
+import com.naver.maps.map.overlay.OverlayImage
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 internal fun CollectionSpotClusterOverlay(
     spots: List<CollectionSpot>,
-    markerColor: Int,
+    markerStyle: CollectionSpotMarkerStyle,
     onSpotClick: (CollectionSpot) -> Unit,
     onClusterClick: (LatLng, Int, Double) -> Unit,
 ) {
+    val density = LocalDensity.current
     val clusterItems = remember(spots) {
         spots.associateBy { spot -> spot.toClusterKey() }
     }
+    val markerRenderStyle = remember(markerStyle, density) {
+        markerStyle.toClusterLeafMarkerRenderStyle(density)
+    }
 
-    DisposableMapEffect(clusterItems, markerColor) { naverMap ->
+    DisposableMapEffect(clusterItems, markerRenderStyle) { naverMap ->
         val clusterer = Clusterer.Builder<CollectionSpotClusterKey>()
             .leafMarkerUpdater(
                 CollectionSpotLeafMarkerUpdater(
-                    markerColor = markerColor,
+                    markerRenderStyle = markerRenderStyle,
                     onSpotClick = onSpotClick,
                 ),
             )
@@ -60,7 +68,7 @@ internal fun CollectionSpotClusterOverlay(
 }
 
 private class CollectionSpotLeafMarkerUpdater(
-    private val markerColor: Int,
+    private val markerRenderStyle: ClusterLeafMarkerRenderStyle,
     private val onSpotClick: (CollectionSpot) -> Unit,
 ) : LeafMarkerUpdater {
     private val defaultUpdater = DefaultLeafMarkerUpdater()
@@ -69,8 +77,12 @@ private class CollectionSpotLeafMarkerUpdater(
         defaultUpdater.updateLeafMarker(info, marker)
 
         val spot = info.tag as? CollectionSpot
-        marker.iconTintColor = markerColor
-        marker.zIndex = DEFAULT_MARKER_Z_INDEX
+        marker.icon = markerRenderStyle.icon
+        marker.iconTintColor = markerRenderStyle.color
+        marker.width = markerRenderStyle.width
+        marker.height = markerRenderStyle.height
+        marker.zIndex = markerRenderStyle.zIndex
+        marker.isForceShowIcon = markerRenderStyle.isForceShowIcon
         marker.captionText = spot?.name.orEmpty()
         marker.onClickListener = Overlay.OnClickListener {
             if (spot != null) {
@@ -80,6 +92,47 @@ private class CollectionSpotLeafMarkerUpdater(
         }
     }
 }
+
+internal data class ClusterLeafMarkerRenderStyle(
+    val icon: OverlayImage,
+    val color: Int,
+    val width: Int,
+    val height: Int,
+    val zIndex: Int,
+    val isForceShowIcon: Boolean,
+)
+
+internal fun CollectionSpotMarkerStyle.toClusterLeafMarkerRenderStyle(
+    density: Density,
+): ClusterLeafMarkerRenderStyle {
+    val markerSize = toClusterLeafMarkerSize(
+        density = density,
+        sizeAuto = Marker.SIZE_AUTO,
+    )
+
+    return ClusterLeafMarkerRenderStyle(
+        icon = icon.toOverlayImage(),
+        color = color.toArgb(),
+        width = markerSize.width,
+        height = markerSize.height,
+        zIndex = zIndex,
+        isForceShowIcon = isForceShowIcon,
+    )
+}
+
+internal data class ClusterLeafMarkerSize(
+    val width: Int,
+    val height: Int,
+)
+
+internal fun CollectionSpotMarkerStyle.toClusterLeafMarkerSize(
+    density: Density,
+    sizeAuto: Int,
+): ClusterLeafMarkerSize =
+    ClusterLeafMarkerSize(
+        width = width?.let { with(density) { it.roundToPx() } } ?: sizeAuto,
+        height = height?.let { with(density) { it.roundToPx() } } ?: sizeAuto,
+    )
 
 private class CollectionSpotClusterMarkerUpdater(
     private val onClusterClick: (LatLng, Int) -> Unit,
@@ -96,5 +149,4 @@ private class CollectionSpotClusterMarkerUpdater(
     }
 }
 
-private const val DEFAULT_MARKER_Z_INDEX = 0
 private const val CLUSTER_MARKER_Z_INDEX = 1
