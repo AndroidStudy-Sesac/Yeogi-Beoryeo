@@ -5,15 +5,24 @@ import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
-import java.util.concurrent.Executors
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class RegionOptionsRepositoryImplTest {
 
@@ -158,6 +167,101 @@ class RegionOptionsRepositoryImplTest {
 
             assertNotNull(availabilityIterationThread)
             assertNotSame(callingThread, availabilityIterationThread)
+        }
+
+    @Test
+    fun `지역 검색 인덱스는 주입한 dispatcher에서 한 번 생성해 재사용한다`() =
+        runBlocking {
+            val callingThread = Thread.currentThread()
+            var administrativeRegionAccessThread: Thread? = null
+            var administrativeRegionAccessCount = 0
+            val administrativeRegions = object : AbstractList<AdministrativeRegionDto>() {
+                private val items = sampleAdministrativeRegions()
+
+                override val size: Int
+                    get() = items.size
+
+                override fun get(index: Int): AdministrativeRegionDto {
+                    administrativeRegionAccessThread = Thread.currentThread()
+                    administrativeRegionAccessCount++
+                    return items[index]
+                }
+            }
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val repository = createRepository(
+                    administrativeRegions = administrativeRegions,
+                    legalAdminDongMappings = emptyList(),
+                    regionalGuideAvailability = emptyList(),
+                    regionalGuideRegionOptions = emptyList(),
+                    defaultDispatcher = dispatcher,
+                )
+
+                assertEquals(
+                    listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동")),
+                    repository.findRegionsByEupmyeondongKeyword("명동"),
+                )
+                val accessCountAfterFirstSearch = administrativeRegionAccessCount
+
+                assertEquals(
+                    listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동")),
+                    repository.findRegionsByEupmyeondongKeyword("명동"),
+                )
+
+                assertEquals(accessCountAfterFirstSearch, administrativeRegionAccessCount)
+            }
+
+            assertNotNull(administrativeRegionAccessThread)
+            assertNotSame(callingThread, administrativeRegionAccessThread)
+        }
+
+    @Test
+    fun `초기 매핑 이후 취소된 지역 검색 인덱스 생성은 다음 검색을 막지 않는다`() =
+        runBlocking {
+            val initialMappingCompleted = CountDownLatch(1)
+            val allowGrouping = CountDownLatch(1)
+            val regionAccessCount = AtomicInteger()
+            val waitsForGrouping = AtomicBoolean(true)
+            val administrativeRegion = sampleAdministrativeRegions().first()
+            val administrativeRegions = object : AbstractList<AdministrativeRegionDto>() {
+                override val size: Int = 10_000
+
+                override fun get(index: Int): AdministrativeRegionDto {
+                    regionAccessCount.incrementAndGet()
+                    if (index == size - 1 && waitsForGrouping.compareAndSet(true, false)) {
+                        initialMappingCompleted.countDown()
+                        check(allowGrouping.await(3, TimeUnit.SECONDS))
+                    }
+                    return administrativeRegion
+                }
+            }
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val repository = createRepository(
+                    administrativeRegions = administrativeRegions,
+                    defaultDispatcher = dispatcher,
+                )
+                val initialSearch = launch(dispatcher) {
+                    repository.findRegionsByEupmyeondongKeyword("명동")
+                }
+
+                assertTrue(initialMappingCompleted.await(3, TimeUnit.SECONDS))
+                initialSearch.cancel()
+                val nextSearch = async(dispatcher) {
+                    repository.findRegionsByEupmyeondongKeyword("명동")
+                }
+                allowGrouping.countDown()
+                initialSearch.cancelAndJoin()
+
+                assertEquals(
+                    listOf(Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동")),
+                    withTimeout(3_000) {
+                        nextSearch.await()
+                    },
+                )
+            }
+
+            assertTrue(regionAccessCount.get() >= administrativeRegions.size * 2)
         }
 
     private fun createRepository(

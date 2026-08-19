@@ -5,6 +5,7 @@ import com.team.yeogibeoryeo.data.region.local.dto.AdministrativeRegionDto
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -121,11 +122,13 @@ class RegionAssetContractTest {
             assetFilePath(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
         )
 
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
-            administrativeRegions = administrativeRegions,
-            legalAdminDongMappings = mappings,
-            keyword = "안양동"
-        )
+        val regions = runBlocking {
+            RegionSearchIndex.create(
+                administrativeRegions = administrativeRegions,
+                legalAdminDongMappings = mappings,
+                regionalGuideRegions = emptyList(),
+            ).findEupmyeondongRegions("안양동")
+        }
 
         assertTrue(
             regions.any { region ->

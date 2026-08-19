@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.domain.regionalguide.usecase
 
+import com.team.yeogibeoryeo.domain.core.di.DefaultDispatcher
 import com.team.yeogibeoryeo.domain.favorite.model.RegionalGuideFavoriteKey
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.region.model.RegionSidoAliasPolicy
@@ -11,18 +12,46 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResul
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import javax.inject.Inject
 
-class SelectRegionalGuideCandidateUseCase @Inject constructor() {
+class SelectRegionalGuideCandidateUseCase @Inject constructor(
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
+) {
 
-    operator fun invoke(
+    constructor() : this(Dispatchers.Default)
+
+    suspend operator fun invoke(
         candidates: List<RegionalDisposalGuide>,
         query: RegionalGuideQuery,
         preferredTargetRegionName: String? = null,
         preferredManagementZoneName: String? = null,
         favoriteKey: RegionalGuideFavoriteKey? = null,
         mappedAdminDongCandidates: List<Region> = emptyList(),
+    ): RegionalGuideLookupResult =
+        withContext(defaultDispatcher) {
+            selectCandidates(
+                candidates = candidates,
+                query = query,
+                preferredTargetRegionName = preferredTargetRegionName,
+                preferredManagementZoneName = preferredManagementZoneName,
+                favoriteKey = favoriteKey,
+                mappedAdminDongCandidates = mappedAdminDongCandidates,
+            )
+        }
+
+    private suspend fun selectCandidates(
+        candidates: List<RegionalDisposalGuide>,
+        query: RegionalGuideQuery,
+        preferredTargetRegionName: String?,
+        preferredManagementZoneName: String?,
+        favoriteKey: RegionalGuideFavoriteKey?,
+        mappedAdminDongCandidates: List<Region>,
     ): RegionalGuideLookupResult {
         if (candidates.isEmpty()) return RegionalGuideLookupResult.NotFound
 
@@ -83,12 +112,12 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         return filteredCandidates.toCandidateResultOrNotFound(query.displayRegion)
     }
 
-    private fun List<RegionalDisposalGuide>.filterBySido(
+    private suspend fun List<RegionalDisposalGuide>.filterBySido(
         requestedRegion: Region
     ): List<RegionalDisposalGuide> {
         if (requestedRegion.sido.isNullOrBlank()) return this
 
-        return filter { guide ->
+        return filterCancellable { guide ->
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = requestedRegion.sido,
                 requestedSigungu = requestedRegion.sigungu,
@@ -98,13 +127,13 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
     }
 
-    private fun List<RegionalDisposalGuide>.filterBySigungu(
+    private suspend fun List<RegionalDisposalGuide>.filterBySigungu(
         query: RegionalGuideQuery
     ): List<RegionalDisposalGuide> {
         val sigunguQuery = query.sigunguQuery
         if (sigunguQuery == SEJONG_SIGUNGU_QUERY) return this
 
-        return filter { guide ->
+        return filterCancellable { guide ->
             guide.region.sigungu == sigunguQuery ||
                 guide.matchesDisplayRegionSigungu(query)
         }
@@ -119,7 +148,114 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             region.sigungu?.let(RegionalGuideRegionKeyNormalizer::normalizeSigungu) == query.sigunguQuery
     }
 
-    private fun selectByTargetRegion(
+    private suspend fun <T> Iterable<T>.filterCancellable(
+        predicate: (T) -> Boolean,
+    ): List<T> {
+        val results = mutableListOf<T>()
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            if (predicate(item)) {
+                results += item
+            }
+        }
+        return results
+    }
+
+    private suspend fun <T, R> Iterable<T>.mapCancellable(
+        transform: suspend (T) -> R,
+    ): List<R> {
+        val results = mutableListOf<R>()
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            results += transform(item)
+        }
+        return results
+    }
+
+    private suspend fun <T, R> Iterable<T>.flatMapCancellable(
+        transform: suspend (T) -> Iterable<R>,
+    ): List<R> {
+        val results = mutableListOf<R>()
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            transform(item).forEachIndexed { nestedIndex, nestedItem ->
+                if (nestedIndex % CANCELLATION_CHECK_INTERVAL == 0) {
+                    currentCoroutineContext().ensureActive()
+                }
+                results += nestedItem
+            }
+        }
+        return results
+    }
+
+    private suspend fun <T, K> Iterable<T>.groupByCancellable(
+        keySelector: (T) -> K,
+    ): Map<K, List<T>> {
+        val results = mutableMapOf<K, MutableList<T>>()
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            results.getOrPut(keySelector(item), ::mutableListOf) += item
+        }
+        return results
+    }
+
+    private suspend fun <T> Iterable<T>.anyCancellable(predicate: (T) -> Boolean): Boolean {
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            if (predicate(item)) return true
+        }
+        return false
+    }
+
+    private suspend fun <T> Iterable<T>.allCancellable(predicate: (T) -> Boolean): Boolean {
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            if (!predicate(item)) return false
+        }
+        return true
+    }
+
+    private suspend fun <T, R : Comparable<R>> Iterable<T>.maxOfCancellable(
+        selector: (T) -> R,
+    ): R {
+        val iterator = iterator()
+        check(iterator.hasNext())
+        var maximum = selector(iterator.next())
+        var index = 1
+        while (iterator.hasNext()) {
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            maximum = maxOf(maximum, selector(iterator.next()))
+            index++
+        }
+        return maximum
+    }
+
+    private suspend fun <T> Iterable<T>.distinctCancellable(): List<T> {
+        val results = linkedSetOf<T>()
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            results += item
+        }
+        return results.toList()
+    }
+
+    private suspend fun selectByTargetRegion(
         candidates: List<RegionalDisposalGuide>,
         requestedRegion: Region,
         sigunguQuery: String,
@@ -140,7 +276,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 ?.let { result -> return result }
 
             candidates
-                .filter { guide ->
+                .filterCancellable { guide ->
                     guide.targetRegionName.isSejongDongArea() &&
                         eupmyeondong in SEJONG_DONG_AREA_NAMES
                 }
@@ -175,18 +311,18 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         return null
     }
 
-    private fun List<RegionalDisposalGuide>.filterByRequestedEupmyeondong(
+    private suspend fun List<RegionalDisposalGuide>.filterByRequestedEupmyeondong(
         eupmyeondong: String,
         mappedAdminDongCandidates: List<Region>
     ): List<RegionalDisposalGuide> {
         val mappedAdminDongMatches = filterByMappedAdminDongs(mappedAdminDongCandidates)
-        val mappedTargetRegionMatches = mappedAdminDongMatches.filter { guide ->
+        val mappedTargetRegionMatches = mappedAdminDongMatches.filterCancellable { guide ->
             guide.targetRegionName.matchesEupmyeondong(
                 eupmyeondong = eupmyeondong,
                 allowLegalDongNamePrefix = true,
             )
         }
-        val exactMatches = filter { guide ->
+        val exactMatches = filterCancellable { guide ->
             guide.targetRegionName.isExactRegionName(eupmyeondong) ||
                 guide.managementZoneName.isExactRegionName(eupmyeondong)
         }
@@ -199,10 +335,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return exactMatches.mergeFilteredDuplicateCandidateRows()
         }
 
-        val managementZoneMatches = filter { guide ->
+        val managementZoneMatches = filterCancellable { guide ->
             guide.managementZoneName.matchesEupmyeondong(eupmyeondong)
         }
-        val hasNumberedManagementZoneAliasMatch = managementZoneMatches.any { guide ->
+        val hasNumberedManagementZoneAliasMatch = managementZoneMatches.anyCancellable { guide ->
             guide.managementZoneName
                 .orEmpty()
                 .matchesNumberedAdministrativeDongAlias(eupmyeondong)
@@ -216,7 +352,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             return mappedTargetRegionMatches.mergeFilteredDuplicateCandidateRows()
         }
 
-        val targetRegionMatches = filter { guide ->
+        val targetRegionMatches = filterCancellable { guide ->
             guide.targetRegionName.matchesEupmyeondong(
                 eupmyeondong = eupmyeondong,
                 allowLegalDongNamePrefix = true,
@@ -227,7 +363,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             .mergeFilteredDuplicateCandidateRows()
     }
 
-    private fun List<RegionalDisposalGuide>.filterByMappedAdminDongs(
+    private suspend fun List<RegionalDisposalGuide>.filterByMappedAdminDongs(
         mappedAdminDongCandidates: List<Region>
     ): List<RegionalDisposalGuide> {
         val adminDongNames = mappedAdminDongCandidates
@@ -236,21 +372,21 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
 
         if (adminDongNames.isEmpty()) return emptyList()
 
-        return filter { guide ->
+        return filterCancellable { guide ->
             guide.managementZoneName.matchesExactMappedAdminDong(adminDongNames) ||
                 guide.targetRegionName.matchesExactMappedAdminDong(adminDongNames)
         }
             .mergeFilteredDuplicateCandidateRows()
     }
 
-    private fun List<RegionalDisposalGuide>.selectOverallCandidates(
+    private suspend fun List<RegionalDisposalGuide>.selectOverallCandidates(
         sigunguQuery: String
     ): List<RegionalDisposalGuide> {
-        val targetRegionNames = map { guide ->
+        val targetRegionNames = mapCancellable { guide ->
             guide.targetRegionName
                 ?.trim()
                 .orEmpty()
-        }.distinct()
+        }.distinctCancellable()
 
         return if (
             targetRegionNames.size == 1 &&
@@ -262,10 +398,10 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
     }
 
-    private fun List<RegionalDisposalGuide>.selectUnmatchedSelectorFallbackCandidates(
+    private suspend fun List<RegionalDisposalGuide>.selectUnmatchedSelectorFallbackCandidates(
         eupmyeondong: String
     ): List<RegionalDisposalGuide> {
-        val broadCandidates = filter { guide ->
+        val broadCandidates = filterCancellable { guide ->
             !guide.hasExplicitEupmyeondongTarget() &&
                 guide.matchesRequestedBroadArea(eupmyeondong)
         }
@@ -273,7 +409,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         return broadCandidates
     }
 
-    private fun List<RegionalDisposalGuide>.toCandidateResultOrNotFound(
+    private suspend fun List<RegionalDisposalGuide>.toCandidateResultOrNotFound(
         displayRegion: Region
     ): RegionalGuideLookupResult {
         if (!displayRegion.eupmyeondong.isNullOrBlank() || size <= 1) {
@@ -281,12 +417,12 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
 
         return RegionalGuideLookupResult.Candidates(
-            guides = map { guide -> guide.withDisplayRegion(displayRegion) },
+            guides = mapCancellable { guide -> guide.withDisplayRegion(displayRegion) },
             reason = RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES
         )
     }
 
-    private fun List<RegionalDisposalGuide>.toSingleSuccessOrCandidates(
+    private suspend fun List<RegionalDisposalGuide>.toSingleSuccessOrCandidates(
         displayRegion: Region,
         candidateReason: RegionalGuideCandidateLookupReason =
             RegionalGuideCandidateLookupReason.MULTIPLE_CANDIDATES
@@ -297,7 +433,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 guide = first().withDisplayRegion(displayRegion)
             )
             else -> RegionalGuideLookupResult.Candidates(
-                guides = map { guide -> guide.withDisplayRegion(displayRegion) },
+                guides = mapCancellable { guide -> guide.withDisplayRegion(displayRegion) },
                 reason = candidateReason
             )
         }
@@ -310,14 +446,14 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             RegionalGuideCandidateLookupReason.FALLBACK_BECAUSE_DIRECT_MATCH_NOT_FOUND
         }
 
-    private fun List<RegionalDisposalGuide>.filterByPreferredCandidate(
+    private suspend fun List<RegionalDisposalGuide>.filterByPreferredCandidate(
         preferredTargetRegionName: String?,
         preferredManagementZoneName: String?
     ): List<RegionalDisposalGuide> {
         val targetRegionName = preferredTargetRegionName.normalizeRegionName()
         val managementZoneName = preferredManagementZoneName.normalizeRegionName()
 
-        return filter { guide ->
+        return filterCancellable { guide ->
             val targetMatches = targetRegionName == null ||
                 guide.targetRegionName.normalizeRegionName() == targetRegionName
             val managementMatches = managementZoneName == null ||
@@ -327,20 +463,21 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
     }
 
-    private fun List<RegionalDisposalGuide>.filterByFavoriteKey(
+    private suspend fun List<RegionalDisposalGuide>.filterByFavoriteKey(
         favoriteKey: RegionalGuideFavoriteKey
     ): List<RegionalDisposalGuide> =
-        filter { guide ->
+        filterCancellable { guide ->
             RegionalGuideFavoriteCompatibilityPolicy.isSameFavoriteTarget(
                 favoriteKey = favoriteKey,
                 candidate = guide,
             )
         }
 
-    private fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRowsByLatestDate(): List<RegionalDisposalGuide> =
-        groupBy { guide -> guide.toLatestCandidateKey() }
+    private suspend fun List<RegionalDisposalGuide>.mergeDuplicateCandidateRowsByLatestDate():
+        List<RegionalDisposalGuide> =
+        groupByCancellable { guide -> guide.toLatestCandidateKey() }
             .values
-            .flatMap { guides ->
+            .flatMapCancellable { guides ->
                 when (val selection = guides.selectLatestGuide()) {
                     is LatestGuideSelection.Unique -> listOf(selection.guide)
                     is LatestGuideSelection.Tie ->
@@ -349,8 +486,8 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 }
             }
 
-    private fun List<RegionalDisposalGuide>.selectLatestGuide(): LatestGuideSelection {
-        if (any { guide -> !guide.sourceMetadata?.lastModifiedPoint.isNullOrBlank() }) {
+    private suspend fun List<RegionalDisposalGuide>.selectLatestGuide(): LatestGuideSelection {
+        if (anyCancellable { guide -> !guide.sourceMetadata?.lastModifiedPoint.isNullOrBlank() }) {
             return selectLatestGuideBy { guide ->
                 guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull()
             }
@@ -361,18 +498,18 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
         }
     }
 
-    private fun List<RegionalDisposalGuide>.selectLatestGuideBy(
+    private suspend fun List<RegionalDisposalGuide>.selectLatestGuideBy(
         datePointSelector: (RegionalDisposalGuide) -> Long?
     ): LatestGuideSelection {
-        val datePoints = map { guide -> guide to datePointSelector(guide) }
-        if (datePoints.any { (_, datePoint) -> datePoint == null }) {
+        val datePoints = mapCancellable { guide -> guide to datePointSelector(guide) }
+        if (datePoints.anyCancellable { (_, datePoint) -> datePoint == null }) {
             return LatestGuideSelection.NotDetermined
         }
 
-        val latestDatePoint = datePoints.maxOf { (_, datePoint) -> checkNotNull(datePoint) }
+        val latestDatePoint = datePoints.maxOfCancellable { (_, datePoint) -> checkNotNull(datePoint) }
         val latestGuides = datePoints
-            .filter { (_, datePoint) -> datePoint == latestDatePoint }
-            .map { (guide, _) -> guide }
+            .filterCancellable { (_, datePoint) -> datePoint == latestDatePoint }
+            .mapCancellable { (guide, _) -> guide }
 
         return latestGuides
             .singleOrNull()
@@ -380,16 +517,17 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
             ?: LatestGuideSelection.Tie(latestGuides)
     }
 
-    private fun List<RegionalDisposalGuide>.mergeLegacyDuplicateCandidateRows(): List<RegionalDisposalGuide> =
-        groupBy { guide -> guide.toLegacyCandidateKey() }
-            .values
-            .flatMap { guides -> guides.mergeSchedules() }
-
-    private fun List<RegionalDisposalGuide>.mergeFilteredDuplicateCandidateRows():
+    private suspend fun List<RegionalDisposalGuide>.mergeLegacyDuplicateCandidateRows():
         List<RegionalDisposalGuide> =
-        groupBy { guide -> guide.toLegacyCandidateKey() }
+        groupByCancellable { guide -> guide.toLegacyCandidateKey() }
             .values
-            .flatMap { guides ->
+            .flatMapCancellable { guides -> guides.mergeSchedules() }
+
+    private suspend fun List<RegionalDisposalGuide>.mergeFilteredDuplicateCandidateRows():
+        List<RegionalDisposalGuide> =
+        groupByCancellable { guide -> guide.toLegacyCandidateKey() }
+            .values
+            .flatMapCancellable { guides ->
                 if (guides.hasSameComparableLatestDate()) {
                     guides.mergeEquivalentCandidateRows()
                 } else {
@@ -397,10 +535,11 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 }
             }
 
-    private fun List<RegionalDisposalGuide>.mergeEquivalentCandidateRows(): List<RegionalDisposalGuide> =
-        groupBy { guide -> guide.toContentCandidateKey() }
+    private suspend fun List<RegionalDisposalGuide>.mergeEquivalentCandidateRows():
+        List<RegionalDisposalGuide> =
+        groupByCancellable { guide -> guide.toContentCandidateKey() }
             .values
-            .map { guides ->
+            .mapCancellable { guides ->
                 when (val selection = guides.selectLatestGuide()) {
                     is LatestGuideSelection.Unique -> selection.guide
                     is LatestGuideSelection.Tie,
@@ -409,21 +548,22 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
                 }
             }
 
-    private fun List<RegionalDisposalGuide>.mergeSchedules(): List<RegionalDisposalGuide> =
+    private suspend fun List<RegionalDisposalGuide>.mergeSchedules(): List<RegionalDisposalGuide> =
         listOf(
             first().copy(
-                schedules = flatMap { guide -> guide.schedules }.distinct(),
+                schedules = flatMapCancellable { guide -> guide.schedules }.distinctCancellable(),
             )
         )
 
-    private fun List<RegionalDisposalGuide>.hasSameComparableLatestDate(): Boolean {
-        val datePoints = if (any { guide -> !guide.sourceMetadata?.lastModifiedPoint.isNullOrBlank() }) {
-            map { guide -> guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull() }
+    private suspend fun List<RegionalDisposalGuide>.hasSameComparableLatestDate(): Boolean {
+        val datePoints = if (anyCancellable { guide -> !guide.sourceMetadata?.lastModifiedPoint.isNullOrBlank() }) {
+            mapCancellable { guide -> guide.sourceMetadata?.lastModifiedPoint.toComparableDatePointOrNull() }
         } else {
-            map { guide -> guide.sourceMetadata?.dataCriteriaDate.toComparableDatePointOrNull() }
+            mapCancellable { guide -> guide.sourceMetadata?.dataCriteriaDate.toComparableDatePointOrNull() }
         }
 
-        return datePoints.all { datePoint -> datePoint != null } && datePoints.distinct().size == 1
+        return datePoints.allCancellable { datePoint -> datePoint != null } &&
+            datePoints.distinctCancellable().size == 1
     }
 
     private fun RegionalDisposalGuide.toLatestCandidateKey(): LatestCandidateKey =
@@ -923,6 +1063,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor() {
     }
 
     private companion object {
+        const val CANCELLATION_CHECK_INTERVAL = 64
         const val SEJONG_SIGUNGU_QUERY = "없음"
         const val DONG_AREA = "동지역"
         const val EUP_MYEON_AREA = "읍면지역"

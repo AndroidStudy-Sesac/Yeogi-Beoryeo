@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideAvailabilityDto
 import com.team.yeogibeoryeo.data.region.local.dto.RegionalGuideRegionDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNormalizer
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -168,7 +169,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 행정구역보다 정보 제공 도시 지역을 우선한다`() {
-        val regions = RegionSearchCandidateMapper.findSigunguRegions(
+        val regions = findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -203,7 +204,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 정보 지역이 없으면 행정구역으로 대체한다`() {
-        val regions = RegionSearchCandidateMapper.findSigunguRegions(
+        val regions = findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -239,7 +240,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 행정구역을 상위 정보 조회 키로 매핑한다`() {
-        val regions = RegionSearchCandidateMapper.findSigunguRegions(
+        val regions = findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -405,7 +406,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `시군구 키워드 검색은 시 접미사 없이 공식 도시 키워드를 정보 키로 매핑한다`() {
-        val regions = RegionSearchCandidateMapper.findSigunguRegions(
+        val regions = findSigunguRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -487,7 +488,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 조회는 시도 시군구 법정동 정확 일치 기준으로 매핑된 행정동을 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
+        val regions = findAdminDongCandidatesForLegalDong(
             mappings = listOf(
                 legalAdminMapping(
                     sidoName = "서울특별시",
@@ -553,11 +554,11 @@ class RegionOptionsMapperTest {
             )
         )
 
-        val haggyeRegions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
+        val haggyeRegions = findAdminDongCandidatesForLegalDong(
             mappings = mappings,
             region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "하계동")
         )
-        val gongneungRegions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
+        val gongneungRegions = findAdminDongCandidatesForLegalDong(
             mappings = mappings,
             region = Region(sido = "서울특별시", sigungu = "노원구", eupmyeondong = "공릉동")
         )
@@ -571,7 +572,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 조회는 정확 일치가 없으면 빈 목록을 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findAdminDongCandidatesForLegalDong(
+        val regions = findAdminDongCandidatesForLegalDong(
             mappings = listOf(
                 legalAdminMapping(
                     sidoName = "서울특별시",
@@ -592,7 +593,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `읍면동 조회는 행정동 접미사가 있는 법정동 후보를 포함한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "전라남도",
@@ -641,7 +642,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 후보 생성 시 법정 행정 시군구 코드가 다른 후보는 제외한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = emptyList(),
             legalAdminDongMappings = listOf(
                 legalAdminMapping(
@@ -674,7 +675,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `접미사 없는 동 검색어도 행정동 후보로 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "부산광역시",
@@ -709,7 +710,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `번호가 생략된 동 검색어는 번호 행정동 후보를 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -761,7 +762,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `제 번호가 붙은 행정동도 번호가 생략된 동 검색어로 찾을 수 있다`() {
-        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "부산광역시",
@@ -789,7 +790,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `사천 검색은 제공 가능 시군구인 경상남도 사천시 후보를 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findSigunguRegions(
+        val regions = findSigunguRegions(
             administrativeRegions = emptyList(),
             regionalGuideRegions = listOf(
                 RegionalGuideRegionDto(
@@ -808,7 +809,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `다른 지역에 정확한 행정동이 있어도 같은 지역의 번호 행정동 별칭은 후보로 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -867,7 +868,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 매핑 행정동이 번호형이 아니면 번호 행정동 별칭으로 확장하지 않는다`() {
-        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "경기도",
@@ -896,7 +897,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `접미사 없는 법정동 검색어는 실제 법정동 이름을 후보에 유지한다`() {
-        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = findRegionalGuideEupmyeondongRegions(
             administrativeRegions = emptyList(),
             legalAdminDongMappings = listOf(
                 legalAdminMapping(
@@ -925,7 +926,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `법정동 키워드 조회는 가 별칭을 반환하고 리 별칭은 제외한다`() {
-        val keywords = RegionSearchCandidateMapper.findLegalDongKeywordsByRegion(
+        val keywords = findLegalDongKeywordsByRegion(
             mappings = listOf(
                 legalAdminMapping(
                     sidoName = "서울특별시",
@@ -955,7 +956,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `문자 점 묶음 행정동 부분 검색은 에셋 원본 지역명 후보로 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대구광역시",
@@ -977,7 +978,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `문자 점 묶음 행정동 붙여쓴 검색어는 에셋 원본 지역명 후보로 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "충청북도",
@@ -999,7 +1000,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `문자 점 묶음 행정동 원본 검색어도 에셋 원본 지역명 후보로 반환한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대구광역시",
@@ -1021,7 +1022,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `숫자 점 묶음 행정동 검색 후보는 기존 행정동 표기를 유지한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "서울특별시",
@@ -1043,7 +1044,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `공용 읍면동 검색은 번호 행정동 별칭 대신 법정동 후보를 유지한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -1072,7 +1073,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `지역 가이드 읍면동 검색 후보는 숫자를 자연 순서로 정렬한다`() {
-        val regions = RegionSearchCandidateMapper.findRegionalGuideEupmyeondongRegions(
+        val regions = findRegionalGuideEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -1100,7 +1101,7 @@ class RegionOptionsMapperTest {
 
     @Test
     fun `공용 읍면동 검색 후보는 기존 문자 순서를 유지한다`() {
-        val regions = RegionSearchCandidateMapper.findEupmyeondongRegions(
+        val regions = findEupmyeondongRegions(
             administrativeRegions = listOf(
                 administrativeRegion(
                     sidoName = "대전광역시",
@@ -1418,4 +1419,68 @@ class RegionOptionsMapperTest {
             managementZoneName = managementZoneName,
             targetRegionName = targetRegionName,
         )
+
+    private fun findSigunguRegions(
+        administrativeRegions: List<AdministrativeRegionDto>,
+        regionalGuideRegions: List<RegionalGuideRegionDto>,
+        keyword: String,
+    ): List<Region> =
+        runBlocking {
+            RegionSearchIndex.create(
+                administrativeRegions = administrativeRegions,
+                legalAdminDongMappings = emptyList(),
+                regionalGuideRegions = regionalGuideRegions,
+            ).findSigunguRegions(keyword)
+        }
+
+    private fun findEupmyeondongRegions(
+        administrativeRegions: List<AdministrativeRegionDto>,
+        legalAdminDongMappings: List<LegalAdminDongMappingDto>,
+        keyword: String,
+    ): List<Region> =
+        runBlocking {
+            RegionSearchIndex.create(
+                administrativeRegions = administrativeRegions,
+                legalAdminDongMappings = legalAdminDongMappings,
+                regionalGuideRegions = emptyList(),
+            ).findEupmyeondongRegions(keyword)
+        }
+
+    private fun findRegionalGuideEupmyeondongRegions(
+        administrativeRegions: List<AdministrativeRegionDto>,
+        legalAdminDongMappings: List<LegalAdminDongMappingDto>,
+        keyword: String,
+    ): List<Region> =
+        runBlocking {
+            RegionSearchIndex.create(
+                administrativeRegions = administrativeRegions,
+                legalAdminDongMappings = legalAdminDongMappings,
+                regionalGuideRegions = emptyList(),
+            ).findRegionalGuideEupmyeondongRegions(keyword)
+        }
+
+    private fun findLegalDongKeywordsByRegion(
+        mappings: List<LegalAdminDongMappingDto>,
+        region: Region,
+        keyword: String,
+    ): List<String> =
+        runBlocking {
+            RegionSearchIndex.create(
+                administrativeRegions = emptyList(),
+                legalAdminDongMappings = mappings,
+                regionalGuideRegions = emptyList(),
+            ).findLegalDongKeywordsByRegion(region, keyword)
+        }
+
+    private fun findAdminDongCandidatesForLegalDong(
+        mappings: List<LegalAdminDongMappingDto>,
+        region: Region,
+    ): List<Region> =
+        runBlocking {
+            RegionSearchIndex.create(
+                administrativeRegions = emptyList(),
+                legalAdminDongMappings = mappings,
+                regionalGuideRegions = emptyList(),
+            ).findAdminDongCandidatesForLegalDong(region)
+        }
 }

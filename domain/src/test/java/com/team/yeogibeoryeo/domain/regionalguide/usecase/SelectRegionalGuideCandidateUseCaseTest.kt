@@ -5,20 +5,140 @@ import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideCandidateLookupReason
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideLookupResult
+import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideSourceMetadata
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class SelectRegionalGuideDirectMatchUseCaseTest {
+abstract class SelectRegionalGuideCandidateUseCaseTestSupport {
 
-    private val useCase = SelectRegionalGuideCandidateUseCase()
+    protected val useCase = SelectRegionalGuideCandidateUseCase()
+
+    protected fun select(
+        candidates: List<RegionalDisposalGuide>,
+        query: RegionalGuideQuery,
+        preferredTargetRegionName: String? = null,
+        preferredManagementZoneName: String? = null,
+        favoriteKey: RegionalGuideFavoriteKey? = null,
+        mappedAdminDongCandidates: List<Region> = emptyList(),
+    ): RegionalGuideLookupResult =
+        runBlocking {
+            useCase(
+                candidates = candidates,
+                query = query,
+                preferredTargetRegionName = preferredTargetRegionName,
+                preferredManagementZoneName = preferredManagementZoneName,
+                favoriteKey = favoriteKey,
+                mappedAdminDongCandidates = mappedAdminDongCandidates,
+            )
+        }
+}
+
+class SelectRegionalGuideDirectMatchUseCaseTest : SelectRegionalGuideCandidateUseCaseTestSupport() {
+
+    @Test
+    fun `지역 가이드 후보 선택은 주입한 dispatcher에서 실행한다`() =
+        runBlocking {
+            val callingThread = Thread.currentThread()
+            var candidateAccessThread: Thread? = null
+            val candidates = object : AbstractList<RegionalDisposalGuide>() {
+                private val items = listOf(
+                    regionalDisposalGuide(
+                        sido = "서울특별시",
+                        sigungu = "중구",
+                        targetRegionName = "중구 전체",
+                    )
+                )
+
+                override val size: Int
+                    get() = items.size
+
+                override fun get(index: Int): RegionalDisposalGuide {
+                    candidateAccessThread = Thread.currentThread()
+                    return items[index]
+                }
+            }
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val result = SelectRegionalGuideCandidateUseCase(dispatcher)(
+                    candidates = candidates,
+                    query = regionalGuideQuery(
+                        displayRegion = Region(sido = "서울특별시", sigungu = "중구"),
+                        sigunguQuery = "중구",
+                    ),
+                )
+
+                assertTrue(result is RegionalGuideLookupResult.Success)
+            }
+
+            assertNotNull(candidateAccessThread)
+            assertNotSame(callingThread, candidateAccessThread)
+        }
+
+    @Test
+    fun `시군구 필터 이후 취소된 지역 가이드 후보 선택은 병합을 중단한다`() =
+        runBlocking {
+            val sigunguFilterCompleted = CountDownLatch(1)
+            val allowCandidateMerge = CountDownLatch(1)
+            val candidateAccessCount = AtomicInteger()
+            val candidate = regionalDisposalGuide(
+                sido = "서울특별시",
+                sigungu = "중구",
+                targetRegionName = "중구 전체",
+            )
+            val candidates = object : AbstractList<RegionalDisposalGuide>() {
+                override val size: Int = 1_000_000
+
+                override fun get(index: Int): RegionalDisposalGuide {
+                    candidateAccessCount.incrementAndGet()
+                    if (index == size - 1) {
+                        sigunguFilterCompleted.countDown()
+                        check(allowCandidateMerge.await(3, TimeUnit.SECONDS))
+                    }
+                    return candidate
+                }
+            }
+
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+                val job = launch(dispatcher) {
+                    SelectRegionalGuideCandidateUseCase(dispatcher)(
+                        candidates = candidates,
+                        query = regionalGuideQuery(
+                            // 시도 조건은 통과시키고, 시군구 필터를 마친 직후 병합 단계에서 취소한다.
+                            displayRegion = Region(sigungu = "중구"),
+                            sigunguQuery = "중구",
+                        ),
+                    )
+                }
+
+                assertTrue(sigunguFilterCompleted.await(3, TimeUnit.SECONDS))
+                job.cancel()
+                allowCandidateMerge.countDown()
+                withTimeout(500) {
+                    job.cancelAndJoin()
+                }
+            }
+
+            assertEquals(candidates.size, candidateAccessCount.get())
+        }
 
     @Test
     fun `후보가 없으면 찾지 못함을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = emptyList(),
             query = regionalGuideQuery(
                 displayRegion = Region(sido = "서울특별시", sigungu = "중구"),
@@ -31,7 +151,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `동일 시군구명이 여러 시도에 있으면 선택한 시도 기준으로 후보를 고른다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "대구광역시", sigungu = "중구", targetRegionName = "대봉2동"),
                 regionalDisposalGuide(sido = "서울특별시", sigungu = "중구", targetRegionName = "서울시 중구")
@@ -51,7 +171,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `선택한 시도와 일치하는 후보가 없으면 후보 없음으로 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "대구광역시", sigungu = "중구", targetRegionName = "대봉2동")
             ),
@@ -66,7 +186,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `광주광역시 선택값은 전남광주통합특별시 광주 후보를 필터링하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "전남광주통합특별시",
@@ -97,7 +217,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
         val gwangjuSigunguNames = listOf("동구", "서구", "남구", "북구", "광산구")
 
         gwangjuSigunguNames.forEach { sigungu ->
-            val result = useCase(
+            val result = select(
                 candidates = listOf(
                     regionalDisposalGuide(
                         sido = "전남광주통합특별시",
@@ -120,7 +240,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `광주광역시 선택값은 전남광주통합특별시 전남 시군 후보를 선택하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "전남광주통합특별시",
@@ -139,7 +259,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `전라남도 선택값은 전남광주통합특별시 전남 시군 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "전남광주통합특별시",
@@ -162,7 +282,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `전남광주통합특별시 전남 선택값은 전라남도 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "전라남도",
@@ -190,7 +310,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `전남광주통합특별시 광주 선택값은 광주광역시 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "광주광역시",
@@ -218,7 +338,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `대상지역 설명에 선택 읍면동이 포함되면 해당 후보를 선택하고 지역 읍면동은 선택값으로 유지한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "인천광역시",
@@ -252,7 +372,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `세종특별자치시 동지역에 포함된 동은 동지역 후보를 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "세종특별자치시", sigungu = null, targetRegionName = "전의면, 전동면, 소정면"),
                 regionalDisposalGuide(sido = "세종특별자치시", sigungu = null, targetRegionName = "동지역")
@@ -274,7 +394,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `필터링된 후보가 1건이면 대상지역 값과 관계없이 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "경기도", sigungu = "수원시", targetRegionName = "수원시 전체")
             ),
@@ -291,7 +411,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `단일 후보의 대상지역이 없음이어도 해당 후보를 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "경기도", sigungu = "수원시", targetRegionName = "없음")
             ),
@@ -309,7 +429,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `단일 후보의 대상지역이 동 목록이어도 해당 후보를 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "서울특별시",
@@ -330,7 +450,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `읍면동 접미사가 없는 대상지역 토큰도 선택 읍면동과 매칭한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "울산광역시",
@@ -364,7 +484,7 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
 
     @Test
     fun `법정동 이름으로 시작하는 상세 대상지역 후보만 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경기도",
@@ -395,13 +515,11 @@ class SelectRegionalGuideDirectMatchUseCaseTest {
     }
 }
 
-class SelectRegionalGuideCandidateIdentityUseCaseTest {
-
-    private val useCase = SelectRegionalGuideCandidateUseCase()
+class SelectRegionalGuideCandidateIdentityUseCaseTest : SelectRegionalGuideCandidateUseCaseTestSupport() {
 
     @Test
     fun `동일 대상지역명이어도 관리구역명이 다르면 첫 후보를 임의 선택하지 않고 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -435,7 +553,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `법정동 매핑 관리구역 후보가 있으면 단일 대상지역명 정확 매칭보다 후보 목록을 우선한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -490,7 +608,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `출장소 행정동 후보는 부모 읍면동 가이드로 연결한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -516,7 +634,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `번호가 생략된 동 검색어는 번호가 붙은 관리구역명 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -564,7 +682,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `번호가 생략된 동 검색어는 대상지역명보다 번호 관리구역명 후보를 우선한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -617,7 +735,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `관리구역명이 선택 읍면동과 정확히 일치하면 직접 매칭 후보로 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -650,7 +768,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `관리구역명으로 직접 매칭되는 후보가 여러 개면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -684,7 +802,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `법정동 매핑 후보와 일치하는 행정동 후보가 여러 개면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "서울특별시",
@@ -722,7 +840,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `기존 직접 매칭 후보가 있으면 법정동 매핑 후보보다 우선한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "서울특별시",
@@ -757,7 +875,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `법정동 매핑 후보와 일치하는 행정동 후보가 하나면 해당 후보를 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "서울특별시",
@@ -792,7 +910,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `제 표기가 있는 행정동 매핑 후보는 숫자 범위 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -821,7 +939,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `제 표기가 있는 행정동 매핑 후보는 쉼표 묶음 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -850,7 +968,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `제 표기가 있는 행정동 매핑 후보는 공백이 있는 쉼표 묶음 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -879,7 +997,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `제 표기가 있는 행정동 매핑 후보는 공백이 있는 숫자 범위 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -908,7 +1026,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `숫자 범위 밖 행정동 매핑 후보는 축약 후보와 매칭되지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -935,7 +1053,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `쉼표 묶음 밖 행정동 매핑 후보는 축약 후보와 매칭되지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -962,7 +1080,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 괴정제1동은 숫자 범위 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -989,7 +1107,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 부곡제1동은 쉼표 묶음 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1016,7 +1134,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 부곡제4동은 쉼표 묶음 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1043,7 +1161,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 부곡제1동은 공백이 있는 쉼표 묶음 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1070,7 +1188,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 부곡제2동은 쉼표 묶음 축약 후보와 매칭되지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1094,7 +1212,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 부곡제3동은 쉼표 묶음 축약 후보와 매칭되지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1118,7 +1236,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 다대제1동은 공백이 있는 숫자 범위 축약 후보와 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1145,7 +1263,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 괴정제4동은 숫자 범위 밖 축약 후보와 매칭되지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1169,7 +1287,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `정확 매칭 후보가 있으면 축약 정규화 후보보다 우선한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1202,7 +1320,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `정확 매칭 후보가 있으면 넓은 행정동명 후보보다 우선한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -1235,7 +1353,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `세분화 행정동은 공공데이터의 넓은 동명 관리구역과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -1262,7 +1380,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `점 대신 가운데점으로 묶인 세분화 행정동도 넓은 동명 관리구역과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -1289,7 +1407,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `가동 점 묶음 행정동은 분리된 응답 관리구역명과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "서울특별시",
@@ -1316,7 +1434,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `점 묶음 행정동은 가운데점으로 묶인 응답 관리구역명과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "인천광역시",
@@ -1347,7 +1465,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
             "불로.봉무동" to "불로봉무동",
             "성내.충인동" to "성내충인동"
         ).forEach { (requestedEupmyeondong, apiRegionName) ->
-            val result = useCase(
+            val result = select(
                 candidates = listOf(
                     regionalDisposalGuide(
                         sido = "대구광역시",
@@ -1375,7 +1493,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `점 묶음 행정동 확장은 범위 밖 행정동을 매칭하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "서울특별시",
@@ -1399,7 +1517,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `일동 계열 행정동은 공공데이터의 넓은 동명 관리구역과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -1426,7 +1544,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `전역 일부 괄호 설명이 붙은 관리구역명도 비교 가능한 동명 토큰으로 매칭한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -1453,7 +1571,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `넓은 동명 완화 매칭 후보가 여러 개이면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -1486,7 +1604,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `다른 세부 행정동 토큰은 넓은 동명 완화 매칭으로 선택하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -1510,7 +1628,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `동지역 관리구역은 동으로 끝나는 행정동과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경상북도",
@@ -1537,7 +1655,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `시군구명이 붙은 동지역 관리구역도 동으로 끝나는 행정동과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -1564,7 +1682,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `띄어쓴 동 지역 관리구역도 동으로 끝나는 행정동과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -1592,7 +1710,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     @Test
     fun `읍면지역 관리구역은 읍과 면으로 끝나는 행정구역과 매칭된다`() {
         listOf("아포읍", "봉산면").forEach { eupmyeondong ->
-            val result = useCase(
+            val result = select(
                 candidates = listOf(
                     regionalDisposalGuide(
                         sido = "경상북도",
@@ -1620,7 +1738,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `읍면지역 관리구역은 동 선택과 매칭하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경상북도",
@@ -1644,7 +1762,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `세종특별자치시가 붙은 동지역 관리구역도 동으로 끝나는 행정동과 매칭된다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "세종특별자치시",
@@ -1671,7 +1789,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `단어 일부가 동지역인 관리구역은 동지역으로 매칭하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "테스트도",
@@ -1695,7 +1813,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `동지역 관리구역은 읍면 선택과 매칭하지 않는다`() {
-        val eupResult = useCase(
+        val eupResult = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경상북도",
@@ -1713,7 +1831,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
                 sigunguQuery = "김천시"
             )
         )
-        val myeonResult = useCase(
+        val myeonResult = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경상북도",
@@ -1738,7 +1856,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `동지역 관리구역 후보가 여러 개이면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경상북도",
@@ -1774,7 +1892,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 선택한 행정동이 여러 축약 후보와 매칭되면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "부산광역시",
@@ -1808,7 +1926,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `법정동 매핑 후보가 있어도 안내 후보와 교집합이 없으면 기존 후보 없음 흐름을 유지한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "서울특별시",
@@ -1835,7 +1953,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `대상지역명과 관리구역명 기준에서 서로 다른 후보가 잡히면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -1869,7 +1987,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 매칭이 실패하고 같은 시군구의 유형 후보만 여러 개 있으면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -1906,7 +2024,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 매칭 실패 후 없음 전체 기준 수거 유형 후보만 있으면 대체 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -1946,7 +2064,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 매칭 실패 후 같은 시군구 후보와 다른 읍면동 후보가 섞이면 시군구 후보만 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -1988,7 +2106,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 매칭 실패 후 같은 시군구 권역 후보가 하나만 남으면 해당 후보를 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2023,7 +2141,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
 
     @Test
     fun `직접 매칭이 실패해도 명시적인 다른 읍면동 후보는 같은 시군구 대체 후보로 노출하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2052,9 +2170,7 @@ class SelectRegionalGuideCandidateIdentityUseCaseTest {
     }
 }
 
-class SelectRegionalGuideCandidateMergeUseCaseTest {
-
-    private val useCase = SelectRegionalGuideCandidateUseCase()
+class SelectRegionalGuideCandidateMergeUseCaseTest : SelectRegionalGuideCandidateUseCaseTestSupport() {
 
     @Test
     fun `완전 중복 후보는 하나의 후보로 정리하고 상세 일정은 유지한다`() {
@@ -2067,7 +2183,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "화"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -2111,7 +2227,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "수"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2158,7 +2274,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "목"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2205,7 +2321,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "일, 월, 화, 수, 목, 금, 토"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2267,7 +2383,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "화"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2320,7 +2436,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "화"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2373,7 +2489,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "화"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2424,7 +2540,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalEndTime = "06:00",
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2476,7 +2592,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalEndTime = "18:00",
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경기도",
@@ -2562,7 +2678,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
                 ),
             )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 후보행(daytimeSchedule, latestDayManagementNumber, "20240709105039"),
                 후보행(outdatedSchedule, outdatedManagementNumber, "20240709104936"),
@@ -2605,7 +2721,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "일",
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "경기도",
@@ -2674,7 +2790,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "화"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2725,7 +2841,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "수"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2782,7 +2898,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
 
     @Test
     fun `후보 식별값이 다르면 날짜가 있어도 최신성 비교 대상으로 묶지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "강원특별자치도",
@@ -2819,7 +2935,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
 
     @Test
     fun `후보명이 같아도 상세 필드가 다르면 별도 후보로 유지한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -2868,7 +2984,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "수"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -2933,7 +3049,7 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
             disposalDays = "목"
         )
 
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -2970,13 +3086,11 @@ class SelectRegionalGuideCandidateMergeUseCaseTest {
     }
 }
 
-class SelectRegionalGuideWithoutEupmyeondongUseCaseTest {
-
-    private val useCase = SelectRegionalGuideCandidateUseCase()
+class SelectRegionalGuideWithoutEupmyeondongUseCaseTest : SelectRegionalGuideCandidateUseCaseTestSupport() {
 
     @Test
     fun `읍면동 없이 복수 후보가 있으면 전체 적용 후보가 있어도 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "경기도", sigungu = "수원시", targetRegionName = "수원시 전체"),
                 regionalDisposalGuide(sido = "경기도", sigungu = "수원시", targetRegionName = "일부 권역")
@@ -2996,7 +3110,7 @@ class SelectRegionalGuideWithoutEupmyeondongUseCaseTest {
 
     @Test
     fun `읍면동 없이 복수 후보의 대상지역이 모두 전체 적용이면 대표 후보를 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "경기도", sigungu = "성남시", targetRegionName = "없음"),
                 regionalDisposalGuide(sido = "경기도", sigungu = "성남시", targetRegionName = "없음")
@@ -3015,7 +3129,7 @@ class SelectRegionalGuideWithoutEupmyeondongUseCaseTest {
 
     @Test
     fun `조회 키와 일치하는 시군구 후보가 없으면 후보 없음으로 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "경기도", sigungu = "수원시 장안구", targetRegionName = "수원시 전체")
             ),
@@ -3030,7 +3144,7 @@ class SelectRegionalGuideWithoutEupmyeondongUseCaseTest {
 
     @Test
     fun `읍면동 없이 복수 권역 후보만 있으면 후보 목록을 반환한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동"),
                 regionalDisposalGuide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신포동+연안동")
@@ -3050,7 +3164,7 @@ class SelectRegionalGuideWithoutEupmyeondongUseCaseTest {
 
     @Test
     fun `읍면동 없이 단일 권역 후보만 있으면 해당 후보를 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동")
             ),
@@ -3066,13 +3180,11 @@ class SelectRegionalGuideWithoutEupmyeondongUseCaseTest {
     }
 }
 
-class SelectRegionalGuidePreferredCandidateUseCaseTest {
-
-    private val useCase = SelectRegionalGuideCandidateUseCase()
+class SelectRegionalGuidePreferredCandidateUseCaseTest : SelectRegionalGuideCandidateUseCaseTestSupport() {
 
     @Test
     fun `우선 대상지역이 있으면 해당 후보를 우선 선택한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동"),
                 regionalDisposalGuide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신포동+연안동")
@@ -3091,7 +3203,7 @@ class SelectRegionalGuidePreferredCandidateUseCaseTest {
 
     @Test
     fun `우선 대상지역이 후보에 없으면 임의 후보를 선택하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신흥동+율목동"),
                 regionalDisposalGuide(sido = "인천광역시", sigungu = "중구", targetRegionName = "신포동+연안동")
@@ -3107,13 +3219,11 @@ class SelectRegionalGuidePreferredCandidateUseCaseTest {
     }
 }
 
-class SelectRegionalGuideFavoriteCompatibilityUseCaseTest {
-
-    private val useCase = SelectRegionalGuideCandidateUseCase()
+class SelectRegionalGuideFavoriteCompatibilityUseCaseTest : SelectRegionalGuideCandidateUseCaseTestSupport() {
 
     @Test
     fun `즐겨찾기 키의 시도 별칭이 달라도 호환 후보를 복원한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "전라남도",
@@ -3150,7 +3260,7 @@ class SelectRegionalGuideFavoriteCompatibilityUseCaseTest {
 
     @Test
     fun `즐겨찾기 키와 호환되는 후보가 여러 개면 첫 후보를 임의 선택하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대전광역시",
@@ -3193,7 +3303,7 @@ class SelectRegionalGuideFavoriteCompatibilityUseCaseTest {
 
     @Test
     fun `가이드 식별 필드가 다른 적용 행이 있어도 즐겨찾기 원본 후보를 복원한다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "대구광역시",
@@ -3235,7 +3345,7 @@ class SelectRegionalGuideFavoriteCompatibilityUseCaseTest {
 
     @Test
     fun `즐겨찾기 키와 호환되는 후보가 없으면 임의 후보를 선택하지 않는다`() {
-        val result = useCase(
+        val result = select(
             candidates = listOf(
                 regionalDisposalGuide(
                     sido = "인천광역시",

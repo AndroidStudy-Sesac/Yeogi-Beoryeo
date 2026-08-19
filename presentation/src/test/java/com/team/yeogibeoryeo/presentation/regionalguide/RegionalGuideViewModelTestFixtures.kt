@@ -76,7 +76,9 @@ internal fun createViewModel(
         getRegionalDisposalGuideUseCase = GetRegionalDisposalGuideUseCase(
             repository = regionalGuideRepository,
             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
-            selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(),
+            selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(
+                defaultDispatcher = Dispatchers.Main.immediate,
+            ),
             findAdminDongCandidatesForLegalDongUseCase = FindAdminDongCandidatesForLegalDongUseCase(
                 regionOptionsRepository
             )

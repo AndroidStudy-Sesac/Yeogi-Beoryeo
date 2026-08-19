@@ -2,6 +2,8 @@ package com.team.yeogibeoryeo.domain.regionalguide.model
 
 object RegionalGuideEupmyeondongNamePolicy {
 
+    fun normalizeForSearch(name: String?): String? = name.normalizeName()
+
     fun isSameName(
         first: String?,
         second: String?,

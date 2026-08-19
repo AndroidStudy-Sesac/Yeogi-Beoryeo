@@ -1,9 +1,10 @@
 package com.team.yeogibeoryeo.data.region.local
 
 import android.content.Context
+import com.team.yeogibeoryeo.data.core.di.IoDispatcher
 import com.team.yeogibeoryeo.data.region.local.dto.LegalAdminDongMappingDto
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 
 @Singleton
 class LegalAdminDongMappingLocalDataSource @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -26,7 +28,7 @@ class LegalAdminDongMappingLocalDataSource @Inject constructor(
     }
 
     private suspend fun loadMappings(): List<LegalAdminDongMappingDto> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val jsonText = context.assets
                 .open(RegionAssetContract.LEGAL_ADMIN_MAPPING_ASSET_PATH)
                 .bufferedReader()

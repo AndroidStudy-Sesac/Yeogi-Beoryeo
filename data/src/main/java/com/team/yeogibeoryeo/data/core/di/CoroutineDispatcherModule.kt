@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.core.di
 
+import com.team.yeogibeoryeo.domain.core.di.DefaultDispatcher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -11,10 +12,6 @@ import kotlinx.coroutines.Dispatchers
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class IoDispatcher
-
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class DefaultDispatcher
 
 @Module
 @InstallIn(SingletonComponent::class)
