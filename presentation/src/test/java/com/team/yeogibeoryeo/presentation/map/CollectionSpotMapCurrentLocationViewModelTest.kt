@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
+import java.net.UnknownHostException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -245,12 +246,10 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
         }
 
     @Test
-    fun `현재 위치 주변 수거 장소 검색 실패 시 errorMessage를 표시하고 notice는 설정하지 않는다`() =
+    fun `현재 위치 주변 수거 장소 검색 네트워크 실패 시 검색 실패 상태를 표시하고 notice는 설정하지 않는다`() =
         runTest {
             val repository = FakeCollectionSpotRepository(
-                locationSearchThrowable = IllegalStateException(
-                    "Unable to resolve host \"apis.data.go.kr\": No address associated with hostname",
-                ),
+                locationSearchThrowable = UnknownHostException("apis.data.go.kr"),
             )
             val viewModel = createViewModel(
                 repository = repository,
@@ -265,9 +264,10 @@ class CollectionSpotMapCurrentLocationViewModelTest : CollectionSpotMapViewModel
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(
-                MapLocationNotices.CurrentLocationSpotSearchFailureMessageResId,
-                viewModel.uiState.value.errorMessageResId,
+                MapSearchFailureReason.Network,
+                viewModel.uiState.value.searchFailure?.reason,
             )
+            assertNull(viewModel.uiState.value.errorMessageResId)
             assertNull(viewModel.uiState.value.locationNotice)
         }
 

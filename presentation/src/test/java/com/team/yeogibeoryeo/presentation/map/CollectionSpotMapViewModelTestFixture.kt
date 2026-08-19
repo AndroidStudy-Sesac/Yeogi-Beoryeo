@@ -261,6 +261,7 @@ internal class FakeCollectionSpotRepository(
     internal val isKeywordSearchPartial: Boolean = false,
     internal val keywordSearchThrowable: Throwable? = null,
     internal val locationSearchThrowable: Throwable? = null,
+    internal val keywordSearchResultProvider: (suspend (String) -> CollectionSpotSearchResult)? = null,
     internal val locationSearchResultProvider: (suspend () -> List<CollectionSpot>)? = null,
 ) : CollectionSpotRepository, CollectionSpotGeocodingRepository {
     val keywords = mutableListOf<String>()
@@ -273,6 +274,7 @@ internal class FakeCollectionSpotRepository(
         types: Set<CollectionSpotType>,
     ): CollectionSpotSearchResult {
         keywords += keyword
+        keywordSearchResultProvider?.let { provider -> return provider(keyword) }
         keywordSearchThrowable?.let { throw it }
         return CollectionSpotSearchResult(
             spots = keywordSpots,
