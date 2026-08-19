@@ -14,6 +14,8 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideRegionKeyNo
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -24,7 +26,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor(
 
     constructor() : this(Dispatchers.Default)
 
-    suspend fun select(
+    suspend operator fun invoke(
         candidates: List<RegionalDisposalGuide>,
         query: RegionalGuideQuery,
         preferredTargetRegionName: String? = null,
@@ -43,24 +45,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor(
             )
         }
 
-    operator fun invoke(
-        candidates: List<RegionalDisposalGuide>,
-        query: RegionalGuideQuery,
-        preferredTargetRegionName: String? = null,
-        preferredManagementZoneName: String? = null,
-        favoriteKey: RegionalGuideFavoriteKey? = null,
-        mappedAdminDongCandidates: List<Region> = emptyList(),
-    ): RegionalGuideLookupResult =
-        selectCandidates(
-            candidates = candidates,
-            query = query,
-            preferredTargetRegionName = preferredTargetRegionName,
-            preferredManagementZoneName = preferredManagementZoneName,
-            favoriteKey = favoriteKey,
-            mappedAdminDongCandidates = mappedAdminDongCandidates,
-        )
-
-    private fun selectCandidates(
+    private suspend fun selectCandidates(
         candidates: List<RegionalDisposalGuide>,
         query: RegionalGuideQuery,
         preferredTargetRegionName: String?,
@@ -127,12 +112,12 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor(
         return filteredCandidates.toCandidateResultOrNotFound(query.displayRegion)
     }
 
-    private fun List<RegionalDisposalGuide>.filterBySido(
+    private suspend fun List<RegionalDisposalGuide>.filterBySido(
         requestedRegion: Region
     ): List<RegionalDisposalGuide> {
         if (requestedRegion.sido.isNullOrBlank()) return this
 
-        return filter { guide ->
+        return filterCancellable { guide ->
             RegionSidoAliasPolicy.isSameSido(
                 requestedSido = requestedRegion.sido,
                 requestedSigungu = requestedRegion.sigungu,
@@ -142,13 +127,13 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor(
         }
     }
 
-    private fun List<RegionalDisposalGuide>.filterBySigungu(
+    private suspend fun List<RegionalDisposalGuide>.filterBySigungu(
         query: RegionalGuideQuery
     ): List<RegionalDisposalGuide> {
         val sigunguQuery = query.sigunguQuery
         if (sigunguQuery == SEJONG_SIGUNGU_QUERY) return this
 
-        return filter { guide ->
+        return filterCancellable { guide ->
             guide.region.sigungu == sigunguQuery ||
                 guide.matchesDisplayRegionSigungu(query)
         }
@@ -161,6 +146,21 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor(
 
         return region.sigungu == query.displayRegion.sigungu &&
             region.sigungu?.let(RegionalGuideRegionKeyNormalizer::normalizeSigungu) == query.sigunguQuery
+    }
+
+    private suspend fun <T> Iterable<T>.filterCancellable(
+        predicate: (T) -> Boolean,
+    ): List<T> {
+        val results = mutableListOf<T>()
+        forEachIndexed { index, item ->
+            if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                currentCoroutineContext().ensureActive()
+            }
+            if (predicate(item)) {
+                results += item
+            }
+        }
+        return results
     }
 
     private fun selectByTargetRegion(
@@ -967,6 +967,7 @@ class SelectRegionalGuideCandidateUseCase @Inject constructor(
     }
 
     private companion object {
+        const val CANCELLATION_CHECK_INTERVAL = 64
         const val SEJONG_SIGUNGU_QUERY = "없음"
         const val DONG_AREA = "동지역"
         const val EUP_MYEON_AREA = "읍면지역"

@@ -110,7 +110,7 @@ class GetRegionalDisposalGuideUseCase @Inject constructor(
             }
         val adminDongCandidates = findAdminDongCandidatesForLegalDongUseCase(query.displayRegion)
 
-        return selectRegionalGuideCandidateUseCase.select(
+        return selectRegionalGuideCandidateUseCase(
             candidates = candidates,
             query = query,
             preferredTargetRegionName = preferredTargetRegionName,

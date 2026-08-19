@@ -433,26 +433,32 @@ internal class RegionSearchIndex private constructor(
                     )
                 }
 
+            val administrativeRegionsByScope = administrativeEntries.groupByCancellable { entry ->
+                entry.scopeKey
+            }
+            val legalAdminDongNamesByScopeAndName = legalAdminDongMappingEntries
+                .filterCancellable { entry -> entry.hasSameSigunguCode }
+                .groupByCancellable { entry ->
+                    LegalDongScopeKey(
+                        scopeKey = entry.scopeKey,
+                        legalDongName = entry.legalDongName,
+                    )
+                }
+                .mapValuesCancellable { (_, entries) ->
+                    entries.mapNotNullCancellable { entry ->
+                        entry.adminDongName
+                            .trim()
+                            .takeIf(String::isNotBlank)
+                    }
+                        .distinct()
+                }
+
             return RegionSearchIndex(
                 administrativeRegions = administrativeEntries,
                 legalAdminDongMappings = legalAdminDongMappingEntries,
                 regionalGuideRegions = regionalGuideRegionEntries,
-                administrativeRegionsByScope = administrativeEntries.groupBy { entry -> entry.scopeKey },
-                legalAdminDongNamesByScopeAndName = legalAdminDongMappingEntries
-                    .asSequence()
-                    .filter { entry -> entry.hasSameSigunguCode }
-                    .groupBy { entry ->
-                        LegalDongScopeKey(
-                            scopeKey = entry.scopeKey,
-                            legalDongName = entry.legalDongName,
-                        )
-                    }
-                    .mapValues { (_, entries) ->
-                        entries
-                            .map { entry -> entry.adminDongName.trim() }
-                            .filter(String::isNotBlank)
-                            .distinct()
-                    },
+                administrativeRegionsByScope = administrativeRegionsByScope,
+                legalAdminDongNamesByScopeAndName = legalAdminDongNamesByScopeAndName,
             )
         }
 
@@ -465,6 +471,60 @@ internal class RegionSearchIndex private constructor(
                     currentCoroutineContext().ensureActive()
                 }
                 results += transform(item)
+            }
+            return results
+        }
+
+        private suspend fun <T> Iterable<T>.filterCancellable(
+            predicate: (T) -> Boolean,
+        ): List<T> {
+            val results = mutableListOf<T>()
+            forEachIndexed { index, item ->
+                if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                    currentCoroutineContext().ensureActive()
+                }
+                if (predicate(item)) {
+                    results += item
+                }
+            }
+            return results
+        }
+
+        private suspend fun <T, R : Any> Iterable<T>.mapNotNullCancellable(
+            transform: (T) -> R?,
+        ): List<R> {
+            val results = mutableListOf<R>()
+            forEachIndexed { index, item ->
+                if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                    currentCoroutineContext().ensureActive()
+                }
+                transform(item)?.let(results::add)
+            }
+            return results
+        }
+
+        private suspend fun <T, K> Iterable<T>.groupByCancellable(
+            keySelector: (T) -> K,
+        ): Map<K, List<T>> {
+            val results = mutableMapOf<K, MutableList<T>>()
+            forEachIndexed { index, item ->
+                if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                    currentCoroutineContext().ensureActive()
+                }
+                results.getOrPut(keySelector(item), ::mutableListOf) += item
+            }
+            return results
+        }
+
+        private suspend fun <K, V, R> Map<K, V>.mapValuesCancellable(
+            transform: suspend (Map.Entry<K, V>) -> R,
+        ): Map<K, R> {
+            val results = mutableMapOf<K, R>()
+            entries.forEachIndexed { index, entry ->
+                if (index % CANCELLATION_CHECK_INTERVAL == 0) {
+                    currentCoroutineContext().ensureActive()
+                }
+                results[entry.key] = transform(entry)
             }
             return results
         }
