@@ -9,6 +9,8 @@ on:
       - '.github/workflows/android-ci.yml'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
+      - '.github/scripts/select_instrumented_test_tasks.py'
+      - '.github/scripts/test_select_instrumented_test_tasks.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -18,6 +20,8 @@ on:
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
 
   push:
     branches:
@@ -27,6 +31,8 @@ on:
       - '.github/workflows/android-ci.yml'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
+      - '.github/scripts/select_instrumented_test_tasks.py'
+      - '.github/scripts/test_select_instrumented_test_tasks.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -36,6 +42,8 @@ on:
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
 
 permissions:
   contents: read
@@ -53,8 +61,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
@@ -162,111 +168,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Determine Gradle tasks
-        id: gradle-tasks
+      - name: Run lint and builds
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-            HEAD_SHA="${{ github.sha }}"
-          fi
-
-          if [[ "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
-            CHANGED_FILES="$(git ls-tree -r --name-only "$HEAD_SHA")"
-          else
-            CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
-          fi
-
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          full_test=false
-          common_changed=false
-          domain_changed=false
-          data_changed=false
-          presentation_changed=false
-
-          while IFS= read -r file; do
-            [[ -z "$file" ]] && continue
-
-            case "$file" in
-              .github/workflows/*|gradle/*|*gradle.kts|settings.gradle.kts|gradle.properties|gradle/libs.versions.toml)
-                full_test=true
-                ;;
-              common/*)
-                common_changed=true
-                ;;
-              domain/*)
-                domain_changed=true
-                ;;
-              data/*)
-                data_changed=true
-                ;;
-              presentation/*)
-                presentation_changed=true
-                ;;
-            esac
-          done <<< "$CHANGED_FILES"
-
-          tasks=(":app:testDebugUnitTest" ":app:assembleDebug")
-
-          if [[ "$full_test" == "true" ]]; then
-            tasks=(
-              ":common:testDebugUnitTest"
-              ":data:testDebugUnitTest"
-              ":presentation:testDebugUnitTest"
-              ":domain:test"
-              ":app:testDebugUnitTest"
-              ":app:assembleDebug"
-            )
-          else
-            if [[ "$common_changed" == "true" ]]; then
-              tasks+=(":common:testDebugUnitTest" ":presentation:testDebugUnitTest")
-            fi
-
-            if [[ "$domain_changed" == "true" ]]; then
-              tasks+=(":domain:test" ":data:testDebugUnitTest" ":presentation:testDebugUnitTest")
-            fi
-
-            if [[ "$data_changed" == "true" ]]; then
-              tasks+=(":data:testDebugUnitTest")
-            fi
-
-            if [[ "$presentation_changed" == "true" ]]; then
-              tasks+=(":presentation:testDebugUnitTest")
-            fi
-          fi
-
-          tasks+=(
-            ":app:lintDebug"
-            ":common:lintDebug"
-            ":data:lintDebug"
-            ":presentation:lintDebug"
-          )
+          tasks=(":app:lintDebug" ":app:assembleDebug")
 
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]] || \
              [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             tasks+=(":app:assembleRelease" ":app:bundleRelease")
           fi
 
-          unique_tasks=()
-          for task in "${tasks[@]}"; do
-            if [[ ! " ${unique_tasks[*]} " =~ " ${task} " ]]; then
-              unique_tasks+=("$task")
-            fi
-          done
-
-          selected_tasks="${unique_tasks[*]}"
-          echo "tasks=$selected_tasks" >> "$GITHUB_OUTPUT"
-          echo "Selected Gradle tasks: $selected_tasks"
-
-      - name: Run selected tests, lint, and builds
-        run: ./gradlew ${{ steps.gradle-tasks.outputs.tasks }} --no-daemon --stacktrace -PciReleaseCheck=true
+          echo "Selected Gradle tasks: ${tasks[*]}"
+          ./gradlew "${tasks[@]}" --no-daemon --stacktrace -PciReleaseCheck=true
 
       - name: Validate release app bundle
         if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
@@ -297,10 +212,57 @@ jobs:
 
           echo "bundletool validate: passed"
 
-  instrumented-test:
-    name: Instrumented Tests
+  determine-instrumented-tests:
+    name: Determine Instrumented Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      has_tests: ${{ steps.instrumented-tasks.outputs.has_tests }}
+      matrix: ${{ steps.instrumented-tasks.outputs.matrix }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Determine instrumented test tasks
+        id: instrumented-tasks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          changed_files_path="$(mktemp)"
+          trap 'rm -f "$changed_files_path"' EXIT
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if ! git diff --name-only --no-renames \
+              "${{ github.event.pull_request.base.sha }}" \
+              "${{ github.sha }}" \
+              > "$changed_files_path"; then
+              echo "::warning::변경 파일을 확인하지 못해 전체 계측 테스트를 실행합니다."
+              : > "$changed_files_path"
+            fi
+          fi
+
+          echo "Changed files:"
+          cat "$changed_files_path"
+
+          selection="$(python -X utf8 .github/scripts/select_instrumented_test_tasks.py \
+            --event-name "${{ github.event_name }}" \
+            < "$changed_files_path")"
+          echo "$selection" >> "$GITHUB_OUTPUT"
+          echo "$selection"
+
+  instrumented-test-modules:
+    name: Instrumented Test (${{ matrix.module }})
+    needs: determine-instrumented-tests
+    if: needs.determine-instrumented-tests.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.determine-instrumented-tests.outputs.matrix) }}
 
     steps:
       - name: Checkout repository
@@ -370,14 +332,53 @@ jobs:
       - name: Run instrumented tests
         run: |
           ./gradlew \
-            :app:pixel9ProApi36DebugAndroidTest \
-            :data:pixel9ProApi36DebugAndroidTest \
-            :presentation:pixel9ProApi36DebugAndroidTest \
+            "${{ matrix.task }}" \
             -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8" \
             --no-parallel \
             --no-daemon \
             --stacktrace \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+
+  instrumented-test:
+    name: Instrumented Tests
+    needs:
+      - determine-instrumented-tests
+      - instrumented-test-modules
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Verify instrumented test results
+        env:
+          DETECTION_RESULT: ${{ needs.determine-instrumented-tests.result }}
+          HAS_TESTS: ${{ needs.determine-instrumented-tests.outputs.has_tests }}
+          MODULE_RESULT: ${{ needs.instrumented-test-modules.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$DETECTION_RESULT" != "success" ]]; then
+            echo "계측 테스트 대상을 확인하지 못했습니다."
+            exit 1
+          fi
+
+          if [[ "$HAS_TESTS" != "true" && "$HAS_TESTS" != "false" ]]; then
+            echo "계측 테스트 실행 여부가 올바르지 않습니다."
+            exit 1
+          fi
+
+          if [[ "$HAS_TESTS" == "true" && "$MODULE_RESULT" != "success" ]]; then
+            echo "하나 이상의 module 계측 테스트가 실패하거나 취소됐습니다."
+            exit 1
+          fi
+
+          if [[ "$HAS_TESTS" == "false" && "$MODULE_RESULT" != "skipped" ]]; then
+            echo "계측 테스트 대상이 없지만 module job이 실행됐습니다."
+            exit 1
+          fi
+
+          echo "Instrumented test gate passed."
 
   focused-coverage:
     name: Focused Coverage
@@ -479,6 +480,6 @@ jobs:
             exit 1
           fi
 
-      - name: Test focused coverage summary
+      - name: Test CI helper scripts
         run: |
-          python -X utf8 -m unittest discover -s .github/scripts -p 'test_focused_coverage_summary.py'
+          python -X utf8 -m unittest discover -s .github/scripts -p 'test_*.py'

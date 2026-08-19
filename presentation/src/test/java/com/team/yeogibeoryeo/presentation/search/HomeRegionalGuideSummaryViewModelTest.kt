@@ -27,6 +27,7 @@ import com.team.yeogibeoryeo.domain.regionalguide.usecase.ObserveHomeRegionalGui
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectHomeRegionalGuidePrimaryFavoriteUseCase
 import com.team.yeogibeoryeo.domain.regionalguide.usecase.SelectRegionalGuideCandidateUseCase
 import com.team.yeogibeoryeo.presentation.search.model.HomeRegionalGuideSummaryUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -417,7 +418,9 @@ class HomeRegionalGuideSummaryViewModelTest {
                         GetRegionalDisposalGuideUseCase(
                             repository = regionalRepository,
                             normalizeRegionalGuideQueryUseCase = NormalizeRegionalGuideQueryUseCase(),
-                            selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(),
+                            selectRegionalGuideCandidateUseCase = SelectRegionalGuideCandidateUseCase(
+                                defaultDispatcher = Dispatchers.Main.immediate,
+                            ),
                             findAdminDongCandidatesForLegalDongUseCase =
                                 FindAdminDongCandidatesForLegalDongUseCase(FakeRegionOptionsRepository()),
                         ),

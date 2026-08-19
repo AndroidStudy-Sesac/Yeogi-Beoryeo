@@ -51,6 +51,104 @@ class CollectionSpotMapScreenStateTest {
     }
 
     @Test
+    fun `지역 후보 뒤로가기 후 현재 위치 결과 바텀시트 자동 노출을 막는다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
+            )
+
+        assertTrue(shouldKeepHidden)
+    }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 위치 안내는 바텀시트로 노출한다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.KEYWORD,
+                hasNoticeOrError = true,
+                hasRegionSelection = false,
+            )
+
+        assertFalse(shouldKeepHidden)
+    }
+
+    @Test
+    fun `지역 후보 뒤로가기 숨김 상태는 현재 위치 결과에만 적용한다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.KEYWORD,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
+            )
+
+        assertFalse(shouldKeepHidden)
+    }
+
+    @Test
+    fun `지역 선택 상태가 남아 있으면 후보 바텀시트 노출을 허용한다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = true,
+            )
+
+        assertFalse(shouldKeepHidden)
+    }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 현재 위치 응답 대기 중에는 빈 결과처럼 보여도 숨김을 유지한다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
+            )
+
+        assertTrue(shouldKeepHidden)
+    }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 최종 빈 결과는 숨김 상태가 해제되어 바텀시트 노출을 허용한다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
+                mapUiMode = MapUiMode.Browsing,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
+            )
+
+        assertFalse(shouldKeepHidden)
+    }
+
+    @Test
+    fun `장소 상세 화면에서는 지역 후보 뒤로가기 숨김 상태를 적용하지 않는다`() {
+        val shouldKeepHidden =
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+                mapUiMode = MapUiMode.SpotDetail,
+                searchMode = MapSearchMode.CURRENT_LOCATION,
+                hasNoticeOrError = false,
+                hasRegionSelection = false,
+            )
+
+        assertFalse(shouldKeepHidden)
+    }
+
+    @Test
     fun `장소 상세를 닫을 때 수신한 운영 공지가 있으면 결과 목록을 Medium으로 보여준다`() {
         val returnState =
             mapDetailCloseReturnState(
@@ -84,5 +182,49 @@ class CollectionSpotMapScreenStateTest {
 
         assertEquals(MapUiMode.ResultList, returnState.mapUiMode)
         assertEquals(MapSheetLevel.Peek, returnState.sheetLevel)
+    }
+
+    @Test
+    fun `검색창이 포커스되면 결과 바텀시트를 숨기고 탐색 상태로 전환한다`() {
+        val returnState =
+            mapSearchFocusReturnState(
+                mapUiMode = MapUiMode.ResultList,
+                sheetLevel = MapSheetLevel.Expanded,
+            )
+
+        assertEquals(MapUiMode.Browsing, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Hidden, returnState.sheetLevel)
+    }
+
+    @Test
+    fun `오류 안내에서 검색창 포커스 후 검색어를 수정해도 입력 우선 상태를 유지한다`() {
+        val returnState =
+            mapSearchFocusReturnState(
+                mapUiMode = MapUiMode.ResultList,
+                sheetLevel = MapSheetLevel.Expanded,
+            )
+
+        val shouldKeepInputPriority =
+            shouldKeepSearchInputPriority(
+                isSearchFocused = true,
+                mapUiMode = returnState.mapUiMode,
+                isSpotSearchLoading = false,
+            )
+
+        assertEquals(MapUiMode.Browsing, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Hidden, returnState.sheetLevel)
+        assertTrue(shouldKeepInputPriority)
+    }
+
+    @Test
+    fun `검색창 포커스는 장소 상세 상태를 변경하지 않는다`() {
+        val returnState =
+            mapSearchFocusReturnState(
+                mapUiMode = MapUiMode.SpotDetail,
+                sheetLevel = MapSheetLevel.Medium,
+            )
+
+        assertEquals(MapUiMode.SpotDetail, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Medium, returnState.sheetLevel)
     }
 }

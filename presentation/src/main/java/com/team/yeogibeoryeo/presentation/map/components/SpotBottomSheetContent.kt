@@ -35,6 +35,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.MapLocationNotice
 import com.team.yeogibeoryeo.presentation.map.MapLocationNoticeAction
 import com.team.yeogibeoryeo.presentation.map.MapSearchMode
+import com.team.yeogibeoryeo.presentation.map.MapSearchFailure
 import com.team.yeogibeoryeo.presentation.map.mapper.toFilterEmptyResultDisplayNameResId
 import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeBanner
 import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
@@ -52,6 +53,7 @@ fun SpotBottomSheetContent(
     regionDetailSearchCandidate: MapRegionSearchCandidate?,
     locationNotice: MapLocationNotice?,
     operationNotice: OperationNoticeUiModel? = null,
+    searchFailure: MapSearchFailure? = null,
     @StringRes errorMessageResId: Int?,
     @StringRes partialWarningMessageResId: Int?,
     onTypeClick: (CollectionSpotType) -> Unit,
@@ -61,6 +63,7 @@ fun SpotBottomSheetContent(
     onRegionDetailKeywordClick: (String) -> Unit,
     onRegionDetailBackClick: () -> Unit,
     onLocationNoticeActionClick: (MapLocationNoticeAction) -> Unit,
+    onSearchFailureRetryClick: () -> Unit = {},
     onOperationNoticeDismiss: (String) -> Unit = {},
     onSpotClick: (CollectionSpot) -> Unit,
     onSpotFavoriteClick: (CollectionSpot) -> Unit,
@@ -68,6 +71,7 @@ fun SpotBottomSheetContent(
     bottomContentPadding: Dp = 0.dp,
 ) {
     val hasNoticeOrError = locationNotice != null ||
+        searchFailure != null ||
         errorMessageResId != null
     val isSelectingRegion = regionDetailSearchCandidate != null ||
         regionSearchCandidates.isNotEmpty()
@@ -77,7 +81,7 @@ fun SpotBottomSheetContent(
         !hasNoticeOrError &&
         !isSelectingRegion
     val shouldShowCompactSearchFailure = operationNotice != null &&
-        errorMessageResId != null &&
+        (searchFailure != null || errorMessageResId != null) &&
         !isLoading &&
         !isSelectingRegion
 
@@ -98,12 +102,24 @@ fun SpotBottomSheetContent(
         }
 
         if (shouldShowCompactSearchFailure) {
-            Text(
-                text = stringResource(R.string.map_operation_notice_search_failure_hint),
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.map_operation_notice_search_failure_hint),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (searchFailure?.canRetry == true) {
+                    FilledTonalButton(onClick = onSearchFailureRetryClick) {
+                        Text(text = stringResource(R.string.retry_action))
+                    }
+                }
+            }
         }
 
         if (shouldShowPartialWarning) {
@@ -172,8 +188,27 @@ fun SpotBottomSheetContent(
                 )
             }
 
-            errorMessageResId != null && operationNotice != null -> {
+            (searchFailure != null || errorMessageResId != null) && operationNotice != null -> {
                 Box(modifier = Modifier.weight(1f))
+            }
+
+            searchFailure != null -> {
+                EmptySpotResult(
+                    title = stringResource(searchFailure.titleResId),
+                    description = stringResource(searchFailure.messageResId),
+                    actionLabel = if (searchFailure.canRetry) {
+                        stringResource(R.string.retry_action)
+                    } else {
+                        null
+                    },
+                    onActionClick = if (searchFailure.canRetry) {
+                        onSearchFailureRetryClick
+                    } else {
+                        null
+                    },
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             errorMessageResId != null -> {

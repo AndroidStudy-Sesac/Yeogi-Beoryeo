@@ -1,6 +1,8 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,9 +13,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.naver.maps.geometry.LatLng
@@ -25,14 +25,17 @@ import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
+import com.naver.maps.map.compose.MarkerDefaults
 import com.naver.maps.map.compose.MarkerState
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberCameraPositionState
+import com.naver.maps.map.overlay.OverlayImage
+import com.naver.maps.map.util.MarkerIcons
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.presentation.map.location.rememberMapLocationSource
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
@@ -49,9 +52,13 @@ fun CollectionSpotNaverMap(
     modifier: Modifier = Modifier,
     naverLogoBottomPadding: Dp = NaverLogoDefaultBottomPadding,
 ) {
-    val defaultMarkerColor = MaterialTheme.colorScheme.primary
-    val selectedMarkerColor = MaterialTheme.colorScheme.tertiary
-    val defaultMarkerColorArgb = defaultMarkerColor.toArgb()
+    val isDarkTheme = isSystemInDarkTheme()
+    val lightDefaultMarkerColor = MaterialTheme.colorScheme.primary
+    val lightSelectedMarkerColor = MaterialTheme.colorScheme.tertiary
+    val defaultMarkerStyle = CollectionSpotMarkerStylePolicy.defaultStyle(
+        isDarkTheme = isDarkTheme,
+        lightColor = lightDefaultMarkerColor,
+    )
     val markerRenderState = remember(spots, selectedSpot) {
         buildCollectionSpotMarkerRenderState(
             spots = spots,
@@ -179,7 +186,7 @@ fun CollectionSpotNaverMap(
         if (markerRenderState.useClustering) {
             CollectionSpotClusterOverlay(
                 spots = markerRenderState.clusterMarkerSpots,
-                markerColor = defaultMarkerColorArgb,
+                markerStyle = defaultMarkerStyle,
                 onSpotClick = { spot ->
                     currentOnSpotClick(spot)
                 },
@@ -200,6 +207,12 @@ fun CollectionSpotNaverMap(
         markerRenderState.composeMarkerSpots.forEach { spot ->
             val coordinate = spot.coordinate ?: return@forEach
             val isSelected = selectedSpot?.id == spot.id
+            val markerStyle = CollectionSpotMarkerStylePolicy.style(
+                isSelected = isSelected,
+                isDarkTheme = isDarkTheme,
+                lightDefaultColor = lightDefaultMarkerColor,
+                lightSelectedColor = lightSelectedMarkerColor,
+            )
 
             Marker(
                 state = MarkerState(
@@ -208,17 +221,13 @@ fun CollectionSpotNaverMap(
                         coordinate.longitude,
                     ),
                 ),
+                icon = markerStyle.icon.toOverlayImage(),
                 captionText = spot.name,
-                iconTintColor = if (isSelected) {
-                    selectedMarkerColor
-                } else {
-                    defaultMarkerColor
-                },
-                zIndex = if (isSelected) {
-                    SELECTED_MARKER_Z_INDEX
-                } else {
-                    DEFAULT_MARKER_Z_INDEX
-                },
+                iconTintColor = markerStyle.color,
+                width = markerStyle.width ?: MarkerDefaults.SizeAuto,
+                height = markerStyle.height ?: MarkerDefaults.SizeAuto,
+                isForceShowIcon = markerStyle.isForceShowIcon,
+                zIndex = markerStyle.zIndex,
                 onClick = {
                     onSpotClick(spot)
                     true
@@ -239,8 +248,12 @@ private const val SELECTED_SPOT_ZOOM = 16.0
 private const val SEARCH_RESULT_BOUNDS_PADDING = 120
 private const val PROGRAMMATIC_CAMERA_MOVE_GUARD_FRAMES = 3
 
-private const val DEFAULT_MARKER_Z_INDEX = 0
-private const val SELECTED_MARKER_Z_INDEX = 10
+internal fun CollectionSpotMarkerIcon.toOverlayImage(): OverlayImage =
+    when (this) {
+        CollectionSpotMarkerIcon.Default -> MarkerDefaults.Icon
+        CollectionSpotMarkerIcon.Black -> MarkerIcons.BLACK
+    }
+
 private val NaverLogoHorizontalPadding = 12.dp
 private val NaverLogoTopPadding = 16.dp
 private val NaverLogoDefaultBottomPadding = 16.dp

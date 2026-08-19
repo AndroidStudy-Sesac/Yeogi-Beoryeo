@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.map
 
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -75,6 +74,7 @@ class CollectionSpotMapViewModel @Inject constructor(
     private var hasRequestedInitialCurrentLocationSearch = false
     private var currentLocationSearchGeneration = 0
     private var favoriteSpotIds: Set<String> = emptySet()
+    private var lastRetryableSearchRequest: MapSearchRetryRequest? = null
     private val consumedFavoriteSpotMoveRequestIds = mutableSetOf<String>()
     private val favoriteToggleJobs = mutableMapOf<String, Job>()
 
@@ -125,9 +125,15 @@ class CollectionSpotMapViewModel @Inject constructor(
                 },
                 hasSearched = if (shouldCancelSpotSearch) {
                     false
+                } else if (
+                    (it.searchFailure != null || it.errorMessageResId != null) &&
+                    it.spots.isEmpty()
+                ) {
+                    false
                 } else {
                     it.hasSearched
                 },
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = if (shouldCancelSpotSearch) {
@@ -147,6 +153,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 } else {
                     it.searchMode
                 },
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -166,6 +173,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     selectedSpot = null,
                     isLoading = false,
                     hasSearched = false,
+                    searchFailure = null,
                     errorMessageResId = R.string.map_search_blank_keyword_message,
                     partialWarningMessageResId = null,
                     isFilterResultEmpty = false,
@@ -175,6 +183,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     regionDetailSearchCandidate = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.KEYWORD,
+                    shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
                 )
             }
             return
@@ -259,7 +268,47 @@ class CollectionSpotMapViewModel @Inject constructor(
 
     fun onRegionDetailSearchBack() {
         _uiState.update {
-            it.copy(regionDetailSearchCandidate = null)
+            it.copy(
+                regionDetailSearchCandidate = null,
+                searchFailure = null,
+            )
+        }
+    }
+
+    fun onRegionSearchBack() {
+        currentLocationRefreshJob?.cancel()
+        currentLocationLoadingJob?.cancel()
+        cancelSpotSearchJob()
+        originalSpots = emptyList()
+        hasRequestedInitialCurrentLocationSearch = false
+
+        _uiState.update {
+            it.copy(
+                spots = emptyList(),
+                searchKeyword = EMPTY_SEARCH_KEYWORD,
+                regionSearchCandidates = emptyList(),
+                regionDetailSearchCandidate = null,
+                selectedSpot = null,
+                isLoading = false,
+                hasSearched = false,
+                searchFailure = null,
+                errorMessageResId = null,
+                partialWarningMessageResId = null,
+                isFilterResultEmpty = false,
+                searchFocusCoordinate = null,
+                locationNotice = null,
+                isFavoriteSpotNearbyLoading = false,
+                searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = true,
+            )
+        }
+
+        searchByCurrentLocationOnMapEntryIfPermitted()
+    }
+
+    fun clearRegionBackCurrentLocationSheetHidden() {
+        _uiState.update {
+            it.copy(shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false)
         }
     }
 
@@ -272,7 +321,10 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationLoadingJob?.cancel()
         cancelSpotSearchJob()
         _uiState.update {
-            it.copy(searchKeyword = keyword)
+            it.copy(
+                searchKeyword = keyword,
+                searchFailure = null,
+            )
         }
         spotSearchJob = viewModelScope.launch {
             searchByKeywordInternal(
@@ -294,6 +346,11 @@ class CollectionSpotMapViewModel @Inject constructor(
                 "selectedRegion=${selectedRegionCandidate?.displayName ?: NO_SELECTED_REGION}",
         )
         startKeywordSearchLoading()
+        lastRetryableSearchRequest = MapSearchRetryRequest.Keyword(
+            keyword = keyword,
+            selectedRegionCandidate = selectedRegionCandidate,
+            searchKeywordsOverride = searchKeywordsOverride,
+        )
 
         runCatching {
             searchByCandidateKeywords(
@@ -310,7 +367,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             if (throwable is CancellationException) throw throwable
 
             updateSpotFailure(
-                messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
+                failure = MapSearchFailures.fromThrowable(throwable),
             )
         }
     }
@@ -321,6 +378,7 @@ class CollectionSpotMapViewModel @Inject constructor(
             it.copy(
                 isLoading = true,
                 hasSearched = true,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -331,6 +389,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -380,6 +439,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -387,6 +447,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -405,6 +466,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = false,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -412,6 +474,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 locationNotice = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -420,8 +483,13 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationRefreshJob?.cancel()
         cancelSpotSearchJob()
         val searchGeneration = ++currentLocationSearchGeneration
+        lastRetryableSearchRequest = MapSearchRetryRequest.CurrentLocation
         _uiState.update {
-            it.copy(searchKeyword = EMPTY_SEARCH_KEYWORD)
+            it.copy(
+                searchKeyword = EMPTY_SEARCH_KEYWORD,
+                searchFailure = null,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
+            )
         }
         spotSearchJob = viewModelScope.launch {
             if (!locationPermissionChecker.hasFineLocationPermission()) {
@@ -442,6 +510,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         currentLocationRefreshJob?.cancel()
         currentLocationLoadingJob?.cancel()
         cancelSpotSearchJob()
+        lastRetryableSearchRequest = MapSearchRetryRequest.MapCenter(coordinate)
         spotSearchJob = viewModelScope.launch {
             val searchStartedAtNanos = System.nanoTime()
             mapSearchTimingLogger.log(
@@ -453,6 +522,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     isLoading = true,
                     hasSearched = true,
                     searchKeyword = EMPTY_SEARCH_KEYWORD,
+                    searchFailure = null,
                     errorMessageResId = null,
                     partialWarningMessageResId = null,
                     isFilterResultEmpty = false,
@@ -462,6 +532,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     selectedSpot = null,
                     isFavoriteSpotNearbyLoading = false,
                     searchMode = MapSearchMode.MAP_CENTER,
+                    shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
                 )
             }
 
@@ -481,9 +552,37 @@ class CollectionSpotMapViewModel @Inject constructor(
                 if (throwable is CancellationException) throw throwable
 
                 updateSpotFailure(
-                    messageResId = MapLocationNotices.SpotSearchFailureMessageResId,
+                    failure = MapSearchFailures.fromThrowable(throwable),
                 )
             }
+        }
+    }
+
+    fun retrySpotSearch() {
+        if (uiState.value.isLoading || uiState.value.searchFailure == null) return
+
+        when (val request = lastRetryableSearchRequest) {
+            is MapSearchRetryRequest.Keyword -> {
+                currentLocationRefreshJob?.cancel()
+                currentLocationLoadingJob?.cancel()
+                cancelSpotSearchJob()
+                _uiState.update {
+                    it.copy(searchKeyword = request.keyword)
+                }
+                spotSearchJob = viewModelScope.launch {
+                    searchByKeywordInternal(
+                        keyword = request.keyword,
+                        selectedRegionCandidate = request.selectedRegionCandidate,
+                        searchKeywordsOverride = request.searchKeywordsOverride,
+                    )
+                }
+            }
+
+            MapSearchRetryRequest.CurrentLocation -> searchByCurrentLocation()
+
+            is MapSearchRetryRequest.MapCenter -> searchByMapCenter(request.coordinate)
+
+            null -> Unit
         }
     }
 
@@ -522,7 +621,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
             if (!preservePreviousResultOnFailure) {
                 updateSpotFailure(
-                    messageResId = MapLocationNotices.CurrentLocationSpotSearchFailureMessageResId,
+                    failure = MapSearchFailures.fromThrowable(throwable),
                 )
             }
         }
@@ -551,6 +650,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     filteredSpots = filteredSpots,
                     selectedTypes = updatedTypes,
                 ),
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -567,13 +667,17 @@ class CollectionSpotMapViewModel @Inject constructor(
                 spots = filteredSpots,
                 selectedSpot = null,
                 isFilterResultEmpty = false,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
 
     fun onSpotClick(spot: CollectionSpot) {
         _uiState.update {
-            it.copy(selectedSpot = spot)
+            it.copy(
+                selectedSpot = spot,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
+            )
         }
     }
 
@@ -601,6 +705,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     isBookmarked = request.targetId in favoriteSpotIds,
                 ),
                 isLoading = false,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -611,6 +716,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 favoriteSpotMoveRequestId = request.targetId,
                 favoriteSpotMoveRequestSequence = it.favoriteSpotMoveRequestSequence + 1,
                 isFavoriteSpotNearbyLoading = true,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
 
@@ -669,6 +775,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = false,
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -678,6 +785,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -698,6 +806,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = false,
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -707,6 +816,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -741,6 +851,7 @@ class CollectionSpotMapViewModel @Inject constructor(
 
         cancelSpotSearchJob()
         val searchGeneration = ++currentLocationSearchGeneration
+        lastRetryableSearchRequest = MapSearchRetryRequest.CurrentLocation
         spotSearchJob = viewModelScope.launch {
             if (canStartInitialCurrentLocationSearch()) {
                 searchByCurrentLocationInternal(
@@ -771,6 +882,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                     filteredSpots = filteredSpots,
                     selectedTypes = selectedTypes,
                 ),
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -786,6 +898,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = false,
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -795,6 +908,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -810,6 +924,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = false,
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -819,6 +934,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.KEYWORD,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -835,6 +951,10 @@ class CollectionSpotMapViewModel @Inject constructor(
             spots = originalSpots,
             selectedTypes = uiState.value.selectedTypes,
         )
+        val selectedSpotId = uiState.value.selectedSpot?.id
+        val updatedSelectedSpot = selectedSpotId?.let { id ->
+            filteredSpots.firstOrNull { spot -> spot.id == id }
+        }
 
         if (searchStartedAtNanos != null) {
             mapSearchTimingLogger.log(
@@ -846,9 +966,10 @@ class CollectionSpotMapViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 spots = filteredSpots,
-                selectedSpot = null,
+                selectedSpot = updatedSelectedSpot,
                 isLoading = false,
                 hasSearched = true,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = if (result.isPartial) {
                     R.string.map_spot_search_partial_failure_message
@@ -864,6 +985,10 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack =
+                    it.shouldKeepCurrentLocationSheetHiddenAfterRegionBack &&
+                        it.searchMode == MapSearchMode.CURRENT_LOCATION &&
+                        filteredSpots.isNotEmpty(),
             )
         }
         mapSearchTimingLogger.log(
@@ -902,6 +1027,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                         isLoading = false,
                         isFavoriteSpotNearbyLoading = false,
                         hasSearched = true,
+                        searchFailure = null,
                         errorMessageResId = null,
                         partialWarningMessageResId = null,
                         isFilterResultEmpty = isFilterResultEmpty(
@@ -913,6 +1039,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                         regionSearchCandidates = emptyList(),
                         regionDetailSearchCandidate = null,
                         searchMode = MapSearchMode.CURRENT_LOCATION,
+                        shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
                     )
                 }
             }.onFailure { throwable ->
@@ -925,7 +1052,7 @@ class CollectionSpotMapViewModel @Inject constructor(
         }
     }
 
-    private fun updateSpotFailure(@StringRes messageResId: Int) {
+    private fun updateSpotFailure(failure: MapSearchFailure) {
         currentLocationLoadingJob?.cancel()
         originalSpots = emptyList()
 
@@ -935,7 +1062,8 @@ class CollectionSpotMapViewModel @Inject constructor(
                 selectedSpot = null,
                 isLoading = false,
                 hasSearched = true,
-                errorMessageResId = messageResId,
+                searchFailure = failure,
+                errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
                 searchFocusCoordinate = null,
@@ -943,6 +1071,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionSearchCandidates = emptyList(),
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack = false,
             )
         }
     }
@@ -1009,6 +1138,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = true,
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = isFilterResultEmpty(
@@ -1021,6 +1151,9 @@ class CollectionSpotMapViewModel @Inject constructor(
                 regionDetailSearchCandidate = null,
                 isFavoriteSpotNearbyLoading = false,
                 searchMode = MapSearchMode.CURRENT_LOCATION,
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack =
+                    it.shouldKeepCurrentLocationSheetHiddenAfterRegionBack &&
+                        filteredSpots.isNotEmpty(),
             )
         }
     }
@@ -1093,6 +1226,7 @@ class CollectionSpotMapViewModel @Inject constructor(
                 isLoading = false,
                 hasSearched = true,
                 searchKeyword = EMPTY_SEARCH_KEYWORD,
+                searchFailure = null,
                 errorMessageResId = null,
                 partialWarningMessageResId = null,
                 isFilterResultEmpty = false,
@@ -1246,6 +1380,20 @@ class CollectionSpotMapViewModel @Inject constructor(
 
 sealed interface CollectionSpotMapEvent {
     data object FavoriteUpdateFailed : CollectionSpotMapEvent
+}
+
+private sealed interface MapSearchRetryRequest {
+    data class Keyword(
+        val keyword: String,
+        val selectedRegionCandidate: MapRegionSearchCandidate?,
+        val searchKeywordsOverride: List<String>?,
+    ) : MapSearchRetryRequest
+
+    data object CurrentLocation : MapSearchRetryRequest
+
+    data class MapCenter(
+        val coordinate: Coordinate,
+    ) : MapSearchRetryRequest
 }
 
 private fun Long.elapsedMs(): Long =

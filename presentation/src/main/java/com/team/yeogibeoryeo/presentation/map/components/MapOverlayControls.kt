@@ -21,6 +21,7 @@ fun MapOverlayControls(
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
     topPadding: Dp = 0.dp,
+    onSearchFocusChanged: (Boolean) -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -32,6 +33,7 @@ fun MapOverlayControls(
             keyword = keyword,
             onKeywordChanged = onKeywordChanged,
             onSearchClick = onSearchClick,
+            onSearchFocusChanged = onSearchFocusChanged,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)

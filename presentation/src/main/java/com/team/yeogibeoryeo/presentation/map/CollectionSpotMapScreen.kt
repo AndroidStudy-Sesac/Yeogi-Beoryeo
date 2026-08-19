@@ -62,7 +62,6 @@ import com.team.yeogibeoryeo.presentation.map.components.MapOverlayControls
 import com.team.yeogibeoryeo.presentation.map.components.MapResultBottomSheetPeekHeight
 import com.team.yeogibeoryeo.presentation.map.components.MapSearchLoadingOverlay
 import com.team.yeogibeoryeo.presentation.map.components.MapSheetLevel
-import com.team.yeogibeoryeo.presentation.map.components.MapSpotDetailBottomSheetPeekHeight
 import com.team.yeogibeoryeo.presentation.map.components.MyLocationButton
 import com.team.yeogibeoryeo.presentation.map.components.SpotBottomSheetContent
 import com.team.yeogibeoryeo.presentation.map.components.SpotDetailBottomSheetContent
@@ -194,10 +193,14 @@ fun CollectionSpotMapScreen(
             },
             onKeywordChanged = viewModel::onSearchKeywordChanged,
             onSearchClick = viewModel::searchByKeyword,
+            onSearchFailureRetryClick = viewModel::retrySpotSearch,
             onRegionCandidateClick = viewModel::onRegionSearchCandidateClick,
             onRegionDetailAllClick = viewModel::onRegionDetailSearchAllClick,
             onRegionDetailKeywordClick = viewModel::onRegionDetailSearchKeywordClick,
             onRegionDetailBackClick = viewModel::onRegionDetailSearchBack,
+            onRegionSearchBackClick = viewModel::onRegionSearchBack,
+            onRegionBackCurrentLocationSheetHiddenClear =
+                viewModel::clearRegionBackCurrentLocationSheetHidden,
             onCurrentLocationClick = requestCurrentLocationSearch,
             onBlockedCurrentLocationClick = viewModel::onLocationPermissionDenied,
             onMapCenterSearchClick = viewModel::searchByMapCenter,
@@ -252,10 +255,13 @@ private fun CollectionSpotMapContent(
     onLocationTrackingModeChange: (LocationTrackingMode) -> Unit,
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
+    onSearchFailureRetryClick: () -> Unit,
     onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
     onRegionDetailAllClick: () -> Unit,
     onRegionDetailKeywordClick: (String) -> Unit,
     onRegionDetailBackClick: () -> Unit,
+    onRegionSearchBackClick: () -> Unit,
+    onRegionBackCurrentLocationSheetHiddenClear: () -> Unit,
     onCurrentLocationClick: () -> Unit,
     onBlockedCurrentLocationClick: () -> Unit,
     onMapCenterSearchClick: (Coordinate) -> Unit,
@@ -284,6 +290,7 @@ private fun CollectionSpotMapContent(
     var sheetRevealRequest by remember { mutableIntStateOf(0) }
     var mapCenterCoordinate by remember { mutableStateOf<Coordinate?>(null) }
     var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
+    var isSearchFocused by remember { mutableStateOf(false) }
     var currentLocationButtonBounds by remember { mutableStateOf<Rect?>(null) }
     var visibleSheetHeight by remember { mutableStateOf(0.dp) }
     val currentLocationGuideTargetBounds = if (
@@ -308,6 +315,7 @@ private fun CollectionSpotMapContent(
     val hasLocationNotice = uiState.locationNotice != null
     val hasNoticeOrError = hasLocationNotice ||
         hasOperationNotice ||
+        uiState.searchFailure != null ||
         uiState.errorMessageResId != null
     val hasRegionCandidates = uiState.regionSearchCandidates.isNotEmpty()
     val hasRegionDetailSelection = uiState.regionDetailSearchCandidate != null
@@ -337,6 +345,12 @@ private fun CollectionSpotMapContent(
         }
     }
 
+    BackHandler(enabled = hasRegionCandidates && !hasRegionDetailSelection) {
+        onRegionSearchBackClick()
+        mapUiMode = MapUiMode.Browsing
+        sheetLevel = MapSheetLevel.Hidden
+    }
+
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
         val returnState =
@@ -352,7 +366,7 @@ private fun CollectionSpotMapContent(
         enabled = mapUiMode == MapUiMode.ResultList &&
             sheetLevel != MapSheetLevel.Hidden &&
             shouldShowBottomSheet &&
-            !hasRegionDetailSelection,
+            !hasRegionSelection,
     ) {
         mapUiMode = MapUiMode.Browsing
         sheetLevel = MapSheetLevel.Hidden
@@ -369,6 +383,7 @@ private fun CollectionSpotMapContent(
         uiState.isLoading,
         uiState.searchMode,
         uiState.spots,
+        uiState.searchFailure,
         uiState.errorMessageResId,
         uiState.locationNotice,
         operationNotice?.id,
@@ -376,6 +391,8 @@ private fun CollectionSpotMapContent(
         uiState.regionDetailSearchCandidate,
         isCurrentLocationGuideReady,
         showCurrentLocationGuide,
+        isSearchFocused,
+        uiState.shouldKeepCurrentLocationSheetHiddenAfterRegionBack,
     ) {
         if (shouldDeferBottomSheetForGuide) return@LaunchedEffect
         if (
@@ -383,8 +400,17 @@ private fun CollectionSpotMapContent(
                 mapUiMode = mapUiMode,
                 hasOperationNotice = hasOperationNotice,
                 hasLocationNotice = hasLocationNotice,
-                hasError = uiState.errorMessageResId != null,
+                hasError = uiState.searchFailure != null || uiState.errorMessageResId != null,
                 isLoading = uiState.isLoading,
+            )
+        ) {
+            return@LaunchedEffect
+        }
+        if (
+            shouldKeepSearchInputPriority(
+                isSearchFocused = isSearchFocused,
+                mapUiMode = mapUiMode,
+                isSpotSearchLoading = isSpotSearchLoading,
             )
         ) {
             return@LaunchedEffect
@@ -394,6 +420,18 @@ private fun CollectionSpotMapContent(
             hasRegionSelection -> {
                 mapUiMode = MapUiMode.ResultList
                 sheetLevel = MapSheetLevel.Expanded
+            }
+
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack =
+                    uiState.shouldKeepCurrentLocationSheetHiddenAfterRegionBack,
+                mapUiMode = mapUiMode,
+                searchMode = uiState.searchMode,
+                hasNoticeOrError = hasNoticeOrError,
+                hasRegionSelection = hasRegionSelection,
+            ) -> {
+                mapUiMode = MapUiMode.Browsing
+                sheetLevel = MapSheetLevel.Hidden
             }
 
             isSpotSearchLoading -> {
@@ -484,7 +522,7 @@ private fun CollectionSpotMapContent(
             navigationBarBottomPadding,
             safeDrawingBottomPadding,
         )
-        val bottomSheetMaxExpandedHeight = bottomSheetMaxExpandedHeight(
+        val bottomSheetMaxExpandedHeight = MapBottomSheetHeightPolicy.maxExpandedHeight(
             mapUiMode = mapUiMode,
             hasRegionSelection = hasRegionSelection,
             hasStateMessageContent = hasStateMessageContent,
@@ -495,7 +533,7 @@ private fun CollectionSpotMapContent(
             canNavigateBackToRegionCandidates = hasRegionCandidates,
             fontScale = density.fontScale,
         )
-        val bottomSheetMediumVisibleHeight = bottomSheetMediumVisibleHeight(
+        val bottomSheetMediumVisibleHeight = MapBottomSheetHeightPolicy.mediumVisibleHeight(
             hasStateMessageContent = hasStateMessageContent,
             maxHeight = maxHeight,
             bottomContentPadding = bottomContentPadding,
@@ -542,6 +580,7 @@ private fun CollectionSpotMapContent(
                     onSpotClick(spot)
                 },
                 onMapClick = {
+                    onRegionBackCurrentLocationSheetHiddenClear()
                     onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                     when (mapUiMode) {
                         MapUiMode.Browsing -> {
@@ -577,11 +616,25 @@ private fun CollectionSpotMapContent(
                     keyword = uiState.searchKeyword,
                     onKeywordChanged = onKeywordChanged,
                     onSearchClick = {
+                        onRegionBackCurrentLocationSheetHiddenClear()
                         onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                         shouldShowMapCenterSearchButton = false
                         mapUiMode = MapUiMode.ResultList
                         sheetLevel = MapSheetLevel.Peek
                         onSearchClick()
+                    },
+                    onSearchFocusChanged = { isFocused ->
+                        isSearchFocused = isFocused
+                        if (isFocused) {
+                            onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                            shouldShowMapCenterSearchButton = false
+                            val returnState = mapSearchFocusReturnState(
+                                mapUiMode = mapUiMode,
+                                sheetLevel = sheetLevel,
+                            )
+                            mapUiMode = returnState.mapUiMode
+                            sheetLevel = returnState.sheetLevel
+                        }
                     },
                     topPadding = searchBarTopPadding,
                 )
@@ -596,6 +649,7 @@ private fun CollectionSpotMapContent(
                 MapCenterSearchButton(
                     onClick = {
                         val coordinate = mapCenterCoordinate ?: return@MapCenterSearchButton
+                        onRegionBackCurrentLocationSheetHiddenClear()
                         shouldShowMapCenterSearchButton = false
                         onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                         mapUiMode = MapUiMode.ResultList
@@ -626,6 +680,7 @@ private fun CollectionSpotMapContent(
                     MyLocationButton(
                         isTracking = mapLocationTrackingMode == LocationTrackingMode.Follow,
                         onClick = {
+                            onRegionBackCurrentLocationSheetHiddenClear()
                             if (isLocationPermissionGranted) {
                                 onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                                 shouldShowMapCenterSearchButton = false
@@ -709,6 +764,7 @@ private fun CollectionSpotMapContent(
                                     isLocationPermissionRequestBlocked = isLocationPermissionRequestBlocked,
                                 ),
                                 operationNotice = operationNotice,
+                                searchFailure = uiState.searchFailure,
                                 errorMessageResId = uiState.errorMessageResId,
                                 partialWarningMessageResId = uiState.partialWarningMessageResId,
                                 onTypeClick = onTypeClick,
@@ -718,6 +774,7 @@ private fun CollectionSpotMapContent(
                                 onRegionDetailKeywordClick = onRegionDetailKeywordClick,
                                 onRegionDetailBackClick = onRegionDetailBackClick,
                                 onLocationNoticeActionClick = onLocationNoticeActionClick,
+                                onSearchFailureRetryClick = onSearchFailureRetryClick,
                                 onOperationNoticeDismiss = onOperationNoticeDismiss,
                                 onSpotFavoriteClick = onSpotFavoriteClick,
                                 onSpotClick = { spot ->
@@ -750,6 +807,7 @@ private fun CollectionSpotMapContent(
 private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
     get() = isLoading ||
         locationNotice != null ||
+        searchFailure != null ||
         errorMessageResId != null ||
         regionSearchCandidates.isNotEmpty() ||
         regionDetailSearchCandidate != null ||
@@ -775,6 +833,28 @@ internal fun shouldKeepSpotDetailOnOperationNotice(
         !hasLocationNotice &&
         !hasError &&
         !isLoading
+
+internal fun shouldKeepSearchInputPriority(
+    isSearchFocused: Boolean,
+    mapUiMode: MapUiMode,
+    isSpotSearchLoading: Boolean,
+): Boolean =
+    isSearchFocused &&
+        mapUiMode != MapUiMode.SpotDetail &&
+        !isSpotSearchLoading
+
+internal fun shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+    shouldKeepCurrentLocationSheetHiddenAfterRegionBack: Boolean,
+    mapUiMode: MapUiMode,
+    searchMode: MapSearchMode,
+    hasNoticeOrError: Boolean,
+    hasRegionSelection: Boolean,
+): Boolean =
+    shouldKeepCurrentLocationSheetHiddenAfterRegionBack &&
+        mapUiMode != MapUiMode.SpotDetail &&
+        searchMode == MapSearchMode.CURRENT_LOCATION &&
+        !hasNoticeOrError &&
+        !hasRegionSelection
 
 internal data class MapDetailReturnState(
     val mapUiMode: MapUiMode,
@@ -803,112 +883,23 @@ internal fun mapDetailCloseReturnState(
             )
     }
 
-private fun bottomSheetMaxExpandedHeight(
+internal fun mapSearchFocusReturnState(
     mapUiMode: MapUiMode,
-    hasRegionSelection: Boolean,
-    hasStateMessageContent: Boolean,
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    regionCandidateCount: Int,
-    regionDetailCandidate: MapRegionSearchCandidate?,
-    canNavigateBackToRegionCandidates: Boolean,
-    fontScale: Float,
-): Dp? {
-    return when {
-        mapUiMode == MapUiMode.SpotDetail -> null
-        hasRegionSelection -> regionSelectionContentFitHeight(
-            maxHeight = maxHeight,
-            bottomContentPadding = bottomContentPadding,
-            candidateCount = regionCandidateCount,
-            detailCandidate = regionDetailCandidate,
-            canNavigateBackToRegionCandidates = canNavigateBackToRegionCandidates,
-            fontScale = fontScale,
+    sheetLevel: MapSheetLevel,
+): MapDetailReturnState =
+    when (mapUiMode) {
+        MapUiMode.SpotDetail -> MapDetailReturnState(
+            mapUiMode = mapUiMode,
+            sheetLevel = sheetLevel,
         )
-        hasStateMessageContent -> stateMessageContentFitHeight(
-            maxHeight = maxHeight,
-            bottomContentPadding = bottomContentPadding,
-            fontScale = fontScale,
+
+        MapUiMode.Browsing,
+        MapUiMode.ResultList,
+        -> MapDetailReturnState(
+            mapUiMode = MapUiMode.Browsing,
+            sheetLevel = MapSheetLevel.Hidden,
         )
-        else -> null
     }
-}
-
-private fun regionSelectionContentFitHeight(
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    candidateCount: Int,
-    detailCandidate: MapRegionSearchCandidate?,
-    canNavigateBackToRegionCandidates: Boolean,
-    fontScale: Float,
-): Dp {
-    val heightScale = fontScale.coerceIn(1f, MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE)
-    val contentHeight = if (detailCandidate == null) {
-        MapBottomSheetHeaderEstimatedHeight +
-            MapRegionSelectionDescriptionEstimatedHeight * heightScale +
-            MapRegionSelectionRowEstimatedHeight * candidateCount.toFloat() * heightScale +
-            bottomContentPadding +
-            MapRegionSelectionBottomExtraPadding
-    } else {
-        val detailKeywordCount = detailCandidate.searchKeywords
-            .filterNot { keyword -> keyword == detailCandidate.searchKeyword }
-            .distinct()
-            .size
-        val backButtonHeight = if (canNavigateBackToRegionCandidates) {
-            MapRegionDetailBackButtonEstimatedHeight
-        } else {
-            0.dp
-        }
-
-        MapBottomSheetHeaderEstimatedHeight +
-            backButtonHeight * heightScale +
-            MapRegionDetailDescriptionEstimatedHeight * heightScale +
-            MapRegionSelectionRowEstimatedHeight * detailKeywordCount.toFloat() * heightScale +
-            MapRegionDetailAllRowEstimatedHeight * heightScale +
-            bottomContentPadding +
-            MapRegionSelectionBottomExtraPadding
-    }
-    val maxContentFitHeight = maxHeight * MapRegionSelectionMaxExpandedRatio
-
-    return contentHeight
-        .coerceAtLeast(MapResultBottomSheetPeekHeight)
-        .coerceAtMost(maxContentFitHeight)
-}
-
-private fun stateMessageContentFitHeight(
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    fontScale: Float,
-): Dp {
-    val fontScaleProgress = ((fontScale - 1f) / (MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE - 1f))
-        .coerceIn(0f, 1f)
-    val maxExpandedRatio = MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO +
-        (MAP_STATE_MESSAGE_LARGE_FONT_MAX_EXPANDED_RATIO - MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO) *
-        fontScaleProgress
-    val contentHeight = MapStateMessageBaseExpandedHeight +
-        MapStateMessageLargeFontExtraExpandedHeight * fontScaleProgress +
-        bottomContentPadding
-
-    return contentHeight
-        .coerceAtLeast(MapResultBottomSheetPeekHeight)
-        .coerceAtMost(maxHeight * maxExpandedRatio)
-}
-
-private fun bottomSheetMediumVisibleHeight(
-    hasStateMessageContent: Boolean,
-    maxHeight: Dp,
-    bottomContentPadding: Dp,
-    fontScale: Float,
-): Dp {
-    return if (hasStateMessageContent) {
-        stateMessageContentFitHeight(
-            maxHeight = maxHeight,
-            bottomContentPadding = bottomContentPadding,
-            fontScale = fontScale,
-        )
-    } else {
-        MapSpotDetailBottomSheetPeekHeight
-    }
-}
 
 private fun myLocationButtonBottomPadding(
     sheetLevel: MapSheetLevel,
@@ -981,10 +972,13 @@ private fun CollectionSpotMapContentPreview() {
                 onLocationTrackingModeChange = {},
                 onKeywordChanged = {},
                 onSearchClick = {},
+                onSearchFailureRetryClick = {},
                 onRegionCandidateClick = {},
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},
                 onRegionDetailBackClick = {},
+                onRegionSearchBackClick = {},
+                onRegionBackCurrentLocationSheetHiddenClear = {},
                 onCurrentLocationClick = {},
                 onBlockedCurrentLocationClick = {},
                 onMapCenterSearchClick = {},
@@ -1022,20 +1016,6 @@ private val MapSearchOverlayLogoGap = 8.dp
 private val MapOverlayControlsTopPadding = 2.dp
 private val MapCenterSearchButtonTopPadding = 112.dp
 private val FavoriteSnackbarIconSize = 20.dp
-private const val MapRegionSelectionMaxExpandedRatio = 0.88f
-private val MapBottomSheetHeaderEstimatedHeight = 57.dp
-private val MapRegionSelectionDescriptionEstimatedHeight = 92.dp
-private val MapRegionDetailDescriptionEstimatedHeight = 150.dp
-private val MapRegionDetailBackButtonEstimatedHeight = 60.dp
-private val MapRegionSelectionRowEstimatedHeight = 68.dp
-private val MapRegionDetailAllRowEstimatedHeight = 92.dp
-private val MapRegionSelectionBottomExtraPadding = 24.dp
-private const val MAP_BOTTOM_SHEET_MAX_HEIGHT_FONT_SCALE = 2f
-private const val MAP_STATE_MESSAGE_BASE_MAX_EXPANDED_RATIO = 0.52f
-private const val MAP_STATE_MESSAGE_LARGE_FONT_MAX_EXPANDED_RATIO = 0.72f
-private val MapStateMessageBaseExpandedHeight = 360.dp
-private val MapStateMessageLargeFontExtraExpandedHeight = 160.dp
-
 private fun MapLocationNoticeAction.toIntent(packageName: String): Intent {
     return when (this) {
         MapLocationNoticeAction.RequestLocationPermission -> error(
