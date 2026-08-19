@@ -290,6 +290,7 @@ private fun CollectionSpotMapContent(
     var sheetRevealRequest by remember { mutableIntStateOf(0) }
     var mapCenterCoordinate by remember { mutableStateOf<Coordinate?>(null) }
     var shouldShowMapCenterSearchButton by remember { mutableStateOf(false) }
+    var isSearchFocused by remember { mutableStateOf(false) }
     var currentLocationButtonBounds by remember { mutableStateOf<Rect?>(null) }
     var visibleSheetHeight by remember { mutableStateOf(0.dp) }
     val currentLocationGuideTargetBounds = if (
@@ -390,6 +391,7 @@ private fun CollectionSpotMapContent(
         uiState.regionDetailSearchCandidate,
         isCurrentLocationGuideReady,
         showCurrentLocationGuide,
+        isSearchFocused,
         uiState.shouldKeepCurrentLocationSheetHiddenAfterRegionBack,
     ) {
         if (shouldDeferBottomSheetForGuide) return@LaunchedEffect
@@ -400,6 +402,15 @@ private fun CollectionSpotMapContent(
                 hasLocationNotice = hasLocationNotice,
                 hasError = uiState.searchFailure != null || uiState.errorMessageResId != null,
                 isLoading = uiState.isLoading,
+            )
+        ) {
+            return@LaunchedEffect
+        }
+        if (
+            shouldKeepSearchInputPriority(
+                isSearchFocused = isSearchFocused,
+                mapUiMode = mapUiMode,
+                isSpotSearchLoading = isSpotSearchLoading,
             )
         ) {
             return@LaunchedEffect
@@ -612,6 +623,19 @@ private fun CollectionSpotMapContent(
                         sheetLevel = MapSheetLevel.Peek
                         onSearchClick()
                     },
+                    onSearchFocusChanged = { isFocused ->
+                        isSearchFocused = isFocused
+                        if (isFocused) {
+                            onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
+                            shouldShowMapCenterSearchButton = false
+                            val returnState = mapSearchFocusReturnState(
+                                mapUiMode = mapUiMode,
+                                sheetLevel = sheetLevel,
+                            )
+                            mapUiMode = returnState.mapUiMode
+                            sheetLevel = returnState.sheetLevel
+                        }
+                    },
                     topPadding = searchBarTopPadding,
                 )
             }
@@ -810,6 +834,15 @@ internal fun shouldKeepSpotDetailOnOperationNotice(
         !hasError &&
         !isLoading
 
+internal fun shouldKeepSearchInputPriority(
+    isSearchFocused: Boolean,
+    mapUiMode: MapUiMode,
+    isSpotSearchLoading: Boolean,
+): Boolean =
+    isSearchFocused &&
+        mapUiMode != MapUiMode.SpotDetail &&
+        !isSpotSearchLoading
+
 internal fun shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
     shouldKeepCurrentLocationSheetHiddenAfterRegionBack: Boolean,
     mapUiMode: MapUiMode,
@@ -848,6 +881,24 @@ internal fun mapDetailCloseReturnState(
                 mapUiMode = MapUiMode.Browsing,
                 sheetLevel = MapSheetLevel.Hidden,
             )
+    }
+
+internal fun mapSearchFocusReturnState(
+    mapUiMode: MapUiMode,
+    sheetLevel: MapSheetLevel,
+): MapDetailReturnState =
+    when (mapUiMode) {
+        MapUiMode.SpotDetail -> MapDetailReturnState(
+            mapUiMode = mapUiMode,
+            sheetLevel = sheetLevel,
+        )
+
+        MapUiMode.Browsing,
+        MapUiMode.ResultList,
+        -> MapDetailReturnState(
+            mapUiMode = MapUiMode.Browsing,
+            sheetLevel = MapSheetLevel.Hidden,
+        )
     }
 
 private fun myLocationButtonBottomPadding(

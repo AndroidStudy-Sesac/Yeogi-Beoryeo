@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -43,6 +44,7 @@ fun SearchBarField(
     minHeight: Dp = SearchBarFieldDefaults.minHeight,
     searchEnabled: (String) -> Boolean = { it.isNotBlank() },
     label: String? = null,
+    onFocusChanged: (Boolean) -> Unit = {},
 ) {
     val hasCandidates = candidateContent != null
     val searchFieldInteractionSource = remember { MutableInteractionSource() }
@@ -71,6 +73,9 @@ fun SearchBarField(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = minHeight)
+                .onFocusChanged { focusState ->
+                    onFocusChanged(focusState.isFocused)
+                }
                 .onPreviewKeyEvent { event ->
                     if (event.type == KeyEventType.KeyUp && event.key == Key.Enter) {
                         submitSearch()

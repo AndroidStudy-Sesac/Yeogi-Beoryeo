@@ -73,3 +73,6 @@ val SurfaceContainerLowDark = Color(0xFF1A1C19)
 val SurfaceContainerDark = Color(0xFF1E211D)
 val SurfaceContainerHighDark = Color(0xFF292B27)
 val SurfaceContainerHighestDark = Color(0xFF343632)
+
+val MapMarkerDefaultDark = Color(0xFF00796B)
+val MapMarkerSelectedDark = Color(0xFFE65100)

@@ -1194,6 +1194,32 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `키워드 검색 실패 후 검색어를 수정하면 실패 검색 완료 상태를 초기화한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                keywordSearchThrowable = UnknownHostException("apis.data.go.kr"),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("용답동")
+            viewModel.searchByKeyword()
+
+            assertEquals(true, viewModel.uiState.value.hasSearched)
+            assertEquals(MapSearchFailureReason.Network, viewModel.uiState.value.searchFailure?.reason)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+
+            viewModel.onSearchKeywordChanged("용답동1")
+
+            assertEquals("용답동1", viewModel.uiState.value.searchKeyword)
+            assertEquals(false, viewModel.uiState.value.hasSearched)
+            assertNull(viewModel.uiState.value.searchFailure)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
     fun `검색 요청 성공 후 결과가 0개이면 실패가 아닌 빈 결과 상태를 유지한다`() =
         runTest {
             val repository = FakeCollectionSpotRepository(keywordSpots = emptyList())

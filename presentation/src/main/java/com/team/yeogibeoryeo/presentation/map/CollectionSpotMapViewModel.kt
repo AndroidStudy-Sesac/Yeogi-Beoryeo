@@ -125,6 +125,11 @@ class CollectionSpotMapViewModel @Inject constructor(
                 },
                 hasSearched = if (shouldCancelSpotSearch) {
                     false
+                } else if (
+                    (it.searchFailure != null || it.errorMessageResId != null) &&
+                    it.spots.isEmpty()
+                ) {
+                    false
                 } else {
                     it.hasSearched
                 },
