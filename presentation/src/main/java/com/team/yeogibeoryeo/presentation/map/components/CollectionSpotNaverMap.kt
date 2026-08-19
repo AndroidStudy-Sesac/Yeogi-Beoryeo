@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.naver.maps.geometry.LatLng
@@ -60,7 +59,6 @@ fun CollectionSpotNaverMap(
         isDarkTheme = isDarkTheme,
         lightColor = lightDefaultMarkerColor,
     )
-    val defaultMarkerColorArgb = defaultMarkerStyle.color.toArgb()
     val markerRenderState = remember(spots, selectedSpot) {
         buildCollectionSpotMarkerRenderState(
             spots = spots,
@@ -188,8 +186,7 @@ fun CollectionSpotNaverMap(
         if (markerRenderState.useClustering) {
             CollectionSpotClusterOverlay(
                 spots = markerRenderState.clusterMarkerSpots,
-                markerIcon = defaultMarkerStyle.icon.toOverlayImage(),
-                markerColor = defaultMarkerColorArgb,
+                markerStyle = defaultMarkerStyle,
                 onSpotClick = { spot ->
                     currentOnSpotClick(spot)
                 },
@@ -251,7 +248,7 @@ private const val SELECTED_SPOT_ZOOM = 16.0
 private const val SEARCH_RESULT_BOUNDS_PADDING = 120
 private const val PROGRAMMATIC_CAMERA_MOVE_GUARD_FRAMES = 3
 
-private fun CollectionSpotMarkerIcon.toOverlayImage(): OverlayImage =
+internal fun CollectionSpotMarkerIcon.toOverlayImage(): OverlayImage =
     when (this) {
         CollectionSpotMarkerIcon.Default -> MarkerDefaults.Icon
         CollectionSpotMarkerIcon.Black -> MarkerIcons.BLACK
