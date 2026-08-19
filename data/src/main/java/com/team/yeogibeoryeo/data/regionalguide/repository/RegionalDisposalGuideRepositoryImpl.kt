@@ -6,9 +6,9 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import com.team.yeogibeoryeo.domain.regionalguide.repository.RegionalDisposalGuideRepository
-import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import javax.inject.Inject
 
 /**
  * [RegionalDisposalGuideRepository]의 Data 계층 구현체.
@@ -46,12 +46,15 @@ class RegionalDisposalGuideRepositoryImpl @Inject constructor(
             ?.let { cache -> return@withLock Result.success(cache.items) }
 
         remoteDataSource.fetchRegionalGuides(sigunguQuery)
-            .onSuccess { items ->
-                recentCandidatesCache = CachedRegionalGuideItems(
-                    sigunguQuery = sigunguQuery,
-                    items = items,
-                )
+            .onSuccess { result ->
+                if (!result.isPartial) {
+                    recentCandidatesCache = CachedRegionalGuideItems(
+                        sigunguQuery = sigunguQuery,
+                        items = result.items,
+                    )
+                }
             }
+            .map { result -> result.items }
     }
 
     private data class CachedRegionalGuideItems(
