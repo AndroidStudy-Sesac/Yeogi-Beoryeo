@@ -1249,6 +1249,85 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `현재 위치 검색 실패 후 다시 시도하면 현재 위치 조건으로 재검색한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val expectedSpots = listOf(
+                sampleSpot("current-location-retry", CollectionSpotType.BATTERY_BIN),
+            )
+            var shouldFail = true
+            val repository = FakeCollectionSpotRepository(
+                locationSearchResultProvider = {
+                    if (shouldFail) throw UnknownHostException("apis.data.go.kr")
+                    expectedSpots
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+            )
+
+            viewModel.searchByCurrentLocation()
+            advanceUntilIdle()
+
+            assertEquals(MapSearchFailureReason.Network, viewModel.uiState.value.searchFailure?.reason)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+
+            shouldFail = false
+            viewModel.retrySpotSearch()
+            advanceUntilIdle()
+
+            assertEquals(2, repository.locationSearchCallCount)
+            assertEquals(currentCoordinate, repository.lastLocationCoordinate)
+            assertEquals(expectedSpots.withDistanceFrom(currentCoordinate), viewModel.uiState.value.spots)
+            assertEquals(currentCoordinate, viewModel.uiState.value.searchFocusCoordinate)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, viewModel.uiState.value.searchMode)
+            assertNull(viewModel.uiState.value.searchFailure)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `지도 중심 검색 실패 후 다시 시도하면 마지막 지도 중심 좌표로 재검색한다`() =
+        runTest {
+            val mapCenterCoordinate = Coordinate(latitude = 37.5701, longitude = 127.0012)
+            val expectedSpots = listOf(
+                sampleSpot("map-center-retry", CollectionSpotType.RECYCLING_CENTER),
+            )
+            var shouldFail = true
+            val repository = FakeCollectionSpotRepository(
+                locationSearchResultProvider = {
+                    if (shouldFail) throw SocketTimeoutException("timeout")
+                    expectedSpots
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.searchByMapCenter(mapCenterCoordinate)
+            advanceUntilIdle()
+
+            assertEquals(
+                MapSearchFailureReason.ExternalService,
+                viewModel.uiState.value.searchFailure?.reason,
+            )
+            assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
+
+            shouldFail = false
+            viewModel.retrySpotSearch()
+            advanceUntilIdle()
+
+            assertEquals(2, repository.locationSearchCallCount)
+            assertEquals(mapCenterCoordinate, repository.lastLocationCoordinate)
+            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertEquals(mapCenterCoordinate, viewModel.uiState.value.searchFocusCoordinate)
+            assertEquals(MapSearchMode.MAP_CENTER, viewModel.uiState.value.searchMode)
+            assertNull(viewModel.uiState.value.searchFailure)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
     fun `키워드 검색이 일부 실패하면 조회된 결과와 일부 실패 안내를 함께 표시한다`() =
         runTest {
             val expectedSpots = listOf(sampleSpot("partial", CollectionSpotType.BATTERY_BIN))
