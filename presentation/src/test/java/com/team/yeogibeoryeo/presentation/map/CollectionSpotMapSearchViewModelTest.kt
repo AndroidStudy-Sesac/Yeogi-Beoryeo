@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -489,6 +490,291 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
                 viewModel.uiState.value.regionSearchCandidates.map { it.displayName },
             )
             assertEquals(emptyList<String>(), repository.keywords)
+        }
+
+    @Test
+    fun `지역 후보 목록에서 뒤로가면 검색어를 비우고 기본 위치 안내 상태로 돌아간다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+                legalDongKeywords = mapOf(
+                    "서울특별시|중구|명동|명동" to listOf("명동1가", "명동2가"),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionDetailSearchBack()
+            viewModel.onRegionSearchBack()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("", state.searchKeyword)
+            assertEquals(emptyList<MapRegionSearchCandidate>(), state.regionSearchCandidates)
+            assertNull(state.regionDetailSearchCandidate)
+            assertEquals(emptyList<CollectionSpot>(), state.spots)
+            assertFalse(state.isLoading)
+            assertFalse(state.hasSearched)
+            assertNull(state.errorMessageResId)
+            assertEquals(MapLocationNotices.CurrentLocationUnavailable, state.locationNotice)
+            assertEquals(emptyList<String>(), repository.keywords)
+        }
+
+    @Test
+    fun `지역 후보 목록에서 뒤로가면 지도 진입 현재 위치 검색을 다시 실행한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(locationSpot),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.searchByCurrentLocationOnMapEntryIfPermitted()
+            advanceUntilIdle()
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionSearchBack()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("", state.searchKeyword)
+            assertEquals(emptyList<MapRegionSearchCandidate>(), state.regionSearchCandidates)
+            assertNull(state.regionDetailSearchCandidate)
+            assertEquals(listOf(locationSpot).withDistanceFrom(currentCoordinate), state.spots)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, state.searchMode)
+            assertTrue(state.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+            assertEquals(2, repository.locationSearchCallCount)
+        }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 현재 위치 응답 대기 중에는 숨김 상태를 유지한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val currentLocationResult = CompletableDeferred<CurrentLocationResult>()
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(locationSpot),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationProvider = FakeCurrentLocationProvider {
+                    currentLocationResult.await()
+                },
+                hasFineLocationPermission = true,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionSearchBack()
+            runCurrent()
+
+            val waitingState = viewModel.uiState.value
+            assertEquals("", waitingState.searchKeyword)
+            assertEquals(emptyList<CollectionSpot>(), waitingState.spots)
+            assertTrue(waitingState.hasSearched)
+            assertFalse(waitingState.isLoading)
+            assertFalse(waitingState.isFilterResultEmpty)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, waitingState.searchMode)
+            assertTrue(waitingState.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+
+            currentLocationResult.complete(CurrentLocationResult.Found(currentCoordinate))
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(listOf(locationSpot).withDistanceFrom(currentCoordinate), state.spots)
+            assertTrue(state.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+        }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 현재 위치 필터 결과가 없으면 빈 결과 노출을 허용한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(locationSpot),
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSpotTypeClick(CollectionSpotType.BATTERY_BIN)
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionSearchBack()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(emptyList<CollectionSpot>(), state.spots)
+            assertTrue(state.hasSearched)
+            assertTrue(state.isFilterResultEmpty)
+            assertEquals(MapSearchMode.CURRENT_LOCATION, state.searchMode)
+            assertFalse(state.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+        }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 마커 상세에서 즐겨찾기를 눌러도 상세 선택을 유지한다`() =
+        runTest {
+            val currentCoordinate = Coordinate(latitude = 37.5666102, longitude = 126.9783881)
+            val locationSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+            val repository = FakeCollectionSpotRepository(
+                locationSpots = listOf(locationSpot),
+            )
+            val favoriteRepository = FakeFavoriteRepository()
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(currentCoordinate),
+                hasFineLocationPermission = true,
+                favoriteRepository = favoriteRepository,
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionSearchBack()
+            advanceUntilIdle()
+
+            val spot = viewModel.uiState.value.spots.first()
+            assertTrue(viewModel.uiState.value.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+
+            viewModel.onSpotClick(spot)
+            assertFalse(viewModel.uiState.value.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+
+            viewModel.onSpotFavoriteClick(spot)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(spot.id, state.selectedSpot?.id)
+            assertTrue(state.selectedSpot?.isBookmarked == true)
+            assertFalse(state.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+        }
+
+    @Test
+    fun `지역 후보 뒤로가기 후 지연된 현재 위치 갱신 중 마커를 선택해도 상세 선택을 유지한다`() =
+        runTest {
+            val cachedSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(name = "캐시 수거 장소")
+            val refreshedSpot = sampleSpot("location", CollectionSpotType.STANDARD_BAG_STORE)
+                .copy(name = "갱신된 수거 장소")
+            val refreshResult = CompletableDeferred<List<CollectionSpot>>()
+            val repository = FakeCollectionSpotRepository(
+                locationSearchResultProvider = {
+                    refreshResult.await()
+                },
+            )
+            val regionOptionsRepository = FakeMapRegionOptionsRepository(
+                eupmyeondongCandidates = mapOf(
+                    "명동" to listOf(
+                        Region(sido = "서울특별시", sigungu = "중구", eupmyeondong = "명동"),
+                        Region(sido = "충청북도", sigungu = "제천시", eupmyeondong = "명동"),
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.Found(DEFAULT_CURRENT_COORDINATE),
+                hasFineLocationPermission = true,
+                recentCurrentLocationSpotCacheRepository = FakeRecentCurrentLocationSpotCacheRepository(
+                    entry = freshCacheEntry(listOf(cachedSpot)),
+                ),
+                regionOptionsRepository = regionOptionsRepository,
+            )
+
+            viewModel.onSearchKeywordChanged("명동")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            val candidate = viewModel.uiState.value.regionSearchCandidates.first()
+            viewModel.onRegionSearchCandidateClick(candidate)
+            viewModel.onRegionSearchBack()
+            runCurrent()
+
+            val cachedResultSpot = viewModel.uiState.value.spots.first()
+            assertEquals(cachedSpot.name, cachedResultSpot.name)
+            assertTrue(viewModel.uiState.value.shouldKeepCurrentLocationSheetHiddenAfterRegionBack)
+
+            viewModel.onSpotClick(cachedResultSpot)
+            assertEquals(cachedSpot.name, viewModel.uiState.value.selectedSpot?.name)
+
+            refreshResult.complete(listOf(refreshedSpot))
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(refreshedSpot.name, state.spots.first().name)
+            assertEquals(refreshedSpot.id, state.selectedSpot?.id)
+            assertEquals(refreshedSpot.name, state.selectedSpot?.name)
         }
 
     @Test

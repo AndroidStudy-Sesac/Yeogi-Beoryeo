@@ -197,6 +197,9 @@ fun CollectionSpotMapScreen(
             onRegionDetailAllClick = viewModel::onRegionDetailSearchAllClick,
             onRegionDetailKeywordClick = viewModel::onRegionDetailSearchKeywordClick,
             onRegionDetailBackClick = viewModel::onRegionDetailSearchBack,
+            onRegionSearchBackClick = viewModel::onRegionSearchBack,
+            onRegionBackCurrentLocationSheetHiddenClear =
+                viewModel::clearRegionBackCurrentLocationSheetHidden,
             onCurrentLocationClick = requestCurrentLocationSearch,
             onBlockedCurrentLocationClick = viewModel::onLocationPermissionDenied,
             onMapCenterSearchClick = viewModel::searchByMapCenter,
@@ -255,6 +258,8 @@ private fun CollectionSpotMapContent(
     onRegionDetailAllClick: () -> Unit,
     onRegionDetailKeywordClick: (String) -> Unit,
     onRegionDetailBackClick: () -> Unit,
+    onRegionSearchBackClick: () -> Unit,
+    onRegionBackCurrentLocationSheetHiddenClear: () -> Unit,
     onCurrentLocationClick: () -> Unit,
     onBlockedCurrentLocationClick: () -> Unit,
     onMapCenterSearchClick: (Coordinate) -> Unit,
@@ -336,6 +341,12 @@ private fun CollectionSpotMapContent(
         }
     }
 
+    BackHandler(enabled = hasRegionCandidates && !hasRegionDetailSelection) {
+        onRegionSearchBackClick()
+        mapUiMode = MapUiMode.Browsing
+        sheetLevel = MapSheetLevel.Hidden
+    }
+
     BackHandler(enabled = mapUiMode == MapUiMode.SpotDetail && selectedSpot != null) {
         onSpotDetailDismiss()
         val returnState =
@@ -351,7 +362,7 @@ private fun CollectionSpotMapContent(
         enabled = mapUiMode == MapUiMode.ResultList &&
             sheetLevel != MapSheetLevel.Hidden &&
             shouldShowBottomSheet &&
-            !hasRegionDetailSelection,
+            !hasRegionSelection,
     ) {
         mapUiMode = MapUiMode.Browsing
         sheetLevel = MapSheetLevel.Hidden
@@ -375,6 +386,7 @@ private fun CollectionSpotMapContent(
         uiState.regionDetailSearchCandidate,
         isCurrentLocationGuideReady,
         showCurrentLocationGuide,
+        uiState.shouldKeepCurrentLocationSheetHiddenAfterRegionBack,
     ) {
         if (shouldDeferBottomSheetForGuide) return@LaunchedEffect
         if (
@@ -393,6 +405,18 @@ private fun CollectionSpotMapContent(
             hasRegionSelection -> {
                 mapUiMode = MapUiMode.ResultList
                 sheetLevel = MapSheetLevel.Expanded
+            }
+
+            shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+                shouldKeepCurrentLocationSheetHiddenAfterRegionBack =
+                    uiState.shouldKeepCurrentLocationSheetHiddenAfterRegionBack,
+                mapUiMode = mapUiMode,
+                searchMode = uiState.searchMode,
+                hasNoticeOrError = hasNoticeOrError,
+                hasRegionSelection = hasRegionSelection,
+            ) -> {
+                mapUiMode = MapUiMode.Browsing
+                sheetLevel = MapSheetLevel.Hidden
             }
 
             isSpotSearchLoading -> {
@@ -541,6 +565,7 @@ private fun CollectionSpotMapContent(
                     onSpotClick(spot)
                 },
                 onMapClick = {
+                    onRegionBackCurrentLocationSheetHiddenClear()
                     onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                     when (mapUiMode) {
                         MapUiMode.Browsing -> {
@@ -576,6 +601,7 @@ private fun CollectionSpotMapContent(
                     keyword = uiState.searchKeyword,
                     onKeywordChanged = onKeywordChanged,
                     onSearchClick = {
+                        onRegionBackCurrentLocationSheetHiddenClear()
                         onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                         shouldShowMapCenterSearchButton = false
                         mapUiMode = MapUiMode.ResultList
@@ -595,6 +621,7 @@ private fun CollectionSpotMapContent(
                 MapCenterSearchButton(
                     onClick = {
                         val coordinate = mapCenterCoordinate ?: return@MapCenterSearchButton
+                        onRegionBackCurrentLocationSheetHiddenClear()
                         shouldShowMapCenterSearchButton = false
                         onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                         mapUiMode = MapUiMode.ResultList
@@ -625,6 +652,7 @@ private fun CollectionSpotMapContent(
                     MyLocationButton(
                         isTracking = mapLocationTrackingMode == LocationTrackingMode.Follow,
                         onClick = {
+                            onRegionBackCurrentLocationSheetHiddenClear()
                             if (isLocationPermissionGranted) {
                                 onLocationTrackingModeChange(LocationTrackingMode.NoFollow)
                                 shouldShowMapCenterSearchButton = false
@@ -775,6 +803,19 @@ internal fun shouldKeepSpotDetailOnOperationNotice(
         !hasError &&
         !isLoading
 
+internal fun shouldKeepCurrentLocationSheetHiddenAfterRegionBack(
+    shouldKeepCurrentLocationSheetHiddenAfterRegionBack: Boolean,
+    mapUiMode: MapUiMode,
+    searchMode: MapSearchMode,
+    hasNoticeOrError: Boolean,
+    hasRegionSelection: Boolean,
+): Boolean =
+    shouldKeepCurrentLocationSheetHiddenAfterRegionBack &&
+        mapUiMode != MapUiMode.SpotDetail &&
+        searchMode == MapSearchMode.CURRENT_LOCATION &&
+        !hasNoticeOrError &&
+        !hasRegionSelection
+
 internal data class MapDetailReturnState(
     val mapUiMode: MapUiMode,
     val sheetLevel: MapSheetLevel,
@@ -877,6 +918,8 @@ private fun CollectionSpotMapContentPreview() {
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},
                 onRegionDetailBackClick = {},
+                onRegionSearchBackClick = {},
+                onRegionBackCurrentLocationSheetHiddenClear = {},
                 onCurrentLocationClick = {},
                 onBlockedCurrentLocationClick = {},
                 onMapCenterSearchClick = {},
