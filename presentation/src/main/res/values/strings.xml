@@ -435,6 +435,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.]]></string>
     <string name="map_search_loading_current_location">현재 위치 주변을 찾고 있어요</string>
     <string name="map_search_loading_map_center">현 지도 주변을 찾고 있어요</string>
     <string name="map_search_blank_keyword_message">검색어를 입력해주세요.</string>
+    <string name="map_search_network_failure_title">인터넷 연결을 확인해 주세요.</string>
+    <string name="map_search_network_failure_message">네트워크 연결이 불안정해 검색 결과를 불러오지 못했습니다.</string>
+    <string name="map_search_external_service_failure_title">현재 검색 결과를 불러올 수 없습니다.</string>
+    <string name="map_search_external_service_failure_message">공공데이터 서비스가 일시적으로 불안정할 수 있어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="map_search_unknown_failure_title">검색 결과를 불러오지 못했습니다.</string>
+    <string name="map_search_unknown_failure_message">원인을 확인하기 어려운 오류가 발생했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="map_spot_search_failure_message">잠시 후 다시 시도하거나 네트워크 연결을 확인해 주세요.</string>
     <string name="map_spot_search_partial_failure_message">일부 결과를 불러오지 못했어요. 다시 검색해 주세요.</string>
     <string name="map_operation_notice_search_failure_hint">검색 결과를 불러오지 못했습니다. 공지 내용을 확인한 뒤 잠시 후 다시 시도해 주세요.</string>
@@ -449,7 +455,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.]]></string>
     <string name="map_region_detail_all_description">결과가 많아 오래 걸릴 수 있어요.</string>
     <string name="map_region_detail_back_to_candidates">지역 목록으로</string>
     <string name="map_empty_spot_result_title">검색 결과가 없습니다.</string>
-    <string name="map_empty_spot_result_description">동/읍/면 이름으로 다시 검색해 주세요.\n예: 문래동, 역삼동</string>
+    <string name="map_empty_spot_result_description">동/읍/면 단위로 다시 검색해 주세요.\n예: 명동, 양평읍</string>
     <string name="map_filter_empty_spot_result_current_location_title">현재 위치 주변에서 %1$s 결과를 찾지 못했어요.</string>
     <string name="map_filter_empty_spot_result_map_center_title">현 지도 주변에서 %1$s 결과를 찾지 못했어요.</string>
     <string name="map_filter_empty_spot_result_keyword_title">검색한 지역 주변에서 %1$s 결과를 찾지 못했어요.</string>

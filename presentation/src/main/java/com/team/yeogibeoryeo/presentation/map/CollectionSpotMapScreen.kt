@@ -193,6 +193,7 @@ fun CollectionSpotMapScreen(
             },
             onKeywordChanged = viewModel::onSearchKeywordChanged,
             onSearchClick = viewModel::searchByKeyword,
+            onSearchFailureRetryClick = viewModel::retrySpotSearch,
             onRegionCandidateClick = viewModel::onRegionSearchCandidateClick,
             onRegionDetailAllClick = viewModel::onRegionDetailSearchAllClick,
             onRegionDetailKeywordClick = viewModel::onRegionDetailSearchKeywordClick,
@@ -254,6 +255,7 @@ private fun CollectionSpotMapContent(
     onLocationTrackingModeChange: (LocationTrackingMode) -> Unit,
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
+    onSearchFailureRetryClick: () -> Unit,
     onRegionCandidateClick: (MapRegionSearchCandidate) -> Unit,
     onRegionDetailAllClick: () -> Unit,
     onRegionDetailKeywordClick: (String) -> Unit,
@@ -312,6 +314,7 @@ private fun CollectionSpotMapContent(
     val hasLocationNotice = uiState.locationNotice != null
     val hasNoticeOrError = hasLocationNotice ||
         hasOperationNotice ||
+        uiState.searchFailure != null ||
         uiState.errorMessageResId != null
     val hasRegionCandidates = uiState.regionSearchCandidates.isNotEmpty()
     val hasRegionDetailSelection = uiState.regionDetailSearchCandidate != null
@@ -379,6 +382,7 @@ private fun CollectionSpotMapContent(
         uiState.isLoading,
         uiState.searchMode,
         uiState.spots,
+        uiState.searchFailure,
         uiState.errorMessageResId,
         uiState.locationNotice,
         operationNotice?.id,
@@ -394,7 +398,7 @@ private fun CollectionSpotMapContent(
                 mapUiMode = mapUiMode,
                 hasOperationNotice = hasOperationNotice,
                 hasLocationNotice = hasLocationNotice,
-                hasError = uiState.errorMessageResId != null,
+                hasError = uiState.searchFailure != null || uiState.errorMessageResId != null,
                 isLoading = uiState.isLoading,
             )
         ) {
@@ -736,6 +740,7 @@ private fun CollectionSpotMapContent(
                                     isLocationPermissionRequestBlocked = isLocationPermissionRequestBlocked,
                                 ),
                                 operationNotice = operationNotice,
+                                searchFailure = uiState.searchFailure,
                                 errorMessageResId = uiState.errorMessageResId,
                                 partialWarningMessageResId = uiState.partialWarningMessageResId,
                                 onTypeClick = onTypeClick,
@@ -745,6 +750,7 @@ private fun CollectionSpotMapContent(
                                 onRegionDetailKeywordClick = onRegionDetailKeywordClick,
                                 onRegionDetailBackClick = onRegionDetailBackClick,
                                 onLocationNoticeActionClick = onLocationNoticeActionClick,
+                                onSearchFailureRetryClick = onSearchFailureRetryClick,
                                 onOperationNoticeDismiss = onOperationNoticeDismiss,
                                 onSpotFavoriteClick = onSpotFavoriteClick,
                                 onSpotClick = { spot ->
@@ -777,6 +783,7 @@ private fun CollectionSpotMapContent(
 private val CollectionSpotMapUiState.shouldShowBottomSheet: Boolean
     get() = isLoading ||
         locationNotice != null ||
+        searchFailure != null ||
         errorMessageResId != null ||
         regionSearchCandidates.isNotEmpty() ||
         regionDetailSearchCandidate != null ||
@@ -914,6 +921,7 @@ private fun CollectionSpotMapContentPreview() {
                 onLocationTrackingModeChange = {},
                 onKeywordChanged = {},
                 onSearchClick = {},
+                onSearchFailureRetryClick = {},
                 onRegionCandidateClick = {},
                 onRegionDetailAllClick = {},
                 onRegionDetailKeywordClick = {},

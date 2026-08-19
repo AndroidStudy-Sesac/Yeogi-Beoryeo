@@ -2,11 +2,14 @@ package com.team.yeogibeoryeo.presentation.map
 
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotSearchResult
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import com.team.yeogibeoryeo.domain.spot.model.MapRegionSearchCandidate
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.location.CurrentLocationResult
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -1140,12 +1143,10 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
-    fun `키워드 검색 실패 시 원문 예외 대신 안내 문구를 표시한다`() =
+    fun `키워드 검색 네트워크 실패 시 원문 예외 대신 네트워크 안내 상태를 표시한다`() =
         runTest {
             val repository = FakeCollectionSpotRepository(
-                keywordSearchThrowable = IllegalStateException(
-                    "Unable to resolve host \"apis.data.go.kr\": No address associated with hostname",
-                ),
+                keywordSearchThrowable = UnknownHostException("apis.data.go.kr"),
             )
             val viewModel = createViewModel(
                 repository = repository,
@@ -1158,11 +1159,93 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
             assertEquals(listOf("용답동"), repository.keywords)
             assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
             assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(MapSearchFailureReason.Network, viewModel.uiState.value.searchFailure?.reason)
             assertEquals(
-                MapLocationNotices.SpotSearchFailureMessageResId,
-                viewModel.uiState.value.errorMessageResId,
+                R.string.map_search_network_failure_message,
+                viewModel.uiState.value.searchFailure?.messageResId,
             )
+            assertNull(viewModel.uiState.value.errorMessageResId)
             assertNull(viewModel.uiState.value.locationNotice)
+        }
+
+    @Test
+    fun `키워드 검색 API 실패 시 외부 서비스 안내 상태를 표시한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                keywordSearchThrowable = IllegalStateException("수거 장소 API 오류(99): SERVICE ERROR"),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("용답동")
+            viewModel.searchByKeyword()
+
+            assertEquals(
+                MapSearchFailureReason.ExternalService,
+                viewModel.uiState.value.searchFailure?.reason,
+            )
+            assertEquals(
+                R.string.map_search_external_service_failure_message,
+                viewModel.uiState.value.searchFailure?.messageResId,
+            )
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 요청 성공 후 결과가 0개이면 실패가 아닌 빈 결과 상태를 유지한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(keywordSpots = emptyList())
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("마포구")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(listOf("마포구"), repository.keywords)
+            assertTrue(viewModel.uiState.value.hasSearched)
+            assertEquals(emptyList<CollectionSpot>(), viewModel.uiState.value.spots)
+            assertNull(viewModel.uiState.value.searchFailure)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 실패 후 다시 시도하면 마지막 키워드 조건으로 재검색한다`() =
+        runTest {
+            val expectedSpots = listOf(sampleSpot("retry", CollectionSpotType.RECYCLING_CENTER))
+            var shouldFail = true
+            val repository = FakeCollectionSpotRepository(
+                keywordSearchResultProvider = {
+                    if (shouldFail) throw SocketTimeoutException("timeout")
+                    CollectionSpotSearchResult(spots = expectedSpots)
+                },
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("양평읍")
+            viewModel.searchByKeyword()
+            advanceUntilIdle()
+
+            assertEquals(
+                MapSearchFailureReason.ExternalService,
+                viewModel.uiState.value.searchFailure?.reason,
+            )
+
+            shouldFail = false
+            viewModel.retrySpotSearch()
+            advanceUntilIdle()
+
+            assertEquals(listOf("양평읍", "양평읍"), repository.keywords)
+            assertEquals(expectedSpots, viewModel.uiState.value.spots)
+            assertNull(viewModel.uiState.value.searchFailure)
+            assertNull(viewModel.uiState.value.errorMessageResId)
         }
 
     @Test

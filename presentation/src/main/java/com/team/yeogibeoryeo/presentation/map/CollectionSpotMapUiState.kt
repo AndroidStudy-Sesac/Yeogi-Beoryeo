@@ -16,6 +16,7 @@ data class CollectionSpotMapUiState(
     val selectedTypes: Set<CollectionSpotType> = emptySet(),
     val searchFocusCoordinate: Coordinate? = null,
     val isLoading: Boolean = false,
+    val searchFailure: MapSearchFailure? = null,
     @param:StringRes val errorMessageResId: Int? = null,
     @param:StringRes val partialWarningMessageResId: Int? = null,
     val hasSearched: Boolean = false,
