@@ -6,8 +6,14 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuidePartialResul
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -16,12 +22,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
 class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     var mockResult: Result<RegionalGuideFetchResult> = Result.success(RegionalGuideFetchResult(emptyList()))
     var delayMillis: Long = 0L
+    var throwable: Throwable? = null
     var calledSigunguName: String? = null
     val calledSigunguNames = mutableListOf<String>()
     val fetchStartedSignals = mutableMapOf<String, CompletableDeferred<Unit>>()
@@ -33,6 +41,7 @@ class FakeRegionalGuideDataSource : RegionalGuideDataSource {
         fetchStartedSignals[sigunguName]?.complete(Unit)
         responseGates[sigunguName]?.await()
         if (delayMillis > 0) delay(delayMillis)
+        throwable?.let { throwable -> throw throwable }
         return mockResult
     }
 }
@@ -40,12 +49,19 @@ class FakeRegionalGuideDataSource : RegionalGuideDataSource {
 class RegionalDisposalGuideRepositoryImplTest {
 
     private lateinit var fakeDataSource: FakeRegionalGuideDataSource
+    private lateinit var fetchScope: CoroutineScope
     private lateinit var repository: RegionalDisposalGuideRepositoryImpl
 
     @Before
     fun setUp() {
         fakeDataSource = FakeRegionalGuideDataSource()
-        repository = RegionalDisposalGuideRepositoryImpl(fakeDataSource)
+        fetchScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        repository = RegionalDisposalGuideRepositoryImpl(fakeDataSource, fetchScope)
+    }
+
+    @After
+    fun tearDown() {
+        fetchScope.cancel()
     }
 
     @Test
@@ -259,20 +275,39 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
-    fun `취소된 조회 키는 진행 중 요청에서 제거해 다음 요청을 새로 시작한다`() = runBlocking {
+    fun `첫 조회가 취소돼도 같은 조회 키를 기다리던 요청은 성공한다`() = runBlocking {
         val sigunguQuery = "김천시"
         fakeDataSource.fetchStartedSignals[sigunguQuery] = CompletableDeferred()
         fakeDataSource.responseGates[sigunguQuery] = CompletableDeferred()
 
-        val cancelledRequest = launch {
+        val firstRequest = launch(start = UNDISPATCHED) {
             repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery))
         }
         fakeDataSource.fetchStartedSignals.getValue(sigunguQuery).await()
 
-        cancelledRequest.cancelAndJoin()
-        fakeDataSource.responseGates.remove(sigunguQuery)
+        val waitingRequest = async(start = UNDISPATCHED) {
+            repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery))
+        }
+        firstRequest.cancelAndJoin()
+        fakeDataSource.responseGates.getValue(sigunguQuery).complete(Unit)
+
+        assertTrue(waitingRequest.await().isSuccess)
+        assertEquals(listOf(sigunguQuery), fakeDataSource.calledSigunguNames)
+    }
+
+    @Test
+    fun `취소된 원격 조회 키는 진행 중 요청에서 제거해 다음 요청을 새로 시작한다`() = runBlocking {
+        val sigunguQuery = "김천시"
+        fakeDataSource.throwable = CancellationException()
+
+        val cancellation = runCatching {
+            repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery))
+        }.exceptionOrNull()
+
+        fakeDataSource.throwable = null
         fakeDataSource.mockResult = Result.success(RegionalGuideFetchResult(emptyList()))
 
+        assertTrue(cancellation is CancellationException)
         assertTrue(repository.getRegionalDisposalGuideCandidates(regionalGuideQuery(sigunguQuery)).isSuccess)
         assertEquals(listOf(sigunguQuery, sigunguQuery), fakeDataSource.calledSigunguNames)
     }
