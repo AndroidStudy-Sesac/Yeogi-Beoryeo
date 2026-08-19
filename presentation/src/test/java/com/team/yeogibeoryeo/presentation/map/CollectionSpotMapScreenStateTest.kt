@@ -99,6 +99,26 @@ class CollectionSpotMapScreenStateTest {
     }
 
     @Test
+    fun `오류 안내에서 검색창 포커스 후 검색어를 수정해도 입력 우선 상태를 유지한다`() {
+        val returnState =
+            mapSearchFocusReturnState(
+                mapUiMode = MapUiMode.ResultList,
+                sheetLevel = MapSheetLevel.Expanded,
+            )
+
+        val shouldKeepInputPriority =
+            shouldKeepSearchInputPriority(
+                isSearchFocused = true,
+                mapUiMode = returnState.mapUiMode,
+                isSpotSearchLoading = false,
+            )
+
+        assertEquals(MapUiMode.Browsing, returnState.mapUiMode)
+        assertEquals(MapSheetLevel.Hidden, returnState.sheetLevel)
+        assertTrue(shouldKeepInputPriority)
+    }
+
+    @Test
     fun `검색창 포커스는 장소 상세 상태를 변경하지 않는다`() {
         val returnState =
             mapSearchFocusReturnState(

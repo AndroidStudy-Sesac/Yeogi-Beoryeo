@@ -880,6 +880,35 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `키워드 검색 실패 후 검색어를 수정하면 실패 검색 완료 상태를 초기화한다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                keywordSearchThrowable = IllegalStateException(
+                    "Unable to resolve host \"apis.data.go.kr\": No address associated with hostname",
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("용답동")
+            viewModel.searchByKeyword()
+
+            assertEquals(true, viewModel.uiState.value.hasSearched)
+            assertEquals(
+                MapLocationNotices.SpotSearchFailureMessageResId,
+                viewModel.uiState.value.errorMessageResId,
+            )
+
+            viewModel.onSearchKeywordChanged("용답동1")
+
+            assertEquals("용답동1", viewModel.uiState.value.searchKeyword)
+            assertEquals(false, viewModel.uiState.value.hasSearched)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
     fun `키워드 검색이 일부 실패하면 조회된 결과와 일부 실패 안내를 함께 표시한다`() =
         runTest {
             val expectedSpots = listOf(sampleSpot("partial", CollectionSpotType.BATTERY_BIN))

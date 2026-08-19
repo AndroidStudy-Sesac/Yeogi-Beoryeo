@@ -26,7 +26,7 @@ fun MapSearchBar(
     onKeywordChanged: (String) -> Unit,
     onSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onSearchFocus: () -> Unit = {},
+    onSearchFocusChanged: (Boolean) -> Unit = {},
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -45,8 +45,8 @@ fun MapSearchBar(
             submitSearch()
         },
         onFocusChanged = { isFocused ->
+            onSearchFocusChanged(isFocused)
             if (isFocused) {
-                onSearchFocus()
                 keyboardController?.show()
             }
         },
