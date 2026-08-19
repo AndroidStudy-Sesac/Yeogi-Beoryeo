@@ -1194,6 +1194,33 @@ class CollectionSpotMapSearchViewModelTest : CollectionSpotMapViewModelTestFixtu
         }
 
     @Test
+    fun `키워드 검색 API 서비스 키 오류는 외부 서비스 일시 장애로 분류하지 않는다`() =
+        runTest {
+            val repository = FakeCollectionSpotRepository(
+                keywordSearchThrowable = IllegalStateException(
+                    "수거 장소 API 오류(30): SERVICE_KEY_IS_NOT_REGISTERED_ERROR",
+                ),
+            )
+            val viewModel = createViewModel(
+                repository = repository,
+                currentLocationResult = CurrentLocationResult.NotFound,
+            )
+
+            viewModel.onSearchKeywordChanged("용답동")
+            viewModel.searchByKeyword()
+
+            assertEquals(
+                MapSearchFailureReason.Unknown,
+                viewModel.uiState.value.searchFailure?.reason,
+            )
+            assertEquals(
+                R.string.map_search_unknown_failure_message,
+                viewModel.uiState.value.searchFailure?.messageResId,
+            )
+            assertNull(viewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
     fun `키워드 검색 실패 후 검색어를 수정하면 실패 검색 완료 상태를 초기화한다`() =
         runTest {
             val repository = FakeCollectionSpotRepository(

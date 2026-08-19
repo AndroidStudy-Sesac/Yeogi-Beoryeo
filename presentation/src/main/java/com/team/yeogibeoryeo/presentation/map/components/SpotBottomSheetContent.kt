@@ -102,12 +102,24 @@ fun SpotBottomSheetContent(
         }
 
         if (shouldShowCompactSearchFailure) {
-            Text(
-                text = stringResource(R.string.map_operation_notice_search_failure_hint),
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.map_operation_notice_search_failure_hint),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (searchFailure?.canRetry == true) {
+                    FilledTonalButton(onClick = onSearchFailureRetryClick) {
+                        Text(text = stringResource(R.string.retry_action))
+                    }
+                }
+            }
         }
 
         if (shouldShowPartialWarning) {

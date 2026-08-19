@@ -60,7 +60,7 @@ private fun Throwable.toSearchFailureReason(): MapSearchFailureReason {
         hasCauseBySimpleName("HttpException") ||
         hasMessageContaining("timeout") ||
         hasMessageContaining("timed out") ||
-        hasMessageContaining("수거 장소 API 오류")
+        hasPublicDataTemporaryServiceError()
     ) {
         return MapSearchFailureReason.ExternalService
     }
@@ -77,6 +77,13 @@ private fun Throwable.hasCauseBySimpleName(simpleName: String): Boolean =
 private fun Throwable.hasMessageContaining(text: String): Boolean =
     causeChain().any { throwable ->
         throwable.message?.contains(text, ignoreCase = true) == true
+    }
+
+private fun Throwable.hasPublicDataTemporaryServiceError(): Boolean =
+    causeChain().any { throwable ->
+        val message = throwable.message.orEmpty()
+        message.contains("수거 장소 API 오류", ignoreCase = true) &&
+            message.contains("SERVICE ERROR", ignoreCase = true)
     }
 
 private fun Throwable.causeChain(): Sequence<Throwable> =
