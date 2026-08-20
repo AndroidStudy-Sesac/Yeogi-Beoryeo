@@ -17,7 +17,11 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.ADMINISTRATIVE_CODE_URL
 import com.team.yeogibeoryeo.presentation.common.DISPOSAL_API_URL
 import com.team.yeogibeoryeo.presentation.common.DISPOSAL_PORTAL_URL
+import com.team.yeogibeoryeo.presentation.common.PAPER_CUP_NOODLE_CONTAINER_URL
+import com.team.yeogibeoryeo.presentation.common.PAPER_RECYCLING_GUIDE_URL
+import com.team.yeogibeoryeo.presentation.common.RECYCLABLES_DISPOSAL_GUIDE_URL
 import com.team.yeogibeoryeo.presentation.common.REGIONAL_WASTE_API_URL
+import com.team.yeogibeoryeo.presentation.common.REGIONAL_WASTE_FILE_DATA_URL
 import com.team.yeogibeoryeo.presentation.settings.components.SettingsDetailContent
 import com.team.yeogibeoryeo.presentation.settings.components.SettingsInfoRow
 import com.team.yeogibeoryeo.presentation.settings.components.SettingsSection
@@ -47,8 +51,20 @@ internal fun SourcesDetail(
             onClick = { onOpenSourceClick(DISPOSAL_PORTAL_URL) },
         )
         SourceLinkButton(
+            label = stringResource(R.string.settings_source_paper_cup_noodle_container_link),
+            onClick = { onOpenSourceClick(PAPER_CUP_NOODLE_CONTAINER_URL) },
+        )
+        SourceLinkButton(
             label = stringResource(R.string.settings_source_disposal_api_link),
             onClick = { onOpenSourceClick(DISPOSAL_API_URL) },
+        )
+        SourceLinkButton(
+            label = stringResource(R.string.settings_source_paper_recycling_guide_link),
+            onClick = { onOpenSourceClick(PAPER_RECYCLING_GUIDE_URL) },
+        )
+        SourceLinkButton(
+            label = stringResource(R.string.settings_source_recyclables_disposal_guide_link),
+            onClick = { onOpenSourceClick(RECYCLABLES_DISPOSAL_GUIDE_URL) },
         )
         SettingsInfoRow(
             label = stringResource(R.string.settings_source_interior_ministry_title),
@@ -57,6 +73,10 @@ internal fun SourcesDetail(
         SourceLinkButton(
             label = stringResource(R.string.settings_source_regional_waste_api_link),
             onClick = { onOpenSourceClick(REGIONAL_WASTE_API_URL) },
+        )
+        SourceLinkButton(
+            label = stringResource(R.string.settings_source_regional_waste_file_data_link),
+            onClick = { onOpenSourceClick(REGIONAL_WASTE_FILE_DATA_URL) },
         )
         SourceLinkButton(
             label = stringResource(R.string.settings_source_administrative_code_link),

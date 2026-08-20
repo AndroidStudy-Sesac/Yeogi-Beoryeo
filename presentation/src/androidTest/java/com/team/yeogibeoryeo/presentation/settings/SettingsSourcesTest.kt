@@ -12,7 +12,11 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.ADMINISTRATIVE_CODE_URL
 import com.team.yeogibeoryeo.presentation.common.DISPOSAL_API_URL
 import com.team.yeogibeoryeo.presentation.common.DISPOSAL_PORTAL_URL
+import com.team.yeogibeoryeo.presentation.common.PAPER_CUP_NOODLE_CONTAINER_URL
+import com.team.yeogibeoryeo.presentation.common.PAPER_RECYCLING_GUIDE_URL
+import com.team.yeogibeoryeo.presentation.common.RECYCLABLES_DISPOSAL_GUIDE_URL
 import com.team.yeogibeoryeo.presentation.common.REGIONAL_WASTE_API_URL
+import com.team.yeogibeoryeo.presentation.common.REGIONAL_WASTE_FILE_DATA_URL
 import com.team.yeogibeoryeo.presentation.settings.detail.SourcesDetail
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -42,8 +46,12 @@ class SettingsSourcesTest {
         var openedUrl: String? = null
         val sources = listOf(
             R.string.settings_source_disposal_portal_link to DISPOSAL_PORTAL_URL,
+            R.string.settings_source_paper_cup_noodle_container_link to PAPER_CUP_NOODLE_CONTAINER_URL,
             R.string.settings_source_disposal_api_link to DISPOSAL_API_URL,
+            R.string.settings_source_paper_recycling_guide_link to PAPER_RECYCLING_GUIDE_URL,
+            R.string.settings_source_recyclables_disposal_guide_link to RECYCLABLES_DISPOSAL_GUIDE_URL,
             R.string.settings_source_regional_waste_api_link to REGIONAL_WASTE_API_URL,
+            R.string.settings_source_regional_waste_file_data_link to REGIONAL_WASTE_FILE_DATA_URL,
             R.string.settings_source_administrative_code_link to ADMINISTRATIVE_CODE_URL,
         )
 
