@@ -13,3 +13,6 @@ internal const val REGIONAL_WASTE_FILE_DATA_URL = "https://www.data.go.kr/data/1
 internal const val ADMINISTRATIVE_CODE_URL =
     "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardArticle.do" +
         "?bbsId=BBSMSTR_000000000052&nttId=127039"
+
+const val E_WASTE_FREE_PICKUP_GUIDE_URL = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
+const val RESOURCE_PICKUP_LOCATION_URL = "https://www.re.or.kr/info/listPickupPage.do"

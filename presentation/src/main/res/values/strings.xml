@@ -291,6 +291,14 @@
     <string name="settings_source_administrative_code_link">행정기관 및 관할구역 코드 자료 열기</string>
     <string name="settings_sources_usage_title">이용 안내</string>
     <string name="settings_sources_usage_description">원본 데이터의 출처와 기준일을 함께 표시합니다.\n가공 데이터는 앱 사용 목적에 맞게 편집한 정보입니다.\n앱에서 제공하는 정보는 정부 기관의 공식 판단이나 개별 지방자치단체의 최종 배출 지침을 대신하지 않습니다.\n분리배출 기준과 행정구역 정보는 정책 변경에 따라 달라질 수 있습니다.\n실제 배출 전 해당 정부 기관 또는 지방자치단체의 최신 안내를 확인해 주세요.\n자세한 출처와 이용조건은 공개 GitHub 저장소의 DATA_SOURCES.md에서 확인할 수 있습니다.</string>
+    <string name="settings_sources_reference_title">기타 공식 안내 및 참고 출처</string>
+    <string name="settings_sources_reference_description">정부·공공데이터 정보 출처와 별도로, 앱의 일부 안내 근거 또는 공식 참고 경로로 사용하는 자료입니다.</string>
+    <string name="settings_source_ecycle_title">E-순환거버넌스 폐가전 무상방문수거</string>
+    <string name="settings_source_ecycle_description">폐가전 무상방문수거, 단일·다량 수거 기준, 중소형 폐가전 5개 이상 배출 안내의 실제 참고 자료입니다.</string>
+    <string name="settings_source_ecycle_link">폐가전 무상방문수거 이용안내 열기</string>
+    <string name="settings_source_resource_pickup_title">한국환경공단 순환자원정보센터 수거회수처</string>
+    <string name="settings_source_resource_pickup_description">폐가전·폐휴대폰 등 수거회수처 확인을 위한 공공기관 공식 참고 경로입니다. 앱의 로컬 데이터 생성 원본은 아닙니다.</string>
+    <string name="settings_source_resource_pickup_link">순환자원정보센터 수거회수처 열기</string>
     <string name="settings_naver_map_title">NAVER 지도</string>
     <string name="settings_naver_map_usage_description">수거 장소 지도에는 NAVER 지도 Android SDK를 사용합니다. SDK의 법적 고지와 오픈소스 라이선스는 아래 메뉴에서 확인할 수 있습니다.</string>
     <string name="settings_naver_map_legal_notice_action">NAVER 지도 법적 고지</string>

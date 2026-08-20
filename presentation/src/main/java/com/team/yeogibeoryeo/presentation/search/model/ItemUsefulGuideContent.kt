@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.DISPOSAL_PORTAL_URL
 import com.team.yeogibeoryeo.presentation.common.REGIONAL_GUIDE_LINKS_URL
+import com.team.yeogibeoryeo.presentation.common.RESOURCE_PICKUP_LOCATION_URL
 
 data class ItemUsefulGuideContent(
     val type: ItemUsefulGuideType,
@@ -38,7 +39,7 @@ val itemUsefulGuideContents: List<ItemUsefulGuideContent> =
                 ),
                 ItemUsefulGuideSite(
                     labelResId = R.string.item_useful_guide_site_pickup_locations,
-                    url = ResourcePickupUrl,
+                    url = RESOURCE_PICKUP_LOCATION_URL,
                 ),
             ),
         ),
@@ -111,4 +112,3 @@ private const val RegionalMapUrl = "https://xn--oy2b29bd3a601b.kr/front/region/l
 private const val FaqUrl = "https://xn--oy2b29bd3a601b.kr/front/bbsList.do?bbsId=BBS_0002"
 private const val DisposalGuidelinesUrl =
     "https://xn--oy2b29bd3a601b.kr/front/bbsList.do?bbsId=BBS_0003"
-private const val ResourcePickupUrl = "https://www.re.or.kr/info/listPickupPage.do"

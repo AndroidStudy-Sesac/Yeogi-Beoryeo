@@ -56,6 +56,7 @@ import com.team.yeogibeoryeo.appguide.AppGuideStep
 import com.team.yeogibeoryeo.appguide.AppGuideViewModel
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
+import com.team.yeogibeoryeo.presentation.common.E_WASTE_FREE_PICKUP_GUIDE_URL
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
@@ -418,7 +419,7 @@ fun YeogiBeoryeoNavHost(
                         onBackClick = navController::popBackStack,
                         onSmallEWasteClick = ctaPreconditionState::requestMap,
                         onFreePickupGuideClick = {
-                            ctaPreconditionState.requestExternalUrl(FREE_PICKUP_GUIDE_URL)
+                            ctaPreconditionState.requestExternalUrl(E_WASTE_FREE_PICKUP_GUIDE_URL)
                         },
                         onOfficialSiteClick = ctaPreconditionState::requestExternalUrl,
                         onRegionalGuideClick = {
@@ -489,7 +490,6 @@ private const val MAP_BOTTOM_TAB_INDEX = 1
 private const val REGIONAL_GUIDE_BOTTOM_TAB_INDEX = 2
 private const val FAVORITES_BOTTOM_TAB_INDEX = 3
 
-private const val FREE_PICKUP_GUIDE_URL = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
 private const val PRIVACY_POLICY_URL =
     "https://androidstudy-sesac.github.io/Yeogi-Beoryeo/privacy-policy/"
 

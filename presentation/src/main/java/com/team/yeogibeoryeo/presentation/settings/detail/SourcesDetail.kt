@@ -17,11 +17,13 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.common.ADMINISTRATIVE_CODE_URL
 import com.team.yeogibeoryeo.presentation.common.DISPOSAL_API_URL
 import com.team.yeogibeoryeo.presentation.common.DISPOSAL_PORTAL_URL
+import com.team.yeogibeoryeo.presentation.common.E_WASTE_FREE_PICKUP_GUIDE_URL
 import com.team.yeogibeoryeo.presentation.common.PAPER_CUP_NOODLE_CONTAINER_URL
 import com.team.yeogibeoryeo.presentation.common.PAPER_RECYCLING_GUIDE_URL
 import com.team.yeogibeoryeo.presentation.common.RECYCLABLES_DISPOSAL_GUIDE_URL
 import com.team.yeogibeoryeo.presentation.common.REGIONAL_WASTE_API_URL
 import com.team.yeogibeoryeo.presentation.common.REGIONAL_WASTE_FILE_DATA_URL
+import com.team.yeogibeoryeo.presentation.common.RESOURCE_PICKUP_LOCATION_URL
 import com.team.yeogibeoryeo.presentation.settings.components.SettingsDetailContent
 import com.team.yeogibeoryeo.presentation.settings.components.SettingsInfoRow
 import com.team.yeogibeoryeo.presentation.settings.components.SettingsSection
@@ -85,6 +87,26 @@ internal fun SourcesDetail(
         SettingsSection(
             title = stringResource(R.string.settings_sources_usage_title),
             description = stringResource(R.string.settings_sources_usage_description),
+        )
+        SettingsSection(
+            title = stringResource(R.string.settings_sources_reference_title),
+            description = stringResource(R.string.settings_sources_reference_description),
+        )
+        SettingsInfoRow(
+            label = stringResource(R.string.settings_source_ecycle_title),
+            value = stringResource(R.string.settings_source_ecycle_description),
+        )
+        SourceLinkButton(
+            label = stringResource(R.string.settings_source_ecycle_link),
+            onClick = { onOpenSourceClick(E_WASTE_FREE_PICKUP_GUIDE_URL) },
+        )
+        SettingsInfoRow(
+            label = stringResource(R.string.settings_source_resource_pickup_title),
+            value = stringResource(R.string.settings_source_resource_pickup_description),
+        )
+        SourceLinkButton(
+            label = stringResource(R.string.settings_source_resource_pickup_link),
+            onClick = { onOpenSourceClick(RESOURCE_PICKUP_LOCATION_URL) },
         )
         SettingsSection(
             title = stringResource(R.string.settings_naver_map_title),
