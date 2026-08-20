@@ -41,6 +41,56 @@ class SettingsSourcesTest {
     }
 
     @Test
+    fun 출처_화면에_정부_공공데이터_출처와_이용_안내가_표시된다() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dataTitle = context.getString(R.string.settings_sources_data_title)
+        val usageDescription = context.getString(R.string.settings_sources_usage_description)
+
+        setSourcesContent()
+
+        composeTestRule
+            .onNodeWithText(dataTitle)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText(usageDescription)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun 출처_화면의_정책_고지와_데이터_기준일이_정해진_내용을_포함한다() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dataTitle = context.getString(R.string.settings_sources_data_title)
+        val usageDescription = context.getString(R.string.settings_sources_usage_description)
+        val climateMinistryDescription =
+            context.getString(R.string.settings_source_climate_ministry_description)
+        val interiorMinistryDescription =
+            context.getString(R.string.settings_source_interior_ministry_description)
+
+        assertEquals("정부·공공데이터 정보 출처", dataTitle)
+        assertTrue(
+            usageDescription.contains(
+                "정부 기관의 공식 판단이나 개별 지방자치단체의 최종 배출 지침을 대신하지 않습니다.",
+            ),
+        )
+        assertTrue(
+            usageDescription.contains(
+                "실제 배출 전 해당 정부 기관 또는 지방자치단체의 최신 안내를 확인해 주세요.",
+            ),
+        )
+        assertTrue(climateMinistryDescription.contains("전체 확인: 2026-05-31"))
+        assertTrue(climateMinistryDescription.contains("최근 부분 확인: 2026-08-13"))
+        assertTrue(climateMinistryDescription.contains("이용조건 확인일\n2026-07-13"))
+        assertTrue(
+            interiorMinistryDescription.contains(
+                "파일데이터 기반 제공 가능 지역 메타데이터: 2026-07-16 기준",
+            ),
+        )
+        assertTrue(interiorMinistryDescription.contains("지역별 배출 정보: API 조회 시점, 일간 업데이트"))
+    }
+
+    @Test
     fun 공식_출처_버튼은_해당_URL을_전달한다() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         var openedUrl: String? = null
