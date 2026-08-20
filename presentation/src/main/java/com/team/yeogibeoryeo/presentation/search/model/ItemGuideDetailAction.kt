@@ -6,6 +6,7 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.common.E_WASTE_FREE_PICKUP_GUIDE_URL
 
 sealed interface ItemGuideDetailAction {
     @get:StringRes
@@ -134,7 +135,7 @@ fun DisposalItemGuide.toDetailActions(): List<ItemGuideDetailAction> {
 
     if (RelatedSpotType.FREE_PICKUP in relatedTypes || detailText.contains("무상방문수거서비스")) {
         actions += ItemGuideDetailAction.OfficialGuide(
-            url = FREE_PICKUP_GUIDE_URL,
+            url = E_WASTE_FREE_PICKUP_GUIDE_URL,
             labelResId = R.string.item_guide_action_free_pickup,
             descriptionResId = R.string.item_guide_action_free_pickup_description,
         )
@@ -192,4 +193,3 @@ private fun String.compact(): String = replace(" ", "")
 private const val MOBILE_PHONE_ITEM_NAME = "핸드폰"
 private const val ELECTRONICS_REPRESENTATIVE_NAME = "전기전자제품"
 private const val HAZARDOUS_WASTE_ITEM_NAME = "생활계 유해폐기물"
-private const val FREE_PICKUP_GUIDE_URL = "https://www.15990903.or.kr/portal/cnts/userGuide.do"
