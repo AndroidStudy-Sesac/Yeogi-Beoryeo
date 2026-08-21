@@ -13,7 +13,17 @@
     <img src="https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/actions/workflows/android-ci.yml/badge.svg?branch=develop" alt="Android CI">
   </a>
   <img src="https://img.shields.io/badge/Android-9%2B-3DDC84?logo=android&logoColor=white" alt="Android 9 이상">
-  <img src="https://img.shields.io/badge/Google_Play-Closed_Testing-3DDC84?logo=googleplay&logoColor=white" alt="Google Play 비공개 테스트">
+  <a href="https://play.google.com/store/apps/details?id=com.team.yeogibeoryeo">
+    <img src="https://img.shields.io/badge/Google_Play-정식_출시-3DDC84?logo=googleplay&logoColor=white" alt="Google Play 정식 출시">
+  </a>
+</p>
+
+<p align="center">
+  <strong>
+    <a href="https://play.google.com/store/apps/details?id=com.team.yeogibeoryeo">
+      Google Play에서 여기버려 설치하기
+    </a>
+  </strong>
 </p>
 
 ## 프로젝트 소개
@@ -27,7 +37,7 @@
 
 공공데이터 OpenAPI와 앱에 포함된 가공 데이터를 함께 사용합니다. 정부기관이 제작하거나 운영하는 공식 앱은 아닙니다.
 
-현재 Google Play에서 비공개 테스트를 진행하고 있습니다.
+여기버려는 Google Play에서 정식으로 제공되고 있습니다.
 
 ## 주요 기능
 
