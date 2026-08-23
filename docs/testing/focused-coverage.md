@@ -17,7 +17,7 @@ Focused coverage는 JVM unit test로 검증할 business logic의 현재 상태�
 | Line | 89.92% (5,658/6,292) |
 | Branch | 75.05% (2,452/3,267) |
 | CI 운영 | 현재 수치와 baseline 대비 증감을 정보성 report로 제공 |
-| 상세 report | `focused-coverage-<run-id>-<attempt>` artifact |
+| Coverage artifact | `focused-coverage-<run-id>-<attempt>` |
 
 Baseline은 최초 측정의 covered/total을 참고 기준으로 보존합니다. CI는 현재 수치와 baseline 대비 증감을 표시하며, coverage 수치만으로 check를 실패시키지 않습니다.
 
@@ -66,7 +66,7 @@ ViewModel, mapper, policy, formatter와 화면 결과를 결정하는 순수 상
 
 프로젝트에 필요한 `local.properties`와 debug Firebase 설정을 준비한 뒤 실행합니다.
 
-Kover와 Gradle은 HTML·XML report를 생성합니다. Python script는 전체와 모듈별 raw covered/total을 집계하고 baseline과 현재 수치의 차이를 계산해 Actions Summary를 만듭니다.
+Kover와 Gradle은 상세 HTML report와 XML report를 생성합니다. Python script는 전체와 모듈별 raw covered/total을 집계하고 baseline과 현재 수치의 차이를 계산해 Actions Summary와 정적 HTML 요약을 만듭니다.
 
 ```shell
 ./gradlew :koverXmlReportFocused :koverHtmlReportFocused
@@ -74,28 +74,30 @@ Kover와 Gradle은 HTML·XML report를 생성합니다. Python script는 전체�
 
 생성 위치:
 
-1. HTML: `build/reports/kover/focused/html/index.html`
-2. XML: `build/reports/kover/focused/report.xml`
+1. 정적 HTML 요약: `build/reports/kover/focused/summary.html`
+2. 상세 Kover HTML: `build/reports/kover/focused/html/index.html`
+3. XML: `build/reports/kover/focused/report.xml`
 
-현재 수치와 baseline 차이는 다음 명령으로 확인합니다.
+현재 수치와 baseline 차이를 Actions Summary 형식과 정적 HTML로 함께 생성합니다.
 
 ```shell
-python -X utf8 .github/scripts/focused_coverage_summary.py \
+python -X utf8 -B .github/scripts/focused_coverage_summary.py \
   --report build/reports/kover/focused/report.xml \
-  --properties gradle.properties
+  --properties gradle.properties \
+  --html-output build/reports/kover/focused/summary.html
 ```
 
 Summary script의 회귀 test는 다음 명령으로 확인합니다.
 
 ```shell
-python -X utf8 -m unittest discover -s .github/scripts -p 'test_focused_coverage_summary.py'
+python -X utf8 -B -m unittest discover -s .github/scripts -p 'test_focused_coverage_summary.py'
 ```
 
 Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행합니다.
 
 ## GitHub Actions 결과 확인
 
-`Android CI` workflow의 `Focused Coverage` job을 엽니다. Summary 표에서 다음 항목을 확인합니다.
+`Android CI` workflow의 `Focused Coverage` job을 엽니다. Actions Summary와 coverage artifact에서 다음 항목을 확인합니다.
 
 `Focused Coverage`는 coverage 수치만으로 CI check를 실패시키지 않습니다. Unit test, report 생성, XML 파싱이나 baseline 입력 검증이 실패하면 check에도 반영됩니다.
 
@@ -108,7 +110,7 @@ Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행
 
 `Line`은 실행된 source line 비율입니다. `Branch`는 조건문의 각 경로가 실행된 비율입니다. 조건 분기 회귀를 볼 때는 Branch를 먼저 확인합니다.
 
-상세 분석이 필요하면 Summary의 artifact를 내려받아 HTML의 `index.html`을 엽니다. 빨간 줄은 실행되지 않은 코드이고, 노란 줄은 일부 branch만 실행된 코드입니다. XML은 CI와 분석 도구에서 사용합니다. Artifact는 14일 동안 보존됩니다.
+Artifact를 내려받은 뒤 `summary.html`을 열면 같은 수치를 한 화면에서 확인할 수 있습니다. 코드별 상세 분석은 정적 요약의 `상세 Kover report` 링크로 이동합니다. 상세 report의 빨간 줄은 실행되지 않은 코드이고, 노란 줄은 일부 branch만 실행된 코드입니다. XML은 CI와 분석 도구에서 사용합니다. Artifact는 14일 동안 보존됩니다.
 
 다음 상태는 coverage가 높은 것으로 해석하지 않습니다.
 
