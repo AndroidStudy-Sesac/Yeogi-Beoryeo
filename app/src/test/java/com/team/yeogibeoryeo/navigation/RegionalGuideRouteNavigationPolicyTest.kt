@@ -8,9 +8,13 @@ import org.junit.Test
 
 class RegionalGuideRouteNavigationPolicyTest {
     @Test
-    fun `즐겨찾기 대상이 없는 지역 가이드 경로는 안내 탭 경로이다`() {
+    fun `빈 상태 회복 경로는 검색 조건 없는 안내 탭 경로이다`() {
         val route = RegionalGuideRoute()
 
+        assertNull(route.initialKeyword)
+        assertNull(route.initialAddress)
+        assertNull(route.initialFavoriteTargetId)
+        assertNull(route.entrySource)
         assertEquals(BottomTab.REGIONAL_GUIDE, route.bottomTab())
         assertEquals(
             BottomTabNavigationAction.RESET_TO_ROOT,

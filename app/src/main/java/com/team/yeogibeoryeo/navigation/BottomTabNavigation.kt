@@ -136,7 +136,7 @@ private fun NavHostController.navigateItemSearchRoot(
     }
 }
 
-private fun NavHostController.navigateRegionalGuideRoot(
+internal fun NavHostController.navigateRegionalGuideRoot(
     currentBackStackEntry: NavBackStackEntry?,
 ) {
     if (currentBackStackEntry.isRegionalGuideSelected()) {

@@ -31,6 +31,8 @@ fun EmptyFavoritesCard(
     title: String,
     description: String,
     modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onActionClick: () -> Unit = {},
 ) {
     FavoritesStatusCard(
         title = title,
@@ -41,6 +43,13 @@ fun EmptyFavoritesCard(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.tertiary,
             )
+        },
+        action = actionLabel?.let { label ->
+            {
+                Button(onClick = onActionClick) {
+                    Text(text = label)
+                }
+            }
         },
         modifier = modifier,
     )

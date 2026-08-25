@@ -43,6 +43,7 @@ fun FavoritesScreen(
     onCollectionSpotFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideHomePrimaryClick: (String) -> Unit,
+    onRegionalGuideSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
     onRetryClick: () -> Unit = {},
 ) {
@@ -108,6 +109,13 @@ fun FavoritesScreen(
                     EmptyFavoritesCard(
                         title = stringResource(uiState.selectedTab.emptyTitleResId),
                         description = stringResource(uiState.selectedTab.emptyDescriptionResId),
+                        actionLabel =
+                            if (uiState.selectedTab == FavoriteTab.REGIONAL_GUIDE) {
+                                stringResource(R.string.regional_guide_search_action)
+                            } else {
+                                null
+                            },
+                        onActionClick = onRegionalGuideSearchClick,
                     )
                 }
             }

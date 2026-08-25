@@ -40,6 +40,7 @@ class FavoritesSemanticsTest {
                     onCollectionSpotFavoriteRemoveClick = {},
                     onRegionalGuideFavoriteRemoveClick = {},
                     onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = {},
                 )
             }
         }
@@ -47,6 +48,37 @@ class FavoritesSemanticsTest {
         composeTestRule.onNodeWithText("즐겨찾기").assert(hasHeading())
         composeTestRule.onNodeWithText("아직 즐겨찾기한 품목이 없어요").assert(hasHeading())
         composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
+    }
+
+    @Test
+    fun `지역_가이드_빈_상태는_검색_이동_버튼을_제공한다`() {
+        var searchClickCount = 0
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                FavoritesScreen(
+                    uiState = FavoritesUiState(selectedTab = FavoriteTab.REGIONAL_GUIDE),
+                    onTabClick = {},
+                    onItemGuideClick = {},
+                    onCollectionSpotClick = {},
+                    onRegionalGuideClick = {},
+                    onItemGuideFavoriteRemoveClick = {},
+                    onCollectionSpotFavoriteRemoveClick = {},
+                    onRegionalGuideFavoriteRemoveClick = {},
+                    onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = { searchClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("아직 즐겨찾기한 지역 가이드가 없어요")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("지역별 배출 가이드 찾아보기")
+            .assertIsDisplayed()
+            .assert(hasClickAction())
+            .performClick()
+
+        assertEquals(1, searchClickCount)
     }
 
     @Test
@@ -63,6 +95,7 @@ class FavoritesSemanticsTest {
                     onCollectionSpotFavoriteRemoveClick = {},
                     onRegionalGuideFavoriteRemoveClick = {},
                     onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = {},
                 )
             }
         }
@@ -88,6 +121,7 @@ class FavoritesSemanticsTest {
                     onCollectionSpotFavoriteRemoveClick = {},
                     onRegionalGuideFavoriteRemoveClick = {},
                     onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = {},
                     onRetryClick = { retryClickCount += 1 },
                 )
             }

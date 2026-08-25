@@ -26,10 +26,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +39,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -64,6 +63,7 @@ fun ItemSearchRoute(
     onGuideSelected: (DisposalItemGuide) -> Unit,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
     onRegionalGuideSummaryClick: (String) -> Unit,
+    onRegionalGuideSearchClick: () -> Unit,
     onQuickCategorySettingsClick: (Int) -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -125,6 +125,7 @@ fun ItemSearchRoute(
         onGuideClick = onGuideSelected,
         onUsefulGuideClick = onUsefulGuideClick,
         onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
+        onRegionalGuideSearchClick = onRegionalGuideSearchClick,
         onRegionalGuideSummaryRetryClick = regionalGuideSummaryViewModel::retry,
         onQuickCategoryClick = viewModel::openCategoryGuide,
         onQuickCategoryMoreClick = viewModel::expandQuickCategory,
@@ -161,6 +162,7 @@ fun ItemSearchScreen(
     regionalGuideSummaryState: HomeRegionalGuideSummaryUiState = HomeRegionalGuideSummaryUiState.NoFavorite,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSearchClick: () -> Unit = {},
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onQuickCategoryMoreClick: (Int, Int, Int) -> Unit = { _, _, _ -> },
     onQuickCategoryCollapseClick: () -> Unit = {},
@@ -202,6 +204,7 @@ fun ItemSearchScreen(
             onUsefulGuideClick = onUsefulGuideClick,
             regionalGuideSummaryState = regionalGuideSummaryState,
             onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
+            onRegionalGuideSearchClick = onRegionalGuideSearchClick,
             onRegionalGuideSummaryRetryClick = onRegionalGuideSummaryRetryClick,
             onQuickCategoryClick = onQuickCategoryClick,
             onQuickCategorySettingsClick = onQuickCategorySettingsClick,
@@ -419,8 +422,8 @@ fun ItemSearchScreen(
 @Composable
 private fun ItemSearchResultQuery(
     query: String,
-    resultCount: Int? = null,
     modifier: Modifier = Modifier,
+    resultCount: Int? = null,
 ) {
     Text(
         text = if (resultCount == null) {
