@@ -281,7 +281,7 @@ fun YeogiBeoryeoNavHost(
                             )
                         },
                         onRegionalGuideSearchClick = {
-                            navController.navigateRegionalGuideRoot(currentBackStackEntry)
+                            navController.navigateRegionalGuideRecoveryRoot()
                         },
                     )
                 }
@@ -309,7 +309,7 @@ fun YeogiBeoryeoNavHost(
                             )
                         },
                         onRegionalGuideSearchClick = {
-                            navController.navigateRegionalGuideRoot(currentBackStackEntry)
+                            navController.navigateRegionalGuideRecoveryRoot()
                         },
                         onQuickCategorySettingsClick = { maxSelectedCount ->
                             navController.navigate(

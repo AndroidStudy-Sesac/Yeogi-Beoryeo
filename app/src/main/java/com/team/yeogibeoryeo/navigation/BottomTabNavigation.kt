@@ -136,7 +136,7 @@ private fun NavHostController.navigateItemSearchRoot(
     }
 }
 
-internal fun NavHostController.navigateRegionalGuideRoot(
+private fun NavHostController.navigateRegionalGuideRoot(
     currentBackStackEntry: NavBackStackEntry?,
 ) {
     if (currentBackStackEntry.isRegionalGuideSelected()) {
@@ -145,6 +145,10 @@ internal fun NavHostController.navigateRegionalGuideRoot(
     }
 
     navigateBottomTab<RegionalGuideRoute, ItemSearchRoute>(RegionalGuideRoute())
+}
+
+internal fun NavHostController.navigateRegionalGuideRecoveryRoot() {
+    resetBottomTabToRoot(RegionalGuideRoute())
 }
 
 private fun NavHostController.navigateItemSearchTab() {
