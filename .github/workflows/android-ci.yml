@@ -450,6 +450,16 @@ jobs:
             --no-daemon \
             --stacktrace
 
+      - name: Generate focused coverage HTML summary
+        run: |
+          python -X utf8 -B .github/scripts/focused_coverage_summary.py \
+            --report build/reports/kover/focused/report.xml \
+            --properties gradle.properties \
+            --commit "${{ github.sha }}" \
+            --policy-url "${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/docs/testing/focused-coverage.md" \
+            --html-output build/reports/kover/focused/summary.html \
+            > /dev/null
+
       - name: Upload focused coverage reports
         id: focused-coverage-artifact
         if: always()
@@ -457,6 +467,7 @@ jobs:
         with:
           name: focused-coverage-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            build/reports/kover/focused/summary.html
             build/reports/kover/focused/html
             build/reports/kover/focused/report.xml
           if-no-files-found: error
@@ -468,7 +479,7 @@ jobs:
         run: |
           report_path='build/reports/kover/focused/report.xml'
           if [[ -f "$report_path" ]]; then
-            python -X utf8 .github/scripts/focused_coverage_summary.py \
+            python -X utf8 -B .github/scripts/focused_coverage_summary.py \
               --report "$report_path" \
               --properties gradle.properties \
               --commit "${{ github.sha }}" \

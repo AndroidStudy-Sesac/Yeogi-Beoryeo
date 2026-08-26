@@ -184,6 +184,7 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             report = pathlib.Path(temp_dir) / "report.xml"
             properties = pathlib.Path(temp_dir) / "gradle.properties"
+            html_output = pathlib.Path(temp_dir) / "summary.html"
             report.write_text(
                 "<report>"
                 '<package name="com/team/yeogibeoryeo/appguide">'
@@ -236,11 +237,16 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
                 "https://example.test/report",
                 "--policy-url",
                 "https://example.test/policy",
+                "--commit",
+                "abc<123",
+                "--html-output",
+                str(html_output),
             ]
 
             output = io.StringIO()
-            with unittest.mock.patch.object(sys, "argv", argv), unittest.mock.patch(
-                "sys.stdout", output
+            with (
+                unittest.mock.patch.object(sys, "argv", argv),
+                unittest.mock.patch("sys.stdout", output),
             ):
                 MODULE.main()
 
@@ -251,8 +257,7 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             )
             self.assertIn("| 지표 | 현재 | baseline | 차이 |", summary)
             self.assertIn(
-                "| Line | `███████░░░` **66.67% (8/12)** | "
-                "83.33% (10/12) | -16.67pp |",
+                "| Line | `███████░░░` **66.67% (8/12)** | 83.33% (10/12) | -16.67pp |",
                 summary,
             )
             self.assertIn("### 모듈별 coverage", summary)
@@ -279,6 +284,32 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             self.assertNotIn("검증 기준", summary)
             self.assertNotIn("통과", summary)
             self.assertNotIn("실패", summary)
+
+            html = html_output.read_text(encoding="utf-8")
+            self.assertIn('<html lang="ko">', html)
+            self.assertIn('<meta name="description"', html)
+            self.assertIn("<main", html)
+            self.assertIn("<caption>모듈별 coverage</caption>", html)
+            self.assertIn('href="html/index.html"', html)
+            self.assertIn("66.67%", html)
+            self.assertIn("8/12", html)
+            self.assertIn("-16.67pp", html)
+            self.assertIn("확인 필요", html)
+            self.assertIn("abc&lt;123", html)
+            self.assertNotIn("abc<123", html)
+            self.assertNotIn("<script", html)
+            self.assertNotIn("\u00b7", html)
+
+    def test_html_output_write_failure_is_not_hidden(self) -> None:
+        with (
+            unittest.mock.patch.object(
+                pathlib.Path,
+                "write_text",
+                side_effect=OSError("disk full"),
+            ),
+            self.assertRaisesRegex(OSError, "disk full"),
+        ):
+            MODULE.write_html(pathlib.Path("summary.html"), "<html></html>")
 
 
 if __name__ == "__main__":
