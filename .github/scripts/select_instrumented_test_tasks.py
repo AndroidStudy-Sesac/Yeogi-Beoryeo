@@ -25,7 +25,9 @@ FULL_TEST_FILES = {
     "settings.gradle.kts",
 }
 NO_INSTRUMENTED_TEST_FILES = {
+    ".github/scripts/check_release_warnings.py",
     ".github/scripts/focused_coverage_summary.py",
+    ".github/scripts/test_check_release_warnings.py",
     ".github/scripts/test_focused_coverage_summary.py",
 }
 

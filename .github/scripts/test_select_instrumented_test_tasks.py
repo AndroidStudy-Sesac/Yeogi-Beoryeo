@@ -46,7 +46,9 @@ class SelectInstrumentedTestTasksTest(unittest.TestCase):
                 "pull_request",
                 [
                     "domain/src/main/NormalizeItemNameUseCase.kt",
+                    ".github/scripts/check_release_warnings.py",
                     ".github/scripts/focused_coverage_summary.py",
+                    ".github/scripts/test_check_release_warnings.py",
                 ],
             ),
             (),

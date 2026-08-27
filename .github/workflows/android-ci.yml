@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - '.github/workflows/android-ci.yml'
+      - '.github/scripts/check_release_warnings.py'
+      - '.github/scripts/test_check_release_warnings.py'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
       - '.github/scripts/select_instrumented_test_tasks.py'
@@ -29,6 +31,8 @@ on:
       - main
     paths:
       - '.github/workflows/android-ci.yml'
+      - '.github/scripts/check_release_warnings.py'
+      - '.github/scripts/test_check_release_warnings.py'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
       - '.github/scripts/select_instrumented_test_tasks.py'
@@ -173,15 +177,26 @@ jobs:
         run: |
           set -euo pipefail
 
-          tasks=(":app:lintDebug" ":app:assembleDebug")
+          debug_tasks=(":app:lintDebug" ":app:assembleDebug")
+          echo "Selected Gradle tasks: ${debug_tasks[*]}"
+          ./gradlew "${debug_tasks[@]}" \
+            --no-daemon \
+            --stacktrace \
+            -PciReleaseCheck=true
 
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]] || \
              [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
-            tasks+=(":app:assembleRelease" ":app:bundleRelease")
+            release_tasks=(":app:assembleRelease" ":app:bundleRelease")
+            release_log="$RUNNER_TEMP/release-build.log"
+            echo "Selected Gradle tasks: ${release_tasks[*]}"
+            ./gradlew "${release_tasks[@]}" \
+              --console=plain \
+              --no-daemon \
+              --stacktrace \
+              -PciReleaseCheck=true \
+              2>&1 | tee "$release_log"
+            python -X utf8 -B .github/scripts/check_release_warnings.py "$release_log"
           fi
-
-          echo "Selected Gradle tasks: ${tasks[*]}"
-          ./gradlew "${tasks[@]}" --no-daemon --stacktrace -PciReleaseCheck=true
 
       - name: Validate release app bundle
         if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
