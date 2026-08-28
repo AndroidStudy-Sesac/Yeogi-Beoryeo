@@ -342,6 +342,8 @@ class DisposalItemGuideRepositoryImplTest {
 
             listOf(
                 "냄비뚜껑 내열" to "냄비뚜껑(내열)",
+                "냄비뚜껑(내열)" to "냄비뚜껑(내열)",
+                "냄비뚜껑（내열）" to "냄비뚜껑(내열)",
                 "택배 박스 스티로폼" to "택배 박스（스티로폼）",
             ).forEach { (query, expectedName) ->
                 val results = repository.searchItemGuides(query)
