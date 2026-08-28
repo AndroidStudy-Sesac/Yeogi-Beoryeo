@@ -30,6 +30,7 @@ fun FavoritesRoute(
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
+    onRegionalGuideSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FavoritesViewModel = hiltViewModel(),
 ) {
@@ -63,6 +64,7 @@ fun FavoritesRoute(
             onCollectionSpotFavoriteRemoveClick = viewModel::removeCollectionSpotFavorite,
             onRegionalGuideFavoriteRemoveClick = viewModel::removeRegionalGuideFavorite,
             onRegionalGuideHomePrimaryClick = viewModel::toggleHomeRegionalGuidePrimaryFavorite,
+            onRegionalGuideSearchClick = onRegionalGuideSearchClick,
             onRetryClick = viewModel::retryLoad,
             modifier = Modifier.fillMaxSize(),
         )

@@ -147,6 +147,10 @@ private fun NavHostController.navigateRegionalGuideRoot(
     navigateBottomTab<RegionalGuideRoute, ItemSearchRoute>(RegionalGuideRoute())
 }
 
+internal fun NavHostController.navigateRegionalGuideRecoveryRoot() {
+    resetBottomTabToRoot(RegionalGuideRoute())
+}
+
 private fun NavHostController.navigateItemSearchTab() {
     navigate(ItemSearchRoute()) {
         popUpTo<ItemSearchRoute> {

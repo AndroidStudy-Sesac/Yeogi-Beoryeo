@@ -32,6 +32,7 @@ import com.team.yeogibeoryeo.common.R as CommonR
 fun HomeRegionalGuideSummaryBanner(
     state: HomeRegionalGuideSummaryUiState,
     onClick: (String) -> Unit,
+    onSearchClick: () -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -60,6 +61,12 @@ fun HomeRegionalGuideSummaryBanner(
                                 onClickLabel = content.actionLabel,
                                 role = Role.Button,
                                 onClick = { onClick(content.targetId) },
+                            )
+                        content.searchable ->
+                            Modifier.clip(shape).clickable(
+                                onClickLabel = content.actionLabel,
+                                role = Role.Button,
+                                onClick = onSearchClick,
                             )
                         else -> Modifier
                     },
@@ -220,6 +227,7 @@ private data class HomeRegionalGuideBannerContent(
     val timeNotice: String? = null,
     val targetId: String? = null,
     val retryable: Boolean = false,
+    val searchable: Boolean = false,
     val actionLabel: String? = null,
     val showChevron: Boolean = false,
 )
@@ -229,6 +237,7 @@ private fun HomeRegionalGuideSummaryUiState.toBannerContent(): HomeRegionalGuide
     val label = stringResource(id = R.string.home_regional_guide_summary_label)
     val openDetailAction =
         stringResource(id = R.string.home_regional_guide_summary_open_detail_action)
+    val searchAction = stringResource(id = R.string.regional_guide_search_action)
 
     return when (this) {
         is HomeRegionalGuideSummaryUiState.Loading ->
@@ -250,6 +259,9 @@ private fun HomeRegionalGuideSummaryUiState.toBannerContent(): HomeRegionalGuide
                 description = stringResource(
                     id = R.string.home_regional_guide_summary_no_favorite_description,
                 ),
+                searchable = true,
+                actionLabel = searchAction,
+                showChevron = true,
             )
 
         is HomeRegionalGuideSummaryUiState.Summary ->
@@ -352,6 +364,7 @@ private fun HomeRegionalGuideSummaryBannerSummaryPreview() {
                 hasDifferentDisposalTime = false,
             ),
             onClick = {},
+            onSearchClick = {},
             onRetryClick = {},
             modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
@@ -372,6 +385,7 @@ private fun HomeRegionalGuideSummaryBannerMixedSchedulePreview() {
                 hasDifferentDisposalTime = true,
             ),
             onClick = {},
+            onSearchClick = {},
             onRetryClick = {},
             modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
@@ -388,6 +402,7 @@ private fun HomeRegionalGuideSummaryBannerRepresentativeScheduleNeedsConfirmatio
                 regionName = "경기도 > 고양시",
             ),
             onClick = {},
+            onSearchClick = {},
             onRetryClick = {},
             modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
@@ -401,6 +416,7 @@ private fun HomeRegionalGuideSummaryBannerNoFavoritePreview() {
         HomeRegionalGuideSummaryBanner(
             state = HomeRegionalGuideSummaryUiState.NoFavorite,
             onClick = {},
+            onSearchClick = {},
             onRetryClick = {},
             modifier = Modifier.padding(ItemSearchLayoutDefaults.spacing.md),
         )
