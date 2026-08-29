@@ -313,6 +313,46 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `품목명 반각과 전각 괄호 차이를 무시하고 정확 일치를 우선한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        name = "냄비뚜껑(내열)",
+                                        categoryPaths = listOf(listOf("일반폐기물", "불연성종량제폐기물")),
+                                        dischargeMethods = listOf("불연성 종량제봉투로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "냄비뚜껑내열판",
+                                        categoryPaths = listOf(listOf("일반폐기물", "불연성종량제폐기물")),
+                                        dischargeMethods = listOf("불연성 종량제봉투로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        name = "택배 박스（스티로폼）",
+                                        categoryPaths = listOf(listOf("일반폐기물", "일반종량제폐기물")),
+                                        dischargeMethods = listOf("종량제봉투로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            listOf(
+                "냄비뚜껑 내열" to "냄비뚜껑(내열)",
+                "냄비뚜껑(내열)" to "냄비뚜껑(내열)",
+                "냄비뚜껑（내열）" to "냄비뚜껑(내열)",
+                "택배 박스 스티로폼" to "택배 박스（스티로폼）",
+            ).forEach { (query, expectedName) ->
+                val results = repository.searchItemGuides(query)
+
+                assertEquals("검색어: $query", listOf(expectedName), results.map { it.name })
+            }
+        }
+
+    @Test
     fun `공백 제거 후 정확 일치를 부분 일치보다 우선한다`() =
         runBlocking {
             val repository =
