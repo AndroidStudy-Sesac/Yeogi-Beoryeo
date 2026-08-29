@@ -21,13 +21,18 @@ internal fun BottomBarVisibilityOnScrollEffect(
     LaunchedEffect(scrollState) {
         var previousOffset = 0
         var previousVisibility = true
+        var didVisibilityChangeInCurrentDrag = false
         onBottomBarVisibilityChangedState(true)
 
         snapshotFlow { scrollState.value to isDragged }
             .collect { (currentOffset, isDragged) ->
+                if (!isDragged) {
+                    didVisibilityChangeInCurrentDrag = false
+                }
                 val isVisible = when {
+                    !isDragged -> currentOffset == 0 || previousVisibility
+                    didVisibilityChangeInCurrentDrag -> previousVisibility
                     currentOffset == 0 -> true
-                    !isDragged -> previousVisibility
                     currentOffset > previousOffset -> false
                     currentOffset < previousOffset -> true
                     else -> previousVisibility
@@ -35,6 +40,7 @@ internal fun BottomBarVisibilityOnScrollEffect(
                 if (isVisible != previousVisibility) {
                     onBottomBarVisibilityChangedState(isVisible)
                     previousVisibility = isVisible
+                    didVisibilityChangeInCurrentDrag = true
                 }
                 previousOffset = currentOffset
             }
@@ -52,6 +58,7 @@ internal fun BottomBarVisibilityOnScrollEffect(
     LaunchedEffect(listState) {
         var previousPosition = 0L
         var previousVisibility = true
+        var didVisibilityChangeInCurrentDrag = false
         onBottomBarVisibilityChangedState(true)
 
         snapshotFlow {
@@ -63,9 +70,13 @@ internal fun BottomBarVisibilityOnScrollEffect(
                 isDragged,
             )
         }.collect { (currentPosition, isAtTop, isDragged) ->
+            if (!isDragged) {
+                didVisibilityChangeInCurrentDrag = false
+            }
             val isVisible = when {
+                !isDragged -> isAtTop || previousVisibility
+                didVisibilityChangeInCurrentDrag -> previousVisibility
                 isAtTop -> true
-                !isDragged -> previousVisibility
                 currentPosition > previousPosition -> false
                 currentPosition < previousPosition -> true
                 else -> previousVisibility
@@ -73,6 +84,7 @@ internal fun BottomBarVisibilityOnScrollEffect(
             if (isVisible != previousVisibility) {
                 onBottomBarVisibilityChangedState(isVisible)
                 previousVisibility = isVisible
+                didVisibilityChangeInCurrentDrag = true
             }
             previousPosition = currentPosition
         }

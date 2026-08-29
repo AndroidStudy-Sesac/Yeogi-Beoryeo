@@ -69,6 +69,7 @@ class LargeTextClippingTest {
     @Test
     fun 작은_화면의_200퍼센트_글자에서_개인정보처리방침_제목과_뒤로가기를_유지한다() {
         var backClickCount = 0
+        var titleDidOverflowHeight: Boolean? = null
 
         composeTestRule.setContent {
             val density = LocalDensity.current
@@ -77,9 +78,7 @@ class LargeTextClippingTest {
             ) {
                 MaterialTheme {
                     AppTopBar(
-                        modifier = Modifier
-                            .width(320.dp)
-                            .testTag(APP_TOP_BAR_TAG),
+                        modifier = Modifier.width(320.dp),
                         navigationIcon = {
                             AppBackButton(onClick = { backClickCount += 1 })
                         },
@@ -88,6 +87,7 @@ class LargeTextClippingTest {
                                 text = "개인정보처리방침",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
+                                onTextLayout = { titleDidOverflowHeight = it.didOverflowHeight },
                             )
                         },
                     )
@@ -95,8 +95,8 @@ class LargeTextClippingTest {
             }
         }
 
-        composeTestRule.onNodeWithTag(APP_TOP_BAR_TAG)
-            .assertHeightIsAtLeast(120.dp)
+        composeTestRule.waitUntil { titleDidOverflowHeight != null }
+        assertEquals(false, titleDidOverflowHeight)
         composeTestRule.onNodeWithText("개인정보처리방침")
             .assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("뒤로가기")
@@ -107,6 +107,5 @@ class LargeTextClippingTest {
 
     private companion object {
         const val USEFUL_GUIDE_BANNER_TAG = "useful_guide_banner"
-        const val APP_TOP_BAR_TAG = "app_top_bar"
     }
 }

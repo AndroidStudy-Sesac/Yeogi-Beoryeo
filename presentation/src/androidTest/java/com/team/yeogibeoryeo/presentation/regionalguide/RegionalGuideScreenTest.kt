@@ -13,13 +13,17 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
@@ -118,15 +122,20 @@ class RegionalGuideScreenTest {
             }
         }
 
+        composeTestRule.onNode(hasScrollAction())
+            .performScrollToNode(hasText("대형폐기물"))
+        composeTestRule.onNodeWithText("대형폐기물").performScrollTo()
+        composeTestRule.waitForIdle()
+
         composeTestRule.onAllNodesWithText("대형폐기물").assertCountEquals(1)
-        composeTestRule.onNodeWithText("2곳").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2곳").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("- 장소 A").assertDoesNotExist()
         composeTestRule.onNodeWithText("- 장소 B").assertDoesNotExist()
 
-        composeTestRule.onNodeWithText("자세히 보기").performClick()
+        composeTestRule.onNodeWithText("자세히 보기").performScrollTo().performClick()
 
-        composeTestRule.onNodeWithText("- 장소 A").assertIsDisplayed()
-        composeTestRule.onNodeWithText("- 장소 B").assertIsDisplayed()
+        composeTestRule.onNodeWithText("- 장소 A").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("- 장소 B").performScrollTo().assertIsDisplayed()
     }
 
     @Test

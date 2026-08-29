@@ -29,7 +29,6 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
@@ -79,10 +78,10 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithText("안내 사항").assertIsDisplayed()
         composeTestRule.onNodeWithText("중소형 폐가전 수거함 안내").assertIsDisplayed()
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
-        composeTestRule.onNodeWithText("종이").assertIsDisplayed()
         composeTestRule.onNodeWithText("여기 버려").assert(hasHeading())
         composeTestRule.onNodeWithText("안내 사항").assert(hasHeading())
         composeTestRule.onNodeWithText("분리배출 분류").assert(hasHeading())
+        composeTestRule.onNodeWithText("종이").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -751,10 +750,13 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithText("무상방문수거 안내 보기")
             .performScrollTo()
             .assertIsDisplayed()
-        composeTestRule.swipeUpUntilTextExists("관련 사이트")
+        composeTestRule.onNode(hasScrollAction())
+            .performScrollToNode(hasText("관련 사이트"))
         composeTestRule.onNodeWithText("관련 사이트")
+            .performScrollTo()
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("생활폐기물 분리배출 누리집 보기")
+            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -823,6 +825,9 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeDown() }
         composeTestRule.waitUntil(timeoutMillis = 5_000) { isBottomBarVisible }
+        composeTestRule.runOnIdle {
+            assertEquals(true, isBottomBarVisible)
+        }
     }
 
     @Test
@@ -891,17 +896,6 @@ class ItemSearchScreenTest {
 
         composeTestRule.onNodeWithText("운영 공지").assertIsDisplayed()
         composeTestRule.onNodeWithText("공지 내용").assertIsDisplayed()
-    }
-
-    private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.swipeUpUntilTextExists(
-        text: String,
-    ) {
-        repeat(5) {
-            if (onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) {
-                return
-            }
-            onRoot().performTouchInput { swipeUp() }
-        }
     }
 
     private fun hasHeading() =

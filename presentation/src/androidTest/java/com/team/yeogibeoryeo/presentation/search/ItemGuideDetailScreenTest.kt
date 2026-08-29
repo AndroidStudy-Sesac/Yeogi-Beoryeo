@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
@@ -295,11 +296,18 @@ class ItemGuideDetailScreenTest {
         }
 
         composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { !isBottomBarVisible }
 
         composeTestRule.runOnIdle {
             assertEquals(false, isBottomBarVisible)
         }
         composeTestRule.onNode(hasScrollAction()).assert(hasPositiveVerticalScrollPosition())
+
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeDown() }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { isBottomBarVisible }
+        composeTestRule.runOnIdle {
+            assertEquals(true, isBottomBarVisible)
+        }
     }
 
     @Test

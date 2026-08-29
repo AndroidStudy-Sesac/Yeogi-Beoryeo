@@ -53,6 +53,7 @@ android {
                     device = "Pixel 2"
                     apiLevel = 28
                     systemImageSource = "aosp"
+                    require64Bit = true
                     testedAbi = "x86_64"
                 }
             }
