@@ -255,6 +255,9 @@ fun YeogiBeoryeoNavHost(
 
                 composable<FavoritesRoute> {
                     FavoritesScreenRoute(
+                        onItemSearchClick = {
+                            navController.navigateItemSearchRoot(navController.currentBackStackEntry)
+                        },
                         onItemGuideClick = { guideId ->
                             navController.navigate(
                                 ItemGuideDetailRoute(
