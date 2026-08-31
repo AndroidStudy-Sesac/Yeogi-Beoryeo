@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import json
 import pathlib
 import sys
 import tempfile
@@ -286,6 +287,11 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             self.assertNotIn("실패", summary)
 
             html = html_output.read_text(encoding="utf-8")
+            structured = json.loads(
+                html_output.with_name("analysis.json").read_text(encoding="utf-8")
+            )
+            self.assertIsNone(structured["pr_analysis"])
+            self.assertIn("분석은 적용하지 않습니다", summary)
             self.assertIn('<html lang="ko">', html)
             self.assertIn('<meta name="description"', html)
             self.assertIn("<main", html)
@@ -310,6 +316,48 @@ class FocusedCoverageSummaryTest(unittest.TestCase):
             self.assertRaisesRegex(OSError, "disk full"),
         ):
             MODULE.write_html(pathlib.Path("summary.html"), "<html></html>")
+
+    def test_partial_pr_refs_are_rejected(self) -> None:
+        with (
+            unittest.mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "summary",
+                    "--report",
+                    "r.xml",
+                    "--properties",
+                    "p.properties",
+                    "--base-commit",
+                    "a" * 40,
+                ],
+            ),
+            unittest.mock.patch("sys.stderr", io.StringIO()),
+            self.assertRaises(SystemExit),
+        ):
+            MODULE.parse_args()
+
+    def test_html_json_link_cannot_diverge_from_output_path(self) -> None:
+        with (
+            unittest.mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "summary",
+                    "--report",
+                    "r.xml",
+                    "--properties",
+                    "p.properties",
+                    "--html-output",
+                    "out/summary.html",
+                    "--json-output",
+                    "out/other.json",
+                ],
+            ),
+            unittest.mock.patch("sys.stderr", io.StringIO()),
+            self.assertRaises(SystemExit),
+        ):
+            MODULE.parse_args()
 
 
 if __name__ == "__main__":

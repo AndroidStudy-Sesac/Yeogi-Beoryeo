@@ -77,6 +77,8 @@ Kover와 Gradle은 상세 HTML report와 XML report를 생성합니다. Python s
 1. 정적 HTML 요약: `build/reports/kover/focused/summary.html`
 2. 상세 Kover HTML: `build/reports/kover/focused/html/index.html`
 3. XML: `build/reports/kover/focused/report.xml`
+4. 구조화된 PR 분석: `build/reports/kover/focused/analysis.json`
+5. 요약용 Pretendard 글꼴과 라이선스: `build/reports/kover/focused/fonts/`
 
 현재 수치와 baseline 차이를 Actions Summary 형식과 정적 HTML로 함께 생성합니다.
 
@@ -95,6 +97,10 @@ python -X utf8 -B -m unittest discover -s .github/scripts -p 'test_focused_cover
 
 Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행합니다.
 
+PR 분석에는 전체 Git history와 PR base/head의 전체 SHA가 필요합니다. 측정한 commit을 checkout하고 production source 변경을 commit한 상태에서 report를 다시 생성한 뒤 `--repository`, `--commit`, `--base-commit`, `--head-commit`을 함께 전달합니다. `--commit`은 XML을 생성한 commit이며 PR head를 포함해야 합니다. CI에서는 GitHub가 만든 merge commit을 측정하므로 PR head와 측정 commit을 구분해 기록합니다. 이전 XML에 새 commit 값만 붙여 재사용하지 않습니다.
+
+HTML을 생성하면 같은 폴더에 `analysis.json`과 글꼴을 함께 저장합니다. JSON만 필요하면 `--json-output`을 사용합니다. PR base/head를 모두 생략하는 push나 일반 로컬 실행에서는 기존 coverage 집계를 유지하고 PR 분석은 미적용으로 표시합니다. 한쪽 SHA만 전달하거나 Git 비교와 소스 연결 과정에서 오류가 나면 분석에 실패하며, 빈 변경 목록으로 바꾸지 않습니다.
+
 ## GitHub Actions 결과 확인
 
 `Android CI` workflow의 `Focused Coverage` job을 엽니다. Actions Summary와 coverage artifact에서 다음 항목을 확인합니다.
@@ -107,6 +113,22 @@ Windows PowerShell에서는 줄 연속 문자 대신 명령을 한 줄로 실행
 4. `모듈별 coverage`: `app`, `data`, `domain`, `presentation`의 Line·Branch를 `baseline → 현재` 순서로 비교
 5. `상태`: Line이나 Branch가 baseline보다 낮으면 merge 차단 없이 `⚠️ 확인 필요`로 표시
 6. `raw covered/total`: 모듈별 현재값과 baseline의 분자·분모
+7. `PR 변경 파일 분석`: merge-base부터 PR head까지 변경한 Kotlin/Java 파일의 추가, 수정, 삭제와 XML 포함 상태
+8. `미실행 코드 확인 후보`: baseline보다 낮은 모듈의 package/class, 미실행 Line/Branch와 PR 변경 여부
+
+변경 파일은 경로순으로 최대 50개, 미실행 class는 Branch와 Line이 많은 순으로 모듈당 최대 5개를 표시합니다. 이름 변경은 삭제와 추가로 표시합니다. 기존 코드도 후보에 포함되므로 이번 PR의 하락 원인으로 확정하지 않습니다. 현재 baseline은 최초 측정값이며 PR 직전 coverage가 아닙니다.
+
+`analysis.json`의 `schema_version: 1`에는 측정 commit, `below_baseline_modules`와 `pr_analysis`를 저장합니다. PR 분석에는 base/head/merge-base/report commit, 전체 변경 파일 수, 표시 제한 없는 `changed_sources`와 `candidates`가 있습니다. PR이 아닌 실행의 `pr_analysis`는 `null`입니다. 후보의 `changed_in_pr`는 변경됨 `true`, 변경 없음 `false`, 소스 연결 불명확 `null`을 구분합니다. JSON 경로와 class 이름은 원문을 보존하고 화면 출력에서만 escape합니다.
+
+### 새 business logic의 측정 포함 확인
+
+1. 변경 파일 표에서 추가하거나 수정한 business logic 파일을 찾습니다. `app`, `data`, `domain`, `presentation`의 `src/main`과 `src/debug` 아래 Kotlin/Java 파일을 연결하며 테스트와 다른 variant는 측정 소스 경로 밖으로 표시합니다.
+2. `XML에 포함`은 module, package 선언과 source filename이 하나의 XML sourcefile에 연결됐다는 뜻입니다. 같은 파일의 모든 declaration이 포함됐다는 뜻은 아니므로 새 class나 함수가 상세 report에도 있는지 확인합니다.
+3. `XML에 없음: 포함 여부 확인`이면 실행 코드 생성 여부, variant와 Kover allowlist/exclusion을 확인합니다. interface, DTO와 Compose 렌더링처럼 정책상 제외된 코드는 테스트 누락으로 판정하지 않습니다. 새 business logic이라면 기존 측정 정책에 따라 포함 설정과 회귀 테스트를 보강합니다.
+4. `소스 연결 불명확`이면 package 선언과 같은 module/package/filename을 쓰는 source set을 확인합니다. 삭제 파일은 새 측정 누락으로 취급하지 않습니다.
+5. 미실행 수치는 XML sourcefile의 직접 counter입니다. class와 중첩 class의 Line을 더하지 않으며, 해당 PR에서 새로 추가한 줄만의 coverage로 해석하지 않습니다.
+
+위 상태와 coverage 하락은 확인 정보입니다. 분석 입력 오류는 CI 실패로 유지하지만, 측정 포함 여부만으로 새로운 merge gate를 만들지 않습니다.
 
 `Line`은 실행된 source line 비율입니다. `Branch`는 조건문의 각 경로가 실행된 비율입니다. 조건 분기 회귀를 볼 때는 Branch를 먼저 확인합니다.
 
