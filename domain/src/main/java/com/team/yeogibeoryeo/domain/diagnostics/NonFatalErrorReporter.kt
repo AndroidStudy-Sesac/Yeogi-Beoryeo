@@ -8,6 +8,9 @@ package com.team.yeogibeoryeo.domain.diagnostics
  * 직접 전달한 CancellationException과 Error는 debug에서도 원객체로 다시 던집니다.
  * 알려진 wrapper의 해석과 요청 단위 중복 기록 방지는 호출 계층의 책임입니다.
  * 기록 장치의 취소를 제외한 RuntimeException은 기존 오류 안내나 재시도를 바꾸지 않습니다.
+ *
+ * [기능 연결 가이드](../../../../../../../../../docs/non-fatal-error-reporting.md)에
+ * 호출 순서, 필드 선택, 기능별 경계와 회귀 테스트 기준을 정리했습니다.
  */
 interface NonFatalErrorReporter {
     fun report(error: Throwable, context: NonFatalErrorContext)
