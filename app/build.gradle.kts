@@ -44,6 +44,7 @@ kover {
 
 android {
     namespace = "com.team.yeogibeoryeo"
+    ndkVersion = "28.2.13676358"
 
     compileSdk {
         version = release(36) {
@@ -68,7 +69,7 @@ android {
         applicationId = "com.team.yeogibeoryeo"
         minSdk = 28
         targetSdk = 36
-        versionCode = 8
+        versionCode = 9
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -113,6 +114,9 @@ android {
             signingConfig = releaseSigningConfig
             isMinifyEnabled = true
             isShrinkResources = true
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
             configure<CrashlyticsExtension> {
                 mappingFileUploadEnabled = !isCiReleaseCheck.get()
             }
