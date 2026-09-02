@@ -15,6 +15,7 @@ private fun FavoritesScreenLoadingPreview() {
         FavoritesScreen(
             uiState = FavoritesUiState(isLoading = true),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
@@ -34,6 +35,7 @@ private fun FavoritesScreenEmptyPreview() {
         FavoritesScreen(
             uiState = FavoritesUiState(),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
@@ -53,6 +55,7 @@ private fun FavoritesScreenSpotEmptyPreview() {
         FavoritesScreen(
             uiState = FavoritesUiState(selectedTab = FavoriteTab.COLLECTION_SPOT),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
@@ -95,6 +98,7 @@ private fun FavoritesScreenListPreview() {
                         ),
                 ),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
