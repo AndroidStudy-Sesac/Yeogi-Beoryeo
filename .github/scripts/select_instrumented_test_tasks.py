@@ -8,7 +8,6 @@ import json
 import sys
 from collections.abc import Iterable
 
-
 MODULE_TASKS = {
     "app": ":app:pixel9ProApi36DebugAndroidTest",
     "data": ":data:pixel9ProApi36DebugAndroidTest",
@@ -25,6 +24,8 @@ FULL_TEST_FILES = {
     "settings.gradle.kts",
 }
 NO_INSTRUMENTED_TEST_FILES = {
+    ".github/scripts/focused_coverage_analysis.py",
+    ".github/scripts/test_focused_coverage_analysis.py",
     ".github/scripts/focused_coverage_summary.py",
     ".github/scripts/test_focused_coverage_summary.py",
 }

@@ -4,10 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 import math
+import shutil
 from html import escape
 from pathlib import Path
 from xml.etree import ElementTree
+
+from focused_coverage_analysis import PrAnalysis, analyze_pr
 
 Metric = tuple[int, int, float]
 
@@ -31,7 +35,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--artifact-url", default="")
     parser.add_argument("--policy-url", default="")
     parser.add_argument("--html-output", type=Path)
-    return parser.parse_args()
+    parser.add_argument("--json-output", type=Path)
+    parser.add_argument("--repository", type=Path, default=Path.cwd())
+    parser.add_argument("--base-commit", default="")
+    parser.add_argument("--head-commit", default="")
+    args = parser.parse_args()
+    if bool(args.base_commit) != bool(args.head_commit):
+        parser.error("PR base와 head commit은 함께 전달해야 합니다.")
+    if (
+        args.html_output
+        and args.json_output
+        and (
+            args.json_output.resolve()
+            != args.html_output.with_name("analysis.json").resolve()
+        )
+    ):
+        parser.error(
+            "HTML과 함께 생성하는 JSON은 같은 폴더의 analysis.json이어야 합니다."
+        )
+    return args
 
 
 def read_properties(path: Path) -> dict[str, str]:
@@ -346,12 +368,26 @@ def render_raw_module_row(
 
 
 HTML_STYLES = """
+@font-face {
+  font-family: Pretendard;
+  src: url("fonts/pretendard_regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Pretendard;
+  src: url("fonts/pretendard_bold.otf") format("opentype");
+  font-weight: 700 900;
+  font-display: swap;
+}
 :root {
   color: #17212b;
   background: #f8fafc;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Pretendard, system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 * {
   box-sizing: border-box;
@@ -360,6 +396,8 @@ body {
   margin: 0;
 }
 a {
+  display: inline-block;
+  min-height: 24px;
   color: #14532d;
   font-weight: 700;
   text-underline-offset: 0.2em;
@@ -426,6 +464,7 @@ section + section {
   color: #475569;
 }
 code {
+  overflow-wrap: anywhere;
   padding: 0.12rem 0.35rem;
   border-radius: 0.25rem;
   color: #17212b;
@@ -504,6 +543,16 @@ table {
   border-collapse: collapse;
   border: 1px solid #cbd5e1;
   background: #ffffff;
+  table-layout: fixed;
+}
+.sources-table th:first-child {
+  width: 40%;
+}
+.candidates-table th:first-child {
+  width: 13%;
+}
+.candidates-table th:nth-child(2) {
+  width: 39%;
 }
 caption {
   padding: 0.75rem 0;
@@ -514,6 +563,7 @@ caption {
 }
 th,
 td {
+  overflow-wrap: anywhere;
   padding: 0.9rem;
   border-bottom: 1px solid #cbd5e1;
   text-align: left;
@@ -540,6 +590,12 @@ tbody tr:last-child td {
   font-size: 0.9rem;
 }
 @media (max-width: 44rem) {
+  dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  dd {
+    margin-bottom: 0.5rem;
+  }
   header {
     padding-top: 2rem;
     padding-bottom: 2rem;
@@ -568,9 +624,13 @@ tbody tr:last-child td {
     background: #f1f5f9;
     font-size: 1.1rem;
   }
+  .sources-table th:first-child,
+  .candidates-table th:first-child {
+    width: 100%;
+  }
   tbody td {
     display: grid;
-    grid-template-columns: minmax(6.5rem, 0.7fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
     gap: 0.75rem;
   }
   tbody td::before {
@@ -589,6 +649,149 @@ tbody tr:last-child td {
   }
 }
 """.strip()
+
+
+SOURCE_STATUS = {
+    "measured": "XML에 포함",
+    "not_measured": "XML에 없음: 포함 여부 확인",
+    "ambiguous": "소스 연결 불명확",
+    "deleted": "삭제됨",
+    "outside_scope": "측정 소스 경로 밖",
+}
+CHANGE_LABEL = {"A": "추가", "M": "수정", "D": "삭제", "T": "유형 변경"}
+ANALYSIS_NOTE = (
+    "파일이 XML에 있어도 모든 declaration이 측정됐다는 뜻은 아닙니다. "
+    "XML에 없는 파일은 filter, variant와 실행 코드 생성 여부를 확인하세요. "
+    "테스트 누락이나 CI 실패로 단정하지 않습니다."
+)
+CANDIDATE_NOTE = (
+    "baseline보다 낮은 모듈에서 미실행 Branch, Line 순으로 모듈당 최대 5개 class를 표시합니다. "
+    "기존 미실행 코드도 포함되므로 이번 PR의 하락 원인으로 확정할 수 없습니다. "
+    "전체 후보와 변경 파일은 analysis.json에서 확인할 수 있습니다."
+)
+
+
+def analysis_tables(
+    analysis: PrAnalysis,
+) -> list[tuple[str, list[str], list[list[str]]]]:
+    sources = [
+        [
+            item["path"],
+            CHANGE_LABEL[item["change"]],
+            SOURCE_STATUS[item["status"]],
+            str(item["missed_lines"]) if item["missed_lines"] is not None else "—",
+            str(item["missed_branches"])
+            if item["missed_branches"] is not None
+            else "—",
+        ]
+        for item in analysis["changed_sources"][:50]
+    ]
+    candidates = []
+    counts: dict[str, int] = {}
+    for item in analysis["candidates"]:
+        module = item["module"]
+        counts[module] = counts.get(module, 0) + 1
+        if counts[module] > 5:
+            continue
+        changed = {True: "변경됨", False: "변경 없음", None: "소스 연결 불명확"}[
+            item["changed_in_pr"]
+        ]
+        candidates.append(
+            [
+                module,
+                item["class_name"],
+                str(item["missed_lines"]),
+                str(item["missed_branches"]),
+                changed,
+            ]
+        )
+    return [
+        (
+            "변경한 Kotlin/Java 파일",
+            ["경로", "변경", "측정 상태", "미실행 Line", "미실행 Branch"],
+            sources,
+        ),
+        (
+            "미실행 코드 확인 후보",
+            ["모듈", "package/class", "미실행 Line", "미실행 Branch", "PR 변경 여부"],
+            candidates,
+        ),
+    ]
+
+
+def analysis_description(analysis: PrAnalysis) -> str:
+    return (
+        f"PR 전체 변경 {analysis['changed_file_count']}개 중 Kotlin/Java 파일 "
+        f"{len(analysis['changed_sources'])}개를 확인했습니다. "
+        "변경 파일은 경로순으로 최대 50개를 표시합니다. "
+        "이름 변경은 삭제와 추가로 나눠 표시합니다."
+    )
+
+
+def markdown_cell(value: str) -> str:
+    # Escape both Markdown syntax and HTML; filenames may contain newlines or pipes.
+    return "".join(
+        character
+        if character.isalnum() or character in " /.:—"
+        else f"&#{ord(character)};"
+        for character in value.replace("\r", "\\r").replace("\n", "\\n")
+    )
+
+
+def render_analysis_markdown(analysis: PrAnalysis | None) -> list[str]:
+    lines = ["", "### PR 변경 파일 분석", ""]
+    if analysis is None:
+        return lines + [
+            "PR base/head가 없는 실행이므로 PR 변경 파일 분석은 적용하지 않습니다."
+        ]
+    lines += [analysis_description(analysis), "", ANALYSIS_NOTE, "", CANDIDATE_NOTE, ""]
+    for title, headers, rows in analysis_tables(analysis):
+        lines += [f"#### {title}", ""]
+        if not rows:
+            lines += ["해당 항목이 없습니다.", ""]
+            continue
+        lines += ["| " + " | ".join(headers) + " |", "|" + "---|" * len(headers)]
+        lines += ["| " + " | ".join(map(markdown_cell, row)) + " |" for row in rows]
+        lines.append("")
+    lines += ["<details>", "<summary>PR 비교 기준</summary>", ""]
+    for key in ("base_commit", "head_commit", "merge_base", "report_commit"):
+        lines += [f"- {key}: `{analysis[key]}`"]
+    return lines + ["", "</details>"]
+
+
+def render_analysis_html(analysis: PrAnalysis | None) -> str:
+    content = '<h2 id="pr-heading">PR 변경 파일 분석</h2>'
+    if analysis is None:
+        content += "<p>PR base/head가 없는 실행이므로 PR 변경 파일 분석은 적용하지 않습니다.</p>"
+    else:
+        content += f"<p>{analysis_description(analysis)}</p><p>{ANALYSIS_NOTE}</p><p>{CANDIDATE_NOTE}</p>"
+        content += '<p><a href="analysis.json">전체 분석 JSON</a></p>'
+        for table_class, (title, headers, rows) in zip(
+            ("sources-table", "candidates-table"),
+            analysis_tables(analysis),
+            strict=True,
+        ):
+            if not rows:
+                content += f"<h3>{title}</h3><p>해당 항목이 없습니다.</p>"
+                continue
+            content += (
+                f'<table class="{table_class}"><caption>{title}</caption><thead><tr>'
+            )
+            content += "".join(f'<th scope="col">{header}</th>' for header in headers)
+            content += "</tr></thead><tbody>"
+            for row in rows:
+                content += f'<tr><th scope="row">{escape(row[0])}</th>'
+                content += "".join(
+                    f'<td data-label="{header}">{escape(value)}</td>'
+                    for header, value in zip(headers[1:], row[1:], strict=True)
+                )
+                content += "</tr>"
+            content += "</tbody></table>"
+        content += '<h3>PR 비교 기준</h3><dl class="commit">'
+        for key in ("base_commit", "head_commit", "merge_base", "report_commit"):
+            content += f"<dt>{key}</dt><dd>{escape(analysis[key])}</dd>"
+        content += "</dl>"
+    return f'<section aria-labelledby="pr-heading">{content}</section>'
 
 
 def render_html_metric_card(
@@ -666,6 +869,7 @@ def render_html(
     module_branch_baselines: dict[str, tuple[int, int]],
     commit: str = "",
     policy_url: str = "",
+    analysis: PrAnalysis | None = None,
 ) -> str:
     module_rows = "\n".join(
         render_html_module_row(
@@ -743,6 +947,7 @@ def render_html(
         </tbody>
       </table>
     </section>
+    {render_analysis_html(analysis)}
   </main>
 </body>
 </html>
@@ -752,6 +957,16 @@ def render_html(
 def write_html(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8", newline="\n")
+    fonts = path.parent / "fonts"
+    fonts.mkdir(exist_ok=True)
+    repository = Path(__file__).resolve().parents[2]
+    for filename in ("pretendard_regular.otf", "pretendard_bold.otf"):
+        shutil.copyfile(
+            repository / "common/src/main/res/font" / filename, fonts / filename
+        )
+    shutil.copyfile(
+        repository / "THIRD_PARTY_NOTICES.md", fonts / "THIRD_PARTY_NOTICES.md"
+    )
 
 
 def main() -> None:
@@ -778,6 +993,50 @@ def main() -> None:
     validate_baseline_total("Line", line_baseline, module_line_baselines)
     validate_baseline_total("Branch", branch_baseline, module_branch_baselines)
 
+    below_modules = {
+        module
+        for module in MODULE_PACKAGE_PREFIXES
+        if needs_coverage_review(
+            module_lines[module],
+            module_line_baselines[module],
+            module_branches[module],
+            module_branch_baselines[module],
+        )
+    }
+    analysis = (
+        analyze_pr(
+            root,
+            args.repository,
+            args.base_commit,
+            args.head_commit,
+            args.commit,
+            MODULE_PACKAGE_PREFIXES,
+            below_modules,
+        )
+        if args.base_commit
+        else None
+    )
+    json_output = args.json_output or (
+        args.html_output.with_name("analysis.json") if args.html_output else None
+    )
+    if json_output:
+        json_output.parent.mkdir(parents=True, exist_ok=True)
+        json_output.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "report_commit": args.commit,
+                    "below_baseline_modules": sorted(below_modules),
+                    "pr_analysis": analysis,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+
     if args.html_output:
         write_html(
             args.html_output,
@@ -792,6 +1051,7 @@ def main() -> None:
                 module_branch_baselines,
                 args.commit,
                 args.policy_url,
+                analysis,
             ),
         )
 
@@ -871,6 +1131,7 @@ def main() -> None:
         lines.extend(("", f"측정 commit: `{args.commit}`"))
 
     lines.extend(("", "</details>"))
+    lines.extend(render_analysis_markdown(analysis))
 
     print("\n".join(lines))
 

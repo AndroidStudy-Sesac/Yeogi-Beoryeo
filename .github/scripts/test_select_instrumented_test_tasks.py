@@ -2,7 +2,6 @@ import unittest
 
 from select_instrumented_test_tasks import build_matrix, select_modules
 
-
 ALL_MODULES = ("app", "data", "presentation")
 
 
@@ -47,6 +46,8 @@ class SelectInstrumentedTestTasksTest(unittest.TestCase):
                 [
                     "domain/src/main/NormalizeItemNameUseCase.kt",
                     ".github/scripts/focused_coverage_summary.py",
+                    ".github/scripts/focused_coverage_analysis.py",
+                    ".github/scripts/test_focused_coverage_analysis.py",
                 ],
             ),
             (),
