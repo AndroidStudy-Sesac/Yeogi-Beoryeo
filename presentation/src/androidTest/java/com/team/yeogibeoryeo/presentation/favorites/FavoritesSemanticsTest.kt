@@ -33,6 +33,7 @@ class FavoritesSemanticsTest {
                 FavoritesScreen(
                     uiState = FavoritesUiState(selectedTab = FavoriteTab.ITEM_GUIDE),
                     onTabClick = {},
+                    onItemSearchClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -40,6 +41,7 @@ class FavoritesSemanticsTest {
                     onCollectionSpotFavoriteRemoveClick = {},
                     onRegionalGuideFavoriteRemoveClick = {},
                     onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = {},
                 )
             }
         }
@@ -50,12 +52,15 @@ class FavoritesSemanticsTest {
     }
 
     @Test
-    fun 로딩_상태는_한_개의_live_region을_제공한다() {
+    fun `지역_가이드_빈_상태는_검색_이동_버튼을_제공한다`() {
+        var searchClickCount = 0
+
         composeTestRule.setContent {
             MaterialTheme {
                 FavoritesScreen(
-                    uiState = FavoritesUiState(isLoading = true),
+                    uiState = FavoritesUiState(selectedTab = FavoriteTab.REGIONAL_GUIDE),
                     onTabClick = {},
+                    onItemSearchClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -63,6 +68,37 @@ class FavoritesSemanticsTest {
                     onCollectionSpotFavoriteRemoveClick = {},
                     onRegionalGuideFavoriteRemoveClick = {},
                     onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = { searchClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("아직 즐겨찾기한 지역 가이드가 없어요")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("지역별 배출 가이드 찾아보기")
+            .assertIsDisplayed()
+            .assert(hasClickAction())
+            .performClick()
+
+        assertEquals(1, searchClickCount)
+    }
+
+    @Test
+    fun 로딩_상태는_한_개의_live_region을_제공한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                FavoritesScreen(
+                    uiState = FavoritesUiState(isLoading = true),
+                    onTabClick = {},
+                    onItemSearchClick = {},
+                    onItemGuideClick = {},
+                    onCollectionSpotClick = {},
+                    onRegionalGuideClick = {},
+                    onItemGuideFavoriteRemoveClick = {},
+                    onCollectionSpotFavoriteRemoveClick = {},
+                    onRegionalGuideFavoriteRemoveClick = {},
+                    onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = {},
                 )
             }
         }
@@ -70,6 +106,7 @@ class FavoritesSemanticsTest {
         composeTestRule.onNodeWithContentDescription("로딩 중")
             .assert(hasPoliteLiveRegion())
         composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
+        composeTestRule.onNodeWithText("품목 검색하기").assertDoesNotExist()
     }
 
     @Test
@@ -81,6 +118,7 @@ class FavoritesSemanticsTest {
                 FavoritesScreen(
                     uiState = FavoritesUiState(hasLoadError = true),
                     onTabClick = {},
+                    onItemSearchClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -88,6 +126,7 @@ class FavoritesSemanticsTest {
                     onCollectionSpotFavoriteRemoveClick = {},
                     onRegionalGuideFavoriteRemoveClick = {},
                     onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = {},
                     onRetryClick = { retryClickCount += 1 },
                 )
             }
@@ -100,6 +139,7 @@ class FavoritesSemanticsTest {
         composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
 
         assertEquals(1, retryClickCount)
+        composeTestRule.onNodeWithText("품목 검색하기").assertDoesNotExist()
     }
 
     @Test
@@ -125,6 +165,64 @@ class FavoritesSemanticsTest {
         composeTestRule.onNodeWithContentDescription("즐겨찾기 해제")
             .assert(hasClickAction())
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun emptyItemFavoritesInvokeOnlyItemSearch() {
+        var itemSearchClickCount = 0
+        var regionalGuideSearchClickCount = 0
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                FavoritesScreen(
+                    uiState = FavoritesUiState(selectedTab = FavoriteTab.ITEM_GUIDE),
+                    onTabClick = {},
+                    onItemSearchClick = { itemSearchClickCount += 1 },
+                    onItemGuideClick = {},
+                    onCollectionSpotClick = {},
+                    onRegionalGuideClick = {},
+                    onItemGuideFavoriteRemoveClick = {},
+                    onCollectionSpotFavoriteRemoveClick = {},
+                    onRegionalGuideFavoriteRemoveClick = {},
+                    onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = { regionalGuideSearchClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("품목 검색하기")
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .performClick()
+        composeTestRule.onNodeWithText("지역별 배출 가이드 찾아보기").assertDoesNotExist()
+
+        assertEquals(1, itemSearchClickCount)
+        assertEquals(0, regionalGuideSearchClickCount)
+    }
+
+    @Test
+    fun emptyCollectionSpotFavoritesHaveNoSearchActions() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                FavoritesScreen(
+                    uiState = FavoritesUiState(selectedTab = FavoriteTab.COLLECTION_SPOT),
+                    onTabClick = {},
+                    onItemSearchClick = {},
+                    onItemGuideClick = {},
+                    onCollectionSpotClick = {},
+                    onRegionalGuideClick = {},
+                    onItemGuideFavoriteRemoveClick = {},
+                    onCollectionSpotFavoriteRemoveClick = {},
+                    onRegionalGuideFavoriteRemoveClick = {},
+                    onRegionalGuideHomePrimaryClick = {},
+                    onRegionalGuideSearchClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("즐겨찾기한 수거 장소가 없어요").assertIsDisplayed()
+        composeTestRule.onNodeWithText("품목 검색하기").assertDoesNotExist()
+        composeTestRule.onNodeWithText("지역별 배출 가이드 찾아보기").assertDoesNotExist()
     }
 
     private fun hasHeading() =

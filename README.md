@@ -205,6 +205,7 @@ Issue
 | [CHANGELOG.md](CHANGELOG.md) | 버전별 주요 변경 이력 |
 | [DATA_SOURCES.md](DATA_SOURCES.md) | 공공데이터 출처와 가공 기준 |
 | [DEPENDENCY_VERIFICATION.md](DEPENDENCY_VERIFICATION.md) | 주요 dependency 검증 기록 |
+| [비치명 오류 기록 연결 가이드](docs/non-fatal-error-reporting.md) | 공통 reporter 사용법, 기능별 호출 책임과 회귀 테스트 |
 | [개인정보처리방침](https://androidstudy-sesac.github.io/Yeogi-Beoryeo/privacy-policy/) | 앱에서 처리하는 정보와 이용 목적 |
 | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | 오픈소스와 제3자 서비스 고지 |
 

@@ -3,8 +3,8 @@ package com.team.yeogibeoryeo.presentation.favorites
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.common.design.theme.YeogiBeoryeoTheme
+import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteUiModel
 
@@ -15,6 +15,7 @@ private fun FavoritesScreenLoadingPreview() {
         FavoritesScreen(
             uiState = FavoritesUiState(isLoading = true),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
@@ -22,6 +23,7 @@ private fun FavoritesScreenLoadingPreview() {
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
             onRegionalGuideHomePrimaryClick = {},
+            onRegionalGuideSearchClick = {},
         )
     }
 }
@@ -33,6 +35,7 @@ private fun FavoritesScreenEmptyPreview() {
         FavoritesScreen(
             uiState = FavoritesUiState(),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
@@ -40,6 +43,7 @@ private fun FavoritesScreenEmptyPreview() {
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
             onRegionalGuideHomePrimaryClick = {},
+            onRegionalGuideSearchClick = {},
         )
     }
 }
@@ -51,6 +55,7 @@ private fun FavoritesScreenSpotEmptyPreview() {
         FavoritesScreen(
             uiState = FavoritesUiState(selectedTab = FavoriteTab.COLLECTION_SPOT),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
@@ -58,6 +63,7 @@ private fun FavoritesScreenSpotEmptyPreview() {
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
             onRegionalGuideHomePrimaryClick = {},
+            onRegionalGuideSearchClick = {},
         )
     }
 }
@@ -92,6 +98,7 @@ private fun FavoritesScreenListPreview() {
                         ),
                 ),
             onTabClick = {},
+            onItemSearchClick = {},
             onItemGuideClick = {},
             onCollectionSpotClick = {},
             onRegionalGuideClick = {},
@@ -99,6 +106,7 @@ private fun FavoritesScreenListPreview() {
             onCollectionSpotFavoriteRemoveClick = {},
             onRegionalGuideFavoriteRemoveClick = {},
             onRegionalGuideHomePrimaryClick = {},
+            onRegionalGuideSearchClick = {},
         )
     }
 }

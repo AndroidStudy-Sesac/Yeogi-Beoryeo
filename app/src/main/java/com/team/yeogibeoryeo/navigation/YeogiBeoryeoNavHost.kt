@@ -12,8 +12,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -39,6 +39,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -46,8 +48,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.naver.maps.map.app.LegalNoticeActivity
 import com.naver.maps.map.app.OpenSourceLicenseActivity
 import com.team.yeogibeoryeo.BuildConfig
@@ -55,14 +55,14 @@ import com.team.yeogibeoryeo.appguide.AppGuideOverlay
 import com.team.yeogibeoryeo.appguide.AppGuideStep
 import com.team.yeogibeoryeo.appguide.AppGuideViewModel
 import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
-import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.common.E_WASTE_FREE_PICKUP_GUIDE_URL
+import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
+import com.team.yeogibeoryeo.presentation.search.ItemSearchGuideTarget
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemSearchRoute as ItemSearchScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemUsefulGuideRoute as ItemUsefulGuideScreenRoute
-import com.team.yeogibeoryeo.presentation.search.ItemSearchGuideTarget
 import com.team.yeogibeoryeo.presentation.search.QuickCategorySettingsRoute as QuickCategorySettingsScreenRoute
 import com.team.yeogibeoryeo.presentation.settings.SettingsDetailRoute as SettingsDetailScreenRoute
 import com.team.yeogibeoryeo.presentation.settings.SettingsRoute as SettingsScreenRoute
@@ -255,6 +255,9 @@ fun YeogiBeoryeoNavHost(
 
                 composable<FavoritesRoute> {
                     FavoritesScreenRoute(
+                        onItemSearchClick = {
+                            navController.navigateItemSearchRoot(navController.currentBackStackEntry)
+                        },
                         onItemGuideClick = { guideId ->
                             navController.navigate(
                                 ItemGuideDetailRoute(
@@ -280,6 +283,9 @@ fun YeogiBeoryeoNavHost(
                                 ),
                             )
                         },
+                        onRegionalGuideSearchClick = {
+                            navController.navigateRegionalGuideRecoveryRoot()
+                        },
                     )
                 }
 
@@ -304,6 +310,9 @@ fun YeogiBeoryeoNavHost(
                                     initialFavoriteTargetId = targetId,
                                 ),
                             )
+                        },
+                        onRegionalGuideSearchClick = {
+                            navController.navigateRegionalGuideRecoveryRoot()
                         },
                         onQuickCategorySettingsClick = { maxSelectedCount ->
                             navController.navigate(

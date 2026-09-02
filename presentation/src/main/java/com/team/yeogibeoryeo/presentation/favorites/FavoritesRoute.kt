@@ -27,9 +27,11 @@ import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpot
 
 @Composable
 fun FavoritesRoute(
+    onItemSearchClick: () -> Unit,
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
+    onRegionalGuideSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FavoritesViewModel = hiltViewModel(),
 ) {
@@ -56,6 +58,7 @@ fun FavoritesRoute(
         FavoritesScreen(
             uiState = uiState,
             onTabClick = viewModel::selectTab,
+            onItemSearchClick = onItemSearchClick,
             onItemGuideClick = onItemGuideClick,
             onCollectionSpotClick = onCollectionSpotClick,
             onRegionalGuideClick = onRegionalGuideClick,
@@ -63,6 +66,7 @@ fun FavoritesRoute(
             onCollectionSpotFavoriteRemoveClick = viewModel::removeCollectionSpotFavorite,
             onRegionalGuideFavoriteRemoveClick = viewModel::removeRegionalGuideFavorite,
             onRegionalGuideHomePrimaryClick = viewModel::toggleHomeRegionalGuidePrimaryFavorite,
+            onRegionalGuideSearchClick = onRegionalGuideSearchClick,
             onRetryClick = viewModel::retryLoad,
             modifier = Modifier.fillMaxSize(),
         )

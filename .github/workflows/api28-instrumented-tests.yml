@@ -79,6 +79,10 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
 
+      - name: Install Android Emulator
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "emulator"
+
       - name: Enable KVM
         run: sudo chmod 666 /dev/kvm
 

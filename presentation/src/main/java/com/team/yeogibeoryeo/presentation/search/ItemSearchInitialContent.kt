@@ -82,6 +82,7 @@ fun ItemSearchInitialContent(
     listState: LazyListState,
     modifier: Modifier = Modifier,
     onRegionalGuideSummaryClick: (String) -> Unit = {},
+    onRegionalGuideSearchClick: () -> Unit = {},
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
@@ -270,6 +271,7 @@ fun ItemSearchInitialContent(
                 HomeRegionalGuideSummaryBanner(
                     state = regionalGuideSummaryState,
                     onClick = onRegionalGuideSummaryClick,
+                    onSearchClick = onRegionalGuideSearchClick,
                     onRetryClick = onRegionalGuideSummaryRetryClick,
                     modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                 )

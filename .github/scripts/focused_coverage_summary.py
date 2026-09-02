@@ -4,9 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 import math
+import shutil
+from html import escape
 from pathlib import Path
 from xml.etree import ElementTree
+
+from focused_coverage_analysis import PrAnalysis, analyze_pr
 
 Metric = tuple[int, int, float]
 
@@ -29,7 +34,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--commit", default="")
     parser.add_argument("--artifact-url", default="")
     parser.add_argument("--policy-url", default="")
-    return parser.parse_args()
+    parser.add_argument("--html-output", type=Path)
+    parser.add_argument("--json-output", type=Path)
+    parser.add_argument("--repository", type=Path, default=Path.cwd())
+    parser.add_argument("--base-commit", default="")
+    parser.add_argument("--head-commit", default="")
+    args = parser.parse_args()
+    if bool(args.base_commit) != bool(args.head_commit):
+        parser.error("PR base와 head commit은 함께 전달해야 합니다.")
+    if (
+        args.html_output
+        and args.json_output
+        and (
+            args.json_output.resolve()
+            != args.html_output.with_name("analysis.json").resolve()
+        )
+    ):
+        parser.error(
+            "HTML과 함께 생성하는 JSON은 같은 폴더의 analysis.json이어야 합니다."
+        )
+    return args
 
 
 def read_properties(path: Path) -> dict[str, str]:
@@ -191,9 +215,7 @@ def render_cells(
 ) -> tuple[str, str, str]:
     baseline = baseline_covered * 100 / baseline_total
     delta = current - baseline
-    below_baseline = is_below_baseline(
-        covered, total, baseline_covered, baseline_total
-    )
+    below_baseline = is_below_baseline(covered, total, baseline_covered, baseline_total)
     if abs(delta) < 0.005 and delta != 0:
         delta_text = "-<0.01pp" if below_baseline else "+<0.01pp"
     else:
@@ -245,10 +267,22 @@ def render_status(
     branch: Metric,
     branch_baseline: tuple[int, int],
 ) -> str:
-    needs_review = is_below_baseline(line[0], line[1], *line_baseline) or (
+    return (
+        "⚠️ 확인 필요"
+        if needs_coverage_review(line, line_baseline, branch, branch_baseline)
+        else "✅ 기준 이상"
+    )
+
+
+def needs_coverage_review(
+    line: Metric,
+    line_baseline: tuple[int, int],
+    branch: Metric,
+    branch_baseline: tuple[int, int],
+) -> bool:
+    return is_below_baseline(line[0], line[1], *line_baseline) or (
         is_below_baseline(branch[0], branch[1], *branch_baseline)
     )
-    return "⚠️ 확인 필요" if needs_review else "✅ 기준 이상"
 
 
 def coverage_delta(metric: Metric, baseline: tuple[int, int]) -> float:
@@ -275,6 +309,7 @@ def render_delta_charts(
         for module in modules
     ]
     axis_limit = max(1, math.ceil(max(map(abs, line_deltas + branch_deltas))))
+
     def render_chart(metric: str, deltas: list[float]) -> list[str]:
         description = "; ".join(
             f"{module} {render_chart_number(delta)}"
@@ -286,8 +321,10 @@ def render_delta_charts(
             "```mermaid",
             "xychart",
             f"  accTitle: {metric} coverage changes from baseline",
-            f"  accDescr: {metric} percentage point changes from baseline. "
-            f"{description}.",
+            (
+                f"  accDescr: {metric} percentage point changes from baseline. "
+                f"{description}."
+            ),
             f"  x-axis [{', '.join(modules)}]",
             f'  y-axis "pp" -{axis_limit} --> {axis_limit}',
             f"  bar [{', '.join(map(render_chart_number, deltas))}]",
@@ -330,6 +367,608 @@ def render_raw_module_row(
     )
 
 
+HTML_STYLES = """
+@font-face {
+  font-family: Pretendard;
+  src: url("fonts/pretendard_regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Pretendard;
+  src: url("fonts/pretendard_bold.otf") format("opentype");
+  font-weight: 700 900;
+  font-display: swap;
+}
+:root {
+  color: #17212b;
+  background: #f8fafc;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+a {
+  display: inline-block;
+  min-height: 24px;
+  color: #14532d;
+  font-weight: 700;
+  text-underline-offset: 0.2em;
+}
+a:hover {
+  text-decoration-thickness: 0.14em;
+}
+a:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 3px;
+  border-radius: 0.2rem;
+}
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  padding: 0.65rem 0.9rem;
+  color: #ffffff;
+  background: #17212b;
+  transform: translateY(-150%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+header {
+  padding: 2.5rem max(1rem, calc((100% - 70rem) / 2));
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  margin-bottom: 0.5rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+header p {
+  max-width: 52rem;
+  margin-bottom: 0;
+  color: #475569;
+}
+main {
+  width: min(70rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+section + section {
+  margin-top: 2.5rem;
+}
+.report-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.commit {
+  overflow-wrap: anywhere;
+  color: #475569;
+}
+code {
+  overflow-wrap: anywhere;
+  padding: 0.12rem 0.35rem;
+  border-radius: 0.25rem;
+  color: #17212b;
+  background: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+.metric-card {
+  padding: 1.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+.metric-card h3 {
+  margin-bottom: 0.25rem;
+  font-size: 1.125rem;
+}
+.metric-current {
+  margin-bottom: 0.75rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.bar {
+  height: 0.65rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  background: #166534;
+}
+dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+dt {
+  color: #475569;
+}
+dd {
+  margin: 0;
+  font-weight: 700;
+}
+.status {
+  display: inline-block;
+  width: fit-content;
+  margin-top: 0.85rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+.status-good {
+  color: #166534;
+  background: #f0fdf4;
+}
+.status-review {
+  color: #92400e;
+  background: #fffbeb;
+}
+.table-note {
+  color: #475569;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  table-layout: fixed;
+}
+.sources-table th:first-child {
+  width: 40%;
+}
+.candidates-table th:first-child {
+  width: 13%;
+}
+.candidates-table th:nth-child(2) {
+  width: 39%;
+}
+caption {
+  padding: 0.75rem 0;
+  color: #17212b;
+  font-size: 1.125rem;
+  font-weight: 800;
+  text-align: left;
+}
+th,
+td {
+  overflow-wrap: anywhere;
+  padding: 0.9rem;
+  border-bottom: 1px solid #cbd5e1;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  color: #334155;
+  background: #f1f5f9;
+}
+tbody tr:last-child th,
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+.metric-value,
+.metric-detail {
+  display: block;
+}
+.metric-value {
+  font-weight: 800;
+}
+.metric-detail {
+  margin-top: 0.2rem;
+  color: #475569;
+  font-size: 0.9rem;
+}
+@media (max-width: 44rem) {
+  dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  dd {
+    margin-bottom: 0.5rem;
+  }
+  header {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  tbody,
+  tr,
+  th,
+  td {
+    display: block;
+    width: 100%;
+  }
+  tbody tr + tr {
+    border-top: 0.75rem solid #f8fafc;
+  }
+  tbody th {
+    border-bottom: 1px solid #94a3b8;
+    background: #f1f5f9;
+    font-size: 1.1rem;
+  }
+  .sources-table th:first-child,
+  .candidates-table th:first-child {
+    width: 100%;
+  }
+  tbody td {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  tbody td::before {
+    content: attr(data-label);
+    color: #475569;
+    font-weight: 700;
+  }
+}
+@media print {
+  :root,
+  body {
+    background: #ffffff;
+  }
+  .skip-link {
+    display: none;
+  }
+}
+""".strip()
+
+
+SOURCE_STATUS = {
+    "measured": "XML에 포함",
+    "not_measured": "XML에 없음: 포함 여부 확인",
+    "ambiguous": "소스 연결 불명확",
+    "deleted": "삭제됨",
+    "outside_scope": "측정 소스 경로 밖",
+}
+CHANGE_LABEL = {"A": "추가", "M": "수정", "D": "삭제", "T": "유형 변경"}
+ANALYSIS_NOTE = (
+    "파일이 XML에 있어도 모든 declaration이 측정됐다는 뜻은 아닙니다. "
+    "XML에 없는 파일은 filter, variant와 실행 코드 생성 여부를 확인하세요. "
+    "테스트 누락이나 CI 실패로 단정하지 않습니다."
+)
+CANDIDATE_NOTE = (
+    "baseline보다 낮은 모듈에서 미실행 Branch, Line 순으로 모듈당 최대 5개 class를 표시합니다. "
+    "기존 미실행 코드도 포함되므로 이번 PR의 하락 원인으로 확정할 수 없습니다. "
+    "전체 후보와 변경 파일은 analysis.json에서 확인할 수 있습니다."
+)
+
+
+def analysis_tables(
+    analysis: PrAnalysis,
+) -> list[tuple[str, list[str], list[list[str]]]]:
+    sources = [
+        [
+            item["path"],
+            CHANGE_LABEL[item["change"]],
+            SOURCE_STATUS[item["status"]],
+            str(item["missed_lines"]) if item["missed_lines"] is not None else "—",
+            str(item["missed_branches"])
+            if item["missed_branches"] is not None
+            else "—",
+        ]
+        for item in analysis["changed_sources"][:50]
+    ]
+    candidates = []
+    counts: dict[str, int] = {}
+    for item in analysis["candidates"]:
+        module = item["module"]
+        counts[module] = counts.get(module, 0) + 1
+        if counts[module] > 5:
+            continue
+        changed = {True: "변경됨", False: "변경 없음", None: "소스 연결 불명확"}[
+            item["changed_in_pr"]
+        ]
+        candidates.append(
+            [
+                module,
+                item["class_name"],
+                str(item["missed_lines"]),
+                str(item["missed_branches"]),
+                changed,
+            ]
+        )
+    return [
+        (
+            "변경한 Kotlin/Java 파일",
+            ["경로", "변경", "측정 상태", "미실행 Line", "미실행 Branch"],
+            sources,
+        ),
+        (
+            "미실행 코드 확인 후보",
+            ["모듈", "package/class", "미실행 Line", "미실행 Branch", "PR 변경 여부"],
+            candidates,
+        ),
+    ]
+
+
+def analysis_description(analysis: PrAnalysis) -> str:
+    return (
+        f"PR 전체 변경 {analysis['changed_file_count']}개 중 Kotlin/Java 파일 "
+        f"{len(analysis['changed_sources'])}개를 확인했습니다. "
+        "변경 파일은 경로순으로 최대 50개를 표시합니다. "
+        "이름 변경은 삭제와 추가로 나눠 표시합니다."
+    )
+
+
+def markdown_cell(value: str) -> str:
+    # Escape both Markdown syntax and HTML; filenames may contain newlines or pipes.
+    return "".join(
+        character
+        if character.isalnum() or character in " /.:—"
+        else f"&#{ord(character)};"
+        for character in value.replace("\r", "\\r").replace("\n", "\\n")
+    )
+
+
+def render_analysis_markdown(analysis: PrAnalysis | None) -> list[str]:
+    lines = ["", "### PR 변경 파일 분석", ""]
+    if analysis is None:
+        return lines + [
+            "PR base/head가 없는 실행이므로 PR 변경 파일 분석은 적용하지 않습니다."
+        ]
+    lines += [analysis_description(analysis), "", ANALYSIS_NOTE, "", CANDIDATE_NOTE, ""]
+    for title, headers, rows in analysis_tables(analysis):
+        lines += [f"#### {title}", ""]
+        if not rows:
+            lines += ["해당 항목이 없습니다.", ""]
+            continue
+        lines += ["| " + " | ".join(headers) + " |", "|" + "---|" * len(headers)]
+        lines += ["| " + " | ".join(map(markdown_cell, row)) + " |" for row in rows]
+        lines.append("")
+    lines += ["<details>", "<summary>PR 비교 기준</summary>", ""]
+    for key in ("base_commit", "head_commit", "merge_base", "report_commit"):
+        lines += [f"- {key}: `{analysis[key]}`"]
+    return lines + ["", "</details>"]
+
+
+def render_analysis_html(analysis: PrAnalysis | None) -> str:
+    content = '<h2 id="pr-heading">PR 변경 파일 분석</h2>'
+    if analysis is None:
+        content += "<p>PR base/head가 없는 실행이므로 PR 변경 파일 분석은 적용하지 않습니다.</p>"
+    else:
+        content += f"<p>{analysis_description(analysis)}</p><p>{ANALYSIS_NOTE}</p><p>{CANDIDATE_NOTE}</p>"
+        content += '<p><a href="analysis.json">전체 분석 JSON</a></p>'
+        for table_class, (title, headers, rows) in zip(
+            ("sources-table", "candidates-table"),
+            analysis_tables(analysis),
+            strict=True,
+        ):
+            if not rows:
+                content += f"<h3>{title}</h3><p>해당 항목이 없습니다.</p>"
+                continue
+            content += (
+                f'<table class="{table_class}"><caption>{title}</caption><thead><tr>'
+            )
+            content += "".join(f'<th scope="col">{header}</th>' for header in headers)
+            content += "</tr></thead><tbody>"
+            for row in rows:
+                content += f'<tr><th scope="row">{escape(row[0])}</th>'
+                content += "".join(
+                    f'<td data-label="{header}">{escape(value)}</td>'
+                    for header, value in zip(headers[1:], row[1:], strict=True)
+                )
+                content += "</tr>"
+            content += "</tbody></table>"
+        content += '<h3>PR 비교 기준</h3><dl class="commit">'
+        for key in ("base_commit", "head_commit", "merge_base", "report_commit"):
+            content += f"<dt>{key}</dt><dd>{escape(analysis[key])}</dd>"
+        content += "</dl>"
+    return f'<section aria-labelledby="pr-heading">{content}</section>'
+
+
+def render_html_metric_card(
+    metric_name: str,
+    metric: Metric,
+    baseline: tuple[int, int],
+) -> str:
+    current_text, baseline_text, delta_text = render_cells(*metric, *baseline)
+    below_baseline = is_below_baseline(metric[0], metric[1], *baseline)
+    status_text = "확인 필요" if below_baseline else "기준 이상"
+    status_class = "status-review" if below_baseline else "status-good"
+    width = min(100.0, max(0.0, metric[2]))
+    escaped_name = escape(metric_name)
+    return f"""
+<article class="metric-card" aria-labelledby="metric-{escaped_name.lower()}">
+  <h3 id="metric-{escaped_name.lower()}">전체 {escaped_name}</h3>
+  <p class="metric-current">{escape(current_text)}</p>
+  <div class="bar" aria-hidden="true"><span style="width: {width:.2f}%"></span></div>
+  <dl>
+    <dt>baseline</dt><dd>{escape(baseline_text)}</dd>
+    <dt>차이</dt><dd>{escape(delta_text)}</dd>
+  </dl>
+  <span class="status {status_class}">{status_text}</span>
+</article>""".strip()
+
+
+def render_html_module_row(
+    module: str,
+    line: Metric,
+    line_baseline: tuple[int, int],
+    branch: Metric,
+    branch_baseline: tuple[int, int],
+) -> str:
+    line_current, line_base, line_delta = render_cells(
+        *line,
+        *line_baseline,
+    )
+    branch_current, branch_base, branch_delta = render_cells(
+        *branch,
+        *branch_baseline,
+    )
+    needs_review = needs_coverage_review(
+        line,
+        line_baseline,
+        branch,
+        branch_baseline,
+    )
+    status_text = "확인 필요" if needs_review else "기준 이상"
+    status_class = "status-review" if needs_review else "status-good"
+    return f"""
+<tr>
+  <th scope="row"><code>{escape(module)}</code></th>
+  <td data-label="Line">
+    <span class="metric-value">{escape(line_current)}</span>
+    <span class="metric-detail">baseline {escape(line_base)}</span>
+    <span class="metric-detail">차이 {escape(line_delta)}</span>
+  </td>
+  <td data-label="Branch">
+    <span class="metric-value">{escape(branch_current)}</span>
+    <span class="metric-detail">baseline {escape(branch_base)}</span>
+    <span class="metric-detail">차이 {escape(branch_delta)}</span>
+  </td>
+  <td data-label="상태"><span class="status {status_class}">{status_text}</span></td>
+</tr>""".strip()
+
+
+def render_html(
+    line: Metric,
+    line_baseline: tuple[int, int],
+    branch: Metric,
+    branch_baseline: tuple[int, int],
+    module_lines: dict[str, Metric],
+    module_line_baselines: dict[str, tuple[int, int]],
+    module_branches: dict[str, Metric],
+    module_branch_baselines: dict[str, tuple[int, int]],
+    commit: str = "",
+    policy_url: str = "",
+    analysis: PrAnalysis | None = None,
+) -> str:
+    module_rows = "\n".join(
+        render_html_module_row(
+            module,
+            module_lines[module],
+            module_line_baselines[module],
+            module_branches[module],
+            module_branch_baselines[module],
+        )
+        for module in MODULE_PACKAGE_PREFIXES
+    )
+    commit_html = (
+        f'<p class="commit">측정 commit <code>{escape(commit)}</code></p>'
+        if commit
+        else ""
+    )
+    policy_link = (
+        f'<a href="{escape(policy_url, quote=True)}">운영 정책</a>'
+        if policy_url
+        else ""
+    )
+    links = "\n".join(
+        link
+        for link in (
+            '<a href="html/index.html">상세 Kover report</a>',
+            policy_link,
+        )
+        if link
+    )
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="전체와 모듈별 focused coverage를 baseline과 비교한 정적 요약입니다.">
+  <title>Focused coverage 요약</title>
+  <style>{HTML_STYLES}</style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 이동</a>
+  <header>
+    <h1>Focused coverage 요약</h1>
+    <p>JVM unit test로 측정한 business logic coverage를 baseline과 비교합니다.</p>
+  </header>
+  <main id="main-content">
+    <nav class="report-links" aria-label="관련 report">
+      {links}
+    </nav>
+    {commit_html}
+    <section aria-labelledby="overall-heading">
+      <h2 id="overall-heading">전체 coverage</h2>
+      <div class="metric-grid">
+        {render_html_metric_card("Line", line, line_baseline)}
+        {render_html_metric_card("Branch", branch, branch_baseline)}
+      </div>
+    </section>
+    <section aria-labelledby="modules-heading">
+      <h2 id="modules-heading">모듈별 coverage</h2>
+      <p class="table-note" id="coverage-note">
+        Line이나 Branch가 baseline보다 낮은 모듈은 '확인 필요'로 표시합니다.
+        Coverage 하락 자체는 CI 실패 조건이 아닙니다.
+      </p>
+      <table aria-describedby="coverage-note">
+        <caption>모듈별 coverage</caption>
+        <thead>
+          <tr>
+            <th scope="col">모듈</th>
+            <th scope="col">Line</th>
+            <th scope="col">Branch</th>
+            <th scope="col">상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          {module_rows}
+        </tbody>
+      </table>
+    </section>
+    {render_analysis_html(analysis)}
+  </main>
+</body>
+</html>
+"""
+
+
+def write_html(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8", newline="\n")
+    fonts = path.parent / "fonts"
+    fonts.mkdir(exist_ok=True)
+    repository = Path(__file__).resolve().parents[2]
+    for filename in ("pretendard_regular.otf", "pretendard_bold.otf"):
+        shutil.copyfile(
+            repository / "common/src/main/res/font" / filename, fonts / filename
+        )
+    shutil.copyfile(
+        repository / "THIRD_PARTY_NOTICES.md", fonts / "THIRD_PARTY_NOTICES.md"
+    )
+
+
 def main() -> None:
     args = parse_args()
     root = ElementTree.parse(args.report).getroot()
@@ -353,6 +992,68 @@ def main() -> None:
     }
     validate_baseline_total("Line", line_baseline, module_line_baselines)
     validate_baseline_total("Branch", branch_baseline, module_branch_baselines)
+
+    below_modules = {
+        module
+        for module in MODULE_PACKAGE_PREFIXES
+        if needs_coverage_review(
+            module_lines[module],
+            module_line_baselines[module],
+            module_branches[module],
+            module_branch_baselines[module],
+        )
+    }
+    analysis = (
+        analyze_pr(
+            root,
+            args.repository,
+            args.base_commit,
+            args.head_commit,
+            args.commit,
+            MODULE_PACKAGE_PREFIXES,
+            below_modules,
+        )
+        if args.base_commit
+        else None
+    )
+    json_output = args.json_output or (
+        args.html_output.with_name("analysis.json") if args.html_output else None
+    )
+    if json_output:
+        json_output.parent.mkdir(parents=True, exist_ok=True)
+        json_output.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "report_commit": args.commit,
+                    "below_baseline_modules": sorted(below_modules),
+                    "pr_analysis": analysis,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+
+    if args.html_output:
+        write_html(
+            args.html_output,
+            render_html(
+                line,
+                line_baseline,
+                branch,
+                branch_baseline,
+                module_lines,
+                module_line_baselines,
+                module_branches,
+                module_branch_baselines,
+                args.commit,
+                args.policy_url,
+                analysis,
+            ),
+        )
 
     lines = ["## Focused coverage", ""]
     links = []
@@ -379,8 +1080,10 @@ def main() -> None:
         "",
         "### 모듈별 baseline 대비 변화",
         "",
-        "각 차트는 모듈별 baseline 대비 변화를 표시합니다. "
-        "0보다 작으면 baseline보다 낮으며, 단위는 pp입니다.",
+        (
+            "각 차트는 모듈별 baseline 대비 변화를 표시합니다. "
+            "0보다 작으면 baseline보다 낮으며, 단위는 pp입니다."
+        ),
         "",
         *render_delta_charts(
             module_lines,
@@ -428,6 +1131,7 @@ def main() -> None:
         lines.extend(("", f"측정 commit: `{args.commit}`"))
 
     lines.extend(("", "</details>"))
+    lines.extend(render_analysis_markdown(analysis))
 
     print("\n".join(lines))
 

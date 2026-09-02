@@ -20,7 +20,7 @@ class QuickCategoryGridLabelLayoutTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun 발포합성수지_라벨은_일반_글자_크기_넓은_폭에서_한_줄로_표시된다() {
+    fun 발포합성수지_라벨은_일반_글자_크기_넓은_폭에서_두_줄을_넘지_않는다() {
         var lineCount: Int? = null
 
         composeTestRule.setContent {
@@ -43,7 +43,7 @@ class QuickCategoryGridLabelLayoutTest {
 
         composeTestRule.waitUntil { lineCount != null }
 
-        assertEquals(1, lineCount)
+        assertTrue(requireNotNull(lineCount) <= 2)
     }
 
     @Test

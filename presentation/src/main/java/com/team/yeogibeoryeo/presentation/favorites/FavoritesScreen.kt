@@ -36,6 +36,7 @@ import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
 fun FavoritesScreen(
     uiState: FavoritesUiState,
     onTabClick: (FavoriteTab) -> Unit,
+    onItemSearchClick: () -> Unit,
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
@@ -43,6 +44,7 @@ fun FavoritesScreen(
     onCollectionSpotFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideFavoriteRemoveClick: (String) -> Unit,
     onRegionalGuideHomePrimaryClick: (String) -> Unit,
+    onRegionalGuideSearchClick: () -> Unit,
     modifier: Modifier = Modifier,
     onRetryClick: () -> Unit = {},
 ) {
@@ -108,6 +110,16 @@ fun FavoritesScreen(
                     EmptyFavoritesCard(
                         title = stringResource(uiState.selectedTab.emptyTitleResId),
                         description = stringResource(uiState.selectedTab.emptyDescriptionResId),
+                        actionLabel = when (uiState.selectedTab) {
+                            FavoriteTab.ITEM_GUIDE -> stringResource(R.string.item_search_action)
+                            FavoriteTab.REGIONAL_GUIDE -> stringResource(R.string.regional_guide_search_action)
+                            FavoriteTab.COLLECTION_SPOT -> null
+                        },
+                        onActionClick = if (uiState.selectedTab == FavoriteTab.ITEM_GUIDE) {
+                            onItemSearchClick
+                        } else {
+                            onRegionalGuideSearchClick
+                        },
                     )
                 }
             }

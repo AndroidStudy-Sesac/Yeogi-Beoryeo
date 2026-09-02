@@ -126,7 +126,7 @@ constructor(
             else -> this in 4..5
         }
 
-    private fun String.toSearchKey(): String = filterNot { it.isWhitespace() }
+    private fun String.toSearchKey(): String = filterNot { it.isWhitespace() || it in "()（）" }
 
     private fun resolveCategory(
         guideDetail: ItemGuideDetail?,

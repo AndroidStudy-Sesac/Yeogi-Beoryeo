@@ -68,8 +68,8 @@ android {
         applicationId = "com.team.yeogibeoryeo"
         minSdk = 28
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.0.0"
+        versionCode = 8
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -150,6 +150,7 @@ android {
                     device = "Pixel 2"
                     apiLevel = 28
                     systemImageSource = "aosp"
+                    require64Bit = true
                     testedAbi = "x86_64"
                 }
             }
