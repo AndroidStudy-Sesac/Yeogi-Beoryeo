@@ -7,6 +7,24 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-02
+
+### Added
+
+- 즐겨찾기가 비어 있는 품목과 지역별 배출 가이드 화면에서 관련 검색으로 바로 이동하는 경로
+- 개인정보를 제외한 고정 분류값으로 release 비치명 오류를 기록하는 공통 기반
+
+### Changed
+
+- 앱 프로세스가 재생성되어도 품목 검색 입력과 결과를 만든 검색어를 구분해 복원
+- Focused Coverage 정적 HTML에서 PR 변경 파일의 측정 포함 상태와 미실행 코드 확인 후보를 함께 표시
+
+### Fixed
+
+- 품목명의 반각 또는 전각 괄호를 생략해 검색해도 해당 품목을 찾도록 검색 비교 보정
+- 즐겨찾기 탭의 Kotlin resource annotation warning 제거
+- API 28 Gradle Managed Device 환경과 UI 테스트 설정을 복구해 회귀 검증 안정화
+
 ## [1.0.0] - 2026-08-19
 
 ### Added
@@ -111,7 +129,8 @@
 
 - 저장소 밖의 업로드 키로 서명된 Google Play 배포용 AAB 생성 절차
 
-[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.1.1...v0.2.0
