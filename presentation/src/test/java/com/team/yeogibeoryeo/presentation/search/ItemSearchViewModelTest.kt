@@ -1,5 +1,7 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.Favorite
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.domain.favorite.repository.FavoriteRepository
@@ -21,10 +23,12 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -97,6 +101,391 @@ class ItemSearchViewModelTest {
             assertEquals("유리", viewModel.uiState.value.query)
             assertEquals("유리", viewModel.uiState.value.submittedQuery)
             assertEquals(listOf("유리"), viewModel.uiState.value.guides.map { it.name })
+        }
+
+    @Test
+    fun `재생성하면 제출하지 않은 입력만 복원하고 검색하지 않는다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(FakeRepository(), savedStateHandle = savedStateHandle)
+            viewModel.onQueryChange(" 비닐 ")
+
+            val repository = FakeRepository()
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            advanceUntilIdle()
+
+            assertEquals(" 비닐 ", restoredViewModel.uiState.value.query)
+            assertNull(restoredViewModel.uiState.value.submittedQuery)
+            assertFalse(restoredViewModel.uiState.value.hasSearched)
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertEquals(emptyList<String>(), repository.queries)
+        }
+
+    @Test
+    fun `재생성하면 수정 중인 입력과 제출 검색어를 구분하고 결과 버전을 유지한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { listOf(sampleGuide("이전 $it")) }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.search("유리")
+            viewModel.search("종이")
+            viewModel.onQueryChange(" 비닐 ")
+            val completedVersion = viewModel.uiState.value.searchResultVersion
+
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide("새 $it")) })
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            advanceUntilIdle()
+
+            assertEquals(listOf("종이"), repository.queries)
+            assertEquals(" 비닐 ", restoredViewModel.uiState.value.query)
+            assertEquals("종이", restoredViewModel.uiState.value.submittedQuery)
+            assertEquals(true, restoredViewModel.uiState.value.hasSearched)
+            assertEquals(listOf("새 종이"), restoredViewModel.uiState.value.guides.map { it.name })
+            assertEquals(completedVersion, restoredViewModel.uiState.value.searchResultVersion)
+
+            restoredViewModel.search()
+            advanceUntilIdle()
+
+            assertEquals(listOf("종이", "비닐"), repository.queries)
+            assertEquals("비닐", restoredViewModel.uiState.value.query)
+            assertEquals("비닐", restoredViewModel.uiState.value.submittedQuery)
+            assertEquals(completedVersion + 1, restoredViewModel.uiState.value.searchResultVersion)
+        }
+
+    @Test
+    fun `검색을 초기화한 뒤 재생성하면 소비한 초기 검색어로 다시 검색하지 않는다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { listOf(sampleGuide(it)) }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.searchInitialQueryIfNeeded(" 유리 ")
+            viewModel.clearSearch()
+
+            val repository = FakeRepository()
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            restoredViewModel.searchInitialQueryIfNeeded("유리")
+            restoredViewModel.searchInitialQueryIfNeeded(" 유리 ")
+            advanceUntilIdle()
+
+            assertEquals(emptyList<String>(), repository.queries)
+            assertEquals("", restoredViewModel.uiState.value.query)
+            assertNull(restoredViewModel.uiState.value.submittedQuery)
+            assertFalse(restoredViewModel.uiState.value.hasSearched)
+            assertEquals(emptyList<DisposalItemGuide>(), restoredViewModel.uiState.value.guides)
+        }
+
+    @Test
+    fun `재생성하면 이전 초기 검색어는 무시하고 새 초기 검색어만 한 번 소비한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { listOf(sampleGuide(it)) }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.searchInitialQueryIfNeeded("유리")
+            viewModel.search("비닐")
+
+            val repository = FakeRepository(onSearch = { listOf(sampleGuide(it)) })
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            restoredViewModel.searchInitialQueryIfNeeded(" 유리 ")
+            advanceUntilIdle()
+
+            assertEquals(listOf("비닐"), repository.queries)
+            assertEquals("비닐", restoredViewModel.uiState.value.query)
+            assertEquals("비닐", restoredViewModel.uiState.value.submittedQuery)
+
+            restoredViewModel.searchInitialQueryIfNeeded(" 종이 ")
+            restoredViewModel.searchInitialQueryIfNeeded("종이")
+            advanceUntilIdle()
+
+            assertEquals(listOf("비닐", "종이"), repository.queries)
+            assertEquals("종이", restoredViewModel.uiState.value.query)
+            assertEquals(listOf("종이"), restoredViewModel.uiState.value.guides.map { it.name })
+        }
+
+    @Test
+    fun `빈 검색 결과에서 재생성해도 검색 상태를 유지하고 제출 검색어로 다시 조회한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(FakeRepository(), savedStateHandle = savedStateHandle)
+            viewModel.search("없는 품목")
+
+            val repository = FakeRepository()
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            advanceUntilIdle()
+
+            assertEquals(listOf("없는 품목"), repository.queries)
+            assertEquals("없는 품목", restoredViewModel.uiState.value.query)
+            assertEquals("없는 품목", restoredViewModel.uiState.value.submittedQuery)
+            assertEquals(true, restoredViewModel.uiState.value.hasSearched)
+            assertEquals(emptyList<DisposalItemGuide>(), restoredViewModel.uiState.value.guides)
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertNull(restoredViewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 오류 뒤 재생성하면 이전 오류 대신 재조회 결과를 표시한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { error("network") }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.search("건전지")
+            assertEquals(R.string.search_load_failed_message, viewModel.uiState.value.errorMessageResId)
+
+            val result = CompletableDeferred<List<DisposalItemGuide>>()
+            val repository = FakeRepository(onSearch = { result.await() })
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            runCurrent()
+
+            assertEquals(listOf("건전지"), repository.queries)
+            assertEquals(true, restoredViewModel.uiState.value.isLoading)
+            assertNull(restoredViewModel.uiState.value.errorMessageResId)
+
+            result.complete(listOf(sampleGuide("건전지")))
+            advanceUntilIdle()
+
+            assertEquals(listOf("건전지"), restoredViewModel.uiState.value.guides.map { it.name })
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertNull(restoredViewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `복원 재조회에 실패해도 다시 시도할 때 수정 중인 입력을 유지한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { listOf(sampleGuide("유리병")) }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.search("유리")
+            viewModel.onQueryChange(" 비닐 ")
+
+            var shouldFail = true
+            val repository = FakeRepository(
+                onSearch = {
+                    if (shouldFail) error("network")
+                    listOf(sampleGuide("새 유리병"))
+                },
+            )
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            advanceUntilIdle()
+
+            assertEquals(" 비닐 ", restoredViewModel.uiState.value.query)
+            assertEquals(R.string.search_load_failed_message, restoredViewModel.uiState.value.errorMessageResId)
+
+            shouldFail = false
+            restoredViewModel.retrySearch()
+            advanceUntilIdle()
+
+            assertEquals(listOf("유리", "유리"), repository.queries)
+            assertEquals(" 비닐 ", restoredViewModel.uiState.value.query)
+            assertEquals("유리", restoredViewModel.uiState.value.submittedQuery)
+            assertEquals(listOf("새 유리병"), restoredViewModel.uiState.value.guides.map { it.name })
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertNull(restoredViewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `검색 도중 재생성하면 초기 검색어를 중복 실행하지 않고 새 결과를 기다린다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val previousResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { previousResult.await() }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.searchInitialQueryIfNeeded("유리")
+            assertEquals(true, viewModel.uiState.value.isLoading)
+
+            val restoredResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val repository = FakeRepository(onSearch = { restoredResult.await() })
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            restoredViewModel.searchInitialQueryIfNeeded("유리")
+            runCurrent()
+
+            assertEquals(listOf("유리"), repository.queries)
+            assertEquals("유리", restoredViewModel.uiState.value.query)
+            assertEquals("유리", restoredViewModel.uiState.value.submittedQuery)
+            assertEquals(true, restoredViewModel.uiState.value.hasSearched)
+            assertEquals(true, restoredViewModel.uiState.value.isLoading)
+
+            previousResult.complete(listOf(sampleGuide("이전 유리병")))
+            runCurrent()
+
+            assertEquals(emptyList<DisposalItemGuide>(), restoredViewModel.uiState.value.guides)
+            assertEquals(true, restoredViewModel.uiState.value.isLoading)
+
+            restoredResult.complete(listOf(sampleGuide("새 유리병")))
+            advanceUntilIdle()
+
+            assertEquals(listOf("유리"), repository.queries)
+            assertEquals(listOf("새 유리병"), restoredViewModel.uiState.value.guides.map { it.name })
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertNull(restoredViewModel.uiState.value.errorMessageResId)
+        }
+
+    @Test
+    fun `복원 재조회 중 입력을 바꾸면 요청을 취소하고 새 입력만 저장한다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { listOf(sampleGuide("유리병")) }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.search("유리")
+
+            val result = CompletableDeferred<List<DisposalItemGuide>>()
+            val restoredState = viewModel.saveStateAndClear(savedStateHandle)
+            val repository = FakeRepository(onSearch = { result.await() })
+            val restoredViewModel = createViewModel(repository, savedStateHandle = restoredState)
+            runCurrent()
+            restoredViewModel.onQueryChange("비닐")
+            result.complete(listOf(sampleGuide("유리병")))
+            advanceUntilIdle()
+
+            assertEquals(listOf("유리"), repository.queries)
+            assertEquals("비닐", restoredViewModel.uiState.value.query)
+            assertNull(restoredViewModel.uiState.value.submittedQuery)
+            assertFalse(restoredViewModel.uiState.value.hasSearched)
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertNull(restoredViewModel.uiState.value.errorMessageResId)
+            assertEquals(emptyList<DisposalItemGuide>(), restoredViewModel.uiState.value.guides)
+
+            val nextRepository = FakeRepository()
+            val nextViewModel = createViewModel(
+                nextRepository,
+                savedStateHandle = restoredViewModel.saveStateAndClear(restoredState),
+            )
+            advanceUntilIdle()
+
+            assertEquals("비닐", nextViewModel.uiState.value.query)
+            assertNull(nextViewModel.uiState.value.submittedQuery)
+            assertFalse(nextViewModel.uiState.value.hasSearched)
+            assertEquals(emptyList<String>(), nextRepository.queries)
+        }
+
+    @Test
+    fun `복원 재조회 중 초기화하면 취소한 결과와 검색 상태가 다시 나타나지 않는다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { listOf(sampleGuide("유리병")) }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.search("유리")
+
+            val result = CompletableDeferred<List<DisposalItemGuide>>()
+            val restoredState = viewModel.saveStateAndClear(savedStateHandle)
+            val repository = FakeRepository(onSearch = { result.await() })
+            val restoredViewModel = createViewModel(repository, savedStateHandle = restoredState)
+            runCurrent()
+            restoredViewModel.clearSearch()
+            result.complete(listOf(sampleGuide("유리병")))
+            advanceUntilIdle()
+
+            assertEquals(listOf("유리"), repository.queries)
+            assertEquals("", restoredViewModel.uiState.value.query)
+            assertNull(restoredViewModel.uiState.value.submittedQuery)
+            assertFalse(restoredViewModel.uiState.value.hasSearched)
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertNull(restoredViewModel.uiState.value.errorMessageResId)
+            assertEquals(emptyList<DisposalItemGuide>(), restoredViewModel.uiState.value.guides)
+
+            val nextRepository = FakeRepository()
+            val nextViewModel = createViewModel(
+                nextRepository,
+                savedStateHandle = restoredViewModel.saveStateAndClear(restoredState),
+            )
+            advanceUntilIdle()
+
+            assertEquals("", nextViewModel.uiState.value.query)
+            assertFalse(nextViewModel.uiState.value.hasSearched)
+            assertEquals(emptyList<String>(), nextRepository.queries)
+        }
+
+    @Test
+    fun `카테고리 이동 뒤 재생성하면 조회와 이동 이벤트를 반복하지 않는다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onCategory = { listOf(sampleGuide("비닐봉투")) }),
+                savedStateHandle = savedStateHandle,
+            )
+            val event = async(start = CoroutineStart.UNDISPATCHED) { viewModel.events.first() }
+            viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+            assertEquals("비닐봉투", (event.await() as ItemSearchEvent.NavigateToGuide).guide.name)
+
+            val repository = FakeRepository(onCategory = { listOf(sampleGuide("비닐봉투")) })
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            val restoredEvents = mutableListOf<ItemSearchEvent>()
+            backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                restoredViewModel.events.collect { restoredEvents += it }
+            }
+            runCurrent()
+
+            assertEquals(emptyList<DisposalCategory>(), repository.requestedCategories)
+            assertEquals(emptyList<String>(), repository.queries)
+            assertEquals(emptyList<ItemSearchEvent>(), restoredEvents)
+            assertFalse(restoredViewModel.uiState.value.hasSearched)
+        }
+
+    @Test
+    fun `빈 검색어를 제출한 뒤 재생성하면 이전 검색을 복원하지 않는다`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            val viewModel = createViewModel(
+                FakeRepository(onSearch = { listOf(sampleGuide("유리병")) }),
+                savedStateHandle = savedStateHandle,
+            )
+            viewModel.search("유리")
+            viewModel.search("   ")
+
+            val repository = FakeRepository()
+            val restoredViewModel = createViewModel(
+                repository,
+                savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+            )
+            advanceUntilIdle()
+
+            assertEquals("   ", restoredViewModel.uiState.value.query)
+            assertNull(restoredViewModel.uiState.value.submittedQuery)
+            assertFalse(restoredViewModel.uiState.value.hasSearched)
+            assertFalse(restoredViewModel.uiState.value.isLoading)
+            assertEquals(emptyList<DisposalItemGuide>(), restoredViewModel.uiState.value.guides)
+            assertEquals(emptyList<String>(), repository.queries)
         }
 
     @Test
@@ -604,8 +993,10 @@ class ItemSearchViewModelTest {
         repository: FakeRepository,
         favoriteRepository: FakeFavoriteRepository = FakeFavoriteRepository(),
         homeQuickCategoryRepository: FakeHomeQuickCategoryRepository = FakeHomeQuickCategoryRepository(),
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ) =
         ItemSearchViewModel(
+            savedStateHandle,
             SearchDisposalItemGuidesUseCase(repository),
             GetDisposalCategoryGuidesUseCase(repository),
             ToggleHomeQuickCategoryUseCase(homeQuickCategoryRepository),
@@ -613,6 +1004,14 @@ class ItemSearchViewModelTest {
             ObserveFavoritesUseCase(favoriteRepository),
             ObserveHomeQuickCategoriesUseCase(homeQuickCategoryRepository),
         )
+
+    private fun ItemSearchViewModel.saveStateAndClear(savedStateHandle: SavedStateHandle): SavedStateHandle {
+        val restoredState = savedStateHandle.keys().associateWith { key ->
+            savedStateHandle.get<Any?>(key)
+        }
+        viewModelScope.cancel()
+        return SavedStateHandle(restoredState)
+    }
 
     private fun sampleGuide(
         name: String,

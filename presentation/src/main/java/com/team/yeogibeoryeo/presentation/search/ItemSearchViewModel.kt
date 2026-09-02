@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
@@ -22,12 +23,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ItemSearchViewModel
 @Inject
 constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val searchDisposalItemGuidesUseCase: SearchDisposalItemGuidesUseCase,
     private val getDisposalCategoryGuidesUseCase: GetDisposalCategoryGuidesUseCase,
     private val toggleHomeQuickCategoryUseCase: ToggleHomeQuickCategoryUseCase,
@@ -35,12 +38,19 @@ constructor(
     observeFavoritesUseCase: ObserveFavoritesUseCase,
     observeHomeQuickCategoriesUseCase: ObserveHomeQuickCategoriesUseCase,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(ItemSearchUiState())
+    private val _uiState =
+        MutableStateFlow(
+            ItemSearchUiState(
+                query = savedStateHandle[QUERY_KEY] ?: "",
+                submittedQuery = savedStateHandle[SUBMITTED_QUERY_KEY],
+                hasSearched = savedStateHandle.get<String>(SUBMITTED_QUERY_KEY) != null,
+                searchResultVersion = savedStateHandle[RESULT_VERSION_KEY] ?: 0,
+            ),
+        )
     val uiState: StateFlow<ItemSearchUiState> = _uiState.asStateFlow()
     private val _events = MutableSharedFlow<ItemSearchEvent>()
     val events: SharedFlow<ItemSearchEvent> = _events.asSharedFlow()
     private var searchJob: Job? = null
-    private var handledInitialQuery: String? = null
 
     init {
         viewModelScope.launch {
@@ -67,12 +77,13 @@ constructor(
                     }
                 }
         }
+        _uiState.value.submittedQuery?.let { startSearch(it, isRestoration = true) }
     }
 
     fun onQueryChange(query: String) {
         searchJob?.cancel()
         searchJob = null
-        _uiState.update { state ->
+        updateSearchState { state ->
             val keepCompletedResult =
                 state.hasSearched &&
                     !state.isLoading &&
@@ -93,7 +104,7 @@ constructor(
     fun clearSearch() {
         searchJob?.cancel()
         searchJob = null
-        _uiState.update {
+        updateSearchState {
             it.copy(
                 query = "",
                 submittedQuery = null,
@@ -115,7 +126,7 @@ constructor(
         if (trimmedQuery.isBlank()) {
             searchJob?.cancel()
             searchJob = null
-            _uiState.update {
+            updateSearchState {
                 it.copy(
                     query = query,
                     submittedQuery = null,
@@ -127,9 +138,18 @@ constructor(
             }
             return
         }
+
+        startSearch(trimmedQuery, inputQuery = trimmedQuery)
+    }
+
+    private fun startSearch(
+        query: String,
+        inputQuery: String = _uiState.value.query,
+        isRestoration: Boolean = false,
+    ) {
         if (
             _uiState.value.isLoading &&
-            _uiState.value.submittedQuery == trimmedQuery
+            _uiState.value.submittedQuery == query
         ) {
             return
         }
@@ -137,10 +157,10 @@ constructor(
         searchJob?.cancel()
         searchJob = null
 
-        _uiState.update {
+        updateSearchState {
             it.copy(
-                query = trimmedQuery,
-                submittedQuery = trimmedQuery,
+                query = inputQuery,
+                submittedQuery = query,
                 guides = emptyList(),
                 isLoading = true,
                 hasSearched = true,
@@ -149,12 +169,13 @@ constructor(
         }
         searchJob =
             viewModelScope.launch {
-                runCatchingCancellable { searchDisposalItemGuidesUseCase(trimmedQuery) }
+                runCatchingCancellable { searchDisposalItemGuidesUseCase(query) }
                     .onSuccess { guides ->
-                        _uiState.update {
+                        updateSearchState {
                             it.copy(
                                 guides = guides,
-                                searchResultVersion = it.searchResultVersion + 1,
+                                searchResultVersion =
+                                    if (isRestoration) it.searchResultVersion else it.searchResultVersion + 1,
                                 isLoading = false,
                             )
                         }
@@ -176,14 +197,17 @@ constructor(
         val submittedQuery = state.submittedQuery ?: return
         if (state.isLoading || state.errorMessageResId == null) return
 
-        search(submittedQuery)
+        startSearch(submittedQuery)
     }
 
     fun searchInitialQueryIfNeeded(query: String?) {
         val trimmedQuery = query?.trim().orEmpty()
-        if (trimmedQuery.isBlank() || handledInitialQuery == trimmedQuery) return
+        if (
+            trimmedQuery.isBlank() ||
+            savedStateHandle.get<String>(HANDLED_INITIAL_QUERY_KEY) == trimmedQuery
+        ) return
 
-        handledInitialQuery = trimmedQuery
+        savedStateHandle[HANDLED_INITIAL_QUERY_KEY] = trimmedQuery
         search(trimmedQuery)
     }
 
@@ -263,6 +287,13 @@ constructor(
         }
     }
 
+    private inline fun updateSearchState(transform: (ItemSearchUiState) -> ItemSearchUiState) {
+        val state = _uiState.updateAndGet(transform)
+        savedStateHandle[QUERY_KEY] = state.query
+        savedStateHandle[SUBMITTED_QUERY_KEY] = state.submittedQuery
+        savedStateHandle[RESULT_VERSION_KEY] = state.searchResultVersion
+    }
+
     private suspend fun <T> runCatchingCancellable(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
@@ -271,4 +302,11 @@ constructor(
         } catch (exception: Throwable) {
             Result.failure(exception)
         }
+
+    private companion object {
+        const val QUERY_KEY = "item_search_query"
+        const val SUBMITTED_QUERY_KEY = "item_search_submitted_query"
+        const val HANDLED_INITIAL_QUERY_KEY = "item_search_handled_initial_query"
+        const val RESULT_VERSION_KEY = "item_search_result_version"
+    }
 }
