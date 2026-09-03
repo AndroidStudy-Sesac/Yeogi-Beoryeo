@@ -67,7 +67,7 @@ class DataStoreHomeQuickCategoryRepository
                     val current = preferences[HOME_QUICK_CATEGORIES_KEY].toCategories()
                     preferences[HOME_QUICK_CATEGORIES_KEY] =
                         transform(current)
-                            .joinToString(CategorySeparator) { it.name }
+                            .joinToString(CATEGORY_SEPARATOR) { it.name }
                 }
             } catch (exception: CancellationException) {
                 throw exception
@@ -79,13 +79,13 @@ class DataStoreHomeQuickCategoryRepository
 
         private fun String?.toCategories(): List<DisposalCategory> =
             this
-                ?.split(CategorySeparator)
+                ?.split(CATEGORY_SEPARATOR)
                 ?.mapNotNull { name -> DisposalCategory.entries.firstOrNull { it.name == name } }
                 ?.distinct()
                 .orEmpty()
 
         private companion object {
-            const val CategorySeparator = ","
+            const val CATEGORY_SEPARATOR = ","
             val HOME_QUICK_CATEGORIES_KEY = stringPreferencesKey("pinned_disposal_categories")
             val CACHE_READ_ERROR_CONTEXT =
                 NonFatalErrorContext(

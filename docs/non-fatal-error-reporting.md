@@ -14,16 +14,16 @@
 
 ## 기록 여부와 책임
 
-| 상황 | 처리 |
-| --- | --- |
-| API 요청, 응답 파싱, 캐시 작업의 처리 가능한 실패 | 원인을 소유한 경계에서 분류해 한 번 기록 |
-| 정상적인 빈 목록, 미검색, 데이터 없음 응답 | 기록하지 않음 |
-| caller 또는 상위 coroutine의 취소 | 기록하지 않고 원래 취소를 전파 |
-| `Error` 등 치명 오류 | 비치명 오류로 바꾸지 않고 전파 |
-| 재시도로 복구된 중간 실패 | 매 시도마다 기록하지 않음. 정한 요청 단위의 최종 실패에서 기록 |
-| 실패 때문에 일부 결과만 반환 | 원인을 확인한 뒤 `isPartialResult = true`로 기록하고 기존 부분 결과 유지 |
-| 조회 상한 등 정상 정책으로 결과가 제한됨 | 부분 결과라는 이유만으로 오류를 만들지 않음 |
-| 여러 caller가 같은 진행 중 요청을 공유 | 기다리는 caller마다 기록하지 않고 실제 요청을 수행한 경계에서 한 번 기록 |
+| 상황                              | 처리                                                   |
+|---------------------------------|------------------------------------------------------|
+| API 요청, 응답 파싱, 캐시 작업의 처리 가능한 실패 | 원인을 소유한 경계에서 분류해 한 번 기록                              |
+| 정상적인 빈 목록, 미검색, 데이터 없음 응답       | 기록하지 않음                                              |
+| caller 또는 상위 coroutine의 취소      | 기록하지 않고 원래 취소를 전파                                    |
+| `Error` 등 치명 오류                 | 비치명 오류로 바꾸지 않고 전파                                    |
+| 재시도로 복구된 중간 실패                  | 매 시도마다 기록하지 않음. 정한 요청 단위의 최종 실패에서 기록                 |
+| 실패 때문에 일부 결과만 반환                | 원인을 확인한 뒤 `isPartialResult = true`로 기록하고 기존 부분 결과 유지 |
+| 조회 상한 등 정상 정책으로 결과가 제한됨         | 부분 결과라는 이유만으로 오류를 만들지 않음                             |
+| 여러 caller가 같은 진행 중 요청을 공유       | 기다리는 caller마다 기록하지 않고 실제 요청을 수행한 경계에서 한 번 기록         |
 
 reporter 자체에는 중복 제거, 재시도, 부분 결과 판정 기능이 없습니다. source에서 기록한 예외를 repository나 ViewModel에서 다시 기록하지 않습니다. 원인을 잃은 결과만 보고 새 예외를 만들어 보완하지 않습니다.
 
@@ -31,14 +31,14 @@ reporter 자체에는 중복 제거, 재시도, 부분 결과 판정 기능이 �
 
 모든 타입은 `com.team.yeogibeoryeo.domain.diagnostics`에 있습니다.
 
-| 필드 | 값과 기준 |
-| --- | --- |
-| `api` | 품목 `ITEM_GUIDE`, 지도 수거 장소 `COLLECTION_SPOT`, 지역 가이드 `REGIONAL_GUIDE` |
-| `stage` | 요청 `REMOTE_REQUEST`, 응답 변환 `RESPONSE_PARSING`, 앱에 포함된 asset 로드 `ASSET_LOAD`, 캐시 읽기 `CACHE_READ`, 캐시 쓰기 `CACHE_WRITE` |
-| `category` | 연결 실패 `NETWORK`, 처리 가능한 시간 초과 `TIMEOUT`, 확인된 HTTP 실패 `HTTP`, 파싱 실패 `PARSING`, 파일 입출력 실패 `IO`, 캐시 실패 `CACHE` |
+| 필드                | 값과 기준                                                                                                                                                              |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `api`             | 품목 `ITEM_GUIDE`, 지도 수거 장소 `COLLECTION_SPOT`, 지역 가이드 `REGIONAL_GUIDE`                                                                                               |
+| `stage`           | 요청 `REMOTE_REQUEST`, 응답 변환 `RESPONSE_PARSING`, 앱에 포함된 asset 로드 `ASSET_LOAD`, 캐시 읽기 `CACHE_READ`, 캐시 쓰기 `CACHE_WRITE`                                               |
+| `category`        | 연결 실패 `NETWORK`, 처리 가능한 시간 초과 `TIMEOUT`, 확인된 HTTP 실패 `HTTP`, 파싱 실패 `PARSING`, 파일 입출력 실패 `IO`, 캐시 실패 `CACHE`                                                        |
 | `httpStatusClass` | 상태 코드를 실제로 받은 경우 100~199 `INFORMATIONAL`, 200~299 `SUCCESS`, 300~399 `REDIRECTION`, 400~499 `CLIENT_ERROR`, 500~599 `SERVER_ERROR`. 상태 코드를 알 수 없으면 `NOT_AVAILABLE` |
-| `retryCount` | 앱이 해당 요청에서 실행한 재시도 횟수. 재시도 없음 `NONE`, 1회 `ONE`, 2회 `TWO`, 3회 이상 `THREE_OR_MORE` |
-| `isPartialResult` | 실패 후 일부 결과를 반환하기로 결정한 경우만 `true`. 기본값은 `false` |
+| `retryCount`      | 앱이 해당 요청에서 실행한 재시도 횟수. 재시도 없음 `NONE`, 1회 `ONE`, 2회 `TWO`, 3회 이상 `THREE_OR_MORE`                                                                                    |
+| `isPartialResult` | 실패 후 일부 결과를 반환하기로 결정한 경우만 `true`. 기본값은 `false`                                                                                                                     |
 
 `httpStatusClass` 기본값은 `NOT_AVAILABLE`, `retryCount` 기본값은 `NONE`입니다. 페이지 번호나 가져온 페이지 수를 재시도 횟수로 사용하지 않습니다. SDK 내부 재시도 횟수나 예외 message를 분석해 필드를 추정하지 않습니다. `TIMEOUT`은 취소 예외를 무조건 기록하라는 뜻이 아닙니다.
 
@@ -48,7 +48,7 @@ reporter 자체에는 중복 제거, 재시도, 부분 결과 판정 기능이 �
 
 앱이 재시도하지 않는 지도 요청에서 network timeout 기록을 맡은 한 경계의 예시입니다. `request`는 하나의 최종 요청을 실행하며, 내부에서 같은 실패를 기록하지 않는다는 전제입니다. 기존 예외 전파를 유지합니다. 이 helper를 공통 코드에 추가하라는 뜻은 아니며 실제 연결에서는 기존 실패 처리 위치에 기록 호출을 넣습니다.
 
-```kotlin
+```text
 import com.team.yeogibeoryeo.domain.diagnostics.NonFatalApi
 import com.team.yeogibeoryeo.domain.diagnostics.NonFatalCategory
 import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorContext
