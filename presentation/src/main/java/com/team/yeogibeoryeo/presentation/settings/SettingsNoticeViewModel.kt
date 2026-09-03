@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.yeogibeoryeo.domain.notice.model.Notice
 import com.team.yeogibeoryeo.domain.notice.usecase.GetPublishedNoticesUseCase
+import com.team.yeogibeoryeo.domain.notice.usecase.GetReadNoticeIdsUseCase
+import com.team.yeogibeoryeo.domain.notice.usecase.MarkNoticeReadUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -17,6 +19,8 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class SettingsNoticeViewModel @Inject constructor(
     private val getPublishedNoticesUseCase: GetPublishedNoticesUseCase,
+    private val getReadNoticeIdsUseCase: GetReadNoticeIdsUseCase,
+    private val markNoticeReadUseCase: MarkNoticeReadUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<SettingsNoticeUiState>(SettingsNoticeUiState.Loading)
@@ -32,12 +36,22 @@ class SettingsNoticeViewModel @Inject constructor(
         loadNotices()
     }
 
+    fun refreshNotices() {
+        loadNotices()
+    }
+
     fun selectNotice(noticeId: String) {
         val content = _uiState.value as? SettingsNoticeUiState.Content ?: return
         if (content.notices.none { notice -> notice.id == noticeId }) return
 
         savedStateHandle[SELECTED_NOTICE_ID_KEY] = noticeId
-        _uiState.value = content.copy(selectedNoticeId = noticeId)
+        _uiState.value = content.copy(
+            readNoticeIds = content.readNoticeIds + noticeId,
+            selectedNoticeId = noticeId,
+        )
+        viewModelScope.launch {
+            markNoticeReadUseCase(noticeId)
+        }
     }
 
     fun clearNoticeSelection() {
@@ -53,16 +67,26 @@ class SettingsNoticeViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             try {
                 val notices = getPublishedNoticesUseCase()
+                val persistedReadNoticeIds = getReadNoticeIdsUseCase()
                 val restoredNoticeId = savedStateHandle.get<String>(SELECTED_NOTICE_ID_KEY)
                     ?.takeIf { noticeId -> notices.any { notice -> notice.id == noticeId } }
+                val readNoticeIds = if (restoredNoticeId != null) {
+                    persistedReadNoticeIds + restoredNoticeId
+                } else {
+                    persistedReadNoticeIds
+                }
 
                 if (restoredNoticeId == null) {
                     savedStateHandle.remove<String>(SELECTED_NOTICE_ID_KEY)
                 }
                 _uiState.value = SettingsNoticeUiState.Content(
                     notices = notices,
+                    readNoticeIds = readNoticeIds,
                     selectedNoticeId = restoredNoticeId,
                 )
+                if (restoredNoticeId != null && restoredNoticeId !in persistedReadNoticeIds) {
+                    markNoticeReadUseCase(restoredNoticeId)
+                }
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -83,9 +107,15 @@ sealed interface SettingsNoticeUiState {
 
     data class Content(
         val notices: List<Notice>,
+        val readNoticeIds: Set<String> = emptySet(),
         val selectedNoticeId: String? = null,
     ) : SettingsNoticeUiState {
         val selectedNotice: Notice?
             get() = notices.firstOrNull { notice -> notice.id == selectedNoticeId }
+
+        val hasUnreadNotices: Boolean
+            get() = notices.any { notice -> notice.id !in readNoticeIds }
+
+        fun isUnread(noticeId: String): Boolean = noticeId !in readNoticeIds
     }
 }

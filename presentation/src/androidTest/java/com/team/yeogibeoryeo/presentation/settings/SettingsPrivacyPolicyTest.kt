@@ -2,6 +2,8 @@ package com.team.yeogibeoryeo.presentation.settings
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasStateDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -62,6 +64,31 @@ class SettingsPrivacyPolicyTest {
             .performClick()
 
         assertEquals(1, clickCount)
+    }
+
+    @Test
+    fun 읽지_않은_공지가_있으면_공지사항_메뉴에_미확인_상태를_제공한다() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                SettingsScreen(
+                    onBackClick = {},
+                    onDetailClick = {},
+                    onAppGuideClick = {},
+                    hasUnreadNotices = true,
+                )
+            }
+        }
+
+        composeTestRule
+            .onNode(
+                hasText(context.getString(R.string.settings_notice_title)) and
+                    hasStateDescription(
+                        context.getString(R.string.settings_notice_unread_state),
+                    ),
+            )
+            .assertIsDisplayed()
     }
 
     @Test

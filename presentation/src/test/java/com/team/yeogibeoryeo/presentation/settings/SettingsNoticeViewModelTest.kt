@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import com.team.yeogibeoryeo.domain.notice.model.Notice
 import com.team.yeogibeoryeo.domain.notice.repository.NoticeRepository
 import com.team.yeogibeoryeo.domain.notice.usecase.GetPublishedNoticesUseCase
+import com.team.yeogibeoryeo.domain.notice.usecase.GetReadNoticeIdsUseCase
+import com.team.yeogibeoryeo.domain.notice.usecase.MarkNoticeReadUseCase
 import com.team.yeogibeoryeo.presentation.search.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -48,6 +50,35 @@ class SettingsNoticeViewModelTest {
     }
 
     @Test
+    fun `저장되지 않은 공지는 읽지 않은 상태로 표시한다`() = runTest {
+        val viewModel = createViewModel(
+            FakeNoticeRepository(mutableListOf({ listOf(notice()) })),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as SettingsNoticeUiState.Content
+
+        assertEquals(true, state.hasUnreadNotices)
+        assertEquals(true, state.isUnread("notice-1"))
+    }
+
+    @Test
+    fun `저장된 공지는 읽은 상태로 표시한다`() = runTest {
+        val viewModel = createViewModel(
+            FakeNoticeRepository(
+                responses = mutableListOf({ listOf(notice()) }),
+                initialReadNoticeIds = setOf("notice-1"),
+            ),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as SettingsNoticeUiState.Content
+
+        assertEquals(false, state.hasUnreadNotices)
+        assertEquals(false, state.isUnread("notice-1"))
+    }
+
+    @Test
     fun `조회 실패 후 다시 시도하면 공지를 표시한다`() = runTest {
         val repository = FakeNoticeRepository(
             mutableListOf(
@@ -89,8 +120,9 @@ class SettingsNoticeViewModelTest {
     @Test
     fun `공지를 선택하고 해제하면 선택 ID도 함께 저장하고 삭제한다`() = runTest {
         val savedStateHandle = SavedStateHandle()
+        val repository = FakeNoticeRepository(mutableListOf({ listOf(notice()) }))
         val viewModel = createViewModel(
-            repository = FakeNoticeRepository(mutableListOf({ listOf(notice()) })),
+            repository = repository,
             savedStateHandle = savedStateHandle,
         )
         advanceUntilIdle()
@@ -102,6 +134,12 @@ class SettingsNoticeViewModelTest {
             (viewModel.uiState.value as SettingsNoticeUiState.Content).selectedNotice?.id,
         )
         assertEquals("notice-1", savedStateHandle.get<String>("selectedNoticeId"))
+        assertEquals(
+            false,
+            (viewModel.uiState.value as SettingsNoticeUiState.Content).hasUnreadNotices,
+        )
+        advanceUntilIdle()
+        assertEquals(listOf("notice-1"), repository.markedNoticeIds)
 
         viewModel.clearNoticeSelection()
 
@@ -147,6 +185,47 @@ class SettingsNoticeViewModelTest {
     }
 
     @Test
+    fun `공지 일부만 읽으면 나머지 공지를 읽지 않은 상태로 유지한다`() = runTest {
+        val secondNotice = notice().copy(id = "notice-2")
+        val viewModel = createViewModel(
+            FakeNoticeRepository(mutableListOf({ listOf(notice(), secondNotice) })),
+        )
+        advanceUntilIdle()
+
+        viewModel.selectNotice("notice-1")
+
+        val state = viewModel.uiState.value as SettingsNoticeUiState.Content
+        assertEquals(true, state.hasUnreadNotices)
+        assertEquals(false, state.isUnread("notice-1"))
+        assertEquals(true, state.isUnread("notice-2"))
+    }
+
+    @Test
+    fun `읽은 공지 뒤 새 ID 공지를 조회하면 다시 읽지 않은 상태가 된다`() = runTest {
+        val newNotice = notice().copy(id = "notice-2")
+        val repository = FakeNoticeRepository(
+            responses = mutableListOf(
+                { listOf(notice()) },
+                { listOf(newNotice, notice()) },
+            ),
+            initialReadNoticeIds = setOf("notice-1"),
+        )
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+        assertEquals(
+            false,
+            (viewModel.uiState.value as SettingsNoticeUiState.Content).hasUnreadNotices,
+        )
+
+        viewModel.refreshNotices()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as SettingsNoticeUiState.Content
+        assertEquals(true, state.hasUnreadNotices)
+        assertEquals(true, state.isUnread("notice-2"))
+    }
+
+    @Test
     fun `저장된 공지가 조회 목록에 있으면 본문 선택을 복원한다`() = runTest {
         val savedStateHandle = SavedStateHandle(mapOf("selectedNoticeId" to "notice-1"))
 
@@ -182,6 +261,8 @@ class SettingsNoticeViewModelTest {
     ): SettingsNoticeViewModel {
         return SettingsNoticeViewModel(
             getPublishedNoticesUseCase = GetPublishedNoticesUseCase(repository),
+            getReadNoticeIdsUseCase = GetReadNoticeIdsUseCase(repository),
+            markNoticeReadUseCase = MarkNoticeReadUseCase(repository),
             savedStateHandle = savedStateHandle,
         )
     }
@@ -198,13 +279,23 @@ class SettingsNoticeViewModelTest {
 
     private class FakeNoticeRepository(
         private val responses: MutableList<suspend () -> List<Notice>>,
+        initialReadNoticeIds: Set<String> = emptySet(),
     ) : NoticeRepository {
+        private val readNoticeIds = initialReadNoticeIds.toMutableSet()
+        val markedNoticeIds = mutableListOf<String>()
         var fetchCallCount = 0
             private set
 
         override suspend fun getPublishedNotices(): List<Notice> {
             fetchCallCount += 1
             return responses.removeAt(0).invoke()
+        }
+
+        override suspend fun getReadNoticeIds(): Set<String> = readNoticeIds.toSet()
+
+        override suspend fun markNoticeRead(noticeId: String) {
+            markedNoticeIds += noticeId
+            readNoticeIds += noticeId
         }
     }
 }

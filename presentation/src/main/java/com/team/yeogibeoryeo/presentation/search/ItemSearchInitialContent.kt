@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,8 +36,10 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
@@ -81,6 +85,7 @@ fun ItemSearchInitialContent(
     onOperationNoticeDismiss: (String) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
+    hasUnreadNotices: Boolean = false,
     onRegionalGuideSummaryClick: (String) -> Unit = {},
     onRegionalGuideSearchClick: () -> Unit = {},
     onRegionalGuideSummaryRetryClick: () -> Unit = {},
@@ -229,6 +234,7 @@ fun ItemSearchInitialContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalPadding = metrics.horizontalPadding,
                     onSettingsClick = onSettingsClick,
+                    hasUnreadNotices = hasUnreadNotices,
                 )
             }
 
@@ -401,8 +407,10 @@ fun ItemSearchHeader(
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = ItemSearchLayoutDefaults.spacing.xl,
     onSettingsClick: (() -> Unit)? = null,
+    hasUnreadNotices: Boolean = false,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
+    val unreadStateDescription = stringResource(R.string.settings_notice_unread_state)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -430,14 +438,28 @@ fun ItemSearchHeader(
             onSettingsClick?.let {
                 IconButton(
                     onClick = it,
-                    modifier = Modifier.size(AppTopBarDefaults.buttonSize),
+                    modifier = Modifier
+                        .size(AppTopBarDefaults.buttonSize)
+                        .semantics {
+                            if (hasUnreadNotices) {
+                                stateDescription = unreadStateDescription
+                            }
+                        },
                 ) {
-                    Icon(
-                        painter = painterResource(id = CommonR.drawable.ic_action_settings),
-                        contentDescription = stringResource(R.string.settings_action),
-                        modifier = Modifier.size(AppTopBarDefaults.iconSize),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
+                    BadgedBox(
+                        badge = {
+                            if (hasUnreadNotices) {
+                                Badge(modifier = Modifier.clearAndSetSemantics { })
+                            }
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(id = CommonR.drawable.ic_action_settings),
+                            contentDescription = stringResource(R.string.settings_action),
+                            modifier = Modifier.size(AppTopBarDefaults.iconSize),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
             }
         }

@@ -4,8 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -16,8 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.notice.model.Notice
@@ -85,7 +89,7 @@ private fun NoticeContent(
         selectedNotice != null -> NoticeBody(notice = selectedNotice)
         state.notices.isEmpty() -> NoticeEmpty()
         else -> NoticeList(
-            notices = state.notices,
+            state = state,
             onNoticeClick = onNoticeClick,
         )
     }
@@ -103,14 +107,22 @@ private fun NoticeEmpty() {
 
 @Composable
 private fun NoticeList(
-    notices: List<Notice>,
+    state: SettingsNoticeUiState.Content,
     onNoticeClick: (String) -> Unit,
 ) {
+    val unreadStateDescription = stringResource(R.string.settings_notice_item_unread_state)
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        notices.forEach { notice ->
+        state.notices.forEach { notice ->
+            val isUnread = state.isUnread(notice.id)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .semantics {
+                        if (isUnread) {
+                            stateDescription = unreadStateDescription
+                        }
+                    }
                     .clickable(
                         role = Role.Button,
                         onClick = { onNoticeClick(notice.id) },
@@ -118,12 +130,24 @@ private fun NoticeList(
                     .padding(vertical = SettingsLayoutDefaults.listItemVerticalPadding),
                 verticalArrangement = Arrangement.spacedBy(SettingsLayoutDefaults.sectionSpacing),
             ) {
-                Text(
-                    text = notice.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(
+                        SettingsLayoutDefaults.sectionSpacing,
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = notice.title,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (isUnread) {
+                        Badge(modifier = Modifier.clearAndSetSemantics { })
+                    }
+                }
                 Text(
                     text = stringResource(
                         R.string.settings_notice_published_date,
