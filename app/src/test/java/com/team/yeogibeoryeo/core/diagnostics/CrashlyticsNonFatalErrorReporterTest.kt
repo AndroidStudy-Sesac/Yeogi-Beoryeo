@@ -87,10 +87,12 @@ class CrashlyticsNonFatalErrorReporterTest {
         val cases = listOf(
             Triple(context.copy(api = NonFatalApi.COLLECTION_SPOT), "failure_api", "COLLECTION_SPOT"),
             Triple(context.copy(stage = NonFatalStage.RESPONSE_PARSING), "failure_stage", "RESPONSE_PARSING"),
+            Triple(context.copy(stage = NonFatalStage.ASSET_LOAD), "failure_stage", "ASSET_LOAD"),
             Triple(context.copy(stage = NonFatalStage.CACHE_WRITE), "failure_stage", "CACHE_WRITE"),
             Triple(context.copy(category = NonFatalCategory.NETWORK), "failure_category", "NETWORK"),
             Triple(context.copy(category = NonFatalCategory.HTTP), "failure_category", "HTTP"),
             Triple(context.copy(category = NonFatalCategory.PARSING), "failure_category", "PARSING"),
+            Triple(context.copy(category = NonFatalCategory.IO), "failure_category", "IO"),
             Triple(context.copy(retryCount = NonFatalRetryCount.ONE), "failure_retry_count", "ONE"),
             Triple(context.copy(retryCount = NonFatalRetryCount.TWO), "failure_retry_count", "TWO"),
         )
