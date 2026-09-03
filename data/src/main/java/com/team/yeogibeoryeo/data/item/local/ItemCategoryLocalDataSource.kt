@@ -31,6 +31,7 @@ data class WasteDictionaryItem(
     val id: String,
     val name: String,
     val legacyNames: List<String> = emptyList(),
+    val searchTerms: List<String> = emptyList(),
     val categoryPaths: List<List<String>>,
     val similarItems: List<String>,
     val dischargeMethods: List<String>,
@@ -126,6 +127,7 @@ constructor(
                 id = obj.requiredString("id"),
                 name = obj.requiredString("name"),
                 legacyNames = obj.stringList("legacyNames"),
+                searchTerms = obj.stringList("searchTerms"),
                 categoryPaths =
                     obj.requiredArray("categoryPaths")
                         .map { path ->

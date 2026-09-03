@@ -307,6 +307,30 @@ class ItemGuideAssetTest {
     }
 
     @Test
+    fun `설문 검색어는 대상 품목의 안정 ID에 연결된다`() {
+        val expectedSearchTerms =
+            mapOf(
+                "item-guide-0230" to setOf("양말"),
+                "item-guide-0736" to setOf("화장품", "쿠션팩트"),
+                "item-guide-0740" to setOf("갑티슈", "각티슈"),
+            )
+        val actualSearchTerms =
+            parseArray("item_disposal_guides.json")
+                .map { it.jsonObject }
+                .filter { item -> item["id"]!!.jsonPrimitive.content in expectedSearchTerms }
+                .associate { item ->
+                    val id = item["id"]!!.jsonPrimitive.content
+                    val searchTerms =
+                        item["searchTerms"]!!.jsonArray
+                            .map { it.jsonPrimitive.content.filterNot(Char::isWhitespace) }
+                            .toSet()
+                    id to searchTerms
+                }
+
+        assertEquals(expectedSearchTerms, actualSearchTerms)
+    }
+
+    @Test
     fun `내용이 다른 대표 상세 가이드와 품목사전 가이드는 ID를 공유하지 않는다`() {
         val representativeIds =
             parseObject("representative_guide_details.json")

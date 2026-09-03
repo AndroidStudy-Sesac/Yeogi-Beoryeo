@@ -8046,6 +8046,9 @@
   {
     "id": "item-guide-0230",
     "name": "의류, 원단",
+    "searchTerms": [
+      "양말"
+    ],
     "similarItems": [
       "스카프",
       "샌들",
@@ -29794,6 +29797,10 @@
   {
     "id": "item-guide-0736",
     "name": "화장품 내용물과 복합 용기",
+    "searchTerms": [
+      "화장품",
+      "쿠션 팩트"
+    ],
     "similarItems": [],
     "notes": [
       "배출 방법은 지역별로 다를 수 있으므로 지방자치단체 기준을 확인"
@@ -29879,6 +29886,10 @@
   {
     "id": "item-guide-0740",
     "name": "티슈 종이 상자",
+    "searchTerms": [
+      "갑 티슈",
+      "각티슈"
+    ],
     "similarItems": [],
     "notes": [
       "남은 티슈와 입구 비닐 등 다른 재질을 제거한 후 배출",
