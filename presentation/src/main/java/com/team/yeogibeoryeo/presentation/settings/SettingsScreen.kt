@@ -20,7 +20,10 @@ internal fun SettingsScreen(
     onDetailClick: (SettingsDetailType) -> Unit,
     onAppGuideClick: () -> Unit,
     modifier: Modifier = Modifier,
+    hasUnreadNotices: Boolean = false,
 ) {
+    val unreadStateDescription = stringResource(R.string.settings_notice_unread_state)
+
     SettingsScaffold(
         title = stringResource(R.string.settings_title),
         onBackClick = onBackClick,
@@ -48,6 +51,9 @@ internal fun SettingsScreen(
                 SettingsListItem(
                     title = stringResource(item.titleResId),
                     onClick = { onDetailClick(item) },
+                    unreadStateDescription = unreadStateDescription.takeIf {
+                        item == SettingsDetailType.Notice && hasUnreadNotices
+                    },
                 )
             }
         }

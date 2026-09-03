@@ -255,6 +255,8 @@
     <string name="settings_notice_load_failed_title">공지사항을 불러오지 못했습니다</string>
     <string name="settings_notice_load_failed_description">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</string>
     <string name="settings_notice_published_date">게시일 %1$s</string>
+    <string name="settings_notice_unread_state">읽지 않은 공지 있음</string>
+    <string name="settings_notice_item_unread_state">읽지 않음</string>
     <string name="operation_notice_dismiss_action">공지 닫기</string>
     <string name="settings_contact_email_label">이메일</string>
     <string name="settings_contact_email" translatable="false">yeogi-beoryeo-support@googlegroups.com</string>
