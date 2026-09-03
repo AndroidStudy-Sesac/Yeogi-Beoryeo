@@ -250,6 +250,27 @@ class ItemGuideAssetTest {
     }
 
     @Test
+    fun `화장품과 갑 티슈에 적용되는 안내는 내용물과 포장 상태를 구분한다`() {
+        val guides =
+            parseArray("item_disposal_guides.json")
+                .associateBy { element -> element.jsonObject["id"]!!.jsonPrimitive.content }
+
+        val cosmetics = guides.getValue("item-guide-0736").jsonObject
+        assertEquals("화장품", cosmetics["name"]!!.jsonPrimitive.content)
+        val cosmeticMethods = cosmetics["dischargeMethods"]!!.jsonArray.map { it.jsonPrimitive.content }
+        assertTrue(cosmeticMethods.any { method -> "내용물" in method && "종량제봉투" in method })
+        assertTrue(cosmeticMethods.any { method -> "분리배출 표시" in method && "재질" in method })
+        assertTrue(cosmeticMethods.any { method -> "분리되지" in method && "종량제봉투" in method })
+
+        val tissueBox = guides.getValue("item-guide-0266").jsonObject
+        assertEquals("화장지", tissueBox["name"]!!.jsonPrimitive.content)
+        val tissueMethods = tissueBox["dischargeMethods"]!!.jsonArray.map { it.jsonPrimitive.content }
+        assertTrue(tissueMethods.any { method -> "티슈" in method && "종량제봉투" in method })
+        assertTrue(tissueMethods.any { method -> "종이 상자" in method && "종이류" in method })
+        assertTrue(tissueMethods.any { method -> "다른 재질" in method && "제거" in method })
+    }
+
+    @Test
     fun `내용이 다른 대표 상세 가이드와 품목사전 가이드는 ID를 공유하지 않는다`() {
         val representativeIds =
             parseObject("representative_guide_details.json")
