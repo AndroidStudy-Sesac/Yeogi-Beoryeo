@@ -187,7 +187,7 @@ class FavoritesViewModel
             }
                 .onStart { emit(FavoritesUiState(isLoading = true)) }
                 .catch { exception ->
-                    if (exception is CancellationException) throw exception
+                    if (exception is CancellationException || exception !is Exception) throw exception
                     emit(FavoritesUiState(hasLoadError = true))
                 }
 
