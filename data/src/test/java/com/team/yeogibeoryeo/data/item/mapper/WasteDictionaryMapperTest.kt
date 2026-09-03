@@ -4,6 +4,7 @@ import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.RelatedSpotType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class WasteDictionaryMapperTest {
@@ -49,6 +50,23 @@ class WasteDictionaryMapperTest {
 
             assertEquals(expectedCategory, result.category)
         }
+    }
+
+    @Test
+    fun `금속류 경로는 고철 하위 분류를 만들지 않는다`() {
+        val result =
+            WasteDictionaryItem(
+                id = "item-guide-test",
+                name = "금속 화장품 용기",
+                categoryPaths = listOf(listOf("재활용폐기물", "금속류")),
+                similarItems = emptyList(),
+                dischargeMethods = listOf("금속류 수거함으로 배출합니다."),
+                features = emptyList(),
+                notes = emptyList(),
+            ).toDomain()
+
+        assertEquals(DisposalCategory.METAL, result.category)
+        assertNull(result.subCategory)
     }
 
     @Test
