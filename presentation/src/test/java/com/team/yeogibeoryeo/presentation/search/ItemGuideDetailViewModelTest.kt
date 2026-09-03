@@ -29,6 +29,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -130,6 +131,36 @@ class ItemGuideDetailViewModelTest {
             assertEquals(guide, state.guide)
             assertEquals(listOf(guide.id, guide.id), itemRepository.requestedGuideIds)
         }
+
+    @Test
+    fun `가이드 조회 치명 오류는 원래 객체로 전파하고 실패 상태로 바꾸지 않는다`() {
+        val failure = LinkageError("fatal")
+        lateinit var stateAfterFailure: ItemGuideDetailUiState
+        lateinit var itemRepository: FakeItemRepository
+
+        val thrown =
+            assertThrows(LinkageError::class.java) {
+                runTest {
+                    itemRepository = FakeItemRepository { throw failure }
+                    val viewModel =
+                        createViewModel(
+                            itemRepository = itemRepository,
+                            favoriteRepository = FakeFavoriteRepository(),
+                        )
+
+                    try {
+                        viewModel.loadGuide("fatal-guide")
+                        advanceUntilIdle()
+                    } finally {
+                        stateAfterFailure = viewModel.uiState.value
+                    }
+                }
+            }
+
+        assertSame(failure, thrown)
+        assertEquals(ItemGuideDetailUiState.Loading, stateAfterFailure)
+        assertEquals(listOf("fatal-guide"), itemRepository.requestedGuideIds)
+    }
 
     @Test
     fun `가이드 재시도 중 다시 누르면 같은 요청을 중복 실행하지 않는다`() =
