@@ -2,7 +2,7 @@
 
 기능에서 처리하는 API와 캐시 실패는 `NonFatalErrorReporter`로 기록합니다. reporter는 오류를 분류하거나 재시도하지 않습니다. 호출 계층이 실패의 의미와 기록 책임을 정하고, reporter는 허용한 정보만 Crashlytics에 전달합니다.
 
-공통 기반만 추가된 상태이며 기능별 연결은 별도 작업입니다. 담당자와 진행 상태는 [이슈 #439](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/issues/439)에서 관리합니다.
+공통 기반과 품목 검색 연결을 반영했습니다. 지도와 지역 가이드 연결 상태는 [이슈 #439](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/issues/439)에서 관리합니다.
 
 ## 연결 순서
 
@@ -14,16 +14,16 @@
 
 ## 기록 여부와 책임
 
-| 상황 | 처리 |
-| --- | --- |
-| API 요청, 응답 파싱, 캐시 작업의 처리 가능한 실패 | 원인을 소유한 경계에서 분류해 한 번 기록 |
-| 정상적인 빈 목록, 미검색, 데이터 없음 응답 | 기록하지 않음 |
-| caller 또는 상위 coroutine의 취소 | 기록하지 않고 원래 취소를 전파 |
-| `Error` 등 치명 오류 | 비치명 오류로 바꾸지 않고 전파 |
-| 재시도로 복구된 중간 실패 | 매 시도마다 기록하지 않음. 정한 요청 단위의 최종 실패에서 기록 |
-| 실패 때문에 일부 결과만 반환 | 원인을 확인한 뒤 `isPartialResult = true`로 기록하고 기존 부분 결과 유지 |
-| 조회 상한 등 정상 정책으로 결과가 제한됨 | 부분 결과라는 이유만으로 오류를 만들지 않음 |
-| 여러 caller가 같은 진행 중 요청을 공유 | 기다리는 caller마다 기록하지 않고 실제 요청을 수행한 경계에서 한 번 기록 |
+| 상황                              | 처리                                                   |
+|---------------------------------|------------------------------------------------------|
+| API 요청, 응답 파싱, 캐시 작업의 처리 가능한 실패 | 원인을 소유한 경계에서 분류해 한 번 기록                              |
+| 정상적인 빈 목록, 미검색, 데이터 없음 응답       | 기록하지 않음                                              |
+| caller 또는 상위 coroutine의 취소      | 기록하지 않고 원래 취소를 전파                                    |
+| `Error` 등 치명 오류                 | 비치명 오류로 바꾸지 않고 전파                                    |
+| 재시도로 복구된 중간 실패                  | 매 시도마다 기록하지 않음. 정한 요청 단위의 최종 실패에서 기록                 |
+| 실패 때문에 일부 결과만 반환                | 원인을 확인한 뒤 `isPartialResult = true`로 기록하고 기존 부분 결과 유지 |
+| 조회 상한 등 정상 정책으로 결과가 제한됨         | 부분 결과라는 이유만으로 오류를 만들지 않음                             |
+| 여러 caller가 같은 진행 중 요청을 공유       | 기다리는 caller마다 기록하지 않고 실제 요청을 수행한 경계에서 한 번 기록         |
 
 reporter 자체에는 중복 제거, 재시도, 부분 결과 판정 기능이 없습니다. source에서 기록한 예외를 repository나 ViewModel에서 다시 기록하지 않습니다. 원인을 잃은 결과만 보고 새 예외를 만들어 보완하지 않습니다.
 
@@ -31,14 +31,14 @@ reporter 자체에는 중복 제거, 재시도, 부분 결과 판정 기능이 �
 
 모든 타입은 `com.team.yeogibeoryeo.domain.diagnostics`에 있습니다.
 
-| 필드 | 값과 기준 |
-| --- | --- |
-| `api` | 품목 `ITEM_GUIDE`, 지도 수거 장소 `COLLECTION_SPOT`, 지역 가이드 `REGIONAL_GUIDE` |
-| `stage` | 요청 `REMOTE_REQUEST`, 응답 변환 `RESPONSE_PARSING`, 캐시 읽기 `CACHE_READ`, 캐시 쓰기 `CACHE_WRITE` |
-| `category` | 연결 실패 `NETWORK`, 처리 가능한 시간 초과 `TIMEOUT`, 확인된 HTTP 실패 `HTTP`, 파싱 실패 `PARSING`, 캐시 실패 `CACHE` |
+| 필드                | 값과 기준                                                                                                                                                              |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `api`             | 품목 `ITEM_GUIDE`, 지도 수거 장소 `COLLECTION_SPOT`, 지역 가이드 `REGIONAL_GUIDE`                                                                                               |
+| `stage`           | 요청 `REMOTE_REQUEST`, 응답 변환 `RESPONSE_PARSING`, 앱에 포함된 asset 로드 `ASSET_LOAD`, 캐시 읽기 `CACHE_READ`, 캐시 쓰기 `CACHE_WRITE`                                               |
+| `category`        | 연결 실패 `NETWORK`, 처리 가능한 시간 초과 `TIMEOUT`, 확인된 HTTP 실패 `HTTP`, 파싱 실패 `PARSING`, 파일 입출력 실패 `IO`, 캐시 실패 `CACHE`                                                        |
 | `httpStatusClass` | 상태 코드를 실제로 받은 경우 100~199 `INFORMATIONAL`, 200~299 `SUCCESS`, 300~399 `REDIRECTION`, 400~499 `CLIENT_ERROR`, 500~599 `SERVER_ERROR`. 상태 코드를 알 수 없으면 `NOT_AVAILABLE` |
-| `retryCount` | 앱이 해당 요청에서 실행한 재시도 횟수. 재시도 없음 `NONE`, 1회 `ONE`, 2회 `TWO`, 3회 이상 `THREE_OR_MORE` |
-| `isPartialResult` | 실패 후 일부 결과를 반환하기로 결정한 경우만 `true`. 기본값은 `false` |
+| `retryCount`      | 앱이 해당 요청에서 실행한 재시도 횟수. 재시도 없음 `NONE`, 1회 `ONE`, 2회 `TWO`, 3회 이상 `THREE_OR_MORE`                                                                                    |
+| `isPartialResult` | 실패 후 일부 결과를 반환하기로 결정한 경우만 `true`. 기본값은 `false`                                                                                                                     |
 
 `httpStatusClass` 기본값은 `NOT_AVAILABLE`, `retryCount` 기본값은 `NONE`입니다. 페이지 번호나 가져온 페이지 수를 재시도 횟수로 사용하지 않습니다. SDK 내부 재시도 횟수나 예외 message를 분석해 필드를 추정하지 않습니다. `TIMEOUT`은 취소 예외를 무조건 기록하라는 뜻이 아닙니다.
 
@@ -48,7 +48,7 @@ reporter 자체에는 중복 제거, 재시도, 부분 결과 판정 기능이 �
 
 앱이 재시도하지 않는 지도 요청에서 network timeout 기록을 맡은 한 경계의 예시입니다. `request`는 하나의 최종 요청을 실행하며, 내부에서 같은 실패를 기록하지 않는다는 전제입니다. 기존 예외 전파를 유지합니다. 이 helper를 공통 코드에 추가하라는 뜻은 아니며 실제 연결에서는 기존 실패 처리 위치에 기록 호출을 넣습니다.
 
-```kotlin
+```text
 import com.team.yeogibeoryeo.domain.diagnostics.NonFatalApi
 import com.team.yeogibeoryeo.domain.diagnostics.NonFatalCategory
 import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorContext
@@ -85,9 +85,9 @@ cause에 취소 예외가 있다는 이유만으로 wrapper 전체를 취소로 
 
 ### 품목 검색
 
-[품목 repository](../data/src/main/java/com/team/yeogibeoryeo/data/item/repository/DisposalItemGuideRepositoryImpl.kt)는 현재 [앱에 포함된 JSON과 lazy 저장값](../data/src/main/java/com/team/yeogibeoryeo/data/item/local/ItemCategoryLocalDataSource.kt)을 읽습니다. 공백 검색, 일치 항목 없음과 상세 조회의 `null`은 정상 결과이며 기록하지 않습니다.
+[품목 repository](../data/src/main/java/com/team/yeogibeoryeo/data/item/repository/DisposalItemGuideRepositoryImpl.kt)는 현재 [앱에 포함된 JSON](../data/src/main/java/com/team/yeogibeoryeo/data/item/local/ItemCategoryLocalDataSource.kt)을 읽습니다. 원격 API를 호출하지 않습니다. asset 열기와 읽기 실패는 `ASSET_LOAD/IO`, JSON 변환 실패는 `ASSET_LOAD/PARSING`으로 실제 실패가 발생한 local source에서 한 번 기록합니다. repository와 ViewModel은 같은 실패를 다시 기록하지 않습니다.
 
-파일 읽기나 JSON 변환 실패를 기록하려면 실제 발생 위치와 필요한 분류를 먼저 정합니다. 현재 계약에는 asset 전용 단계가 없으므로 packaged asset 실패를 원격 요청이나 응답 실패로 표시하지 않습니다. `ITEM_GUIDE`가 있다는 이유만으로 기존 단계에 맞지 않는 실패까지 기록하지 않습니다.
+[홈 표시 분류 저장소](../data/src/main/java/com/team/yeogibeoryeo/data/item/repository/DataStoreHomeQuickCategoryRepository.kt)는 DataStore 읽기 실패를 `CACHE_READ/CACHE`로 기록한 뒤 기존처럼 빈 설정으로 복구합니다. 토글과 표시 개수 제한의 쓰기 실패는 `CACHE_WRITE/CACHE`로 기록한 뒤 현재 값을 유지합니다. 공백 검색, 일치 항목 없음, 상세 조회의 `null`, 저장된 홈 표시 분류가 없는 상태는 정상 결과이며 기록하지 않습니다.
 
 ### 지도
 
