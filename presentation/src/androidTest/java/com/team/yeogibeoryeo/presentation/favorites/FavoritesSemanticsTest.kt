@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
@@ -162,8 +163,20 @@ class FavoritesSemanticsTest {
         composeTestRule.onNodeWithText("유리병")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
             .assert(hasOnClickLabel("유리병 상세 보기"))
-        composeTestRule.onNodeWithContentDescription("즐겨찾기 해제")
+        composeTestRule.onNodeWithContentDescription("유리병 즐겨찾기")
             .assert(hasClickAction())
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    "즐겨찾기됨",
+                ),
+            )
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ToggleableState,
+                    ToggleableState.On,
+                ),
+            )
             .assertIsDisplayed()
     }
 

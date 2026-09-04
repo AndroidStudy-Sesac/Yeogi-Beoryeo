@@ -1,12 +1,22 @@
 package com.team.yeogibeoryeo.presentation.map.components
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import com.team.yeogibeoryeo.domain.operationnotice.model.OperationNoticeSeverity
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
+import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.MapSearchFailures
 import com.team.yeogibeoryeo.presentation.map.MapSearchMode
@@ -69,4 +79,48 @@ class SpotBottomSheetContentTest {
 
         assertTrue(retryClicked)
     }
+
+    @Test
+    fun 수거_장소_즐겨찾기_버튼은_장소명과_현재_상태를_제공한다() {
+        var spot by mutableStateOf(
+            CollectionSpot(
+                id = "battery-bin",
+                name = "문래동 폐건전지 수거함",
+                type = CollectionSpotType.BATTERY_BIN,
+                address = "서울특별시 영등포구 문래동",
+                detailLocation = null,
+                coordinate = null,
+                distanceMeter = 120,
+                isBookmarked = false,
+            ),
+        )
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                SpotBottomCard(
+                    spot = spot,
+                    isSelected = false,
+                    onClick = {},
+                    onFavoriteClick = { selectedSpot ->
+                        spot = selectedSpot.copy(isBookmarked = !selectedSpot.isBookmarked)
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("문래동 폐건전지 수거함 즐겨찾기")
+            .assert(hasStateDescription("즐겨찾기 안 됨"))
+            .assert(hasToggleableState(ToggleableState.Off))
+            .performClick()
+
+        composeTestRule.onNodeWithContentDescription("문래동 폐건전지 수거함 즐겨찾기")
+            .assert(hasStateDescription("즐겨찾기됨"))
+            .assert(hasToggleableState(ToggleableState.On))
+    }
+
+    private fun hasStateDescription(description: String) =
+        SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, description)
+
+    private fun hasToggleableState(state: ToggleableState) =
+        SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, state)
 }

@@ -128,8 +128,6 @@
     <string name="regional_guide_region_three_name_format">%1$s &gt; %2$s &gt; %3$s</string>
     <string name="regional_guide_region_selector_search_action">조회</string>
     <string name="regional_guide_region_selector_change_action">변경</string>
-    <string name="regional_guide_summary_favorite_add_action">즐겨찾기 추가</string>
-    <string name="regional_guide_summary_favorite_remove_action">즐겨찾기 해제</string>
     <string name="regional_guide_summary_management_zone_label">관리구역</string>
     <string name="regional_guide_summary_target_region_label">대상지역</string>
     <string name="regional_guide_summary_disposal_place_label">배출장소</string>
@@ -214,8 +212,7 @@
     <string name="item_guide_action_free_pickup">무상방문수거 안내 보기</string>
     <string name="item_guide_action_free_pickup_description">방문수거는 지도 장소가 아니라 예약 안내로 확인합니다.</string>
     <string name="back_action">뒤로가기</string>
-    <string name="favorite_add_action">즐겨찾기 추가</string>
-    <string name="favorite_remove_action">즐겨찾기 해제</string>
+    <string name="favorite_control_label">%1$s 즐겨찾기</string>
     <string name="favorite_item_open_action">%1$s 상세 보기</string>
     <string name="favorite_collection_spot_open_action">%1$s 지도에서 보기</string>
     <string name="favorite_regional_guide_open_action">%1$s 지역 가이드 보기</string>
