@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
@@ -84,6 +85,31 @@ class ItemGuideDetailScreenTest {
         composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
 
         assertEquals(1, backClickCount)
+    }
+
+    @Test
+    fun 즐겨찾기_버튼은_품목명과_현재_상태를_제공한다() {
+        var isFavorite by mutableStateOf(false)
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemGuideDetailScreen(
+                    guide = sampleGuide(),
+                    isFavorite = isFavorite,
+                    onBackClick = {},
+                    onFavoriteClick = { isFavorite = !isFavorite },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("유리컵 즐겨찾기")
+            .assert(hasStateDescription("즐겨찾기 안 됨"))
+            .assert(hasToggleableState(ToggleableState.Off))
+            .performClick()
+
+        composeTestRule.onNodeWithContentDescription("유리컵 즐겨찾기")
+            .assert(hasStateDescription("즐겨찾기됨"))
+            .assert(hasToggleableState(ToggleableState.On))
     }
 
     @Test
@@ -388,6 +414,12 @@ class ItemGuideDetailScreenTest {
 
     private fun hasHeading() =
         SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
+
+    private fun hasStateDescription(description: String) =
+        SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, description)
+
+    private fun hasToggleableState(state: ToggleableState) =
+        SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, state)
 
     private fun hasPositiveVerticalScrollPosition() =
         SemanticsMatcher("has positive vertical scroll position") { node ->

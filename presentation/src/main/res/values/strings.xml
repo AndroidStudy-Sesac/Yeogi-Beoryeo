@@ -128,8 +128,6 @@
     <string name="regional_guide_region_three_name_format">%1$s &gt; %2$s &gt; %3$s</string>
     <string name="regional_guide_region_selector_search_action">조회</string>
     <string name="regional_guide_region_selector_change_action">변경</string>
-    <string name="regional_guide_summary_favorite_add_action">즐겨찾기 추가</string>
-    <string name="regional_guide_summary_favorite_remove_action">즐겨찾기 해제</string>
     <string name="regional_guide_summary_management_zone_label">관리구역</string>
     <string name="regional_guide_summary_target_region_label">대상지역</string>
     <string name="regional_guide_summary_disposal_place_label">배출장소</string>
@@ -214,8 +212,7 @@
     <string name="item_guide_action_free_pickup">무상방문수거 안내 보기</string>
     <string name="item_guide_action_free_pickup_description">방문수거는 지도 장소가 아니라 예약 안내로 확인합니다.</string>
     <string name="back_action">뒤로가기</string>
-    <string name="favorite_add_action">즐겨찾기 추가</string>
-    <string name="favorite_remove_action">즐겨찾기 해제</string>
+    <string name="favorite_control_label">%1$s 즐겨찾기</string>
     <string name="favorite_item_open_action">%1$s 상세 보기</string>
     <string name="favorite_collection_spot_open_action">%1$s 지도에서 보기</string>
     <string name="favorite_regional_guide_open_action">%1$s 지역 가이드 보기</string>
@@ -439,7 +436,7 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.]]></string>
     <string name="settings_cache_confirm_description">현재 위치로 주변 수거 장소를 찾았을 때 임시 저장된 위치 캐시를 삭제합니다. 즐겨찾기와 품목 검색 기록은 삭제되지 않습니다.</string>
     <string name="settings_cache_delete_action">삭제</string>
-    <string name="settings_cache_deleting_action">삭제 중...</string>
+    <string name="settings_cache_deleting_action">삭제 중…</string>
     <string name="settings_cache_delete_success_message">위치 캐시를 삭제했습니다.</string>
     <string name="settings_cache_delete_no_cache_message">삭제할 위치 캐시가 없습니다.</string>
     <string name="settings_cache_delete_failure_message">위치 캐시를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
