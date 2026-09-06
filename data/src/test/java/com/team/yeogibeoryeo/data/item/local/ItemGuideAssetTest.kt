@@ -250,6 +250,63 @@ class ItemGuideAssetTest {
     }
 
     @Test
+    fun `화장품과 갑 티슈에 적용되는 안내는 내용물과 포장 상태를 구분한다`() {
+        val guides =
+            parseArray("item_disposal_guides.json")
+                .associateBy { element -> element.jsonObject["id"]!!.jsonPrimitive.content }
+
+        val cosmeticGuides =
+            listOf(
+                Triple("item-guide-0736", "화장품 내용물과 복합 용기", "일반종량제폐기물"),
+                Triple("item-guide-0737", "화장품 플라스틱 용기", "합성수지 용기류"),
+                Triple("item-guide-0738", "화장품 유리 용기", "유리병"),
+                Triple("item-guide-0739", "화장품 금속 용기", "금속류"),
+            )
+        cosmeticGuides.forEach { (id, expectedName, expectedCategory) ->
+            val guide = guides.getValue(id).jsonObject
+            assertEquals(expectedName, guide["name"]!!.jsonPrimitive.content)
+            val categoryPaths = guide["categoryPaths"]!!.jsonArray
+            assertEquals(1, categoryPaths.size)
+            assertEquals(
+                expectedCategory,
+                categoryPaths.single().jsonArray.last().jsonPrimitive.content,
+            )
+        }
+
+        val cosmeticMethods =
+            cosmeticGuides.flatMap { (id, _, _) ->
+                guides.getValue(id).jsonObject["dischargeMethods"]!!.jsonArray
+                    .map { it.jsonPrimitive.content }
+            }
+        assertTrue(cosmeticMethods.any { method -> "내용물" in method && "종량제봉투" in method })
+        assertTrue(cosmeticMethods.any { method -> "플라스틱" in method && "분리" in method })
+        assertTrue(cosmeticMethods.any { method -> "유리" in method && "분리" in method })
+        assertTrue(cosmeticMethods.any { method -> "금속" in method && "분리" in method })
+        assertTrue(cosmeticMethods.any { method -> "분리되지" in method && "종량제봉투" in method })
+
+        val usedTissue = guides.getValue("item-guide-0266").jsonObject
+        assertEquals("화장지", usedTissue["name"]!!.jsonPrimitive.content)
+        assertEquals(
+            "일반종량제폐기물",
+            usedTissue["categoryPaths"]!!.jsonArray.single().jsonArray.last().jsonPrimitive.content,
+        )
+        val tissueMethods = usedTissue["dischargeMethods"]!!.jsonArray.map { it.jsonPrimitive.content }
+        assertTrue(tissueMethods.any { method -> "티슈" in method && "종량제봉투" in method })
+
+        val tissueBox = guides.getValue("item-guide-0740").jsonObject
+        assertEquals("티슈 종이 상자", tissueBox["name"]!!.jsonPrimitive.content)
+        assertEquals(
+            "종이",
+            tissueBox["categoryPaths"]!!.jsonArray.single().jsonArray.last().jsonPrimitive.content,
+        )
+        val boxMethods = tissueBox["dischargeMethods"]!!.jsonArray.map { it.jsonPrimitive.content }
+        val boxNotes = tissueBox["notes"]!!.jsonArray.map { it.jsonPrimitive.content }
+        assertTrue(boxMethods.any { method -> "종이 상자" in method && "종이류" in method })
+        assertTrue(boxMethods.any { method -> "다른 재질" in method && "제거" in method })
+        assertTrue(boxNotes.any { note -> "코팅" in note && "종량제봉투" in note })
+    }
+
+    @Test
     fun `내용이 다른 대표 상세 가이드와 품목사전 가이드는 ID를 공유하지 않는다`() {
         val representativeIds =
             parseObject("representative_guide_details.json")
