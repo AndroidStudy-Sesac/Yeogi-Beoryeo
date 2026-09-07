@@ -2,6 +2,7 @@ package com.team.yeogibeoryeo.presentation.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -13,12 +14,14 @@ fun SettingsRoute(
     onDetailClick: (SettingsDetailType) -> Unit,
     onAppGuideClick: () -> Unit,
     modifier: Modifier = Modifier,
+    hasUnreadNotices: Boolean = false,
 ) {
     SettingsScreen(
         onBackClick = onBackClick,
         onDetailClick = onDetailClick,
         onAppGuideClick = onAppGuideClick,
         modifier = modifier,
+        hasUnreadNotices = hasUnreadNotices,
     )
 }
 
@@ -32,13 +35,16 @@ fun SettingsDetailRoute(
     onOpenNaverMapLegalNoticeClick: () -> Unit,
     onOpenNaverMapOpenSourceLicenseClick: () -> Unit,
     onOpenSourceClick: (String) -> Unit,
+    noticeViewModel: SettingsNoticeViewModel,
     modifier: Modifier = Modifier,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     cacheViewModel: SettingsCacheViewModel = hiltViewModel(),
 ) {
     val cacheUiState by cacheViewModel.uiState.collectAsStateWithLifecycle()
     val noticeRouteState = if (detailType == SettingsDetailType.Notice) {
-        val noticeViewModel: SettingsNoticeViewModel = hiltViewModel()
+        LaunchedEffect(noticeViewModel) {
+            noticeViewModel.refreshNotices()
+        }
         val noticeUiState by noticeViewModel.uiState.collectAsStateWithLifecycle()
         SettingsNoticeRouteState(
             uiState = noticeUiState,
