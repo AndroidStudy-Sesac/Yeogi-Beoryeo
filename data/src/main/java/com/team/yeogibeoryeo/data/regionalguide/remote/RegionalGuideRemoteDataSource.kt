@@ -82,7 +82,7 @@ class RegionalGuideRemoteDataSource @Inject constructor(
                     } catch (_: TimeoutCancellationException) {
                         currentCoroutineContext().ensureActive()
                         nonFatalErrorReporter.reportRegionalGuideFailure(
-                            error = RegionalGuideOwnedTimeoutException,
+                            error = RegionalGuideOwnedTimeoutException(),
                             isPartialResult = true,
                         )
 
@@ -127,7 +127,7 @@ class RegionalGuideRemoteDataSource @Inject constructor(
         } catch (e: TimeoutCancellationException) {
             currentCoroutineContext().ensureActive()
             nonFatalErrorReporter.reportRegionalGuideFailure(
-                error = RegionalGuideOwnedTimeoutException,
+                error = RegionalGuideOwnedTimeoutException(),
                 isPartialResult = firstPageFetched,
             )
 
@@ -215,7 +215,7 @@ class RegionalGuideRemoteDataSource @Inject constructor(
 
     private fun List<RegionalGuideItemDto>.toInconsistentPartialResult(): RegionalGuideFetchResult {
         nonFatalErrorReporter.reportRegionalGuideFailure(
-            error = RegionalGuideInconsistentResponseException,
+            error = RegionalGuideInconsistentResponseException(),
             isPartialResult = true,
         )
         return toPartialResult(RegionalGuidePartialResultReason.INCONSISTENT_RESPONSE)
@@ -279,9 +279,9 @@ private class RegionalGuideBodyParsingException(
     val statusCode: Int,
 ) : RegionalGuideRemoteResponseException()
 
-private object RegionalGuideOwnedTimeoutException : RuntimeException()
+private class RegionalGuideOwnedTimeoutException : RuntimeException()
 
-private object RegionalGuideInconsistentResponseException : RuntimeException()
+private class RegionalGuideInconsistentResponseException : RuntimeException()
 
 private fun NonFatalErrorReporter.reportRegionalGuideFailure(
     error: Throwable,
@@ -305,7 +305,7 @@ private fun Throwable.toRegionalGuideNonFatalErrorContext(
             category = NonFatalCategory.PARSING,
             httpStatusClass = statusCode.toNonFatalHttpStatusClass(),
         )
-        RegionalGuideOwnedTimeoutException,
+        is RegionalGuideOwnedTimeoutException,
         is SocketTimeoutException,
         -> RegionalGuideFailureContext(
             stage = NonFatalStage.REMOTE_REQUEST,
@@ -316,7 +316,7 @@ private fun Throwable.toRegionalGuideNonFatalErrorContext(
             category = NonFatalCategory.NETWORK,
         )
         is SerializationException,
-        RegionalGuideInconsistentResponseException,
+        is RegionalGuideInconsistentResponseException,
         -> RegionalGuideFailureContext(
             stage = NonFatalStage.RESPONSE_PARSING,
             category = NonFatalCategory.PARSING,
