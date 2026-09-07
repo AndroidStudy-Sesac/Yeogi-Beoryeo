@@ -1,14 +1,22 @@
 package com.team.yeogibeoryeo.presentation.settings
 
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasProgressBarRangeInfo
+import androidx.compose.ui.test.hasStateDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.team.yeogibeoryeo.domain.notice.model.Notice
 import com.team.yeogibeoryeo.presentation.R
@@ -77,6 +85,83 @@ class SettingsNoticeTest {
         ).assertIsDisplayed()
 
         assertEquals(notice.id, selectedNoticeId)
+    }
+
+    @Test
+    fun 읽지_않은_공지에_미확인_상태를_제공한다() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val notice = notice()
+        setNoticeContent(SettingsNoticeUiState.Content(listOf(notice)))
+
+        composeTestRule
+            .onNode(
+                hasText(notice.title) and
+                    hasStateDescription(
+                        context.getString(R.string.settings_notice_item_unread_state),
+                    ),
+            )
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun 읽은_공지에는_미확인_상태를_제공하지_않는다() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val notice = notice()
+        setNoticeContent(
+            SettingsNoticeUiState.Content(
+                notices = listOf(notice),
+                readNoticeIds = setOf(notice.id),
+            ),
+        )
+
+        composeTestRule
+            .onNode(
+                hasText(notice.title) and
+                    hasStateDescription(
+                        context.getString(R.string.settings_notice_item_unread_state),
+                    ),
+            )
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun 작은_화면의_200퍼센트_글자에서_공지와_미확인_상태를_표시한다() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val notice = notice().copy(title = "[업데이트] v1.1.0 업데이트 안내")
+
+        composeTestRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density = density.density, fontScale = 2f),
+            ) {
+                MaterialTheme {
+                    LazyColumn(modifier = Modifier.width(320.dp)) {
+                        item {
+                            NoticeDetail(
+                                uiState = SettingsNoticeUiState.Content(listOf(notice)),
+                                onNoticeClick = {},
+                                onRetryClick = {},
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeTestRule
+            .onNode(
+                hasText(notice.title) and
+                    hasStateDescription(
+                        context.getString(R.string.settings_notice_item_unread_state),
+                    ),
+            )
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(
+            context.getString(
+                R.string.settings_notice_published_date,
+                formatNoticeDate(notice.publishedAtMillis),
+            ),
+        ).assertIsDisplayed()
     }
 
     @Test
