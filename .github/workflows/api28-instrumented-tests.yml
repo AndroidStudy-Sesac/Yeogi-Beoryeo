@@ -113,9 +113,6 @@ jobs:
             df -h .
             ps -eo pid,comm,%cpu,%mem,rss --sort=-rss | sed -n '1,21p'
             java -version
-            if [[ -x "$ANDROID_HOME/emulator/emulator" ]]; then
-              "$ANDROID_HOME/emulator/emulator" -version
-            fi
             if [[ -x "$ANDROID_HOME/platform-tools/adb" ]]; then
               "$ANDROID_HOME/platform-tools/adb" version
               "$ANDROID_HOME/platform-tools/adb" devices -l
