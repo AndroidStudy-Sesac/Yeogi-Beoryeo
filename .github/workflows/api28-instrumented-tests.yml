@@ -95,6 +95,7 @@ jobs:
         run: |
           ./gradlew \
             ":${{ matrix.module }}:pixel2Api28DebugAndroidTest" \
+            -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8" \
             --no-parallel \
             --no-daemon \
             --stacktrace \
