@@ -12,18 +12,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpot
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
+import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.map.formatter.DistanceFormatter
 import com.team.yeogibeoryeo.presentation.map.mapper.toDisplayName
 import com.team.yeogibeoryeo.common.R as CommonR
@@ -61,6 +65,15 @@ fun SpotBottomCard(
         }
     }
     val distanceText = DistanceFormatter.format(spot.distanceMeter)
+    val favoriteContentDescription =
+        stringResource(R.string.favorite_control_label, spot.name)
+    val favoriteStateDescription = stringResource(
+        if (spot.isBookmarked) {
+            R.string.item_card_favorite_saved_state
+        } else {
+            R.string.item_card_favorite_not_saved_state
+        },
+    )
 
     Card(
         modifier = cardModifier,
@@ -118,11 +131,16 @@ fun SpotBottomCard(
                     )
                 }
 
-                IconButton(
-                    onClick = {
+                IconToggleButton(
+                    checked = spot.isBookmarked,
+                    onCheckedChange = {
                         onFavoriteClick(spot)
                     },
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .semantics {
+                            stateDescription = favoriteStateDescription
+                        },
                 ) {
                     Icon(
                         painter = painterResource(
@@ -132,11 +150,7 @@ fun SpotBottomCard(
                                 CommonR.drawable.ic_favorite
                             },
                         ),
-                        contentDescription = if (spot.isBookmarked) {
-                            "즐겨찾기 해제"
-                        } else {
-                            "즐겨찾기 추가"
-                        },
+                        contentDescription = favoriteContentDescription,
                         tint = if (spot.isBookmarked) {
                             MaterialTheme.colorScheme.tertiary
                         } else {

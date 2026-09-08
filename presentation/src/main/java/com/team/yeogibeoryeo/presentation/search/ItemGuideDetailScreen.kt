@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
@@ -77,6 +78,7 @@ fun ItemGuideDetailScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             ItemGuideDetailTopBar(
+                itemName = guide.name,
                 isFavorite = isFavorite,
                 onBackClick = onBackClick,
                 onFavoriteClick = onFavoriteClick,
@@ -204,25 +206,33 @@ fun ItemGuideDetailScreen(
 
 @Composable
 private fun ItemGuideDetailTopBar(
+    itemName: String,
     isFavorite: Boolean,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
 ) {
-    val favoriteActionDescription =
-        stringResource(
-            if (isFavorite) {
-                R.string.favorite_remove_action
-            } else {
-                R.string.favorite_add_action
-            },
-        )
+    val favoriteContentDescription =
+        stringResource(R.string.favorite_control_label, itemName)
+    val favoriteStateDescription = stringResource(
+        if (isFavorite) {
+            R.string.item_card_favorite_saved_state
+        } else {
+            R.string.item_card_favorite_not_saved_state
+        },
+    )
 
     AppTopBar(
         navigationIcon = {
             AppBackButton(onClick = onBackClick)
         },
         actions = {
-            IconButton(onClick = onFavoriteClick) {
+            IconToggleButton(
+                checked = isFavorite,
+                onCheckedChange = { onFavoriteClick() },
+                modifier = Modifier.semantics {
+                    stateDescription = favoriteStateDescription
+                },
+            ) {
                 Icon(
                     painter = painterResource(
                         id = if (isFavorite) {
@@ -231,7 +241,7 @@ private fun ItemGuideDetailTopBar(
                             CommonR.drawable.ic_favorite
                         },
                     ),
-                    contentDescription = favoriteActionDescription,
+                    contentDescription = favoriteContentDescription,
                     tint = if (isFavorite) {
                         MaterialTheme.colorScheme.tertiary
                     } else {
