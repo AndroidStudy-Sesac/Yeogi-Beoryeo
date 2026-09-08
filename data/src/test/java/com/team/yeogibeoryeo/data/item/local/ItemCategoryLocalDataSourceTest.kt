@@ -15,6 +15,29 @@ import org.junit.Test
 
 class ItemCategoryLocalDataSourceTest {
     @Test
+    fun `품목 검색어를 읽고 검색어가 없는 품목은 빈 목록으로 유지한다`() {
+        val reporter = RecordingNonFatalErrorReporter()
+        val source = ItemCategoryLocalDataSource(
+            readAssetText = {
+                """
+                [
+                  {"id":"cosmetics","name":"화장품 용기","searchTerms":["화장품","쿠션 팩트"],"categoryPaths":[["일반쓰레기"]]},
+                  {"id":"paper","name":"종이","categoryPaths":[["종이류"]]}
+                ]
+                """.trimIndent()
+            },
+            reporter = reporter,
+        )
+
+        val items = source.getWasteDictionaryItems()
+
+        assertEquals(listOf("cosmetics", "paper"), items.map { it.id })
+        assertEquals(listOf("화장품", "쿠션 팩트"), items.first().searchTerms)
+        assertTrue(items.last().searchTerms.isEmpty())
+        assertTrue(reporter.errors.isEmpty())
+    }
+
+    @Test
     fun `asset 읽기 실패를 한 번 기록하고 원래 예외를 전파한다`() {
         val failure = IOException("private asset path")
         val reporter = RecordingNonFatalErrorReporter()
