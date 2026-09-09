@@ -28,6 +28,7 @@ import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteCollectionSpot
 @Composable
 fun FavoritesRoute(
     onItemSearchClick: () -> Unit,
+    onCollectionSpotMapClick: () -> Unit,
     onItemGuideClick: (String) -> Unit,
     onCollectionSpotClick: (FavoriteCollectionSpotMapMoveRequest) -> Unit,
     onRegionalGuideClick: (String) -> Unit,
@@ -59,6 +60,7 @@ fun FavoritesRoute(
             uiState = uiState,
             onTabClick = viewModel::selectTab,
             onItemSearchClick = onItemSearchClick,
+            onCollectionSpotMapClick = onCollectionSpotMapClick,
             onItemGuideClick = onItemGuideClick,
             onCollectionSpotClick = onCollectionSpotClick,
             onRegionalGuideClick = onRegionalGuideClick,

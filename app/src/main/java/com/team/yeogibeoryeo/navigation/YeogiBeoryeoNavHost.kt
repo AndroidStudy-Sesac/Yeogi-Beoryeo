@@ -264,6 +264,9 @@ fun YeogiBeoryeoNavHost(
                         onItemSearchClick = {
                             navController.navigateItemSearchRoot(navController.currentBackStackEntry)
                         },
+                        onCollectionSpotMapClick = {
+                            navController.navigateCollectionSpotDiscoveryRoot()
+                        },
                         onItemGuideClick = { guideId ->
                             navController.navigate(
                                 ItemGuideDetailRoute(
