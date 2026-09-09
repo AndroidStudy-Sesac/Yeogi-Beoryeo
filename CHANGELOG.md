@@ -7,6 +7,25 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-09
+
+### Added
+
+- 읽지 않은 공지가 있으면 설정과 공지사항 목록에 표시하고, 공지를 열면 읽음 상태를 저장합니다.
+- 수거 장소 즐겨찾기가 비어 있을 때 지도에서 장소를 찾아볼 수 있는 버튼을 추가했습니다.
+
+### Changed
+
+- 화장품, 쿠션 팩트, 갑 티슈와 화장지의 상태별 배출 안내를 보강했습니다.
+- 즐겨찾기 버튼에서 조작 대상과 현재 저장 상태를 접근성 정보로 전달합니다.
+- 품목 검색과 지역 가이드의 비치명 오류를 기존 오류 안내 및 복구 동작을 유지하면서 기록합니다.
+- API 28 계측 테스트를 모듈별 runner로 분리하고 실패 진단 자료를 보강했습니다.
+
+### Fixed
+
+- 화장품, 쿠션 팩트, 양말과 갑 티슈의 검색 결과를 보정했습니다.
+- 품목 검색, 상세 및 즐겨찾기 조회에서 취소와 치명 오류를 일반 실패로 처리하지 않고 전파합니다.
+
 ## [1.1.0] - 2026-09-02
 
 ### Added
@@ -129,7 +148,8 @@
 
 - 저장소 밖의 업로드 키로 서명된 Google Play 배포용 AAB 생성 절차
 
-[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v0.2.0...v0.3.0
