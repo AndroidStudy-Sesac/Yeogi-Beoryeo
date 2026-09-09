@@ -4,6 +4,11 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideDataSource
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuideFetchResult
 import com.team.yeogibeoryeo.data.regionalguide.remote.RegionalGuidePartialResultReason
 import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalApi
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalCategory
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorContext
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorReporter
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalStage
 import com.team.yeogibeoryeo.domain.region.model.Region
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideQuery
 import kotlinx.coroutines.CancellationException
@@ -20,11 +25,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     var mockResult: Result<RegionalGuideFetchResult> = Result.success(RegionalGuideFetchResult(emptyList()))
@@ -34,6 +40,7 @@ class FakeRegionalGuideDataSource : RegionalGuideDataSource {
     val calledSigunguNames = mutableListOf<String>()
     val fetchStartedSignals = mutableMapOf<String, CompletableDeferred<Unit>>()
     val responseGates = mutableMapOf<String, CompletableDeferred<Unit>>()
+    var beforeResult: (() -> Unit)? = null
 
     override suspend fun fetchRegionalGuides(sigunguName: String): Result<RegionalGuideFetchResult> {
         calledSigunguName = sigunguName
@@ -42,6 +49,7 @@ class FakeRegionalGuideDataSource : RegionalGuideDataSource {
         responseGates[sigunguName]?.await()
         if (delayMillis > 0) delay(delayMillis)
         throwable?.let { throwable -> throw throwable }
+        beforeResult?.invoke()
         return mockResult
     }
 }
@@ -230,6 +238,44 @@ class RegionalDisposalGuideRepositoryImplTest {
     }
 
     @Test
+    fun `동일한 실패를 공유하는 여러 요청은 원격 실패를 한 번만 기록한다`() = runBlocking {
+        val reporter = RepositoryRecordingNonFatalErrorReporter()
+        val failure = IOException()
+        val sigunguQuery = "김천시"
+        fakeDataSource.fetchStartedSignals[sigunguQuery] = CompletableDeferred()
+        fakeDataSource.responseGates[sigunguQuery] = CompletableDeferred()
+        fakeDataSource.mockResult = Result.failure(failure)
+        fakeDataSource.beforeResult = {
+            reporter.report(
+                error = failure,
+                context = NonFatalErrorContext(
+                    api = NonFatalApi.REGIONAL_GUIDE,
+                    stage = NonFatalStage.REMOTE_REQUEST,
+                    category = NonFatalCategory.NETWORK,
+                ),
+            )
+        }
+        val query = regionalGuideQuery(sigunguQuery)
+
+        val results = coroutineScope {
+            val firstRequest = async(start = UNDISPATCHED) {
+                repository.getRegionalDisposalGuideCandidates(query)
+            }
+            fakeDataSource.fetchStartedSignals.getValue(sigunguQuery).await()
+            val waitingRequest = async(start = UNDISPATCHED) {
+                repository.getRegionalDisposalGuideCandidates(query)
+            }
+            fakeDataSource.responseGates.getValue(sigunguQuery).complete(Unit)
+
+            listOf(firstRequest.await(), waitingRequest.await())
+        }
+
+        assertTrue(results.all { result -> result.isFailure })
+        assertEquals(listOf(sigunguQuery), fakeDataSource.calledSigunguNames)
+        assertEquals(1, reporter.contexts.size)
+    }
+
+    @Test
     fun `서로 다른 조회 키는 진행 중인 요청과 관계없이 원격 데이터를 동시에 호출한다`() = runBlocking {
         val firstQuery = "김천시"
         val secondQuery = "구미시"
@@ -331,4 +377,12 @@ class RegionalDisposalGuideRepositoryImplTest {
             displayRegion = Region(sido = "경상북도", sigungu = sigunguQuery),
             sigunguQuery = sigunguQuery,
         )
+}
+
+private class RepositoryRecordingNonFatalErrorReporter : NonFatalErrorReporter {
+    val contexts = mutableListOf<NonFatalErrorContext>()
+
+    override fun report(error: Throwable, context: NonFatalErrorContext) {
+        contexts += context
+    }
 }

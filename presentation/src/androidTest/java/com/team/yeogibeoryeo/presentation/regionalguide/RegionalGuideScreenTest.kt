@@ -9,6 +9,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -26,6 +30,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.regionalguide.components.RegionalGuideSummaryCard
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideCandidateUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalGuideUiModel
 import com.team.yeogibeoryeo.presentation.regionalguide.model.RegionalWasteScheduleUiModel
@@ -39,6 +44,61 @@ class RegionalGuideScreenTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun 지역_가이드_즐겨찾기_버튼은_지역명과_현재_상태를_제공한다() {
+        var isFavorite by mutableStateOf(false)
+        val guide =
+            RegionalGuideUiModel(
+                regionName = "충청남도 홍성군 은하면",
+                managementZoneName = "홍성군",
+                targetRegionName = "은하면",
+                disposalPlaceType = "문전수거",
+                disposalPlaceDescription = null,
+                schedules = emptyList(),
+                uncollectedDays = null,
+                departmentInfo = null,
+            )
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                RegionalGuideSummaryCard(
+                    guide = guide,
+                    isFavorite = isFavorite,
+                    onFavoriteClick = { isFavorite = !isFavorite },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("충청남도 홍성군 은하면 즐겨찾기")
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    "즐겨찾기 안 됨",
+                ),
+            )
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ToggleableState,
+                    ToggleableState.Off,
+                ),
+            )
+            .performClick()
+
+        composeTestRule.onNodeWithContentDescription("충청남도 홍성군 은하면 즐겨찾기")
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    "즐겨찾기됨",
+                ),
+            )
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ToggleableState,
+                    ToggleableState.On,
+                ),
+            )
+    }
 
     @Test
     fun 선택_지역_표시_상태에서_검색_실행은_원본_검색어를_전달한다() {

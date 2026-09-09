@@ -78,7 +78,7 @@ constructor(
                     }
                 } catch (exception: CancellationException) {
                     throw exception
-                } catch (_: Throwable) {
+                } catch (_: Exception) {
                     _uiState.value = ItemGuideDetailUiState.LoadFailed
                 } finally {
                     if (loadingGuideId == guideId) {

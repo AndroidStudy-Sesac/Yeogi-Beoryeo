@@ -58,6 +58,8 @@ import com.team.yeogibeoryeo.common.navigation.AppBottomNavigationBar
 import com.team.yeogibeoryeo.presentation.common.E_WASTE_FREE_PICKUP_GUIDE_URL
 import com.team.yeogibeoryeo.presentation.map.CollectionSpotMapScreen
 import com.team.yeogibeoryeo.presentation.search.ItemSearchGuideTarget
+import com.team.yeogibeoryeo.presentation.settings.SettingsNoticeUiState
+import com.team.yeogibeoryeo.presentation.settings.SettingsNoticeViewModel
 import com.team.yeogibeoryeo.presentation.favorites.FavoritesRoute as FavoritesScreenRoute
 import com.team.yeogibeoryeo.presentation.regionalguide.RegionalGuideRoute as RegionalGuideScreenRoute
 import com.team.yeogibeoryeo.presentation.search.ItemGuideDetailRoute as ItemGuideDetailScreenRoute
@@ -72,6 +74,7 @@ fun YeogiBeoryeoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     appGuideViewModel: AppGuideViewModel = hiltViewModel(),
+    settingsNoticeViewModel: SettingsNoticeViewModel = hiltViewModel(),
 ) {
     val currentContext by rememberUpdatedState(LocalContext.current)
     val ctaPreconditionState = rememberCtaPreconditionState(
@@ -87,6 +90,9 @@ fun YeogiBeoryeoNavHost(
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentDestination = currentBackStackEntry?.destination
     val appGuideUiState by appGuideViewModel.uiState.collectAsStateWithLifecycle()
+    val settingsNoticeUiState by settingsNoticeViewModel.uiState.collectAsStateWithLifecycle()
+    val hasUnreadNotices =
+        (settingsNoticeUiState as? SettingsNoticeUiState.Content)?.hasUnreadNotices == true
     val isMapScreen = currentDestination?.hasRoute<MapRoute>() == true
     val isItemSearchScreen = currentDestination?.hasRoute<ItemSearchRoute>() == true
     val isItemDetailScreen = currentDestination?.hasRoute<ItemGuideDetailRoute>() == true
@@ -258,6 +264,9 @@ fun YeogiBeoryeoNavHost(
                         onItemSearchClick = {
                             navController.navigateItemSearchRoot(navController.currentBackStackEntry)
                         },
+                        onCollectionSpotMapClick = {
+                            navController.navigateCollectionSpotDiscoveryRoot()
+                        },
                         onItemGuideClick = { guideId ->
                             navController.navigate(
                                 ItemGuideDetailRoute(
@@ -293,6 +302,7 @@ fun YeogiBeoryeoNavHost(
                     val route = backStackEntry.toRoute<ItemSearchRoute>()
                     ItemSearchScreenRoute(
                         initialQuery = route.initialQuery,
+                        hasUnreadNotices = hasUnreadNotices,
                         onGuideSelected = { guide ->
                             navController.navigate(
                                 ItemGuideDetailRoute(
@@ -389,6 +399,7 @@ fun YeogiBeoryeoNavHost(
                             }
                             appGuideViewModel.startGuide()
                         },
+                        hasUnreadNotices = hasUnreadNotices,
                     )
                 }
 
@@ -397,6 +408,7 @@ fun YeogiBeoryeoNavHost(
                     SettingsDetailScreenRoute(
                         detailType = route.detailType.toScreenType(),
                         appVersionName = BuildConfig.VERSION_NAME,
+                        noticeViewModel = settingsNoticeViewModel,
                         onBackClick = navController::popBackStack,
                         onOpenAppSettingsClick = {
                             currentContext.openAppSettings()

@@ -1,10 +1,13 @@
 package com.team.yeogibeoryeo.presentation.favorites
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
@@ -14,6 +17,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Density
 import com.team.yeogibeoryeo.domain.favorite.model.FavoriteTargetType
 import com.team.yeogibeoryeo.presentation.favorites.components.FavoriteCard
 import com.team.yeogibeoryeo.presentation.favorites.model.FavoriteTab
@@ -34,6 +38,7 @@ class FavoritesSemanticsTest {
                     uiState = FavoritesUiState(selectedTab = FavoriteTab.ITEM_GUIDE),
                     onTabClick = {},
                     onItemSearchClick = {},
+                    onCollectionSpotMapClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -52,7 +57,7 @@ class FavoritesSemanticsTest {
     }
 
     @Test
-    fun `지역_가이드_빈_상태는_검색_이동_버튼을_제공한다`() {
+    fun 지역_가이드_빈_상태는_검색_이동_버튼을_제공한다() {
         var searchClickCount = 0
 
         composeTestRule.setContent {
@@ -61,6 +66,7 @@ class FavoritesSemanticsTest {
                     uiState = FavoritesUiState(selectedTab = FavoriteTab.REGIONAL_GUIDE),
                     onTabClick = {},
                     onItemSearchClick = {},
+                    onCollectionSpotMapClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -91,6 +97,7 @@ class FavoritesSemanticsTest {
                     uiState = FavoritesUiState(isLoading = true),
                     onTabClick = {},
                     onItemSearchClick = {},
+                    onCollectionSpotMapClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -119,6 +126,7 @@ class FavoritesSemanticsTest {
                     uiState = FavoritesUiState(hasLoadError = true),
                     onTabClick = {},
                     onItemSearchClick = {},
+                    onCollectionSpotMapClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -161,9 +169,26 @@ class FavoritesSemanticsTest {
 
         composeTestRule.onNodeWithText("유리병")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
-            .assert(hasOnClickLabel("유리병 상세 보기"))
-        composeTestRule.onNodeWithContentDescription("즐겨찾기 해제")
+            .assert(
+                SemanticsMatcher("onClick label is '유리병 상세 보기'") { node ->
+                    SemanticsActions.OnClick in node.config &&
+                        node.config[SemanticsActions.OnClick].label == "유리병 상세 보기"
+                },
+            )
+        composeTestRule.onNodeWithContentDescription("유리병 즐겨찾기")
             .assert(hasClickAction())
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    "즐겨찾기됨",
+                ),
+            )
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ToggleableState,
+                    ToggleableState.On,
+                ),
+            )
             .assertIsDisplayed()
     }
 
@@ -178,6 +203,7 @@ class FavoritesSemanticsTest {
                     uiState = FavoritesUiState(selectedTab = FavoriteTab.ITEM_GUIDE),
                     onTabClick = {},
                     onItemSearchClick = { itemSearchClickCount += 1 },
+                    onCollectionSpotMapClick = {},
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -201,13 +227,18 @@ class FavoritesSemanticsTest {
     }
 
     @Test
-    fun emptyCollectionSpotFavoritesHaveNoSearchActions() {
+    fun emptyCollectionSpotFavoritesInvokeOnlyMapDiscovery() {
+        var mapClickCount = 0
+        var itemSearchClickCount = 0
+        var regionalGuideSearchClickCount = 0
+
         composeTestRule.setContent {
             MaterialTheme {
                 FavoritesScreen(
                     uiState = FavoritesUiState(selectedTab = FavoriteTab.COLLECTION_SPOT),
                     onTabClick = {},
-                    onItemSearchClick = {},
+                    onItemSearchClick = { itemSearchClickCount += 1 },
+                    onCollectionSpotMapClick = { mapClickCount += 1 },
                     onItemGuideClick = {},
                     onCollectionSpotClick = {},
                     onRegionalGuideClick = {},
@@ -215,14 +246,54 @@ class FavoritesSemanticsTest {
                     onCollectionSpotFavoriteRemoveClick = {},
                     onRegionalGuideFavoriteRemoveClick = {},
                     onRegionalGuideHomePrimaryClick = {},
-                    onRegionalGuideSearchClick = {},
+                    onRegionalGuideSearchClick = { regionalGuideSearchClickCount += 1 },
                 )
             }
         }
 
         composeTestRule.onNodeWithText("즐겨찾기한 수거 장소가 없어요").assertIsDisplayed()
+        composeTestRule.onNodeWithText("지도에서 수거 장소 찾아보기")
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(hasClickAction())
+            .performClick()
         composeTestRule.onNodeWithText("품목 검색하기").assertDoesNotExist()
         composeTestRule.onNodeWithText("지역별 배출 가이드 찾아보기").assertDoesNotExist()
+
+        assertEquals(1, mapClickCount)
+        assertEquals(0, itemSearchClickCount)
+        assertEquals(0, regionalGuideSearchClickCount)
+    }
+
+    @Test
+    fun collectionSpotEmptyActionIsDisplayedAtLargeFontScale() {
+        composeTestRule.setContent {
+            val currentDensity = LocalDensity.current
+
+            CompositionLocalProvider(
+                LocalDensity provides Density(currentDensity.density, fontScale = 2f),
+            ) {
+                MaterialTheme {
+                    FavoritesScreen(
+                        uiState = FavoritesUiState(selectedTab = FavoriteTab.COLLECTION_SPOT),
+                        onTabClick = {},
+                        onItemSearchClick = {},
+                        onCollectionSpotMapClick = {},
+                        onItemGuideClick = {},
+                        onCollectionSpotClick = {},
+                        onRegionalGuideClick = {},
+                        onItemGuideFavoriteRemoveClick = {},
+                        onCollectionSpotFavoriteRemoveClick = {},
+                        onRegionalGuideFavoriteRemoveClick = {},
+                        onRegionalGuideHomePrimaryClick = {},
+                        onRegionalGuideSearchClick = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("즐겨찾기한 수거 장소가 없어요").assertIsDisplayed()
+        composeTestRule.onNodeWithText("지도에서 수거 장소 찾아보기").assertIsDisplayed()
     }
 
     private fun hasHeading() =
@@ -234,9 +305,4 @@ class FavoritesSemanticsTest {
             LiveRegionMode.Polite,
         )
 
-    private fun hasOnClickLabel(label: String) =
-        SemanticsMatcher("onClick label is '$label'") { node ->
-            SemanticsActions.OnClick in node.config &&
-                node.config[SemanticsActions.OnClick].label == label
-        }
 }

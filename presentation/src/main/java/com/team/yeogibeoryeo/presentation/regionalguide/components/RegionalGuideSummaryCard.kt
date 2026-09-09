@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,15 @@ fun RegionalGuideSummaryCard(
         ?: guide.regionName.ifBlank {
             stringResource(id = R.string.regional_guide_default_region_name)
         }
+    val favoriteContentDescription =
+        stringResource(R.string.favorite_control_label, displayRegionName)
+    val favoriteStateDescription = stringResource(
+        if (isFavorite) {
+            R.string.item_card_favorite_saved_state
+        } else {
+            R.string.item_card_favorite_not_saved_state
+        },
+    )
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -67,7 +78,13 @@ fun RegionalGuideSummaryCard(
                     fontWeight = FontWeight.Bold
                 )
 
-                IconButton(onClick = onFavoriteClick) {
+                IconToggleButton(
+                    checked = isFavorite,
+                    onCheckedChange = { onFavoriteClick() },
+                    modifier = Modifier.semantics {
+                        stateDescription = favoriteStateDescription
+                    },
+                ) {
                     Icon(
                         painter = painterResource(
                             id = if (isFavorite) {
@@ -76,13 +93,7 @@ fun RegionalGuideSummaryCard(
                                 CommonR.drawable.ic_favorite
                             },
                         ),
-                        contentDescription = stringResource(
-                            id = if (isFavorite) {
-                                R.string.regional_guide_summary_favorite_remove_action
-                            } else {
-                                R.string.regional_guide_summary_favorite_add_action
-                            }
-                        ),
+                        contentDescription = favoriteContentDescription,
                         modifier = Modifier.size(22.dp),
                         tint = MaterialTheme.colorScheme.tertiary,
                     )

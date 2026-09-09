@@ -14,10 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  instrumented-test:
-    name: API 28 Instrumented Tests
+  instrumented-test-modules:
+    name: API 28 Instrumented Test (${{ matrix.module }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [app, data, presentation]
 
     steps:
       - name: Checkout repository
@@ -87,12 +91,71 @@ jobs:
         run: sudo chmod 666 /dev/kvm
 
       - name: Run API 28 instrumented tests
+        shell: bash
         run: |
           ./gradlew \
-            :app:pixel2Api28DebugAndroidTest \
-            :data:pixel2Api28DebugAndroidTest \
-            :presentation:pixel2Api28DebugAndroidTest \
+            ":${{ matrix.module }}:pixel2Api28DebugAndroidTest" \
+            -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8" \
             --no-parallel \
             --no-daemon \
             --stacktrace \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+
+      - name: Collect API 28 diagnostics
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p build/ci-diagnostics
+          {
+            printf 'Runner image: %s %s\n' "${ImageOS:-unknown}" "${ImageVersion:-unknown}"
+            uname -a
+            nproc
+            free -h
+            df -h .
+            ps -eo pid,comm,%cpu,%mem,rss --sort=-rss | sed -n '1,21p'
+            java -version
+            if [[ -x "$ANDROID_HOME/platform-tools/adb" ]]; then
+              "$ANDROID_HOME/platform-tools/adb" version
+              "$ANDROID_HOME/platform-tools/adb" devices -l
+            fi
+            for package in \
+              "$ANDROID_HOME/emulator/source.properties" \
+              "$ANDROID_HOME/system-images/android-28/default/x86_64/source.properties"; do
+              if [[ -f "$package" ]]; then
+                printf '\n%s\n' "$package"
+                cat "$package"
+              fi
+            done
+          } > build/ci-diagnostics/environment.txt 2>&1
+
+      - name: Upload API 28 test reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api28-${{ matrix.module }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/ci-diagnostics/
+            ${{ matrix.module }}/build/reports/androidTests/
+            ${{ matrix.module }}/build/outputs/androidTest-results/
+          if-no-files-found: error
+          retention-days: 14
+
+  instrumented-test:
+    name: API 28 Instrumented Tests
+    needs: instrumented-test-modules
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Verify API 28 test results
+        env:
+          MODULE_RESULT: ${{ needs.instrumented-test-modules.result }}
+        shell: bash
+        run: |
+          if [[ "$MODULE_RESULT" != "success" ]]; then
+            echo "API 28 module tests did not all succeed: $MODULE_RESULT"
+            exit 1
+          fi
+
+          echo "API 28 instrumented test gate passed."

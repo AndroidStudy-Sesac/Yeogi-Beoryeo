@@ -467,6 +467,96 @@ class DisposalItemGuideRepositoryImplTest {
         }
 
     @Test
+    fun `searchItemGuides는 전용 검색어 대상을 같은 등급의 품목명 결과보다 먼저 반환한다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0736",
+                                        name = "화장품 내용물과 복합 용기",
+                                        searchTerms = listOf("화장품"),
+                                        categoryPaths = listOf(listOf("일반폐기물")),
+                                        dischargeMethods = listOf("종량제봉투로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0739",
+                                        name = "화장품 금속 용기",
+                                        categoryPaths = listOf(listOf("재활용폐기물", "금속류")),
+                                        dischargeMethods = listOf("금속류로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val results = repository.searchItemGuides("화장품")
+
+            assertEquals(
+                listOf("item-guide-0736", "item-guide-0739"),
+                results.map { it.id },
+            )
+        }
+
+    @Test
+    fun `searchItemGuides는 전용 검색어의 공백 차이를 무시하고 다른 품목과 섞지 않는다`() =
+        runBlocking {
+            val repository =
+                DisposalItemGuideRepositoryImpl(
+                    localDataSource =
+                        FakeLocalSource(
+                            wasteDictionaryItems =
+                                listOf(
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0736",
+                                        name = "화장품 내용물과 복합 용기",
+                                        searchTerms = listOf("쿠션 팩트"),
+                                        categoryPaths = listOf(listOf("일반폐기물")),
+                                        dischargeMethods = listOf("종량제봉투로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        id = "item-guide-cushion",
+                                        name = "쿠션",
+                                        categoryPaths = listOf(listOf("일반폐기물")),
+                                        dischargeMethods = listOf("종량제봉투로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0230",
+                                        name = "의류, 원단",
+                                        searchTerms = listOf("양말"),
+                                        categoryPaths = listOf(listOf("재활용폐기물", "의류 및 원단")),
+                                        dischargeMethods = listOf("의류수거함으로 배출합니다."),
+                                    ),
+                                    sampleDictionaryItem(
+                                        id = "item-guide-0740",
+                                        name = "티슈 종이 상자",
+                                        searchTerms = listOf("갑 티슈", "각티슈"),
+                                        categoryPaths = listOf(listOf("재활용폐기물", "종이")),
+                                        dischargeMethods = listOf("종이류로 배출합니다."),
+                                    ),
+                                ),
+                        ),
+                )
+
+            val expectedIdsByQuery =
+                mapOf(
+                    "쿠션 팩트" to "item-guide-0736",
+                    "쿠션팩트" to "item-guide-0736",
+                    "양말" to "item-guide-0230",
+                    "갑 티슈" to "item-guide-0740",
+                    "갑티슈" to "item-guide-0740",
+                    "각티슈" to "item-guide-0740",
+                )
+            expectedIdsByQuery.forEach { (query, expectedId) ->
+                val results = repository.searchItemGuides(query)
+
+                assertEquals("검색어: $query", listOf(expectedId), results.map { it.id })
+            }
+        }
+
+    @Test
     fun `컵라면 용기 종이는 기존 이름과 공식 품목명으로 검색하면 대상 품목 하나만 반환한다`() =
         runBlocking {
             val repository =
@@ -862,11 +952,13 @@ class DisposalItemGuideRepositoryImplTest {
         similarItems: List<String> = emptyList(),
         id: String = "item-guide-$name",
         legacyNames: List<String> = emptyList(),
+        searchTerms: List<String> = emptyList(),
     ): WasteDictionaryItem =
         WasteDictionaryItem(
             id = id,
             name = name,
             legacyNames = legacyNames,
+            searchTerms = searchTerms,
             categoryPaths = categoryPaths,
             similarItems = similarItems,
             dischargeMethods = dischargeMethods,

@@ -208,6 +208,41 @@ class SearchComponentsTest {
     }
 
     @Test
+    fun 결과_카드는_품목명과_즐겨찾기_상태를_함께_제공한다() {
+        composeTestRule.setContent {
+            MaterialTheme {
+                Column {
+                    DisposalItemCard(
+                        guide = sampleGuide().copy(name = "저장한 유리병"),
+                        onClick = {},
+                        isFavorite = true,
+                    )
+                    DisposalItemCard(
+                        guide = sampleGuide().copy(name = "저장하지 않은 유리병"),
+                        onClick = {},
+                        isFavorite = false,
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("저장한 유리병")
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    "즐겨찾기됨",
+                ),
+            )
+        composeTestRule.onNodeWithText("저장하지 않은 유리병")
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    "즐겨찾기 안 됨",
+                ),
+            )
+    }
+
+    @Test
     fun 퀵_카테고리_그리드는_전달한_카테고리만_표시하고_클릭을_전달한다() {
         var clickedCategory: RepresentativeGuideCategory? = null
         composeTestRule.setContent {

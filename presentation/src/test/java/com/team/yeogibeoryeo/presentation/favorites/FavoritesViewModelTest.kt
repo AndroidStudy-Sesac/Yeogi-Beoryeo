@@ -53,6 +53,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 
@@ -458,6 +460,44 @@ class FavoritesViewModelTest {
             assertEquals(false, viewModel.uiState.value.isLoading)
             assertEquals(4, favoriteRepository.observeCallCount)
         }
+
+    @Test
+    fun `즐겨찾기 조회 치명 오류는 전파하고 오류 상태로 바꾸지 않는다`() {
+        val failure = LinkageError("fatal")
+        lateinit var stateAfterFailure: FavoritesUiState
+        var observeCallCount = 0
+
+        val thrown =
+            assertThrows(LinkageError::class.java) {
+                runTest {
+                    val favoriteRepository =
+                        FakeFavoriteRepository(
+                            observeFailureCount = 1,
+                            observeFailure = failure,
+                        )
+                    val viewModel =
+                        createViewModel(
+                            favoriteRepository = favoriteRepository,
+                            itemRepository = FakeItemRepository(guides = emptyList()),
+                        )
+
+                    try {
+                        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                            viewModel.uiState.collect()
+                        }
+                        advanceUntilIdle()
+                    } finally {
+                        stateAfterFailure = viewModel.uiState.value
+                        observeCallCount = favoriteRepository.observeCallCount
+                    }
+                }
+            }
+
+        assertEquals(failure.javaClass, thrown.javaClass)
+        assertEquals(failure.message, thrown.message)
+        assertFalse(stateAfterFailure.hasLoadError)
+        assertEquals(2, observeCallCount)
+    }
 
     @Test
     fun `화면 구독이 중지되면 즐겨찾기 관찰을 멈추고 재구독하면 다시 시작한다`() =
@@ -1141,6 +1181,7 @@ class FavoritesViewModelTest {
         private val removeStarted: CompletableDeferred<Unit>? = null,
         private val continueRemove: CompletableDeferred<Unit>? = null,
         observeFailureCount: Int = 0,
+        private val observeFailure: Throwable = IllegalStateException("조회 실패"),
     ) : FavoriteRepository {
         private val favorites = MutableStateFlow(initialFavorites)
         private var remainingObserveFailures = observeFailureCount
@@ -1155,7 +1196,7 @@ class FavoritesViewModelTest {
             observeCallCount += 1
             if (remainingObserveFailures > 0) {
                 remainingObserveFailures -= 1
-                return flow { throw IllegalStateException("조회 실패") }
+                return flow { throw observeFailure }
             }
             return favorites
         }

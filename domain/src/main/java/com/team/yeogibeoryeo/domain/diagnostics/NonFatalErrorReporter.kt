@@ -35,6 +35,7 @@ enum class NonFatalApi {
 enum class NonFatalStage {
     REMOTE_REQUEST,
     RESPONSE_PARSING,
+    ASSET_LOAD,
     CACHE_READ,
     CACHE_WRITE,
 }
@@ -44,6 +45,7 @@ enum class NonFatalCategory {
     TIMEOUT,
     HTTP,
     PARSING,
+    IO,
     CACHE,
 }
 

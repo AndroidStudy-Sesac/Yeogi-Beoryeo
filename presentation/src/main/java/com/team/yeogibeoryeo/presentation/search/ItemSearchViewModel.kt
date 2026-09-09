@@ -299,7 +299,7 @@ constructor(
             Result.success(block())
         } catch (exception: CancellationException) {
             throw exception
-        } catch (exception: Throwable) {
+        } catch (exception: Exception) {
             Result.failure(exception)
         }
 

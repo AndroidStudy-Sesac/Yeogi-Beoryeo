@@ -26,15 +26,19 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 
@@ -556,6 +560,31 @@ class ItemSearchViewModelTest {
         }
 
     @Test
+    fun `검색 치명 오류는 원래 객체로 전파하고 오류 상태로 바꾸지 않는다`() {
+        val failure = LinkageError("fatal")
+        lateinit var stateAfterFailure: ItemSearchUiState
+
+        val thrown =
+            assertThrows(LinkageError::class.java) {
+                runTest {
+                    val viewModel = createViewModel(FakeRepository(onSearch = { throw failure }))
+
+                    try {
+                        viewModel.search("건전지")
+                        advanceUntilIdle()
+                    } finally {
+                        stateAfterFailure = viewModel.uiState.value
+                    }
+                }
+            }
+
+        assertSame(failure, thrown)
+        assertEquals(true, stateAfterFailure.isLoading)
+        assertNull(stateAfterFailure.errorMessageResId)
+        assertEquals(0, stateAfterFailure.searchResultVersion)
+    }
+
+    @Test
     fun `검색 실패 후 다시 시도하면 같은 검색어로 결과를 불러온다`() =
         runTest {
             var shouldFail = true
@@ -856,6 +885,34 @@ class ItemSearchViewModelTest {
             )
             assertFalse(viewModel.uiState.value.isLoading)
         }
+
+    @Test
+    fun `카테고리 조회 치명 오류는 원래 객체로 전파하고 이동 이벤트를 보내지 않는다`() {
+        val failure = LinkageError("fatal")
+        lateinit var stateAfterFailure: ItemSearchUiState
+        var eventCount = 0
+
+        val thrown =
+            assertThrows(LinkageError::class.java) {
+                runTest {
+                    val viewModel = createViewModel(FakeRepository(onCategory = { throw failure }))
+                    backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                        viewModel.events.collect { eventCount += 1 }
+                    }
+
+                    try {
+                        viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+                        advanceUntilIdle()
+                    } finally {
+                        stateAfterFailure = viewModel.uiState.value
+                    }
+                }
+            }
+
+        assertSame(failure, thrown)
+        assertEquals(0, eventCount)
+        assertNull(stateAfterFailure.errorMessageResId)
+    }
 
     @Test
     fun `즐겨찾기한 검색 결과 id를 상태에 반영한다`() =

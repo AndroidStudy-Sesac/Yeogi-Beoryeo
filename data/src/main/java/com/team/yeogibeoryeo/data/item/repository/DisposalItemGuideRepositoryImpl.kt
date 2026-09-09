@@ -51,6 +51,7 @@ constructor(
             .sortedWith(
                 compareBy(
                     { (_, rank) -> rank },
+                    { (item, _) -> !item.matchesExactSearchTerm(query) },
                     { (item, _) -> item.name },
                 ),
             )
@@ -104,6 +105,8 @@ constructor(
         return when {
             nameSearchKey.equals(query, ignoreCase = true) -> 0
 
+            matchesExactSearchTerm(query) -> 1
+
             nameSearchKey.startsWith(query, ignoreCase = true) -> 1
 
             nameSearchKey.contains(query, ignoreCase = true) -> 2
@@ -117,6 +120,9 @@ constructor(
             else -> null
         }
     }
+
+    private fun WasteDictionaryItem.matchesExactSearchTerm(query: String): Boolean =
+        searchTerms.any { term -> term.toSearchKey().equals(query, ignoreCase = true) }
 
     private fun Int.isEligibleDictionaryRank(bestRank: Int): Boolean =
         when (bestRank) {
