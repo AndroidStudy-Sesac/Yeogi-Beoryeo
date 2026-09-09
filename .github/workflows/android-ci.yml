@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - '.github/workflows/android-ci.yml'
+      - '.github/workflows/api28-instrumented-tests.yml'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
       - '.github/scripts/focused_coverage_analysis.py'
@@ -31,6 +32,7 @@ on:
       - main
     paths:
       - '.github/workflows/android-ci.yml'
+      - '.github/workflows/api28-instrumented-tests.yml'
       - '.github/scripts/focused_coverage_summary.py'
       - '.github/scripts/test_focused_coverage_summary.py'
       - '.github/scripts/focused_coverage_analysis.py'

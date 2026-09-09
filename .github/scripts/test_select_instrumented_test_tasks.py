@@ -23,6 +23,7 @@ class SelectInstrumentedTestTasksTest(unittest.TestCase):
         full_test_paths = (
             "common/src/main/Theme.kt",
             ".github/workflows/android-ci.yml",
+            ".github/workflows/api28-instrumented-tests.yml",
             "gradle/libs.versions.toml",
             "app/build.gradle.kts",
             "build.gradle.kts",
