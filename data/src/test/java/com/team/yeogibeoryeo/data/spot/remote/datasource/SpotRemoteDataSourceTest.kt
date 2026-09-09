@@ -7,12 +7,27 @@ import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemsDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseBodyDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseDto
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalApi
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalCategory
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorContext
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorReporter
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalHttpStatusClass
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalStage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.HttpException
+import retrofit2.Response
+import java.io.IOException
+import java.net.SocketTimeoutException
 
 class SpotRemoteDataSourceTest {
 
@@ -21,7 +36,8 @@ class SpotRemoteDataSourceTest {
         val apiService = FakeSpotApiService(
             response = createNormalResponse(),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -35,6 +51,7 @@ class SpotRemoteDataSourceTest {
         assertNull(apiService.requestedRadius)
         assertEquals(1, result.size)
         assertEquals("폐건전지 수거함", result.first().spotNm)
+        assertTrue(reporter.errors.isEmpty())
     }
 
     @Test
@@ -42,7 +59,7 @@ class SpotRemoteDataSourceTest {
         val apiService = FakeSpotApiService(
             response = createNormalResponse(),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByLocation(
             serviceKey = TEST_SERVICE_KEY,
@@ -64,7 +81,8 @@ class SpotRemoteDataSourceTest {
         val apiService = FakeSpotApiService(
             response = createNormalResponse(),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -75,6 +93,7 @@ class SpotRemoteDataSourceTest {
         assertEquals("폐건전지 수거함", result.first().spotNm)
         assertEquals("서울특별시 영등포구 문래동", result.first().addrBase)
         assertEquals("주민센터 앞", result.first().addrDtl)
+        assertTrue(reporter.errors.isEmpty())
     }
 
     @Test
@@ -82,7 +101,8 @@ class SpotRemoteDataSourceTest {
         val apiService = FakeSpotApiService(
             response = createNoDataResponse(),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -90,6 +110,7 @@ class SpotRemoteDataSourceTest {
         )
 
         assertEquals(emptyList<SpotItemDto>(), result)
+        assertTrue(reporter.errors.isEmpty())
     }
 
     @Test
@@ -97,7 +118,8 @@ class SpotRemoteDataSourceTest {
         val apiService = FakeSpotApiService(
             response = createErrorResponse(),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val exception = assertThrows(IllegalStateException::class.java) {
             runBlocking {
@@ -109,6 +131,48 @@ class SpotRemoteDataSourceTest {
         }
 
         assertEquals("수거 장소 API 오류(30): SERVICE_KEY_IS_NOT_REGISTERED_ERROR", exception.message)
+        assertEquals(
+            listOf(RecordedError(exception, REMOTE_HTTP_CONTEXT)),
+            reporter.errors,
+        )
+    }
+
+    @Test
+    fun `검색어 첫 페이지의 실제 실패 원인을 구분해 요청당 한 번 기록한다`() {
+        val cases = listOf(
+            IOException("private url") to REMOTE_NETWORK_CONTEXT,
+            SocketTimeoutException("private url") to REMOTE_TIMEOUT_CONTEXT,
+            SerializationException("private response") to RESPONSE_PARSING_CONTEXT,
+            HttpException(
+                Response.error<SpotResponseDto>(503, "private response".toResponseBody()),
+            ) to REMOTE_SERVER_HTTP_CONTEXT,
+        )
+
+        cases.forEach { (failure, expectedContext) ->
+            val reporter = RecordingNonFatalErrorReporter()
+            val dataSource = createDataSource(
+                apiService = FakeSpotApiService(
+                    response = createNormalResponse(),
+                    failuresByPage = mapOf(1 to failure),
+                ),
+                reporter = reporter,
+            )
+
+            val thrown = runCatching {
+                runBlocking {
+                    dataSource.searchByKeyword(
+                        serviceKey = TEST_SERVICE_KEY,
+                        keyword = "문래동",
+                    )
+                }
+            }.exceptionOrNull()
+
+            assertSame(failure, thrown)
+            assertEquals(
+                listOf(RecordedError(failure, expectedContext)),
+                reporter.errors,
+            )
+        }
     }
 
     @Test
@@ -116,7 +180,7 @@ class SpotRemoteDataSourceTest {
         val apiService = FakeSpotApiService(
             response = createNormalResponseWithNullItems(),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -135,7 +199,8 @@ class SpotRemoteDataSourceTest {
                 totalCount = 1,
             ),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -144,6 +209,7 @@ class SpotRemoteDataSourceTest {
 
         assertEquals(listOf(1), apiService.requestedPageNos)
         assertEquals(1, result.size)
+        assertTrue(reporter.errors.isEmpty())
     }
 
     @Test
@@ -169,7 +235,7 @@ class SpotRemoteDataSourceTest {
                 ),
             ),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -209,7 +275,7 @@ class SpotRemoteDataSourceTest {
                 ),
             ),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -244,7 +310,7 @@ class SpotRemoteDataSourceTest {
                 )
             },
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByKeyword(
             serviceKey = TEST_SERVICE_KEY,
@@ -261,6 +327,7 @@ class SpotRemoteDataSourceTest {
 
     @Test
     fun `검색어 기반 추가 페이지 실패 시 조회된 페이지 결과를 반환한다`() = runBlocking {
+        val failure = IOException("private url")
         val apiService = FakeSpotApiService(
             response = createResponse(
                 pageNo = 1,
@@ -270,9 +337,10 @@ class SpotRemoteDataSourceTest {
                     spotItem("1페이지 수거함", "서울특별시 영등포구 문래동", "주민센터 앞"),
                 ),
             ),
-            failurePages = setOf(2),
+            failuresByPage = mapOf(2 to failure),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val result = dataSource.searchByKeywordResult(
             serviceKey = TEST_SERVICE_KEY,
@@ -283,6 +351,10 @@ class SpotRemoteDataSourceTest {
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
         assertEquals(listOf("1페이지 수거함"), result.items.map { item -> item.spotNm })
         assertEquals(true, result.isPartial)
+        assertEquals(
+            listOf(RecordedError(failure, REMOTE_PARTIAL_NETWORK_CONTEXT)),
+            reporter.errors,
+        )
     }
 
     @Test
@@ -308,7 +380,7 @@ class SpotRemoteDataSourceTest {
                 ),
             ),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByLocation(
             serviceKey = TEST_SERVICE_KEY,
@@ -355,7 +427,8 @@ class SpotRemoteDataSourceTest {
                 ),
             ),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val result = dataSource.searchByLocation(
             serviceKey = TEST_SERVICE_KEY,
@@ -370,6 +443,7 @@ class SpotRemoteDataSourceTest {
             listOf("1페이지 수거함", "2페이지 수거함"),
             result.map { item -> item.spotNm },
         )
+        assertTrue(reporter.errors.isEmpty())
     }
 
     @Test
@@ -397,7 +471,7 @@ class SpotRemoteDataSourceTest {
                 ),
             ),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByLocation(
             serviceKey = TEST_SERVICE_KEY,
@@ -432,7 +506,7 @@ class SpotRemoteDataSourceTest {
                 ),
             ),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val dataSource = createDataSource(apiService)
 
         val result = dataSource.searchByLocation(
             serviceKey = TEST_SERVICE_KEY,
@@ -449,6 +523,7 @@ class SpotRemoteDataSourceTest {
 
     @Test
     fun `좌표 기반 추가 페이지 실패 시 첫 페이지 결과를 반환한다`() = runBlocking {
+        val failure = SocketTimeoutException("private coordinates")
         val apiService = FakeSpotApiService(
             response = createResponse(
                 pageNo = 1,
@@ -458,9 +533,10 @@ class SpotRemoteDataSourceTest {
                     spotItem("1페이지 수거함", "서울특별시 영등포구 문래동", "주민센터 앞"),
                 ),
             ),
-            failurePages = setOf(2),
+            failuresByPage = mapOf(2 to failure),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
         val result = dataSource.searchByLocation(
             serviceKey = TEST_SERVICE_KEY,
@@ -472,17 +548,23 @@ class SpotRemoteDataSourceTest {
 
         assertEquals(listOf(1, 2), apiService.requestedPageNos)
         assertEquals(listOf("1페이지 수거함"), result.map { item -> item.spotNm })
+        assertEquals(
+            listOf(RecordedError(failure, REMOTE_PARTIAL_TIMEOUT_CONTEXT)),
+            reporter.errors,
+        )
     }
 
     @Test
     fun `좌표 기반 첫 페이지 실패 시 예외를 전달한다`() {
+        val failure = IOException("private coordinates")
         val apiService = FakeSpotApiService(
             response = createNormalResponse(),
-            failurePages = setOf(1),
+            failuresByPage = mapOf(1 to failure),
         )
-        val dataSource = SpotRemoteDataSource(apiService)
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
 
-        assertThrows(IllegalStateException::class.java) {
+        val thrown = assertThrows(IOException::class.java) {
             runBlocking {
                 dataSource.searchByLocation(
                     serviceKey = TEST_SERVICE_KEY,
@@ -492,12 +574,47 @@ class SpotRemoteDataSourceTest {
                 )
             }
         }
+
+        assertSame(failure, thrown)
+        assertEquals(
+            listOf(RecordedError(failure, REMOTE_NETWORK_CONTEXT)),
+            reporter.errors,
+        )
+    }
+
+    @Test
+    fun `caller cancellation과 fatal Error는 기록하지 않고 원래 오류를 전파한다`() {
+        listOf(CancellationException("cancelled"), LinkageError("fatal")).forEach { failure ->
+            val reporter = RecordingNonFatalErrorReporter()
+            val dataSource = createDataSource(
+                apiService = FakeSpotApiService(
+                    response = createNormalResponse(),
+                    failuresByPage = mapOf(1 to failure),
+                ),
+                reporter = reporter,
+            )
+
+            val thrown = runCatching {
+                runBlocking {
+                    dataSource.searchByLocation(
+                        serviceKey = TEST_SERVICE_KEY,
+                        latitude = 37.5182396969791,
+                        longitude = 126.895880210522,
+                        radiusMeter = 500,
+                    )
+                }
+            }.exceptionOrNull()
+
+            assertSame(failure, thrown)
+            assertTrue(reporter.errors.isEmpty())
+        }
     }
 
     private class FakeSpotApiService(
         private val response: SpotResponseDto,
         private val responsesByPage: Map<Int, SpotResponseDto> = emptyMap(),
         private val failurePages: Set<Int> = emptySet(),
+        private val failuresByPage: Map<Int, Throwable> = emptyMap(),
     ) : SpotApiService {
 
         var requestedServiceKey: String? = null
@@ -530,6 +647,7 @@ class SpotRemoteDataSourceTest {
             requestedRadius = radius
             requestedType = type
 
+            failuresByPage[pageNo]?.let { failure -> throw failure }
             if (pageNo in failurePages) {
                 error("page failed")
             }
@@ -538,8 +656,58 @@ class SpotRemoteDataSourceTest {
         }
     }
 
+    private fun createDataSource(
+        apiService: SpotApiService,
+        reporter: NonFatalErrorReporter = RecordingNonFatalErrorReporter(),
+    ): SpotRemoteDataSource = SpotRemoteDataSource(
+        apiService = apiService,
+        nonFatalErrorReporter = reporter,
+    )
+
+    private class RecordingNonFatalErrorReporter : NonFatalErrorReporter {
+        val errors = mutableListOf<RecordedError>()
+
+        override fun report(error: Throwable, context: NonFatalErrorContext) {
+            errors += RecordedError(error, context)
+        }
+    }
+
+    private data class RecordedError(
+        val error: Throwable,
+        val context: NonFatalErrorContext,
+    )
+
     private companion object {
         const val TEST_SERVICE_KEY = "test-service-key"
+        val REMOTE_NETWORK_CONTEXT = NonFatalErrorContext(
+            api = NonFatalApi.COLLECTION_SPOT,
+            stage = NonFatalStage.REMOTE_REQUEST,
+            category = NonFatalCategory.NETWORK,
+        )
+        val REMOTE_TIMEOUT_CONTEXT = NonFatalErrorContext(
+            api = NonFatalApi.COLLECTION_SPOT,
+            stage = NonFatalStage.REMOTE_REQUEST,
+            category = NonFatalCategory.TIMEOUT,
+        )
+        val REMOTE_HTTP_CONTEXT = NonFatalErrorContext(
+            api = NonFatalApi.COLLECTION_SPOT,
+            stage = NonFatalStage.REMOTE_REQUEST,
+            category = NonFatalCategory.HTTP,
+        )
+        val REMOTE_SERVER_HTTP_CONTEXT = REMOTE_HTTP_CONTEXT.copy(
+            httpStatusClass = NonFatalHttpStatusClass.SERVER_ERROR,
+        )
+        val RESPONSE_PARSING_CONTEXT = NonFatalErrorContext(
+            api = NonFatalApi.COLLECTION_SPOT,
+            stage = NonFatalStage.RESPONSE_PARSING,
+            category = NonFatalCategory.PARSING,
+        )
+        val REMOTE_PARTIAL_NETWORK_CONTEXT = REMOTE_NETWORK_CONTEXT.copy(
+            isPartialResult = true,
+        )
+        val REMOTE_PARTIAL_TIMEOUT_CONTEXT = REMOTE_TIMEOUT_CONTEXT.copy(
+            isPartialResult = true,
+        )
 
         fun createNormalResponse(
             pageNo: Int? = null,

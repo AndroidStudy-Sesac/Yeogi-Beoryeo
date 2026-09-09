@@ -10,6 +10,8 @@ import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemsDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseBodyDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseDto
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorContext
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorReporter
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import kotlinx.coroutines.runBlocking
@@ -159,10 +161,17 @@ class CollectionSpotRepositoryImplTest {
         apiService: FakeSpotApiService,
     ): CollectionSpotRepositoryImpl {
         return CollectionSpotRepositoryImpl(
-            remoteDataSource = SpotRemoteDataSource(apiService),
+            remoteDataSource = SpotRemoteDataSource(
+                apiService = apiService,
+                nonFatalErrorReporter = NoOpNonFatalErrorReporter,
+            ),
             spotMapper = SpotMapper(),
             publicDataKeyProvider = FakePublicDataKeyProvider(),
         )
+    }
+
+    private object NoOpNonFatalErrorReporter : NonFatalErrorReporter {
+        override fun report(error: Throwable, context: NonFatalErrorContext) = Unit
     }
 
     private class FakePublicDataKeyProvider : AppKeyProvider {
