@@ -14,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
 import retrofit2.HttpException
+import retrofit2.Response
 import java.io.IOException
 import java.net.SocketTimeoutException
 import javax.inject.Inject
@@ -188,7 +189,7 @@ class SpotRemoteDataSource @Inject constructor(
             addr = keyword,
         )
 
-        return response.toSpotPageResult()
+        return response.bodyOrThrow().toSpotPageResult()
     }
 
     private suspend fun fetchFirstPage(
@@ -223,7 +224,15 @@ class SpotRemoteDataSource @Inject constructor(
             radius = radiusMeter,
         )
 
-        return response.toSpotPageResult()
+        return response.bodyOrThrow().toSpotPageResult()
+    }
+
+    private fun Response<SpotResponseDto>.bodyOrThrow(): SpotResponseDto {
+        if (!isSuccessful) throw HttpException(this)
+
+        return body() ?: throw SerializationException(
+            "수거 장소 API 응답 본문이 없습니다 (HTTP ${code()})",
+        )
     }
 
     private fun SpotResponseDto.toSpotPageResult(): SpotPageResult {

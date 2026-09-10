@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.spot.remote.datasource
 
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.team.yeogibeoryeo.data.spot.remote.SpotApiService
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotBodyDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotHeaderDto
@@ -16,16 +17,21 @@ import com.team.yeogibeoryeo.domain.diagnostics.NonFatalStage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
 import retrofit2.Response
+import retrofit2.Retrofit
 import java.io.IOException
 import java.net.SocketTimeoutException
 
@@ -173,6 +179,57 @@ class SpotRemoteDataSourceTest {
                 reporter.errors,
             )
         }
+    }
+
+    @Test
+    fun `Retrofit이 204를 반환한 첫 페이지는 파싱 실패로 한 번 기록하고 예외를 전달한다`() {
+        val apiService = createRetrofitApiService { HttpFixtureResponse(code = 204) }
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
+
+        val thrown = assertThrows(SerializationException::class.java) {
+            runBlocking {
+                dataSource.searchByKeyword(
+                    serviceKey = TEST_SERVICE_KEY,
+                    keyword = "문래동",
+                )
+            }
+        }
+
+        assertEquals("수거 장소 API 응답 본문이 없습니다 (HTTP 204)", thrown.message)
+        assertEquals(
+            listOf(RecordedError(thrown, RESPONSE_PARSING_CONTEXT)),
+            reporter.errors,
+        )
+    }
+
+    @Test
+    fun `Retrofit이 205를 반환한 추가 페이지는 파싱 실패로 한 번 기록하고 부분 결과를 반환한다`() = runBlocking {
+        val requestedPageNos = mutableListOf<Int>()
+        val apiService = createRetrofitApiService { pageNo ->
+            requestedPageNos += pageNo
+            when (pageNo) {
+                1 -> HttpFixtureResponse(code = 200, body = FIRST_PAGE_RESPONSE_JSON)
+                2 -> HttpFixtureResponse(code = 205)
+                else -> error("예상하지 않은 페이지 요청: $pageNo")
+            }
+        }
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
+
+        val result = dataSource.searchByKeywordResult(
+            serviceKey = TEST_SERVICE_KEY,
+            keyword = "문래동",
+            numOfRows = 1,
+        )
+
+        assertEquals(listOf(1, 2), requestedPageNos)
+        assertEquals(listOf("1페이지 수거함"), result.items.map { item -> item.spotNm })
+        assertTrue(result.isPartial)
+        val recordedError = reporter.errors.single()
+        assertTrue(recordedError.error is SerializationException)
+        assertEquals("수거 장소 API 응답 본문이 없습니다 (HTTP 205)", recordedError.error.message)
+        assertEquals(RESPONSE_PARTIAL_PARSING_CONTEXT, recordedError.context)
     }
 
     @Test
@@ -636,7 +693,7 @@ class SpotRemoteDataSourceTest {
             longitude: Double?,
             radius: Int?,
             type: String,
-        ): SpotResponseDto {
+        ): Response<SpotResponseDto> {
             requestedServiceKey = serviceKey
             requestedPageNo = pageNo
             requestedPageNos += pageNo
@@ -652,7 +709,7 @@ class SpotRemoteDataSourceTest {
                 error("page failed")
             }
 
-            return responsesByPage[pageNo] ?: response
+            return Response.success(responsesByPage[pageNo] ?: response)
         }
     }
 
@@ -662,6 +719,37 @@ class SpotRemoteDataSourceTest {
     ): SpotRemoteDataSource = SpotRemoteDataSource(
         apiService = apiService,
         nonFatalErrorReporter = reporter,
+    )
+
+    private fun createRetrofitApiService(
+        responseForPage: (Int) -> HttpFixtureResponse,
+    ): SpotApiService {
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val pageNo = checkNotNull(request.url.queryParameter("pageNo")).toInt()
+                val fixture = responseForPage(pageNo)
+                okhttp3.Response.Builder()
+                    .request(request)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(fixture.code)
+                    .message(fixture.code.toString())
+                    .body(fixture.body.toResponseBody(JSON_MEDIA_TYPE))
+                    .build()
+            }
+            .build()
+
+        return Retrofit.Builder()
+            .baseUrl("https://example.com/")
+            .client(client)
+            .addConverterFactory(Json.asConverterFactory(JSON_MEDIA_TYPE))
+            .build()
+            .create(SpotApiService::class.java)
+    }
+
+    private data class HttpFixtureResponse(
+        val code: Int,
+        val body: String = "",
     )
 
     private class RecordingNonFatalErrorReporter : NonFatalErrorReporter {
@@ -702,12 +790,41 @@ class SpotRemoteDataSourceTest {
             stage = NonFatalStage.RESPONSE_PARSING,
             category = NonFatalCategory.PARSING,
         )
+        val RESPONSE_PARTIAL_PARSING_CONTEXT = RESPONSE_PARSING_CONTEXT.copy(
+            isPartialResult = true,
+        )
         val REMOTE_PARTIAL_NETWORK_CONTEXT = REMOTE_NETWORK_CONTEXT.copy(
             isPartialResult = true,
         )
         val REMOTE_PARTIAL_TIMEOUT_CONTEXT = REMOTE_TIMEOUT_CONTEXT.copy(
             isPartialResult = true,
         )
+        val JSON_MEDIA_TYPE = "application/json".toMediaType()
+        val FIRST_PAGE_RESPONSE_JSON =
+            """
+            {
+              "response": {
+                "header": {
+                  "resultCode": "00",
+                  "resultMsg": "NORMAL SERVICE"
+                },
+                "body": {
+                  "items": {
+                    "item": [
+                      {
+                        "spotNm": "1페이지 수거함",
+                        "addrBase": "서울특별시 영등포구 문래동",
+                        "addrDtl": "주민센터 앞"
+                      }
+                    ]
+                  },
+                  "numOfRows": 1,
+                  "pageNo": 1,
+                  "totalCount": 2
+                }
+              }
+            }
+            """.trimIndent()
 
         fun createNormalResponse(
             pageNo: Int? = null,

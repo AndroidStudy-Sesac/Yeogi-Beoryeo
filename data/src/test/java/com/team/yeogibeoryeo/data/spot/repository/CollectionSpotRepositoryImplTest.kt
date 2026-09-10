@@ -19,6 +19,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import retrofit2.Response
 
 class CollectionSpotRepositoryImplTest {
 
@@ -203,7 +204,7 @@ class CollectionSpotRepositoryImplTest {
             longitude: Double?,
             radius: Int?,
             type: String,
-        ): SpotResponseDto {
+        ): Response<SpotResponseDto> {
             requestedServiceKey = serviceKey
             requestedPageNo = pageNo
             requestedPageNos += pageNo
@@ -214,7 +215,7 @@ class CollectionSpotRepositoryImplTest {
             requestedRadius = radius
             requestedType = type
 
-            return responsesByPage[pageNo] ?: response
+            return Response.success(responsesByPage[pageNo] ?: response)
         }
     }
 
