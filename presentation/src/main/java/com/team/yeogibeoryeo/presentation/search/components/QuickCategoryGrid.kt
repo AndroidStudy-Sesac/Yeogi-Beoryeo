@@ -82,6 +82,7 @@ fun QuickCategoryGrid(
 ) {
     val density = LocalDensity.current
     var measuredViewportBottomInRootPx by remember { mutableIntStateOf(0) }
+    var measuredWidthPx by remember { mutableIntStateOf(0) }
     var initialAvailableHeightPx by remember { mutableIntStateOf(0) }
     var rowHeightPx by remember { mutableIntStateOf(0) }
     var shouldBringExpandedGridIntoView by remember { mutableStateOf(false) }
@@ -106,8 +107,12 @@ fun QuickCategoryGrid(
             .fillMaxWidth()
             .bringIntoViewRequester(bringIntoViewRequester)
             .onGloballyPositioned { coordinates ->
-                if (measuredViewportBottomInRootPx != viewportBottomInRootPx) {
+                if (
+                    measuredViewportBottomInRootPx != viewportBottomInRootPx ||
+                    measuredWidthPx != coordinates.size.width
+                ) {
                     measuredViewportBottomInRootPx = viewportBottomInRootPx
+                    measuredWidthPx = coordinates.size.width
                     initialAvailableHeightPx = 0
                 }
                 if (viewportBottomInRootPx > 0 && initialAvailableHeightPx == 0) {

@@ -8,6 +8,27 @@ import org.junit.Test
 
 class ItemSearchScreenMetricsTest {
     @Test
+    fun 홈은_창_폭에_따라_여백을_늘리고_검색_결과의_여백은_유지한다() {
+        listOf(
+            Triple(360.dp, 16.dp, 16.dp),
+            Triple(384.dp, 16.dp, 16.dp),
+            Triple(385.dp, 24.dp, 24.dp),
+            Triple(599.dp, 24.dp, 24.dp),
+            Triple(600.dp, 32.dp, 24.dp),
+            Triple(720.dp, 32.dp, 24.dp),
+            Triple(952.dp, 32.dp, 24.dp),
+            Triple(1200.dp, 32.dp, 24.dp),
+        ).forEach { (width, homePadding, searchPadding) ->
+            listOf(360.dp, 800.dp).forEach { height ->
+                val metrics = itemSearchScreenMetricsSpec(width, height)
+
+                assertEquals(homePadding, metrics.homeHorizontalPadding)
+                assertEquals(searchPadding, metrics.horizontalPadding)
+            }
+        }
+    }
+
+    @Test
     fun `높이가 480dp 이하인 가로 화면은 compact landscape로 본다`() {
         listOf(
             480.dp to 320.dp,
