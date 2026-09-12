@@ -14,6 +14,8 @@ on:
       - '.github/scripts/test_focused_coverage_analysis.py'
       - '.github/scripts/select_instrumented_test_tasks.py'
       - '.github/scripts/test_select_instrumented_test_tasks.py'
+      - '.github/scripts/build_warning_summary.py'
+      - '.github/scripts/test_build_warning_summary.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -39,6 +41,8 @@ on:
       - '.github/scripts/test_focused_coverage_analysis.py'
       - '.github/scripts/select_instrumented_test_tasks.py'
       - '.github/scripts/test_select_instrumented_test_tasks.py'
+      - '.github/scripts/build_warning_summary.py'
+      - '.github/scripts/test_build_warning_summary.py'
       - 'app/**'
       - 'common/**'
       - 'data/**'
@@ -187,7 +191,30 @@ jobs:
           fi
 
           echo "Selected Gradle tasks: ${tasks[*]}"
-          ./gradlew "${tasks[@]}" --no-daemon --stacktrace -PciReleaseCheck=true
+          ./gradlew "${tasks[@]}" --no-daemon --stacktrace --console=plain --warning-mode all \
+            -PciReleaseCheck=true 2>&1 | tee "$RUNNER_TEMP/android-build.log"
+
+      - name: Upload build log
+        id: build-log-artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-build-log-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/android-build.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Summarize build warnings
+        if: always()
+        shell: bash
+        env:
+          BUILD_LOG_URL: ${{ steps.build-log-artifact.outputs.artifact-url }}
+        run: |
+          set -euo pipefail
+          python -X utf8 -B .github/scripts/build_warning_summary.py \
+            --log "$RUNNER_TEMP/android-build.log" \
+            --log-url "$BUILD_LOG_URL" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Validate release app bundle
         if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
