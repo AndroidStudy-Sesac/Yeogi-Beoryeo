@@ -38,17 +38,18 @@
 ## 화면과 자료 출처
 
 - 지도, 중소형 폐가전 안내와 장소 즐겨찾기는 네이티브 Android 앱 1.2.0 debug 빌드에서 캡처했습니다. 지도는 서울시청의 공개 예시 좌표를 기준으로 실제 조회한 수거함을 보여줍니다.
-- 홈은 [7bbff55d](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/commit/7bbff55dc251e18b277ba213e6664380c4b2fcc2), 지역 안내는 [4c1c8aa3](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/commit/4c1c8aa38f2c8d736513a1fad5ffff1fa625f161)의 1.2.0 debug 빌드에서 캡처했습니다. 두 빌드는 [#596](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/pull/596) 검증에 사용했습니다. 지역 안내는 경기도 양평군 양평읍 공흥1리의 실제 조회 결과를 보여줍니다.
+- 홈과 지역 안내는 배포한 v1.2.0 AAB에서 생성한 APK를 설치해 캡처했습니다. 소스를 다시 빌드하지 않고 배포 산출물의 코드와 리소스를 사용했습니다. 지역 안내는 경기도 양평군 양평읍 공흥1리의 실제 조회 결과를 보여줍니다.
 - Android SDK의 공식 Pixel 9 Pro 스킨으로 기기 프레임을 적용했습니다. 화면의 글자와 데이터를 다시 그리거나 편집하지 않았습니다.
 - 그래픽 이미지의 가전 일러스트는 이미지 생성 도구로 제작했습니다. 추가 문구에는 Pretendard를 사용했으며, 글꼴 라이선스는 [THIRD_PARTY_NOTICES.md](../../../THIRD_PARTY_NOTICES.md)에 기재되어 있습니다.
 - 무료 배출 안내는 [인천광역시 공식 안내](https://www.incheon.go.kr/recycle/RC100300/3069041)를 참고했습니다. 앱의 공공데이터와 공식 안내 출처는 [DATA_SOURCES.md](../../../DATA_SOURCES.md)에서도 확인할 수 있습니다.
 - 이미지 규격과 대체 텍스트 기준은 [Google Play 공식 안내](https://support.google.com/googleplay/android-developer/answer/9866151?hl=ko)를 따릅니다.
 
-## 배포 버전과 화면 대조
+## 배포 빌드 화면 검증
 
-홈과 지역 안내의 캡처 빌드를 배포 기준인 [v1.2.0](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/tree/v1.2.0)과 대조했습니다. 버전 이름만으로 일치 여부를 판단하지 않고, [홈 캡처까지의 변경](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.2.0...7bbff55dc251e18b277ba213e6664380c4b2fcc2)과 [지역 안내 캡처까지의 변경](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/compare/v1.2.0...4c1c8aa38f2c8d736513a1fad5ffff1fa625f161)을 확인했습니다.
+2026년 9월 12일, 배포한 [v1.2.0](https://github.com/AndroidStudy-Sesac/Yeogi-Beoryeo/tree/v1.2.0) AAB에서 bundletool로 APK를 생성해 Pixel 9 Pro Android Emulator에 설치했습니다. 패키지 `com.team.yeogibeoryeo`, 버전 이름 `1.2.0`, 버전 코드 `10`과 업로드 인증서의 일치를 확인했습니다.
 
-- 홈은 1280 × 2856 px, 밀도 480 dpi, 글자 크기 1.0의 세로 화면입니다. 화면 폭은 약 426.7 dp로, #596에서 추가한 720 dp 최대 폭 제한과 600 dp 이상에서의 여백 변경이 적용되지 않습니다. 좌우 여백은 배포 버전과 같은 24 dp이며, 표시 문구와 구성 요소도 같습니다.
-- 지역 안내의 화면, 문자열, 조회 및 데이터 처리 코드는 배포 버전과 같습니다. 이미지에 보이는 배출 요일과 시간은 공흥1리의 조회 결과이며, 양평읍 전체의 공통 배출 기준을 뜻하지 않습니다.
+- 홈은 최초 사용 가이드를 건너뛴 뒤 안내 카드, 품목 검색과 분리배출 분류가 보이는 화면을 캡처했습니다. 기존 소개 이미지와 표시 문구 및 구성 요소의 위치가 일치하는지 확인했습니다.
+- 지역 안내는 ‘안내’ 탭에서 경기도, 양평군, 양평읍을 차례로 선택하고 조회한 뒤 공흥1리를 선택했습니다. 일반쓰레기와 음식물쓰레기의 배출 요일, 시간과 방법을 직접 확인하고, 스크롤하여 요일과 시간이 보이는 화면을 캡처했습니다. 공흥1리의 조회 결과이며 양평읍 전체의 공통 배출 기준을 뜻하지 않습니다.
+- 두 화면 모두 1280 × 2856 px, 밀도 480 dpi, 글자 크기 1.0의 라이트 모드에서 캡처했습니다. 원본 화면에 공식 Pixel 9 Pro 프레임을 적용한 뒤 1080 × 1920 px 소개 이미지로 저장했습니다.
 
-위 확인은 캡처 조건과 구현 소스를 기준으로 한 화면 구성 대조입니다. 배포 빌드를 다시 실행해 픽셀 단위로 비교한 결과는 아닙니다.
+사용한 AAB의 SHA-256은 `5b9e7000a6e8a204e39e04b2ba36aca172fadea9c06a72b1d0f806751b8b7677`입니다. 스토어 이미지 4번과 5번에는 위 배포 산출물에서 새로 캡처한 화면을 사용합니다.
