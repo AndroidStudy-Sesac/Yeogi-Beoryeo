@@ -219,7 +219,13 @@ fun ItemSearchInitialContent(
             state = listState,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .widthIn(max = ItemSearchLayoutDefaults.size.homeContentMaxWidth)
+                .widthIn(
+                    max = if (metrics.isCompactLandscape) {
+                        maxWidth
+                    } else {
+                        ItemSearchLayoutDefaults.size.homeContentMaxWidth
+                    },
+                )
                 .fillMaxSize()
                 .padding(top = metrics.homeHeaderTopPadding)
                 .onGloballyPositioned { coordinates ->

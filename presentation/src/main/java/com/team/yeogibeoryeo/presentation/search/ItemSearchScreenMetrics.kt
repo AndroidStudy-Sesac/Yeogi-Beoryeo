@@ -42,8 +42,9 @@ internal fun itemSearchScreenMetricsSpec(
     return ItemSearchScreenMetricsSpec(
         horizontalPadding = if (isNarrowPhone) spacing.md else spacing.xl,
         homeHorizontalPadding = when {
-            maxWidth >= ItemSearchScreenBreakpoints.MediumWidth -> spacing.xxl
             isNarrowPhone -> spacing.md
+            isCompactLandscape -> spacing.xl
+            maxWidth >= ItemSearchScreenBreakpoints.MediumWidth -> spacing.xxl
             else -> spacing.xl
         },
         topPadding = when {

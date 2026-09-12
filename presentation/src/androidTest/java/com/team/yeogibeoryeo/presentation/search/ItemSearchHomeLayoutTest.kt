@@ -1,7 +1,11 @@
 package com.team.yeogibeoryeo.presentation.search
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +26,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Density
@@ -41,14 +46,16 @@ class ItemSearchHomeLayoutTest {
         composeTestRule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 MaterialTheme {
-                    Box(Modifier.width(1000.dp).height(900.dp).testTag("window")) {
-                        ItemSearchScreen(
-                            uiState = ItemSearchUiState(),
-                            onQueryChange = {},
-                            onSearchClick = {},
-                            onGuideClick = {},
-                            onQuickCategoryClick = {},
-                        )
+                    Box(Modifier.fillMaxSize()) {
+                        Box(Modifier.width(1000.dp).height(900.dp).testTag("window")) {
+                            ItemSearchScreen(
+                                uiState = ItemSearchUiState(),
+                                onQueryChange = {},
+                                onSearchClick = {},
+                                onGuideClick = {},
+                                onQuickCategoryClick = {},
+                            )
+                        }
                     }
                 }
             }
@@ -67,6 +74,69 @@ class ItemSearchHomeLayoutTest {
     }
 
     @Test
+    fun 낮은_가로_창의_전체_폭을_사용하고_높이_변경_후에도_입력을_유지한다() {
+        var height by mutableStateOf(480.dp)
+        var uiState by mutableStateOf(ItemSearchUiState())
+        var viewportChanges = 0
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
+                MaterialTheme {
+                    Box(Modifier.fillMaxSize()) {
+                        Box(
+                            Modifier
+                                .width(1000.dp)
+                                .height(height)
+                                .consumeWindowInsets(WindowInsets.statusBars)
+                                .testTag("window"),
+                        ) {
+                            ItemSearchScreen(
+                                uiState = uiState,
+                                onQueryChange = { uiState = uiState.copy(query = it) },
+                                onSearchClick = {},
+                                onGuideClick = {},
+                                onQuickCategoryClick = {},
+                                onQuickCategoryViewportChanged = { viewportChanges += 1 },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        homeList().performScrollToNode(hasSetTextAction())
+        composeTestRule.onNode(hasSetTextAction()).performTextReplacement("PET")
+        composeTestRule.waitForIdle()
+        val window = composeTestRule.onNodeWithTag("window").fetchSemanticsNode().boundsInRoot
+        val landscapeBody = homeList().fetchSemanticsNode().boundsInRoot
+        val landscapeSearch = composeTestRule.onNode(hasSetTextAction()).fetchSemanticsNode().boundsInRoot
+        assertEquals(1000f, window.width, 1f)
+        assertEquals(window.left, landscapeBody.left, 1f)
+        assertEquals(window.right, landscapeBody.right, 1f)
+        assertEquals(window.left + 24f, landscapeSearch.left, 1f)
+        assertEquals(window.right - 24f, landscapeSearch.right, 1f)
+
+        val changesBeforeResize = composeTestRule.runOnIdle {
+            viewportChanges.also { height = 481.dp }
+        }
+        homeList().performScrollToNode(hasSetTextAction())
+        composeTestRule.waitForIdle()
+        val tallBody = homeList().fetchSemanticsNode().boundsInRoot
+        val tallSearch = composeTestRule.onNode(hasSetTextAction()).fetchSemanticsNode().boundsInRoot
+        assertEquals(720f, tallBody.width, 1f)
+        assertEquals(window.center.x, tallBody.center.x, 1f)
+        assertEquals(tallBody.left + 32f, tallSearch.left, 1f)
+        assertEquals(tallBody.right - 32f, tallSearch.right, 1f)
+        composeTestRule.runOnIdle { assertTrue(viewportChanges > changesBeforeResize) }
+        composeTestRule.onNode(hasSetTextAction()).assertIsDisplayed().assertTextContains("PET")
+
+        composeTestRule.runOnIdle { height = 360.dp }
+        homeList().performScrollToNode(hasSetTextAction())
+        composeTestRule.waitForIdle()
+        assertEquals(window.width, homeList().fetchSemanticsNode().boundsInRoot.width, 1f)
+        composeTestRule.onNode(hasSetTextAction()).assertIsDisplayed().assertTextContains("PET")
+    }
+
+    @Test
     fun 높이가_같은_창_폭_변경에도_입력과_분류_펼침을_유지한다() {
         var width by mutableStateOf(1000.dp)
         var uiState by mutableStateOf(ItemSearchUiState())
@@ -74,26 +144,28 @@ class ItemSearchHomeLayoutTest {
         composeTestRule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 MaterialTheme {
-                    val listState = rememberLazyListState()
-                    Box(Modifier.width(width).height(700.dp).testTag("window")) {
-                        ItemSearchScreen(
-                            uiState = uiState,
-                            onQueryChange = { uiState = uiState.copy(query = it) },
-                            onSearchClick = {},
-                            onGuideClick = {},
-                            onQuickCategoryClick = {},
-                            onQuickCategoryMoreClick = { count, _, _ ->
-                                uiState = uiState.copy(
-                                    isQuickCategoryExpanded = true,
-                                    quickCategoryFixedCollapsedItemCount = count,
-                                )
-                            },
-                            onQuickCategoryCollapseClick = {
-                                uiState = uiState.copy(isQuickCategoryExpanded = false)
-                            },
-                            onQuickCategoryViewportChanged = { viewportChanges += 1 },
-                            categoryListState = listState,
-                        )
+                    Box(Modifier.fillMaxSize()) {
+                        val listState = rememberLazyListState()
+                        Box(Modifier.width(width).height(700.dp).testTag("window")) {
+                            ItemSearchScreen(
+                                uiState = uiState,
+                                onQueryChange = { uiState = uiState.copy(query = it) },
+                                onSearchClick = {},
+                                onGuideClick = {},
+                                onQuickCategoryClick = {},
+                                onQuickCategoryMoreClick = { count, _, _ ->
+                                    uiState = uiState.copy(
+                                        isQuickCategoryExpanded = true,
+                                        quickCategoryFixedCollapsedItemCount = count,
+                                    )
+                                },
+                                onQuickCategoryCollapseClick = {
+                                    uiState = uiState.copy(isQuickCategoryExpanded = false)
+                                },
+                                onQuickCategoryViewportChanged = { viewportChanges += 1 },
+                                categoryListState = listState,
+                            )
+                        }
                     }
                 }
             }
@@ -116,6 +188,8 @@ class ItemSearchHomeLayoutTest {
             assertEquals("유리병", uiState.query)
         }
         homeList().performScrollToNode(hasContentDescription("접기"))
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("접기").performScrollTo()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithContentDescription("접기").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
