@@ -1,0 +1,17 @@
+screenshots/01-nearby-free.png
+‘내 주변에서 찾는 무료 가전 배출 장소’라는 문구 아래 Pixel 9 Pro 프레임 안의 실제 지도에 중소형 수거함의 위치와 주소가 보입니다.
+
+screenshots/02-disposal-guide.png
+Pixel 9 Pro 프레임 안의 ‘중소형 폐가전 수거함 안내’에 배출 방법과 주의사항이 보입니다.
+
+screenshots/03-save-place.png
+Pixel 9 Pro 프레임 안의 즐겨찾기 ‘장소’ 탭에 저장한 중소형 수거함의 주소가 보입니다.
+
+screenshots/04-more-guides.png
+Pixel 9 Pro 프레임 안의 앱 홈에 품목 검색과 분리배출 분류, 지역별 배출 가이드가 보입니다.
+
+screenshots/05-region-guide.png
+Pixel 9 Pro 프레임 안의 ‘안내’ 탭에 선택한 지역의 배출 요일, 시간과 방법이 보입니다.
+
+feature-graphic.png
+‘소형 가전, 무료로 버릴 곳을 내 주변에서’라는 문구 옆에 선풍기, 전기밥솥, 헤어드라이어 일러스트가 보입니다.
