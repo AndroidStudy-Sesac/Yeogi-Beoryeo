@@ -69,10 +69,12 @@ constructor(
         viewModelScope.launch {
             observeHomeQuickCategoriesUseCase()
                 .collect { categories ->
+                    val selectedCategories = categories.map(RepresentativeGuideCategory::fromDisposalCategory)
                     _uiState.update { state ->
                         state.copy(
-                            homeQuickCategories =
-                                categories.map(RepresentativeGuideCategory::fromDisposalCategory),
+                            homeQuickCategories = selectedCategories,
+                            // 방문 중 순서는 유지하고, 새 ViewModel에서는 저장값으로 다시 정합니다.
+                            homeQuickCategoriesAtEntry = state.homeQuickCategoriesAtEntry ?: selectedCategories,
                         )
                     }
                 }

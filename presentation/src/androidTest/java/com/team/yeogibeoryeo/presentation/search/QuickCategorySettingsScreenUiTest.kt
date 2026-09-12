@@ -2,15 +2,23 @@ package com.team.yeogibeoryeo.presentation.search
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -124,5 +132,48 @@ class QuickCategorySettingsScreenUiTest {
         composeTestRule.runOnIdle {
             assertEquals(null, clickedCategory)
         }
+    }
+
+    @Test
+    fun 진입_순서는_선택과_해제_및_검색어를_지운_뒤에도_유지된다() {
+        val battery = RepresentativeGuideCategory.BATTERY
+        val paper = RepresentativeGuideCategory.PAPER
+        val paperPack = RepresentativeGuideCategory.PAPER_PACK
+        val entryOrder = listOf(battery) + quickCategoryOrder.filterNot { it == battery }
+
+        composeTestRule.setContent {
+            var selected by remember { mutableStateOf(setOf(battery)) }
+            MaterialTheme {
+                QuickCategorySettingsScreen(
+                    selectedCategories = selected,
+                    maxSelectedCount = 2,
+                    onCategoryClick = { category ->
+                        selected = if (category in selected) selected - category else selected + category
+                    },
+                    onBackClick = {},
+                    categoryOrder = entryOrder,
+                )
+            }
+        }
+
+        fun assertEntryOrder() {
+            composeTestRule.waitForIdle()
+            val batteryTop = composeTestRule.onNodeWithText(battery.displayName).getUnclippedBoundsInRoot().top
+            val paperTop = composeTestRule.onNodeWithText(paper.displayName).getUnclippedBoundsInRoot().top
+            val paperPackTop = composeTestRule.onNodeWithText(paperPack.displayName).getUnclippedBoundsInRoot().top
+            assertTrue(batteryTop < paperTop)
+            assertTrue(paperTop < paperPackTop)
+        }
+
+        assertEntryOrder()
+        composeTestRule.onNodeWithText(battery.displayName).performClick()
+        composeTestRule.onNodeWithText(paperPack.displayName).performClick()
+        assertEntryOrder()
+
+        composeTestRule.onNode(hasSetTextAction()).performTextInput("건전")
+        composeTestRule.onNodeWithText(battery.displayName).assertIsDisplayed()
+        composeTestRule.onNodeWithText(paper.displayName).assertDoesNotExist()
+        composeTestRule.onNode(hasSetTextAction()).performTextClearance()
+        assertEntryOrder()
     }
 }
