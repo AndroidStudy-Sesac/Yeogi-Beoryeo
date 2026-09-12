@@ -4,7 +4,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from build_warning_summary import collect_warnings, parse_warning, render_summary
+from build_warning_summary import (
+    Warning,
+    collect_warnings,
+    parse_warning,
+    render_summary,
+)
 
 REPOSITORY = "/home/runner/work/Yeogi-Beoryeo/Yeogi-Beoryeo"
 SCRIPT = Path(__file__).with_name("build_warning_summary.py")
@@ -15,6 +20,39 @@ R8_MESSAGE = (
 
 
 class BuildWarningSummaryTest(unittest.TestCase):
+    def test_parses_android_warnings_without_source(self) -> None:
+        for tool in ("D8", "R8"):
+            for message in (D8_MESSAGE, "Unexpected diagnostic: R8: keep this text"):
+                with self.subTest(tool=tool, message=message):
+                    self.assertEqual(
+                        parse_warning(f"WARNING: {tool}: {message}", REPOSITORY),
+                        Warning("출처 미확인", tool, "-", message),
+                    )
+
+    def test_groups_sourceless_android_warnings_by_tool(self) -> None:
+        warnings = collect_warnings(
+            [
+                f"WARNING: D8: {D8_MESSAGE}",
+                f"WARNING: R8: {D8_MESSAGE}",
+                f"WARNING: D8: {D8_MESSAGE}",
+            ],
+            REPOSITORY,
+        )
+        self.assertEqual(
+            warnings,
+            {
+                Warning("출처 미확인", "D8", "-", D8_MESSAGE): [1, 3],
+                Warning("출처 미확인", "R8", "-", D8_MESSAGE): [2],
+            },
+        )
+
+    def test_keeps_generic_warning_message_unchanged(self) -> None:
+        message = "Check R8 settings before retrying"
+        self.assertEqual(
+            parse_warning(f"WARNING: {message}", REPOSITORY),
+            Warning("출처 미확인", "기타", "-", message),
+        )
+
     def test_groups_real_sdk_diagnostics_without_losing_occurrences(self) -> None:
         lines = ["> Task :app:dexBuilderDebug"]
         for cache_hash in ("aaa", "bbb"):
@@ -25,8 +63,10 @@ class BuildWarningSummaryTest(unittest.TestCase):
         lines.extend(
             [
                 "> Task :app:minifyReleaseWithR8",
-                "WARNING: /home/runner/.gradle/caches/9.4.1/transforms/"
-                f"ccc/transformed/map-sdk-3.23.2-runtime.jar: R8: {R8_MESSAGE}",
+                (
+                    "WARNING: /home/runner/.gradle/caches/9.4.1/transforms/"
+                    f"ccc/transformed/map-sdk-3.23.2-runtime.jar: R8: {R8_MESSAGE}"
+                ),
             ]
         )
         warnings = collect_warnings(lines, REPOSITORY)

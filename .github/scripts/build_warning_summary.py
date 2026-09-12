@@ -70,6 +70,9 @@ def parse_warning(line: str, repository: str) -> Warning | None:
     prefix = WARNING_PREFIX.match(line)
     if prefix:
         message = line[prefix.end() :]
+        tool, separator, diagnostic = message.partition(": ")
+        if separator and tool in ("D8", "R8"):
+            return Warning("출처 미확인", tool, "-", diagnostic)
         match = ANDROID_WARNING.match(message)
         if match:
             source, tool, message = match.groups()
