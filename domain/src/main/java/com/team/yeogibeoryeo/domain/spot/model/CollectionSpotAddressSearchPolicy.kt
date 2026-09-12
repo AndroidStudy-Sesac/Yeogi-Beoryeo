@@ -8,11 +8,12 @@ object CollectionSpotAddressSearchPolicy {
         if (trimmedKeyword.isBlank()) return trimmedKeyword
 
         val tokens = tokenize(trimmedKeyword)
-        if (tokens.any { token -> token.hasAddressNumber() || token.isRoadNameLike() }) {
+        // `을지로 1가`처럼 도로명 형태인 법정동도 도로명 판별 전에 하나의 토큰으로 합친다.
+        val searchTokens = tokens.mergeSeparatedLegalDongGaTokens()
+        if (searchTokens.any { token -> token.hasAddressNumber() || token.isRoadNameLike() }) {
             return trimmedKeyword
         }
 
-        val searchTokens = tokens.mergeSeparatedLegalDongGaTokens()
         return searchTokens.lastOrNull { token -> token.hasEupMyeonDongShape() } ?: trimmedKeyword
     }
 
@@ -102,6 +103,11 @@ object CollectionSpotAddressSearchPolicy {
     private fun String.isSeparatedLegalDongGaSuffix(): Boolean =
         SEPARATED_LEGAL_DONG_GA_REGEX.matches(this)
 
+    private fun String.isLegalDongGaPrefix(): Boolean =
+        LEGAL_DONG_GA_PREFIX_REGEX.matches(this) &&
+            !isSigunguLike(this) &&
+            !RegionSidoAliasPolicy.isSidoName(this)
+
     private fun List<String>.mergeSeparatedLegalDongGaTokens(): List<String> {
         if (size < 2) return this
 
@@ -112,7 +118,7 @@ object CollectionSpotAddressSearchPolicy {
             val next = getOrNull(index + 1)
             if (
                 next != null &&
-                current.hasEupMyeonDongShape() &&
+                current.isLegalDongGaPrefix() &&
                 next.isSeparatedLegalDongGaSuffix()
             ) {
                 mergedTokens += current + next
@@ -148,6 +154,7 @@ object CollectionSpotAddressSearchPolicy {
     private val EUP_MYEON_DONG_REGEX =
         """[가-힣]+\d*[$EUP_SUFFIX$MYEON_SUFFIX$DONG_SUFFIX]""".toRegex()
     private val LEGAL_DONG_GA_REGEX = """[가-힣]+\d+$LEGAL_DONG_GA_SUFFIX""".toRegex()
+    private val LEGAL_DONG_GA_PREFIX_REGEX = """[가-힣]+""".toRegex()
     private val SEPARATED_LEGAL_DONG_GA_REGEX = """\d+$LEGAL_DONG_GA_SUFFIX""".toRegex()
 
 }
