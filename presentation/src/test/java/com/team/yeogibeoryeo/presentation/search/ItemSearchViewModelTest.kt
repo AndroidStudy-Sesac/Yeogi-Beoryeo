@@ -17,6 +17,7 @@ import com.team.yeogibeoryeo.domain.item.usecase.ObserveHomeQuickCategoriesUseCa
 import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.ToggleHomeQuickCategoryUseCase
 import com.team.yeogibeoryeo.presentation.R
+import com.team.yeogibeoryeo.presentation.search.components.quickCategoryGridCollapseLayout
 import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import kotlinx.coroutines.CompletableDeferred
@@ -800,18 +801,55 @@ class ItemSearchViewModelTest {
             assertEquals(40, viewModel.uiState.value.quickCategoryScrollRestoreOffset)
             assertEquals(true, viewModel.uiState.value.isQuickCategoryExpanded)
 
-            viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
-
-            assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
-
             viewModel.collapseQuickCategory()
 
             assertEquals(false, viewModel.uiState.value.isQuickCategoryExpanded)
+            assertEquals(8, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+            assertEquals(3, viewModel.uiState.value.quickCategoryScrollRestoreIndex)
+            assertEquals(40, viewModel.uiState.value.quickCategoryScrollRestoreOffset)
             assertEquals(1, viewModel.uiState.value.quickCategoryScrollRestoreVersion)
 
-            viewModel.resetQuickCategoryFixedCollapsedItemCountIfCollapsed()
+            viewModel.resetQuickCategoryFixedCollapsedItemCount()
 
             assertEquals(0, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+        }
+
+    @Test
+    fun 펼친_분류의_창_크기가_바뀌면_접은_뒤_새_높이로_개수를_계산한다() =
+        runTest {
+            val viewModel = createViewModel(FakeRepository())
+            viewModel.onQueryChange("PET")
+            viewModel.expandQuickCategory(
+                collapsedItemCount = 8,
+                firstVisibleItemIndex = 3,
+                firstVisibleItemScrollOffset = 40,
+            )
+
+            viewModel.resetQuickCategoryFixedCollapsedItemCount()
+
+            assertEquals(0, viewModel.uiState.value.quickCategoryFixedCollapsedItemCount)
+            assertEquals(true, viewModel.uiState.value.isQuickCategoryExpanded)
+            assertEquals("PET", viewModel.uiState.value.query)
+            assertEquals(3, viewModel.uiState.value.quickCategoryScrollRestoreIndex)
+            assertEquals(40, viewModel.uiState.value.quickCategoryScrollRestoreOffset)
+            assertEquals(0, viewModel.uiState.value.quickCategoryScrollRestoreVersion)
+
+            viewModel.collapseQuickCategory()
+            val state = viewModel.uiState.value
+            val layout = quickCategoryGridCollapseLayout(
+                categoryCount = 20,
+                columnCount = 4,
+                availableHeightPx = 70,
+                rowHeightPx = 70,
+                rowSpacingPx = 10,
+                fixedCollapsedItemCount = state.quickCategoryFixedCollapsedItemCount,
+                isExpanded = state.isQuickCategoryExpanded,
+            )
+
+            assertEquals(3, layout.visibleCategoryCount)
+            assertEquals(true, layout.showsMore)
+            assertEquals(false, layout.showsCollapse)
+            assertEquals(1, state.quickCategoryScrollRestoreVersion)
         }
 
     @Test

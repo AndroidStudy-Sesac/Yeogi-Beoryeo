@@ -262,13 +262,9 @@ constructor(
         }
     }
 
-    fun resetQuickCategoryFixedCollapsedItemCountIfCollapsed() {
+    fun resetQuickCategoryFixedCollapsedItemCount() {
         _uiState.update {
-            if (it.isQuickCategoryExpanded) {
-                it
-            } else {
-                it.copy(quickCategoryFixedCollapsedItemCount = 0)
-            }
+            it.copy(quickCategoryFixedCollapsedItemCount = 0)
         }
     }
 

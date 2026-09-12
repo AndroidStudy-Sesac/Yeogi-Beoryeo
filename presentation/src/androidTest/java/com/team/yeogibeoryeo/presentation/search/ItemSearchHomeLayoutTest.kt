@@ -153,16 +153,25 @@ class ItemSearchHomeLayoutTest {
                                 onSearchClick = {},
                                 onGuideClick = {},
                                 onQuickCategoryClick = {},
-                                onQuickCategoryMoreClick = { count, _, _ ->
+                                onQuickCategoryMoreClick = { count, index, offset ->
                                     uiState = uiState.copy(
                                         isQuickCategoryExpanded = true,
                                         quickCategoryFixedCollapsedItemCount = count,
+                                        quickCategoryScrollRestoreIndex = index,
+                                        quickCategoryScrollRestoreOffset = offset,
                                     )
                                 },
                                 onQuickCategoryCollapseClick = {
-                                    uiState = uiState.copy(isQuickCategoryExpanded = false)
+                                    uiState = uiState.copy(
+                                        isQuickCategoryExpanded = false,
+                                        quickCategoryScrollRestoreVersion =
+                                            uiState.quickCategoryScrollRestoreVersion + 1,
+                                    )
                                 },
-                                onQuickCategoryViewportChanged = { viewportChanges += 1 },
+                                onQuickCategoryViewportChanged = {
+                                    viewportChanges += 1
+                                    uiState = uiState.copy(quickCategoryFixedCollapsedItemCount = 0)
+                                },
                                 categoryListState = listState,
                             )
                         }
@@ -185,6 +194,7 @@ class ItemSearchHomeLayoutTest {
         composeTestRule.runOnIdle {
             assertTrue(viewportChanges > changesBeforeResize)
             assertTrue(uiState.isQuickCategoryExpanded)
+            assertEquals(0, uiState.quickCategoryFixedCollapsedItemCount)
             assertEquals("유리병", uiState.query)
         }
         homeList().performScrollToNode(hasContentDescription("접기"))
@@ -193,6 +203,7 @@ class ItemSearchHomeLayoutTest {
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithContentDescription("접기").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("더보기").assertIsDisplayed()
         composeTestRule.runOnIdle {
             assertFalse(uiState.isQuickCategoryExpanded)
             width = 1000.dp

@@ -68,6 +68,7 @@ fun QuickCategoryGrid(
     onCollapseClick: () -> Unit = {},
     onVisibleCategoryCountChange: (Int) -> Unit = {},
     collapseBringIntoViewRequestVersion: Int = 0,
+    collapsedMeasurementVersion: Int = 0,
     itemContent: @Composable (
         category: RepresentativeGuideCategory,
         onClick: () -> Unit,
@@ -83,7 +84,7 @@ fun QuickCategoryGrid(
     val density = LocalDensity.current
     var measuredViewportBottomInRootPx by remember { mutableIntStateOf(0) }
     var measuredWidthPx by remember { mutableIntStateOf(0) }
-    var initialAvailableHeightPx by remember { mutableIntStateOf(0) }
+    var initialAvailableHeightPx by remember(collapsedMeasurementVersion) { mutableIntStateOf(0) }
     var rowHeightPx by remember { mutableIntStateOf(0) }
     var shouldBringExpandedGridIntoView by remember { mutableStateOf(false) }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }

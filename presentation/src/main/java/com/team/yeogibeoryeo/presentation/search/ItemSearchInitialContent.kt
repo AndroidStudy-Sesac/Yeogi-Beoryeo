@@ -370,6 +370,7 @@ fun ItemSearchInitialContent(
                         onCollapseClick = onQuickCategoryCollapseClick,
                         screenHorizontalPadding = metrics.homeHorizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,
+                        collapsedMeasurementVersion = handledScrollRestoreVersion,
                         onVisibleCategoryCountChange = { maxSelectedQuickCategoryCount = it },
                         collapseBringIntoViewRequestVersion =
                             collapseBringIntoViewRequestVersion,

@@ -132,7 +132,7 @@ fun ItemSearchRoute(
         onQuickCategoryMoreClick = viewModel::expandQuickCategory,
         onQuickCategoryCollapseClick = viewModel::collapseQuickCategory,
         onQuickCategoryViewportChanged =
-            viewModel::resetQuickCategoryFixedCollapsedItemCountIfCollapsed,
+            viewModel::resetQuickCategoryFixedCollapsedItemCount,
         onQuickCategorySettingsClick = onQuickCategorySettingsClick,
         onSettingsClick = onSettingsClick,
         hasUnreadNotices = hasUnreadNotices,
