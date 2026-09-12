@@ -1,6 +1,7 @@
 package com.team.yeogibeoryeo.data.spot.remote
 
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseDto
+import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -16,5 +17,5 @@ interface SpotApiService {
         @Query("longitude") longitude: Double? = null,
         @Query("radius") radius: Int? = null,
         @Query("_type") type: String = "json",
-    ): SpotResponseDto
+    ): Response<SpotResponseDto>
 }

@@ -3,13 +3,25 @@ package com.team.yeogibeoryeo.data.spot.remote.datasource
 import com.team.yeogibeoryeo.data.spot.remote.SpotApiService
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseDto
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalApi
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalCategory
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorContext
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorReporter
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalHttpStatusClass
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalStage
 import com.team.yeogibeoryeo.domain.spot.log.MapSearchTimingLogger
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
+import retrofit2.HttpException
+import retrofit2.Response
+import java.io.IOException
+import java.net.SocketTimeoutException
+import javax.inject.Inject
 
 class SpotRemoteDataSource @Inject constructor(
     private val apiService: SpotApiService,
+    private val nonFatalErrorReporter: NonFatalErrorReporter,
     private val mapSearchTimingLogger: MapSearchTimingLogger = MapSearchTimingLogger.NoOp,
 ) {
     suspend fun searchByKeyword(
@@ -33,12 +45,14 @@ class SpotRemoteDataSource @Inject constructor(
         numOfRows: Int = 100,
     ): SpotKeywordSearchResult {
         val searchStartedAtNanos = System.nanoTime()
-        val firstPage = fetchKeywordPage(
-            serviceKey = serviceKey,
-            keyword = keyword,
-            pageNo = pageNo,
-            numOfRows = numOfRows,
-        )
+        val firstPage = fetchFirstPage {
+            fetchKeywordPage(
+                serviceKey = serviceKey,
+                keyword = keyword,
+                pageNo = pageNo,
+                numOfRows = numOfRows,
+            )
+        }
         val effectiveNumOfRows = firstPage.numOfRows ?: numOfRows
         val currentPageNo = firstPage.pageNo ?: pageNo
         val totalCount = firstPage.totalCount
@@ -70,6 +84,10 @@ class SpotRemoteDataSource @Inject constructor(
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
 
+                nonFatalErrorReporter.reportCollectionSpotFailure(
+                    error = exception,
+                    isPartialResult = true,
+                )
                 isPartial = true
                 break
             }
@@ -105,14 +123,16 @@ class SpotRemoteDataSource @Inject constructor(
         pageNo: Int = 1,
         numOfRows: Int = 100,
     ): List<SpotItemDto> {
-        val firstPage = fetchLocationPage(
-            serviceKey = serviceKey,
-            pageNo = pageNo,
-            numOfRows = numOfRows,
-            latitude = latitude,
-            longitude = longitude,
-            radiusMeter = radiusMeter,
-        )
+        val firstPage = fetchFirstPage {
+            fetchLocationPage(
+                serviceKey = serviceKey,
+                pageNo = pageNo,
+                numOfRows = numOfRows,
+                latitude = latitude,
+                longitude = longitude,
+                radiusMeter = radiusMeter,
+            )
+        }
         val effectiveNumOfRows = firstPage.numOfRows ?: numOfRows
         val currentPageNo = firstPage.pageNo ?: pageNo
         val totalCount = firstPage.totalCount
@@ -141,6 +161,10 @@ class SpotRemoteDataSource @Inject constructor(
             } catch (exception: Exception) {
                 if (exception is CancellationException) throw exception
 
+                nonFatalErrorReporter.reportCollectionSpotFailure(
+                    error = exception,
+                    isPartialResult = true,
+                )
                 break
             }
 
@@ -165,7 +189,23 @@ class SpotRemoteDataSource @Inject constructor(
             addr = keyword,
         )
 
-        return response.toSpotPageResult()
+        return response.bodyOrThrow().toSpotPageResult(
+            httpStatusCode = response.code(),
+        )
+    }
+
+    private suspend fun fetchFirstPage(
+        fetch: suspend () -> SpotPageResult,
+    ): SpotPageResult = try {
+        fetch()
+    } catch (exception: CancellationException) {
+        throw exception
+    } catch (exception: Exception) {
+        nonFatalErrorReporter.reportCollectionSpotFailure(
+            error = exception,
+            isPartialResult = false,
+        )
+        throw exception
     }
 
     private suspend fun fetchLocationPage(
@@ -186,26 +226,42 @@ class SpotRemoteDataSource @Inject constructor(
             radius = radiusMeter,
         )
 
-        return response.toSpotPageResult()
+        return response.bodyOrThrow().toSpotPageResult(
+            httpStatusCode = response.code(),
+        )
     }
 
-    private fun SpotResponseDto.toSpotPageResult(): SpotPageResult {
+    private fun Response<SpotResponseDto>.bodyOrThrow(): SpotResponseDto {
+        if (!isSuccessful) throw HttpException(this)
+
+        return body() ?: throw SpotEmptyResponseBodyException(
+            httpStatusCode = code(),
+        )
+    }
+
+    private fun SpotResponseDto.toSpotPageResult(
+        httpStatusCode: Int,
+    ): SpotPageResult {
         return SpotPageResult(
-            items = toSpotItemsOrEmpty(),
+            items = toSpotItemsOrEmpty(httpStatusCode),
             numOfRows = response.body.numOfRows.toIntOrNull(),
             pageNo = response.body.pageNo.toIntOrNull(),
             totalCount = response.body.totalCount.toIntOrNull(),
         )
     }
 
-    private fun SpotResponseDto.toSpotItemsOrEmpty(): List<SpotItemDto> {
+    private fun SpotResponseDto.toSpotItemsOrEmpty(
+        httpStatusCode: Int,
+    ): List<SpotItemDto> {
         val resultCode = response.header.resultCode
 
         return when (resultCode) {
             RESULT_CODE_SUCCESS -> response.body.items?.item.orEmpty()
             RESULT_CODE_NO_DATA -> emptyList()
-            else -> error(
-                "수거 장소 API 오류($resultCode): ${response.header.resultMsg}",
+            else -> throw SpotApiResponseException(
+                httpStatusCode = httpStatusCode,
+                resultCode = resultCode,
+                resultMessage = response.header.resultMsg,
             )
         }
     }
@@ -240,6 +296,83 @@ class SpotRemoteDataSource @Inject constructor(
         const val LOCATION_MAX_RESULT_COUNT = 120
     }
 }
+
+private class SpotApiResponseException(
+    val httpStatusCode: Int,
+    resultCode: String,
+    resultMessage: String,
+) : IllegalStateException("수거 장소 API 오류($resultCode): $resultMessage")
+
+private class SpotEmptyResponseBodyException(
+    val httpStatusCode: Int,
+) : SerializationException("수거 장소 API 응답 본문이 없습니다 (HTTP $httpStatusCode)")
+
+private fun NonFatalErrorReporter.reportCollectionSpotFailure(
+    error: Throwable,
+    isPartialResult: Boolean,
+) {
+    val context = error.toCollectionSpotNonFatalErrorContext(isPartialResult) ?: return
+    report(error, context)
+}
+
+private fun Throwable.toCollectionSpotNonFatalErrorContext(
+    isPartialResult: Boolean,
+): NonFatalErrorContext? {
+    val failure = when (this) {
+        is SocketTimeoutException -> CollectionSpotFailureContext(
+            stage = NonFatalStage.REMOTE_REQUEST,
+            category = NonFatalCategory.TIMEOUT,
+        )
+        is HttpException -> CollectionSpotFailureContext(
+            stage = NonFatalStage.REMOTE_REQUEST,
+            category = NonFatalCategory.HTTP,
+            httpStatusClass = code().toNonFatalHttpStatusClass(),
+        )
+        is SpotApiResponseException -> CollectionSpotFailureContext(
+            stage = NonFatalStage.REMOTE_REQUEST,
+            category = NonFatalCategory.HTTP,
+            httpStatusClass = httpStatusCode.toNonFatalHttpStatusClass(),
+        )
+        is SpotEmptyResponseBodyException -> CollectionSpotFailureContext(
+            stage = NonFatalStage.RESPONSE_PARSING,
+            category = NonFatalCategory.PARSING,
+            httpStatusClass = httpStatusCode.toNonFatalHttpStatusClass(),
+        )
+        is SerializationException -> CollectionSpotFailureContext(
+            stage = NonFatalStage.RESPONSE_PARSING,
+            category = NonFatalCategory.PARSING,
+        )
+        is IOException -> CollectionSpotFailureContext(
+            stage = NonFatalStage.REMOTE_REQUEST,
+            category = NonFatalCategory.NETWORK,
+        )
+        else -> return null
+    }
+
+    return NonFatalErrorContext(
+        api = NonFatalApi.COLLECTION_SPOT,
+        stage = failure.stage,
+        category = failure.category,
+        httpStatusClass = failure.httpStatusClass,
+        isPartialResult = isPartialResult,
+    )
+}
+
+private data class CollectionSpotFailureContext(
+    val stage: NonFatalStage,
+    val category: NonFatalCategory,
+    val httpStatusClass: NonFatalHttpStatusClass = NonFatalHttpStatusClass.NOT_AVAILABLE,
+)
+
+private fun Int.toNonFatalHttpStatusClass(): NonFatalHttpStatusClass =
+    when (this) {
+        in 100..199 -> NonFatalHttpStatusClass.INFORMATIONAL
+        in 200..299 -> NonFatalHttpStatusClass.SUCCESS
+        in 300..399 -> NonFatalHttpStatusClass.REDIRECTION
+        in 400..499 -> NonFatalHttpStatusClass.CLIENT_ERROR
+        in 500..599 -> NonFatalHttpStatusClass.SERVER_ERROR
+        else -> NonFatalHttpStatusClass.NOT_AVAILABLE
+    }
 
 private fun Long.elapsedMs(): Long =
     (System.nanoTime() - this) / NANOS_PER_MILLISECOND
