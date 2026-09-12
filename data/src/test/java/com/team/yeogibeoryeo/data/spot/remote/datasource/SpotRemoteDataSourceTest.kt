@@ -120,7 +120,7 @@ class SpotRemoteDataSourceTest {
     }
 
     @Test
-    fun `정상과 데이터 없음 외 응답 코드는 예외를 전달한다`() {
+    fun `정상과 데이터 없음 외 API 응답 코드는 HTTP 상태 등급과 함께 예외를 전달한다`() {
         val apiService = FakeSpotApiService(
             response = createErrorResponse(),
         )
@@ -138,7 +138,7 @@ class SpotRemoteDataSourceTest {
 
         assertEquals("수거 장소 API 오류(30): SERVICE_KEY_IS_NOT_REGISTERED_ERROR", exception.message)
         assertEquals(
-            listOf(RecordedError(exception, REMOTE_HTTP_CONTEXT)),
+            listOf(RecordedError(exception, REMOTE_SUCCESS_HTTP_CONTEXT)),
             reporter.errors,
         )
     }
@@ -182,6 +182,28 @@ class SpotRemoteDataSourceTest {
     }
 
     @Test
+    fun `Retrofit이 오류 응답을 반환하면 HTTP 예외와 상태 등급을 보존한다`() {
+        val apiService = createRetrofitApiService { HttpFixtureResponse(code = 503) }
+        val reporter = RecordingNonFatalErrorReporter()
+        val dataSource = createDataSource(apiService, reporter)
+
+        val thrown = assertThrows(HttpException::class.java) {
+            runBlocking {
+                dataSource.searchByKeyword(
+                    serviceKey = TEST_SERVICE_KEY,
+                    keyword = "문래동",
+                )
+            }
+        }
+
+        assertEquals(503, thrown.code())
+        assertEquals(
+            listOf(RecordedError(thrown, REMOTE_SERVER_HTTP_CONTEXT)),
+            reporter.errors,
+        )
+    }
+
+    @Test
     fun `Retrofit이 204를 반환한 첫 페이지는 파싱 실패로 한 번 기록하고 예외를 전달한다`() {
         val apiService = createRetrofitApiService { HttpFixtureResponse(code = 204) }
         val reporter = RecordingNonFatalErrorReporter()
@@ -198,7 +220,7 @@ class SpotRemoteDataSourceTest {
 
         assertEquals("수거 장소 API 응답 본문이 없습니다 (HTTP 204)", thrown.message)
         assertEquals(
-            listOf(RecordedError(thrown, RESPONSE_PARSING_CONTEXT)),
+            listOf(RecordedError(thrown, RESPONSE_SUCCESS_PARSING_CONTEXT)),
             reporter.errors,
         )
     }
@@ -229,7 +251,7 @@ class SpotRemoteDataSourceTest {
         val recordedError = reporter.errors.single()
         assertTrue(recordedError.error is SerializationException)
         assertEquals("수거 장소 API 응답 본문이 없습니다 (HTTP 205)", recordedError.error.message)
-        assertEquals(RESPONSE_PARTIAL_PARSING_CONTEXT, recordedError.context)
+        assertEquals(RESPONSE_PARTIAL_SUCCESS_PARSING_CONTEXT, recordedError.context)
     }
 
     @Test
@@ -785,12 +807,18 @@ class SpotRemoteDataSourceTest {
         val REMOTE_SERVER_HTTP_CONTEXT = REMOTE_HTTP_CONTEXT.copy(
             httpStatusClass = NonFatalHttpStatusClass.SERVER_ERROR,
         )
+        val REMOTE_SUCCESS_HTTP_CONTEXT = REMOTE_HTTP_CONTEXT.copy(
+            httpStatusClass = NonFatalHttpStatusClass.SUCCESS,
+        )
         val RESPONSE_PARSING_CONTEXT = NonFatalErrorContext(
             api = NonFatalApi.COLLECTION_SPOT,
             stage = NonFatalStage.RESPONSE_PARSING,
             category = NonFatalCategory.PARSING,
         )
-        val RESPONSE_PARTIAL_PARSING_CONTEXT = RESPONSE_PARSING_CONTEXT.copy(
+        val RESPONSE_SUCCESS_PARSING_CONTEXT = RESPONSE_PARSING_CONTEXT.copy(
+            httpStatusClass = NonFatalHttpStatusClass.SUCCESS,
+        )
+        val RESPONSE_PARTIAL_SUCCESS_PARSING_CONTEXT = RESPONSE_SUCCESS_PARSING_CONTEXT.copy(
             isPartialResult = true,
         )
         val REMOTE_PARTIAL_NETWORK_CONTEXT = REMOTE_NETWORK_CONTEXT.copy(

@@ -189,7 +189,9 @@ class SpotRemoteDataSource @Inject constructor(
             addr = keyword,
         )
 
-        return response.bodyOrThrow().toSpotPageResult()
+        return response.bodyOrThrow().toSpotPageResult(
+            httpStatusCode = response.code(),
+        )
     }
 
     private suspend fun fetchFirstPage(
@@ -224,33 +226,40 @@ class SpotRemoteDataSource @Inject constructor(
             radius = radiusMeter,
         )
 
-        return response.bodyOrThrow().toSpotPageResult()
+        return response.bodyOrThrow().toSpotPageResult(
+            httpStatusCode = response.code(),
+        )
     }
 
     private fun Response<SpotResponseDto>.bodyOrThrow(): SpotResponseDto {
         if (!isSuccessful) throw HttpException(this)
 
-        return body() ?: throw SerializationException(
-            "수거 장소 API 응답 본문이 없습니다 (HTTP ${code()})",
+        return body() ?: throw SpotEmptyResponseBodyException(
+            httpStatusCode = code(),
         )
     }
 
-    private fun SpotResponseDto.toSpotPageResult(): SpotPageResult {
+    private fun SpotResponseDto.toSpotPageResult(
+        httpStatusCode: Int,
+    ): SpotPageResult {
         return SpotPageResult(
-            items = toSpotItemsOrEmpty(),
+            items = toSpotItemsOrEmpty(httpStatusCode),
             numOfRows = response.body.numOfRows.toIntOrNull(),
             pageNo = response.body.pageNo.toIntOrNull(),
             totalCount = response.body.totalCount.toIntOrNull(),
         )
     }
 
-    private fun SpotResponseDto.toSpotItemsOrEmpty(): List<SpotItemDto> {
+    private fun SpotResponseDto.toSpotItemsOrEmpty(
+        httpStatusCode: Int,
+    ): List<SpotItemDto> {
         val resultCode = response.header.resultCode
 
         return when (resultCode) {
             RESULT_CODE_SUCCESS -> response.body.items?.item.orEmpty()
             RESULT_CODE_NO_DATA -> emptyList()
             else -> throw SpotApiResponseException(
+                httpStatusCode = httpStatusCode,
                 resultCode = resultCode,
                 resultMessage = response.header.resultMsg,
             )
@@ -289,9 +298,14 @@ class SpotRemoteDataSource @Inject constructor(
 }
 
 private class SpotApiResponseException(
+    val httpStatusCode: Int,
     resultCode: String,
     resultMessage: String,
 ) : IllegalStateException("수거 장소 API 오류($resultCode): $resultMessage")
+
+private class SpotEmptyResponseBodyException(
+    val httpStatusCode: Int,
+) : SerializationException("수거 장소 API 응답 본문이 없습니다 (HTTP $httpStatusCode)")
 
 private fun NonFatalErrorReporter.reportCollectionSpotFailure(
     error: Throwable,
@@ -317,6 +331,12 @@ private fun Throwable.toCollectionSpotNonFatalErrorContext(
         is SpotApiResponseException -> CollectionSpotFailureContext(
             stage = NonFatalStage.REMOTE_REQUEST,
             category = NonFatalCategory.HTTP,
+            httpStatusClass = httpStatusCode.toNonFatalHttpStatusClass(),
+        )
+        is SpotEmptyResponseBodyException -> CollectionSpotFailureContext(
+            stage = NonFatalStage.RESPONSE_PARSING,
+            category = NonFatalCategory.PARSING,
+            httpStatusClass = httpStatusCode.toNonFatalHttpStatusClass(),
         )
         is SerializationException -> CollectionSpotFailureContext(
             stage = NonFatalStage.RESPONSE_PARSING,
