@@ -23,6 +23,7 @@ internal object ItemSearchSpacingDefaults {
 }
 
 internal object ItemSearchSizeDefaults {
+    val homeContentMaxWidth: Dp = 720.dp
     val iconSmall: Dp = 20.dp
     val iconStandard: Dp = 24.dp
     val iconLarge: Dp = 32.dp
