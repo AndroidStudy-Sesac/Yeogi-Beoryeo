@@ -26,8 +26,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -961,6 +962,80 @@ class ItemSearchViewModelTest {
     }
 
     @Test
+    fun 저장값을_받은_뒤_진입_기준을_고정하고_선택과_해제는_반영한다() =
+        runTest {
+            val initialRead = CompletableDeferred<Unit>()
+            val preferences = FakeHomeQuickCategoryRepository(
+                initialCategories = listOf(DisposalCategory.BATTERY),
+                initialRead = initialRead,
+            )
+            val viewModel = createViewModel(FakeRepository(), homeQuickCategoryRepository = preferences)
+            runCurrent()
+            assertNull(viewModel.uiState.value.homeQuickCategoriesAtEntry)
+
+            initialRead.complete(Unit)
+            runCurrent()
+            val entryCategories = listOf(RepresentativeGuideCategory.BATTERY)
+            assertEquals(entryCategories, viewModel.uiState.value.homeQuickCategoriesAtEntry)
+
+            viewModel.toggleHomeQuickCategory(RepresentativeGuideCategory.BATTERY, 2)
+            viewModel.toggleHomeQuickCategory(RepresentativeGuideCategory.ELECTRONICS, 2)
+            runCurrent()
+
+            assertEquals(entryCategories, viewModel.uiState.value.homeQuickCategoriesAtEntry)
+            assertEquals(
+                listOf(RepresentativeGuideCategory.ELECTRONICS),
+                viewModel.uiState.value.homeQuickCategories,
+            )
+        }
+
+    @Test
+    fun 저장된_선택이_없어도_첫_응답을_진입_기준으로_유지한다() =
+        runTest {
+            val viewModel = createViewModel(FakeRepository())
+            runCurrent()
+            assertEquals(emptyList<RepresentativeGuideCategory>(), viewModel.uiState.value.homeQuickCategoriesAtEntry)
+
+            viewModel.toggleHomeQuickCategory(RepresentativeGuideCategory.BATTERY, 1)
+            runCurrent()
+
+            assertEquals(emptyList<RepresentativeGuideCategory>(), viewModel.uiState.value.homeQuickCategoriesAtEntry)
+            assertEquals(listOf(RepresentativeGuideCategory.BATTERY), viewModel.uiState.value.homeQuickCategories)
+        }
+
+    @Test
+    fun 화면을_다시_만들면_복원된_화면_상태보다_최신_저장값으로_진입_기준을_정한다() =
+        runTest {
+            val preferences = FakeHomeQuickCategoryRepository(listOf(DisposalCategory.ELECTRONICS))
+            val savedStateHandle = SavedStateHandle()
+            val firstViewModel = createViewModel(
+                FakeRepository(),
+                homeQuickCategoryRepository = preferences,
+                savedStateHandle = savedStateHandle,
+            )
+            runCurrent()
+            firstViewModel.toggleHomeQuickCategory(RepresentativeGuideCategory.BATTERY, 2)
+            runCurrent()
+            assertEquals(
+                listOf(RepresentativeGuideCategory.ELECTRONICS),
+                firstViewModel.uiState.value.homeQuickCategoriesAtEntry,
+            )
+
+            val restoredState = firstViewModel.saveStateAndClear(savedStateHandle)
+            val nextViewModel = createViewModel(
+                FakeRepository(),
+                homeQuickCategoryRepository = preferences,
+                savedStateHandle = restoredState,
+            )
+            runCurrent()
+
+            assertEquals(
+                listOf(RepresentativeGuideCategory.ELECTRONICS, RepresentativeGuideCategory.BATTERY),
+                nextViewModel.uiState.value.homeQuickCategoriesAtEntry,
+            )
+        }
+
+    @Test
     fun `선택한 분류가 있으면 홈 빠른 분류는 선택한 분류를 앞에 노출한다`() {
         val selectedCategories =
             listOf(
@@ -1159,11 +1234,15 @@ class ItemSearchViewModelTest {
 
     private class FakeHomeQuickCategoryRepository(
         initialCategories: List<DisposalCategory> = emptyList(),
+        private val initialRead: CompletableDeferred<Unit> = CompletableDeferred(Unit),
     ) : HomeQuickCategoryRepository {
         private val categories = MutableStateFlow(initialCategories)
         val toggledHomeQuickCategories = mutableListOf<DisposalCategory>()
 
-        override fun observeHomeQuickCategories(): Flow<List<DisposalCategory>> = categories
+        override fun observeHomeQuickCategories(): Flow<List<DisposalCategory>> = flow {
+            initialRead.await()
+            emitAll(categories)
+        }
 
         override suspend fun toggleHomeQuickCategory(
             category: DisposalCategory,

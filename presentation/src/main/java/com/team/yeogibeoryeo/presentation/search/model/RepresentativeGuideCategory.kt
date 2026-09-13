@@ -7,6 +7,7 @@ enum class RepresentativeGuideCategory(
     val representativeGuideName: String,
     val representativeGuideId: String,
     val disposalCategory: DisposalCategory,
+    val searchAliases: List<String> = emptyList(),
 ) {
     PAPER("종이", "종이", "item-guide-0001", DisposalCategory.PAPER),
     PAPER_PACK("종이팩", "종이팩", "item-guide-0002", DisposalCategory.PAPER_PACK),
@@ -17,7 +18,7 @@ enum class RepresentativeGuideCategory(
     GLASS("유리병", "유리병", "item-guide-0007", DisposalCategory.GLASS),
     METAL("금속류", "금속류", "item-guide-0008", DisposalCategory.METAL),
     CLOTHING("의류 및 원단", "의류 및 원단", "item-guide-0009", DisposalCategory.CLOTHING),
-    BATTERY("전지", "전지", "item-guide-0010", DisposalCategory.BATTERY),
+    BATTERY("전지", "전지", "item-guide-0010", DisposalCategory.BATTERY, searchAliases = listOf("건전지")),
     LIGHTING("조명제품", "조명제품", "item-guide-0011", DisposalCategory.LIGHTING),
     ELECTRONICS("전기전자제품", "전기전자제품", "item-guide-0012", DisposalCategory.ELECTRONICS),
     FOOD_WASTE("음식물류폐기물", "음식물류폐기물", "item-guide-0013", DisposalCategory.FOOD_WASTE),

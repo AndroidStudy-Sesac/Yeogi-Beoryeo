@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -51,6 +52,54 @@ class DataStoreHomeQuickCategoryRepositoryTest {
                 repository.toggleHomeQuickCategory(DisposalCategory.BATTERY, maxSelectedCount = 2)
 
                 assertEquals(emptyList<DisposalCategory>(), repository.observeHomeQuickCategories().first())
+            }
+        }
+
+    @Test
+    fun `DataStore를 다시 생성해도 선택한 분류와 순서를 복원한다`() =
+        runBlocking {
+            val file = withContext(Dispatchers.IO) {
+                File.createTempFile("persisted-home-quick-category", ".preferences_pb").apply {
+                    delete()
+                }
+            }
+            val reporter = RecordingNonFatalErrorReporter()
+            val firstJob = SupervisorJob()
+            val firstDataStore = PreferenceDataStoreFactory.create(
+                scope = CoroutineScope(firstJob + Dispatchers.IO),
+                produceFile = { file },
+            )
+
+            try {
+                val repository = DataStoreHomeQuickCategoryRepository(firstDataStore, reporter)
+                repository.toggleHomeQuickCategory(DisposalCategory.ELECTRONICS, maxSelectedCount = 2)
+                repository.toggleHomeQuickCategory(DisposalCategory.BATTERY, maxSelectedCount = 2)
+                firstJob.cancelAndJoin()
+
+                val secondJob = SupervisorJob()
+                val secondDataStore = PreferenceDataStoreFactory.create(
+                    scope = CoroutineScope(secondJob + Dispatchers.IO),
+                    produceFile = { file },
+                )
+                try {
+                    val restoredCategories =
+                        DataStoreHomeQuickCategoryRepository(secondDataStore, reporter)
+                            .observeHomeQuickCategories()
+                            .first()
+
+                    assertEquals(
+                        listOf(DisposalCategory.ELECTRONICS, DisposalCategory.BATTERY),
+                        restoredCategories,
+                    )
+                    assertTrue(reporter.errors.isEmpty())
+                } finally {
+                    secondJob.cancelAndJoin()
+                }
+            } finally {
+                firstJob.cancelAndJoin()
+                withContext(Dispatchers.IO) {
+                    file.delete()
+                }
             }
         }
 

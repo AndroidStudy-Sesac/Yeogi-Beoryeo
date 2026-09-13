@@ -30,5 +30,6 @@ fun QuickCategorySettingsRoute(
         },
         onBackClick = onBackClick,
         modifier = modifier,
+        categoryOrder = uiState.quickCategorySettingsOrder(boundedMaxSelectedCount),
     )
 }
