@@ -104,6 +104,14 @@ class SearchCollectionSpotsByKeywordUseCaseTest {
         }
 
     @Test
+    fun `공백으로 분리된 법정동 가는 붙인 검색어로 수거함을 검색한다`() =
+        runSuspendTest {
+            useCase(keyword = "을지로 1가")
+
+            assertEquals(listOf("을지로1가"), repository.keywords)
+        }
+
+    @Test
     fun `동 정보가 없는 도로명 주소 결과는 유지한다`() =
         runSuspendTest {
             val spot = collectionSpot(
