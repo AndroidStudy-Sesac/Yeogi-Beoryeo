@@ -1,6 +1,10 @@
 package com.team.yeogibeoryeo.data.item.repository
 
 import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalSource
+import com.team.yeogibeoryeo.data.item.local.ItemCategoryLocalDataSource
+import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorReporter
+import io.mockk.mockk
+import java.io.File
 import com.team.yeogibeoryeo.data.item.local.ItemGuideDetail
 import com.team.yeogibeoryeo.data.item.local.WasteDictionaryItem
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
@@ -18,6 +22,66 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DisposalItemGuideRepositoryImplTest {
+    @Test
+    fun `실제 품목의 오타 후보는 선택하면 검색 결과를 반환한다`() = runBlocking {
+        val repository = DisposalItemGuideRepositoryImpl(
+            ItemCategoryLocalDataSource(
+                readAssetText = { File("src/main/assets", it).readText(Charsets.UTF_8) },
+                reporter = mockk<NonFatalErrorReporter>(relaxed = true),
+            ),
+        )
+        val examples = mapOf(
+            "유리뱡" to "유리병",
+            "전기밥숱" to "전기밥솥",
+            "프라이펜" to "프라이팬",
+            "플라스틳" to "플라스틱",
+            "무색페트뱡" to "무색페트병",
+        )
+        examples.forEach { (typo, expected) ->
+            assertTrue(repository.searchItemGuides(typo).isEmpty())
+            val suggestions = repository.suggestSearchQueries(typo)
+            assertTrue("$typo: $suggestions", expected in suggestions)
+            assertTrue(suggestions.size <= 3)
+            suggestions.forEach { assertTrue(repository.searchItemGuides(it).isNotEmpty()) }
+        }
+        assertTrue(repository.searchItemGuides("스트로폼").isNotEmpty())
+        assertTrue(repository.suggestSearchQueries("스트로폼").isEmpty())
+        listOf("", "유", "유뱡", "ㄱㄴㄷ", "맛집예약", "오늘날씨알려주세요").forEach {
+            assertTrue("$it should not suggest", repository.suggestSearchQueries(it).isEmpty())
+        }
+    }
+
+    @Test
+    fun `후보는 한 글자 차이만 허용하고 중복 없이 최대 세 개를 정렬한다`() = runBlocking {
+        val names = listOf("가나다마", "가나다라", "가나 다라", "가나마바", "가나다바", "가나마사", "가나다사")
+        val repository = DisposalItemGuideRepositoryImpl(
+            FakeLocalSource(
+                wasteDictionaryItems = names.map {
+                    sampleDictionaryItem(it, listOf(listOf("일반폐기물")), emptyList())
+                },
+            ),
+        )
+        assertEquals(listOf("가나다라", "가나다마", "가나다바"), repository.suggestSearchQueries("가나다카"))
+        assertTrue(repository.suggestSearchQueries("없는검색어").isEmpty())
+    }
+
+    @Test
+    fun `공백 괄호와 대소문자를 정규화하고 검색 가능한 별칭만 제안한다`() = runBlocking {
+        val repository = DisposalItemGuideRepositoryImpl(
+            FakeLocalSource(
+                synonyms = mapOf("스마트폰" to "핸드폰", "미등록품" to "없는품목"),
+                wasteDictionaryItems = listOf(
+                    sampleDictionaryItem("핸드폰", emptyList(), emptyList(), searchTerms = listOf("MOBILE")),
+                ),
+            ),
+        )
+        assertEquals(listOf("스마트폰"), repository.suggestSearchQueries("스마 트（퐁）"))
+        assertEquals(listOf("MOBILE"), repository.suggestSearchQueries("mobilx"))
+        assertTrue(repository.suggestSearchQueries("미등록푼").isEmpty())
+        assertTrue(repository.suggestSearchQueries("스마트폰").isEmpty())
+        assertTrue(repository.suggestSearchQueries("핸드폰").isEmpty())
+    }
+
     @Test
     fun `searchItemGuides는 local 조회를 지정된 dispatcher에서 실행한다`() =
         runBlocking {

@@ -8,9 +8,11 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -20,6 +22,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
@@ -39,6 +42,7 @@ import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalInstruction
@@ -58,6 +62,60 @@ import org.junit.Test
 class ItemSearchScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun 큰_글꼴의_낮은_화면에서도_본문을_스크롤해_마지막_후보를_선택한다() {
+        var selected: String? = null
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 2f)) {
+                MaterialTheme {
+                    ItemSearchScreen(
+                        uiState = ItemSearchUiState(
+                            query = "유리뱡", submittedQuery = "유리뱡", hasSearched = true,
+                            suggestedQueries = listOf("유리병", "유리창", "유리컵"),
+                        ),
+                        onQueryChange = {}, onSearchClick = {}, onGuideClick = {}, onQuickCategoryClick = {},
+                        onSuggestionClick = { selected = it },
+                        modifier = Modifier.height(320.dp),
+                    )
+                }
+            }
+        }
+        composeTestRule.onNodeWithText("유리컵").performScrollTo().assertIsDisplayed().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.runOnIdle { assertEquals("유리컵", selected) }
+    }
+
+    @Test
+    fun 후보를_한번_누르면_해당_검색어를_전달하고_입력이_바뀌면_후보를_숨긴다() {
+        var state by mutableStateOf(ItemSearchUiState(
+            query = "유리뱡",
+            submittedQuery = "유리뱡",
+            hasSearched = true,
+            suggestedQueries = listOf("유리병"),
+        ))
+        val selected = mutableListOf<String>()
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = state,
+                    onQueryChange = { state = state.copy(query = it) },
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onSuggestionClick = { selected += it },
+                )
+            }
+        }
+        composeTestRule.onNodeWithText("비슷한 검색어로 다시 검색해보세요.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("유리병").assertHasClickAction().performClick()
+        composeTestRule.runOnIdle { assertEquals(listOf("유리병"), selected) }
+        composeTestRule.onAllNodes(hasPoliteLiveRegion()).assertCountEquals(1)
+        composeTestRule.onNode(hasSetTextAction()).performTextReplacement("종이")
+        composeTestRule.waitForIdle()
+        composeTestRule.onAllNodesWithText("유리병").assertCountEquals(0)
+        composeTestRule.onNodeWithText("다른 이름으로 다시 검색해보세요.").assertIsDisplayed()
+    }
 
     @Test
     fun 초기_상태에서는_분리배출_분류를_보여준다() {
