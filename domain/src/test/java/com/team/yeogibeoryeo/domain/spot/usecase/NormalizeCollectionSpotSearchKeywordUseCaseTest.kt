@@ -53,6 +53,18 @@ class NormalizeCollectionSpotSearchKeywordUseCaseTest {
     }
 
     @Test
+    fun `동으로 끝나지 않는 법정동 가 검색어도 붙여서 정규화한다`() {
+        assertEquals("명륜1가", useCase("명륜 1가"))
+        assertEquals("명륜1가", useCase("종로구 명륜 1가"))
+    }
+
+    @Test
+    fun `도로명처럼 보이는 법정동 가 검색어도 붙여서 정규화한다`() {
+        assertEquals("을지로1가", useCase("을지로 1가"))
+        assertEquals("을지로1가", useCase("서울특별시 중구 을지로 1가"))
+    }
+
+    @Test
     fun `구 법정동 가 조합에서 법정동을 추출한다`() {
         assertEquals("금호동3가", useCase("성동구 금호동3가"))
     }
@@ -80,11 +92,23 @@ class NormalizeCollectionSpotSearchKeywordUseCaseTest {
     @Test
     fun `도로명과 번지만 있는 입력은 그대로 유지한다`() {
         assertEquals("강남대로 123", useCase("강남대로 123"))
+        assertEquals("을지로 100", useCase("을지로 100"))
+        assertEquals("을지로1길 10", useCase("을지로1길 10"))
     }
 
     @Test
     fun `지번 상세 주소는 동으로 잘못 보정하지 않는다`() {
         assertEquals("역삼동 123-4", useCase("역삼동 123-4"))
+        assertEquals(
+            "서울특별시 중구 을지로 1가 100",
+            useCase("서울특별시 중구 을지로 1가 100"),
+        )
+    }
+
+    @Test
+    fun `시도나 시군구 다음의 가 토큰은 법정동으로 합치지 않는다`() {
+        assertEquals("서울 1가", useCase("서울 1가"))
+        assertEquals("중구 1가", useCase("중구 1가"))
     }
 
     @Test

@@ -76,6 +76,17 @@ class ResolveMapRegionSearchCandidateUseCaseTest {
         }
 
     @Test
+    fun `도로명처럼 보이는 법정동 가도 붙인 검색어로 검색한다`() =
+        runSuspendTest {
+            val result = useCase("서울 중구 을지로 1가")
+
+            assertTrue(result is MapRegionSearchCandidateResult.ReadyToSearch)
+            result as MapRegionSearchCandidateResult.ReadyToSearch
+            assertEquals("을지로1가", result.searchKeyword)
+            assertEquals("서울특별시 중구 을지로1가", result.selectedCandidate?.displayName)
+        }
+
+    @Test
     fun `시도 시군구 동 입력은 후보를 좁혀 바로 검색 결과를 반환한다`() =
         runSuspendTest {
             val result = useCase("서울 중구 명동")

@@ -3,6 +3,7 @@ package com.team.yeogibeoryeo.presentation.search
 import androidx.annotation.StringRes
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.presentation.search.components.orderedQuickCategories
+import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 
 data class ItemSearchUiState(
@@ -19,9 +20,18 @@ data class ItemSearchUiState(
     val isLoading: Boolean = false,
     val hasSearched: Boolean = false,
     val homeQuickCategories: List<RepresentativeGuideCategory> = emptyList(),
+    val homeQuickCategoriesAtEntry: List<RepresentativeGuideCategory>? = null,
     @param:StringRes val errorMessageResId: Int? = null,
 ) {
     val quickCategories: List<RepresentativeGuideCategory>
         get() =
             orderedQuickCategories(homeQuickCategories)
+
+    internal fun quickCategorySettingsOrder(maxSelectedCount: Int): List<RepresentativeGuideCategory> {
+        val selectedAtEntry = homeQuickCategoriesAtEntry
+            ?.take(maxSelectedCount.coerceAtLeast(0))
+            ?.toSet()
+            ?: return emptyList()
+        return quickCategoryOrder.sortedBy { it !in selectedAtEntry }
+    }
 }
