@@ -69,12 +69,10 @@ constructor(
         viewModelScope.launch {
             observeHomeQuickCategoriesUseCase()
                 .collect { categories ->
-                    val selectedCategories = categories.map(RepresentativeGuideCategory::fromDisposalCategory)
                     _uiState.update { state ->
                         state.copy(
-                            homeQuickCategories = selectedCategories,
-                            // 방문 중 순서는 유지하고, 새 ViewModel에서는 저장값으로 다시 정합니다.
-                            homeQuickCategoriesAtEntry = state.homeQuickCategoriesAtEntry ?: selectedCategories,
+                            homeQuickCategories =
+                                categories.map(RepresentativeGuideCategory::fromDisposalCategory),
                         )
                     }
                 }
@@ -264,9 +262,13 @@ constructor(
         }
     }
 
-    fun resetQuickCategoryFixedCollapsedItemCount() {
+    fun resetQuickCategoryFixedCollapsedItemCountIfCollapsed() {
         _uiState.update {
-            it.copy(quickCategoryFixedCollapsedItemCount = 0)
+            if (it.isQuickCategoryExpanded) {
+                it
+            } else {
+                it.copy(quickCategoryFixedCollapsedItemCount = 0)
+            }
         }
     }
 

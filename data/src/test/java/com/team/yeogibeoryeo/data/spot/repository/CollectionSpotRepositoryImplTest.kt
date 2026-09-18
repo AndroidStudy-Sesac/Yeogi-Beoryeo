@@ -10,8 +10,6 @@ import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotItemsDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseBodyDto
 import com.team.yeogibeoryeo.data.spot.remote.dto.SpotResponseDto
-import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorContext
-import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorReporter
 import com.team.yeogibeoryeo.domain.spot.model.CollectionSpotType
 import com.team.yeogibeoryeo.domain.spot.model.Coordinate
 import kotlinx.coroutines.runBlocking
@@ -19,7 +17,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import retrofit2.Response
 
 class CollectionSpotRepositoryImplTest {
 
@@ -162,17 +159,10 @@ class CollectionSpotRepositoryImplTest {
         apiService: FakeSpotApiService,
     ): CollectionSpotRepositoryImpl {
         return CollectionSpotRepositoryImpl(
-            remoteDataSource = SpotRemoteDataSource(
-                apiService = apiService,
-                nonFatalErrorReporter = NoOpNonFatalErrorReporter,
-            ),
+            remoteDataSource = SpotRemoteDataSource(apiService),
             spotMapper = SpotMapper(),
             publicDataKeyProvider = FakePublicDataKeyProvider(),
         )
-    }
-
-    private object NoOpNonFatalErrorReporter : NonFatalErrorReporter {
-        override fun report(error: Throwable, context: NonFatalErrorContext) = Unit
     }
 
     private class FakePublicDataKeyProvider : AppKeyProvider {
@@ -204,7 +194,7 @@ class CollectionSpotRepositoryImplTest {
             longitude: Double?,
             radius: Int?,
             type: String,
-        ): Response<SpotResponseDto> {
+        ): SpotResponseDto {
             requestedServiceKey = serviceKey
             requestedPageNo = pageNo
             requestedPageNos += pageNo
@@ -215,7 +205,7 @@ class CollectionSpotRepositoryImplTest {
             requestedRadius = radius
             requestedType = type
 
-            return Response.success(responsesByPage[pageNo] ?: response)
+            return responsesByPage[pageNo] ?: response
         }
     }
 

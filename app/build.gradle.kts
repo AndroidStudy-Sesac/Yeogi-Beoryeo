@@ -69,8 +69,8 @@ android {
         applicationId = "com.team.yeogibeoryeo"
         minSdk = 28
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.3.0"
+        versionCode = 10
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

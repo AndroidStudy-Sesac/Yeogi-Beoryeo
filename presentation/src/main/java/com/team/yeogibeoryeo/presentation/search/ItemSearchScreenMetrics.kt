@@ -17,7 +17,6 @@ internal fun itemSearchScreenMetrics(
 
     return ItemSearchScreenMetrics(
         horizontalPadding = spec.horizontalPadding,
-        homeHorizontalPadding = spec.homeHorizontalPadding,
         topPadding = spec.topPadding,
         homeHeaderTopPadding = spec.homeHeaderTopPadding,
         screenVerticalSpace = spec.screenVerticalSpace,
@@ -41,12 +40,6 @@ internal fun itemSearchScreenMetricsSpec(
 
     return ItemSearchScreenMetricsSpec(
         horizontalPadding = if (isNarrowPhone) spacing.md else spacing.xl,
-        homeHorizontalPadding = when {
-            isNarrowPhone -> spacing.md
-            isCompactLandscape -> spacing.xl
-            maxWidth >= ItemSearchScreenBreakpoints.MediumWidth -> spacing.xxl
-            else -> spacing.xl
-        },
         topPadding = when {
             isCompactLandscape -> spacing.md
             isNarrowPhone -> spacing.lg
@@ -72,7 +65,6 @@ internal fun itemSearchScreenMetricsSpec(
 
 internal data class ItemSearchScreenMetrics(
     val horizontalPadding: Dp,
-    val homeHorizontalPadding: Dp,
     val topPadding: Dp,
     val homeHeaderTopPadding: Dp,
     val screenVerticalSpace: Dp,
@@ -85,7 +77,6 @@ internal data class ItemSearchScreenMetrics(
 
 internal data class ItemSearchScreenMetricsSpec(
     val horizontalPadding: Dp,
-    val homeHorizontalPadding: Dp,
     val topPadding: Dp,
     val homeHeaderTopPadding: Dp,
     val screenVerticalSpace: Dp,
@@ -98,6 +89,5 @@ internal data class ItemSearchScreenMetricsSpec(
 
 private object ItemSearchScreenBreakpoints {
     val NarrowPhoneWidth = 384.dp
-    val MediumWidth = 600.dp
     val CompactLandscapeHeight = 480.dp
 }

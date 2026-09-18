@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
@@ -98,7 +97,6 @@ fun ItemSearchInitialContent(
     usefulGuideModifier: Modifier = Modifier,
 ) {
     var viewportBottomInRootPx by rememberSaveable { mutableIntStateOf(0) }
-    var viewportWidthPx by rememberSaveable { mutableIntStateOf(0) }
     var maxSelectedQuickCategoryCount by rememberSaveable { mutableIntStateOf(quickCategories.size) }
     var shouldBringCollapseIntoViewAfterSettings by rememberSaveable {
         mutableStateOf(false)
@@ -218,25 +216,13 @@ fun ItemSearchInitialContent(
         LazyColumn(
             state = listState,
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .widthIn(
-                    max = if (metrics.isCompactLandscape) {
-                        maxWidth
-                    } else {
-                        ItemSearchLayoutDefaults.size.homeContentMaxWidth
-                    },
-                )
                 .fillMaxSize()
                 .padding(top = metrics.homeHeaderTopPadding)
                 .onGloballyPositioned { coordinates ->
                     val measuredViewportBottomInRootPx =
                         coordinates.positionInRoot().y.toInt() + coordinates.size.height
-                    if (
-                        viewportBottomInRootPx != measuredViewportBottomInRootPx ||
-                        viewportWidthPx != coordinates.size.width
-                    ) {
+                    if (viewportBottomInRootPx != measuredViewportBottomInRootPx) {
                         viewportBottomInRootPx = measuredViewportBottomInRootPx
-                        viewportWidthPx = coordinates.size.width
                         onQuickCategoryViewportChanged()
                     }
                 },
@@ -246,7 +232,7 @@ fun ItemSearchInitialContent(
             item {
                 ItemSearchHeader(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalPadding = metrics.homeHorizontalPadding,
+                    horizontalPadding = metrics.horizontalPadding,
                     onSettingsClick = onSettingsClick,
                     hasUnreadNotices = hasUnreadNotices,
                 )
@@ -257,7 +243,7 @@ fun ItemSearchInitialContent(
                     OperationNoticeBanner(
                         notice = notice,
                         onDismiss = onOperationNoticeDismiss,
-                        modifier = Modifier.padding(horizontal = metrics.homeHorizontalPadding),
+                        modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                     )
                 }
             }
@@ -274,14 +260,14 @@ fun ItemSearchInitialContent(
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
                         modifier = Modifier
-                            .padding(horizontal = metrics.homeHorizontalPadding)
+                            .padding(horizontal = metrics.horizontalPadding)
                             .semantics { heading() },
                     )
                     ItemUsefulGuideBannerRow(
                         guides = itemUsefulGuideContents,
                         onGuideClick = onUsefulGuideClick,
                         modifier = usefulGuideModifier,
-                        contentPadding = PaddingValues(horizontal = metrics.homeHorizontalPadding),
+                        contentPadding = PaddingValues(horizontal = metrics.horizontalPadding),
                         itemWidthFraction = metrics.usefulGuideBannerWidthFraction,
                     )
                 }
@@ -293,7 +279,7 @@ fun ItemSearchInitialContent(
                     onClick = onRegionalGuideSummaryClick,
                     onSearchClick = onRegionalGuideSearchClick,
                     onRetryClick = onRegionalGuideSummaryRetryClick,
-                    modifier = Modifier.padding(horizontal = metrics.homeHorizontalPadding),
+                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                 )
             }
 
@@ -305,7 +291,7 @@ fun ItemSearchInitialContent(
                     placeholder = stringResource(R.string.item_search_query_label),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = metrics.homeHorizontalPadding)
+                        .padding(horizontal = metrics.horizontalPadding)
                         .then(searchGuideModifier),
                     iconSize = metrics.searchIconSize,
                 )
@@ -313,7 +299,7 @@ fun ItemSearchInitialContent(
 
             item {
                 Column(
-                    modifier = Modifier.padding(horizontal = metrics.homeHorizontalPadding),
+                    modifier = Modifier.padding(horizontal = metrics.horizontalPadding),
                     verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
                 ) {
                     val quickCategoriesTitle = stringResource(R.string.quick_categories)
@@ -368,9 +354,8 @@ fun ItemSearchInitialContent(
                             )
                         },
                         onCollapseClick = onQuickCategoryCollapseClick,
-                        screenHorizontalPadding = metrics.homeHorizontalPadding,
+                        screenHorizontalPadding = metrics.horizontalPadding,
                         viewportBottomInRootPx = viewportBottomInRootPx,
-                        collapsedMeasurementVersion = handledScrollRestoreVersion,
                         onVisibleCategoryCountChange = { maxSelectedQuickCategoryCount = it },
                         collapseBringIntoViewRequestVersion =
                             collapseBringIntoViewRequestVersion,

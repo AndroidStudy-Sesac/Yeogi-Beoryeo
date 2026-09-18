@@ -49,11 +49,10 @@ internal fun QuickCategorySettingsScreen(
     onCategoryClick: (RepresentativeGuideCategory) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    categoryOrder: List<RepresentativeGuideCategory> = quickCategoryOrder,
 ) {
     val spacing = ItemSearchLayoutDefaults.spacing
     var keyword by rememberSaveable { mutableStateOf("") }
-    val categories = filterQuickCategorySettingsCategories(keyword, categoryOrder)
+    val categories = filterQuickCategorySettingsCategories(keyword)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val limitExceededMessage =
@@ -155,7 +154,7 @@ internal fun QuickCategorySettingsScreen(
                 )
             }
 
-            if (keyword.isNotBlank() && categoryOrder.isNotEmpty() && categories.isEmpty()) {
+            if (keyword.isNotBlank() && categories.isEmpty()) {
                 item {
                     EmptySearchResult(
                         title = stringResource(R.string.quick_category_settings_empty_title),
@@ -181,10 +180,7 @@ internal fun filterQuickCategorySettingsCategories(
                 .contains(searchKey, ignoreCase = true) ||
             category.representativeGuideName
                 .toQuickCategorySearchKey()
-                .contains(searchKey, ignoreCase = true) ||
-            category.searchAliases.any { alias ->
-                alias.toQuickCategorySearchKey().contains(searchKey, ignoreCase = true)
-            }
+                .contains(searchKey, ignoreCase = true)
     }
 }
 
