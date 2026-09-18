@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.search
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,38 +14,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.presentation.R
-import com.team.yeogibeoryeo.presentation.common.components.AppBackButton
-import com.team.yeogibeoryeo.presentation.common.components.AppTopBar
 import com.team.yeogibeoryeo.presentation.common.effects.BottomBarVisibilityOnScrollEffect
-import com.team.yeogibeoryeo.presentation.operationnotice.HomeOperationNoticeViewModel
 import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeBanner
 import com.team.yeogibeoryeo.presentation.operationnotice.OperationNoticeUiModel
 import com.team.yeogibeoryeo.presentation.search.components.DisposalItemCard
@@ -59,100 +45,6 @@ import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCatego
 import kotlinx.coroutines.launch
 
 @Composable
-fun ItemSearchRoute(
-    onGuideSelected: (DisposalItemGuide) -> Unit,
-    onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit,
-    onRegionalGuideSummaryClick: (String) -> Unit,
-    onRegionalGuideSearchClick: () -> Unit,
-    onQuickCategorySettingsClick: (Int) -> Unit,
-    onSettingsClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    hasUnreadNotices: Boolean = false,
-    initialQuery: String? = null,
-    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
-    onItemSearchBottomBarScrollEnabledChanged: (Boolean) -> Unit = {},
-    isAppGuideActive: Boolean = false,
-    appGuideTarget: ItemSearchGuideTarget? = null,
-    searchGuideModifier: Modifier = Modifier,
-    quickCategoryGuideModifier: Modifier = Modifier,
-    usefulGuideModifier: Modifier = Modifier,
-    viewModel: ItemSearchViewModel = hiltViewModel(),
-    regionalGuideSummaryViewModel: HomeRegionalGuideSummaryViewModel = hiltViewModel(),
-    operationNoticeViewModel: HomeOperationNoticeViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val regionalGuideSummaryState by
-        regionalGuideSummaryViewModel.uiState.collectAsStateWithLifecycle()
-    val operationNotice by operationNoticeViewModel.notice.collectAsStateWithLifecycle()
-    val currentOnGuideSelected by rememberUpdatedState(onGuideSelected)
-
-    val searchResultListState = rememberLazyListState()
-    val categoryListState = rememberLazyListState()
-    var handledSearchResultVersion by rememberSaveable { mutableIntStateOf(0) }
-
-    LaunchedEffect(uiState.searchResultVersion) {
-        if (
-            uiState.searchResultVersion != handledSearchResultVersion &&
-            uiState.hasSearched &&
-            uiState.guides.isNotEmpty()
-        ) {
-            searchResultListState.scrollToItem(0)
-            handledSearchResultVersion = uiState.searchResultVersion
-        }
-    }
-
-    LaunchedEffect(initialQuery) {
-        viewModel.searchInitialQueryIfNeeded(initialQuery)
-    }
-
-    LaunchedEffect(viewModel.events) {
-        viewModel.events.collect { event ->
-            when (event) {
-                is ItemSearchEvent.NavigateToGuide -> currentOnGuideSelected(event.guide)
-            }
-        }
-    }
-
-    if (uiState.hasSearched) {
-        BackHandler(onBack = viewModel::clearSearch)
-    }
-
-    ItemSearchScreen(
-        uiState = uiState,
-        regionalGuideSummaryState = regionalGuideSummaryState,
-        onQueryChange = viewModel::onQueryChange,
-        onSearchClick = viewModel::search,
-        onRetryClick = viewModel::retrySearch,
-        onGuideClick = onGuideSelected,
-        onUsefulGuideClick = onUsefulGuideClick,
-        onRegionalGuideSummaryClick = onRegionalGuideSummaryClick,
-        onRegionalGuideSearchClick = onRegionalGuideSearchClick,
-        onRegionalGuideSummaryRetryClick = regionalGuideSummaryViewModel::retry,
-        onQuickCategoryClick = viewModel::openCategoryGuide,
-        onQuickCategoryMoreClick = viewModel::expandQuickCategory,
-        onQuickCategoryCollapseClick = viewModel::collapseQuickCategory,
-        onQuickCategoryViewportChanged =
-            viewModel::resetQuickCategoryFixedCollapsedItemCount,
-        onQuickCategorySettingsClick = onQuickCategorySettingsClick,
-        onSettingsClick = onSettingsClick,
-        hasUnreadNotices = hasUnreadNotices,
-        onBackClick = viewModel::clearSearch,
-        operationNotice = operationNotice,
-        onOperationNoticeDismiss = operationNoticeViewModel::dismissNotice,
-        searchResultListState = searchResultListState,
-        categoryListState = categoryListState,
-        onBottomBarVisibilityChanged = onBottomBarVisibilityChanged,
-        onItemSearchBottomBarScrollEnabledChanged = onItemSearchBottomBarScrollEnabledChanged,
-        isAppGuideActive = isAppGuideActive,
-        appGuideTarget = appGuideTarget,
-        searchGuideModifier = searchGuideModifier,
-        quickCategoryGuideModifier = quickCategoryGuideModifier,
-        usefulGuideModifier = usefulGuideModifier,
-        modifier = modifier,
-    )
-}
-
-@Composable
 fun ItemSearchScreen(
     uiState: ItemSearchUiState,
     onQueryChange: (String) -> Unit,
@@ -161,6 +53,7 @@ fun ItemSearchScreen(
     onQuickCategoryClick: (RepresentativeGuideCategory) -> Unit,
     modifier: Modifier = Modifier,
     onRetryClick: () -> Unit = {},
+    onSuggestionClick: (String) -> Unit = {},
     regionalGuideSummaryState: HomeRegionalGuideSummaryUiState = HomeRegionalGuideSummaryUiState.NoFavorite,
     onUsefulGuideClick: (ItemUsefulGuideContent) -> Unit = {},
     onRegionalGuideSummaryClick: (String) -> Unit = {},
@@ -349,6 +242,7 @@ fun ItemSearchScreen(
             return@BoxWithConstraints
         }
 
+        val scrollEmptyResult = !uiState.isLoading && uiState.errorMessageResId == null
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -359,6 +253,7 @@ fun ItemSearchScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(if (scrollEmptyResult) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                     .padding(horizontal = metrics.horizontalPadding),
                 verticalArrangement = Arrangement.spacedBy(metrics.screenVerticalSpace),
             ) {
@@ -383,7 +278,7 @@ fun ItemSearchScreen(
                 }
 
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier = if (scrollEmptyResult) Modifier.fillMaxWidth() else Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(metrics.sectionVerticalSpace),
                 ) {
                     if (!uiState.isLoading && uiState.errorMessageResId == null) {
@@ -411,7 +306,15 @@ fun ItemSearchScreen(
                         uiState.guides.isEmpty() -> {
                             EmptySearchResult(
                                 title = stringResource(R.string.no_search_results_title),
-                                description = stringResource(R.string.no_search_results_description),
+                                description = stringResource(
+                                    if (uiState.visibleSuggestedQueries.isEmpty()) {
+                                        R.string.no_search_results_description
+                                    } else {
+                                        R.string.item_search_suggestions_description
+                                    },
+                                ),
+                                suggestedQueries = uiState.visibleSuggestedQueries,
+                                onSuggestionClick = onSuggestionClick,
                             )
                         }
 
@@ -421,49 +324,4 @@ fun ItemSearchScreen(
             }
         }
     }
-}
-
-@Composable
-private fun ItemSearchResultQuery(
-    query: String,
-    modifier: Modifier = Modifier,
-    resultCount: Int? = null,
-) {
-    Text(
-        text = if (resultCount == null) {
-            stringResource(R.string.item_search_result_query, query)
-        } else {
-            stringResource(R.string.item_search_result_summary, query, resultCount)
-        },
-        modifier = modifier.semantics {
-            heading()
-            if (resultCount != null) {
-                liveRegion = LiveRegionMode.Polite
-            }
-        },
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-    )
-}
-
-@Composable
-private fun ItemSearchTopBar(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    AppTopBar(
-        modifier = modifier,
-        navigationIcon = {
-            AppBackButton(onClick = onBackClick)
-        },
-        title = {
-            Text(
-                text = stringResource(R.string.item_search_screen_title),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-    )
 }

@@ -9,6 +9,7 @@ import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalCategoryGuidesUseCas
 import com.team.yeogibeoryeo.domain.item.usecase.LimitHomeQuickCategoriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.ObserveHomeQuickCategoriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.SuggestItemSearchQueriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.ToggleHomeQuickCategoryUseCase
 import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
@@ -32,6 +33,7 @@ class ItemSearchViewModel
 constructor(
     private val savedStateHandle: SavedStateHandle,
     private val searchDisposalItemGuidesUseCase: SearchDisposalItemGuidesUseCase,
+    private val suggestItemSearchQueriesUseCase: SuggestItemSearchQueriesUseCase,
     private val getDisposalCategoryGuidesUseCase: GetDisposalCategoryGuidesUseCase,
     private val toggleHomeQuickCategoryUseCase: ToggleHomeQuickCategoryUseCase,
     private val limitHomeQuickCategoriesUseCase: LimitHomeQuickCategoriesUseCase,
@@ -96,6 +98,7 @@ constructor(
                 query = query,
                 submittedQuery = if (keepCompletedResult) state.submittedQuery else null,
                 guides = if (keepCompletedResult) state.guides else emptyList(),
+                suggestedQueries = if (keepCompletedResult) state.suggestedQueries else emptyList(),
                 isLoading = false,
                 hasSearched = keepCompletedResult,
                 errorMessageResId = null,
@@ -111,6 +114,7 @@ constructor(
                 query = "",
                 submittedQuery = null,
                 guides = emptyList(),
+                suggestedQueries = emptyList(),
                 isLoading = false,
                 hasSearched = false,
                 errorMessageResId = null,
@@ -133,6 +137,7 @@ constructor(
                     query = query,
                     submittedQuery = null,
                     guides = emptyList(),
+                    suggestedQueries = emptyList(),
                     isLoading = false,
                     hasSearched = false,
                     errorMessageResId = null,
@@ -164,6 +169,7 @@ constructor(
                 query = inputQuery,
                 submittedQuery = query,
                 guides = emptyList(),
+                suggestedQueries = emptyList(),
                 isLoading = true,
                 hasSearched = true,
                 errorMessageResId = null,
@@ -171,11 +177,16 @@ constructor(
         }
         searchJob =
             viewModelScope.launch {
-                runCatchingCancellable { searchDisposalItemGuidesUseCase(query) }
-                    .onSuccess { guides ->
+                runCatchingCancellable {
+                    val guides = searchDisposalItemGuidesUseCase(query)
+                    val suggestions = if (guides.isEmpty()) suggestItemSearchQueriesUseCase(query) else emptyList()
+                    guides to suggestions
+                }
+                    .onSuccess { (guides, suggestions) ->
                         updateSearchState {
                             it.copy(
                                 guides = guides,
+                                suggestedQueries = suggestions,
                                 searchResultVersion =
                                     if (isRestoration) it.searchResultVersion else it.searchResultVersion + 1,
                                 isLoading = false,
@@ -186,12 +197,17 @@ constructor(
                         _uiState.update {
                             it.copy(
                                 guides = emptyList(),
+                                suggestedQueries = emptyList(),
                                 isLoading = false,
                                 errorMessageResId = R.string.search_load_failed_message,
                             )
                         }
                     }
             }
+    }
+
+    fun selectSuggestedQuery(query: String) {
+        if (query in _uiState.value.visibleSuggestedQueries) search(query)
     }
 
     fun retrySearch() {

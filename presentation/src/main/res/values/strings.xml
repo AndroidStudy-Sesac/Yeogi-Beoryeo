@@ -85,6 +85,7 @@
     <string name="home_regional_guide_summary_retry_action">배출 정보 다시 불러오기</string>
     <string name="no_search_results_title">검색 결과가 없어요.</string>
     <string name="no_search_results_description">다른 이름으로 다시 검색해보세요.</string>
+    <string name="item_search_suggestions_description">비슷한 검색어로 다시 검색해보세요.</string>
     <string name="disposal_method_title">버리는 방법</string>
     <string name="features_title">품목 특징</string>
     <string name="disposal_steps_title">배출 절차</string>
