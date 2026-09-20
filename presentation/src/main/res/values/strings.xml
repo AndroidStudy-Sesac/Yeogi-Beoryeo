@@ -6,8 +6,6 @@
     <string name="item_search_result_summary">‘%1$s’ 검색 결과 %2$d개</string>
     <string name="item_search_title">여기 버려</string>
     <string name="item_search_description">품목 검색, 수거 장소, 지역별 배출 정보를 한 곳에서 확인하세요.</string>
-    <string name="item_search_greeting">어서오세요!</string>
-    <string name="item_search_prompt">무엇을 도와드릴까요?</string>
     <string name="search_action">검색</string>
     <string name="scroll_to_top_action">맨 위로 이동</string>
     <string name="loading_action">로딩 중</string>

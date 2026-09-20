@@ -552,7 +552,7 @@ class FavoritesViewModelTest {
             val restoredSavedStateHandle =
                 SavedStateHandle(
                     savedStateHandle.keys().associateWith { key ->
-                        savedStateHandle.get<Any?>(key)
+                        savedStateHandle.get(key)
                     },
                 )
 
