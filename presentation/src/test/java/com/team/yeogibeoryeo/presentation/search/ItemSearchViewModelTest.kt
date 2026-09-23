@@ -14,6 +14,7 @@ import com.team.yeogibeoryeo.domain.item.repository.HomeQuickCategoryRepository
 import com.team.yeogibeoryeo.domain.item.usecase.GetDisposalCategoryGuidesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.LimitHomeQuickCategoriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.ObserveHomeQuickCategoriesUseCase
+import com.team.yeogibeoryeo.domain.item.usecase.SuggestItemSearchQueriesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.SearchDisposalItemGuidesUseCase
 import com.team.yeogibeoryeo.domain.item.usecase.ToggleHomeQuickCategoryUseCase
 import com.team.yeogibeoryeo.presentation.R
@@ -21,6 +22,7 @@ import com.team.yeogibeoryeo.presentation.search.components.quickCategoryGridCol
 import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -48,6 +50,114 @@ import org.junit.Test
 class ItemSearchViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `빈 결과 후보를 한 번 선택하면 입력과 제출 검색어를 바꾸고 한 번 검색한다`() = runTest {
+        val repository = FakeRepository(
+            onSearch = { if (it == "유리병") listOf(sampleGuide(it)) else emptyList() },
+            onSuggest = { listOf("유리병") },
+        )
+        val viewModel = createViewModel(repository)
+        viewModel.search("유리뱡")
+        advanceUntilIdle()
+        assertEquals(listOf("유리병"), viewModel.uiState.value.visibleSuggestedQueries)
+
+        viewModel.selectSuggestedQuery("유리병")
+        advanceUntilIdle()
+        viewModel.selectSuggestedQuery("유리병")
+
+        assertEquals(listOf("유리뱡", "유리병"), repository.queries)
+        assertEquals(listOf("유리뱡"), repository.suggestionQueries)
+        assertEquals("유리병", viewModel.uiState.value.query)
+        assertEquals("유리병", viewModel.uiState.value.submittedQuery)
+        assertEquals(listOf("유리병"), viewModel.uiState.value.guides.map { it.name })
+        assertEquals(emptyList<String>(), viewModel.uiState.value.visibleSuggestedQueries)
+    }
+
+    @Test
+    fun `수정 중인 검색어로는 이전 후보를 선택할 수 없고 복원도 같은 규칙을 따른다`() = runTest {
+        val savedState = SavedStateHandle()
+        val repository = FakeRepository(onSuggest = { listOf("유리병") })
+        val viewModel = createViewModel(repository, savedStateHandle = savedState)
+        viewModel.search("유리뱡")
+        advanceUntilIdle()
+        val version = viewModel.uiState.value.searchResultVersion
+        viewModel.onQueryChange("수정 중")
+        viewModel.selectSuggestedQuery("유리병")
+        assertEquals(listOf("유리뱡"), repository.queries)
+        assertEquals(emptyList<String>(), viewModel.uiState.value.visibleSuggestedQueries)
+
+        val restoredRepository = FakeRepository(onSuggest = { listOf("유리병") })
+        val restored = createViewModel(restoredRepository, savedStateHandle = viewModel.saveStateAndClear(savedState))
+        advanceUntilIdle()
+        assertEquals("수정 중", restored.uiState.value.query)
+        assertEquals(listOf("유리뱡"), restoredRepository.suggestionQueries)
+        assertEquals(version, restored.uiState.value.searchResultVersion)
+        assertEquals(emptyList<String>(), restored.uiState.value.visibleSuggestedQueries)
+        restored.onQueryChange("유리뱡")
+        assertEquals(listOf("유리병"), restored.uiState.value.visibleSuggestedQueries)
+        restored.clearSearch()
+        assertEquals(emptyList<String>(), restored.uiState.value.suggestedQueries)
+    }
+
+    @Test
+    fun `후보 계산 중 입력 변경과 재검색 및 초기화는 이전 계산을 취소한다`() = runTest {
+        var cancelled = 0
+        val repository = FakeRepository(
+            onSearch = { if (it == "종이") listOf(sampleGuide(it)) else emptyList() },
+            onSuggest = {
+                try {
+                    awaitCancellation()
+                } finally {
+                    cancelled += 1
+                }
+            },
+        )
+        val viewModel = createViewModel(repository)
+        viewModel.search("유리뱡")
+        runCurrent()
+        viewModel.onQueryChange("다른 입력")
+        runCurrent()
+        assertEquals(1, cancelled)
+        assertFalse(viewModel.uiState.value.hasSearched)
+
+        viewModel.search("유리뱡")
+        runCurrent()
+        viewModel.search("종이")
+        advanceUntilIdle()
+        assertEquals(2, cancelled)
+        assertEquals(listOf("종이"), viewModel.uiState.value.guides.map { it.name })
+
+        viewModel.search("유리뱡")
+        runCurrent()
+        viewModel.clearSearch()
+        advanceUntilIdle()
+        assertEquals(3, cancelled)
+        assertEquals(emptyList<String>(), viewModel.uiState.value.suggestedQueries)
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertNull(viewModel.uiState.value.errorMessageResId)
+    }
+
+    @Test
+    fun `후보 계산 오류에서는 이전 후보를 지우고 재시도할 수 있다`() = runTest {
+        var shouldFail = false
+        val repository = FakeRepository(onSuggest = {
+            if (shouldFail) error("suggestion failure")
+            listOf("유리병")
+        })
+        val viewModel = createViewModel(repository)
+        viewModel.search("유리뱡")
+        advanceUntilIdle()
+        shouldFail = true
+        viewModel.search("유리뱡")
+        advanceUntilIdle()
+        assertEquals(R.string.search_load_failed_message, viewModel.uiState.value.errorMessageResId)
+        assertEquals(emptyList<String>(), viewModel.uiState.value.visibleSuggestedQueries)
+        shouldFail = false
+        viewModel.retrySearch()
+        advanceUntilIdle()
+        assertEquals(listOf("유리병"), viewModel.uiState.value.visibleSuggestedQueries)
+    }
 
     @Test
     fun `빈 검색어는 검색하지 않고 초기 상태를 유지한다`() =
@@ -1168,6 +1278,7 @@ class ItemSearchViewModelTest {
         ItemSearchViewModel(
             savedStateHandle,
             SearchDisposalItemGuidesUseCase(repository),
+            SuggestItemSearchQueriesUseCase(repository),
             GetDisposalCategoryGuidesUseCase(repository),
             ToggleHomeQuickCategoryUseCase(homeQuickCategoryRepository),
             LimitHomeQuickCategoriesUseCase(homeQuickCategoryRepository),
@@ -1202,8 +1313,15 @@ class ItemSearchViewModelTest {
 
     private class FakeRepository(
         private val onSearch: suspend (String) -> List<DisposalItemGuide> = { emptyList() },
+        private val onSuggest: suspend (String) -> List<String> = { emptyList() },
         private val onCategory: suspend (DisposalCategory) -> List<DisposalItemGuide> = { emptyList() },
     ) : DisposalItemGuideRepository {
+        val suggestionQueries = mutableListOf<String>()
+        override suspend fun suggestSearchQueries(query: String): List<String> {
+            suggestionQueries += query
+            return onSuggest(query)
+        }
+
         val queries = mutableListOf<String>()
         val requestedCategories = mutableListOf<DisposalCategory>()
         var searchCallCount = 0

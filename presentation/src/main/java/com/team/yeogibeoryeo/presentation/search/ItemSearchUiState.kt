@@ -10,6 +10,7 @@ data class ItemSearchUiState(
     val query: String = "",
     val submittedQuery: String? = null,
     val guides: List<DisposalItemGuide> = emptyList(),
+    val suggestedQueries: List<String> = emptyList(),
     val favoriteGuideIds: Set<String> = emptySet(),
     val searchResultVersion: Int = 0,
     val isQuickCategoryExpanded: Boolean = false,
@@ -23,6 +24,12 @@ data class ItemSearchUiState(
     val homeQuickCategoriesAtEntry: List<RepresentativeGuideCategory>? = null,
     @param:StringRes val errorMessageResId: Int? = null,
 ) {
+    val visibleSuggestedQueries: List<String>
+        get() = if (
+            hasSearched && !isLoading && errorMessageResId == null && guides.isEmpty() &&
+            query.trim() == submittedQuery
+        ) suggestedQueries else emptyList()
+
     val quickCategories: List<RepresentativeGuideCategory>
         get() =
             orderedQuickCategories(homeQuickCategories)
