@@ -42,8 +42,6 @@ javaxInject = "1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
-appcompat = "1.7.1"
-material = "1.13.0"
 mockk = "1.14.11"
 
 playServicesLocation = "21.3.0"
@@ -124,8 +122,6 @@ javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "j
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 
@@ -183,10 +179,6 @@ naver-map = [
 room = [
     "androidx-room-runtime",
     "androidx-room-ktx"
-]
-
-test = [
-    "junit"
 ]
 
 android-test = [
