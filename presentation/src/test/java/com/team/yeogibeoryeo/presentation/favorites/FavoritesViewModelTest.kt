@@ -1166,6 +1166,8 @@ class FavoritesViewModelTest {
     ) : DisposalItemGuideRepository {
         private val guidesById = guides.associateBy { it.id }
 
+        override suspend fun suggestSearchQueries(query: String): List<String> = emptyList()
+
         override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> = emptyList()
 
         override suspend fun getItemGuide(guideId: String): DisposalItemGuide? = guidesById[guideId]

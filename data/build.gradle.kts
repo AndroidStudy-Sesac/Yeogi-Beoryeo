@@ -74,6 +74,7 @@ kotlin {
 
 dependencies {
     implementation(project(":domain"))
+    implementation(libs.string.similarity)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.datastore.preferences)

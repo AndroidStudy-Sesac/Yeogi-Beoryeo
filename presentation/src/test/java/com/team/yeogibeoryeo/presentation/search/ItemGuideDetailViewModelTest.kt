@@ -472,6 +472,8 @@ class ItemGuideDetailViewModelTest {
 
         constructor(guide: DisposalItemGuide?) : this({ guideId -> guide?.takeIf { it.id == guideId } })
 
+        override suspend fun suggestSearchQueries(query: String): List<String> = emptyList()
+
         override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> = emptyList()
 
         override suspend fun getItemGuide(guideId: String): DisposalItemGuide? {

@@ -9,9 +9,12 @@ import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.model.DisposalItemGuide
 import com.team.yeogibeoryeo.domain.item.model.DisposalRecyclability
 import com.team.yeogibeoryeo.domain.item.repository.DisposalItemGuideRepository
+import info.debatty.java.stringsimilarity.Levenshtein
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 class DisposalItemGuideRepositoryImpl
@@ -34,6 +37,42 @@ constructor(
             if (resolvedQuery == searchQuery) return@withContext emptyList()
 
             dictionaryItems.searchBy(resolvedQuery)
+        }
+
+    override suspend fun suggestSearchQueries(query: String): List<String> =
+        withContext(ioDispatcher) {
+            val searchKey = query.toSearchKey()
+            if (searchKey.length < 3) return@withContext emptyList()
+
+            val items = localDataSource.getWasteDictionaryItems()
+            val synonyms = localDataSource.getSynonyms()
+            fun hasResults(term: String): Boolean {
+                val key = term.toSearchKey()
+                return items.any { it.dictionarySearchRank(key) != null } ||
+                    synonyms[key]?.toSearchKey()?.let { resolved ->
+                        items.any { it.dictionarySearchRank(resolved) != null }
+                    } == true
+            }
+            if (hasResults(searchKey)) return@withContext emptyList()
+
+            val distance = Levenshtein()
+            val context = currentCoroutineContext()
+            val normalizedQuery = searchKey.lowercase()
+            (items.asSequence().flatMap { sequenceOf(it.name) + it.searchTerms.asSequence() } +
+                synonyms.keys.asSequence() + synonyms.values.asSequence())
+                .map { it.trim() }
+                .distinctBy { it.toSearchKey().lowercase() }
+                .filter { candidate ->
+                    context.ensureActive()
+                    val key = candidate.toSearchKey().lowercase()
+                    key.length >= 3 && kotlin.math.abs(key.length - normalizedQuery.length) <= 1 &&
+                        // 제한값 이상은 제한값으로 반환되므로 허용 거리 1보다 큰 값을 사용합니다.
+                        distance.distance(normalizedQuery, key, 2) <= 1
+                }
+                .sortedBy { it.toSearchKey().lowercase() }
+                .filter(::hasResults)
+                .take(3)
+                .toList()
         }
 
     private fun List<WasteDictionaryItem>.searchBy(query: String): List<DisposalItemGuide> {

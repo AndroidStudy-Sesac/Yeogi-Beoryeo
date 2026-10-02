@@ -96,6 +96,8 @@ class ItemUseCasesTest {
         private val onItem: suspend (String) -> DisposalItemGuide? = { null },
         private val onCategories: () -> List<DisposalCategory> = { emptyList() },
     ) : DisposalItemGuideRepository {
+        override suspend fun suggestSearchQueries(query: String): List<String> = emptyList()
+
         override suspend fun searchItemGuides(query: String): List<DisposalItemGuide> = onSearch(query)
 
         override suspend fun getCategoryGuides(category: DisposalCategory): List<DisposalItemGuide> = onCategory(category)
