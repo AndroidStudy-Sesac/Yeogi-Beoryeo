@@ -20,9 +20,6 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 import javax.inject.Inject
 
-/**
- * 데이터 소스를 추상화한 인터페이스.
- */
 interface RegionalGuideDataSource {
     suspend fun fetchRegionalGuides(sigunguName: String): Result<RegionalGuideFetchResult>
 }

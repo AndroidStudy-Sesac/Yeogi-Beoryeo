@@ -14,10 +14,6 @@ import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
-/**
- * 부가적인 정보를 담는 카드 컴포넌트입니다.
- * 테마의 SurfaceVariant 컬러를 사용하여 배경과 구분합니다.
- */
 @Composable
 fun SectionCard(
     title: String,
