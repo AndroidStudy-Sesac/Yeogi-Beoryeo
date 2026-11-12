@@ -4,9 +4,6 @@ import com.team.yeogibeoryeo.data.regionalguide.remote.dto.RegionalGuideItemDto
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteSchedule
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalWasteType
 
-/**
- * 공공데이터 API의 폐기물 종류별 필드(Prefix)를 분석하여 도메인 모델 스케줄 리스트로 변환하는 매퍼.
- */
 object RegionalWasteScheduleMapper {
 
     fun mapToSchedules(dto: RegionalGuideItemDto): List<RegionalWasteSchedule> {
@@ -62,7 +59,6 @@ object RegionalWasteScheduleMapper {
             .joinToString(", ")
     }
 
-    // [로직] 시간 데이터 예외 처리
     internal fun parseTime(time: String?): String? {
         val trimmed = time?.trim()
         if (trimmed.isNullOrBlank()) return null
@@ -83,7 +79,6 @@ object RegionalWasteScheduleMapper {
         return normalized.takeUnless { it in EMPTY_TIME_VALUES }
     }
 
-    // [로직] 배출 방법 정제
     internal fun parseMethod(method: String?): String {
         if (method.isNullOrBlank()) return "지정된 배출 방법이 없습니다."
         return method.replace(Regex("\\s+"), " ").trim()
