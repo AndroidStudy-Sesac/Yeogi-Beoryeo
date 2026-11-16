@@ -41,9 +41,6 @@ enum class RegionalGuidePartialResultReason {
     UNKNOWN,
 }
 
-/**
- * 행정안전부 지역별 배출 가이드 데이터 패치를 담당하는 원격 데이터 소스(Remote DataSource).
- */
 class RegionalGuideRemoteDataSource @Inject constructor(
     private val apiService: RegionalGuideApiService,
     private val keyProvider: AppKeyProvider,
