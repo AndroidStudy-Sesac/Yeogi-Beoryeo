@@ -18,10 +18,6 @@ import com.team.yeogibeoryeo.presentation.common.text.KoreanLineBreakText
 import com.team.yeogibeoryeo.presentation.search.ItemSearchLayoutDefaults
 import com.team.yeogibeoryeo.presentation.search.itemGuideDetailTextStyles
 
-/**
- * '버리는 방법'을 강조하여 보여주는 카드 컴포넌트입니다.
- * 테마의 PrimaryContainer 컬러를 사용하여 강조 효과를 줍니다.
- */
 @Composable
 fun DisposalInstructionCard(
     instructions: List<DisposalInstruction>,

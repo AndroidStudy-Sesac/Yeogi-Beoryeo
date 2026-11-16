@@ -24,7 +24,6 @@ class RegionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun resolveRegionFromCoordinate(latitude: Double, longitude: Double): Region? {
-        // TODO: 향후 외부 API 기반 Reverse Geocoding 연동 시 구현
         return null
     }
 

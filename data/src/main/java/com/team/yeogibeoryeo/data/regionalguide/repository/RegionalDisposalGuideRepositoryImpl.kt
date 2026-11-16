@@ -19,10 +19,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-/**
- * [RegionalDisposalGuideRepository]의 Data 계층 구현체.
- * RemoteDataSource를 통해 데이터를 패치하고 DTO를 domain 후보 목록으로 변환합니다.
- */
 class RegionalDisposalGuideRepositoryImpl @Inject constructor(
     private val remoteDataSource: RegionalGuideDataSource,
     @param:RegionalGuideFetchScope private val fetchScope: CoroutineScope,

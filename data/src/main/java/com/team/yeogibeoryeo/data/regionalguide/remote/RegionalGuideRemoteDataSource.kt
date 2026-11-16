@@ -20,9 +20,6 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 import javax.inject.Inject
 
-/**
- * 데이터 소스를 추상화한 인터페이스.
- */
 interface RegionalGuideDataSource {
     suspend fun fetchRegionalGuides(sigunguName: String): Result<RegionalGuideFetchResult>
 }
@@ -44,9 +41,6 @@ enum class RegionalGuidePartialResultReason {
     UNKNOWN,
 }
 
-/**
- * 행정안전부 지역별 배출 가이드 데이터 패치를 담당하는 원격 데이터 소스(Remote DataSource).
- */
 class RegionalGuideRemoteDataSource @Inject constructor(
     private val apiService: RegionalGuideApiService,
     private val keyProvider: AppKeyProvider,

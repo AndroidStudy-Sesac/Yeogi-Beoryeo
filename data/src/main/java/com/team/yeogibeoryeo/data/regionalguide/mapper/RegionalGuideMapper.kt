@@ -7,7 +7,6 @@ import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalDisposalGuide
 import com.team.yeogibeoryeo.domain.regionalguide.model.RegionalGuideSourceMetadata
 
 /**
- * Data 계층의 DTO를 Domain 계층의 최상위 모델인 RegionalDisposalGuide로 변환하는 매퍼.
  * API의 대상지역 설명은 targetRegionName으로 유지하고, Region은 조회 기준 행정구역 값으로 유지합니다.
  */
 object RegionalGuideMapper {
