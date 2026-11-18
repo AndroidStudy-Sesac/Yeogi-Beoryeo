@@ -17,6 +17,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -101,6 +103,7 @@ constructor(
                 suggestedQueries = if (keepCompletedResult) state.suggestedQueries else emptyList(),
                 isLoading = false,
                 hasSearched = keepCompletedResult,
+                failedCategory = null,
                 errorMessageResId = null,
             )
         }
@@ -117,6 +120,7 @@ constructor(
                 suggestedQueries = emptyList(),
                 isLoading = false,
                 hasSearched = false,
+                failedCategory = null,
                 errorMessageResId = null,
             )
         }
@@ -140,6 +144,7 @@ constructor(
                     suggestedQueries = emptyList(),
                     isLoading = false,
                     hasSearched = false,
+                    failedCategory = null,
                     errorMessageResId = null,
                 )
             }
@@ -172,6 +177,7 @@ constructor(
                 suggestedQueries = emptyList(),
                 isLoading = true,
                 hasSearched = true,
+                failedCategory = null,
                 errorMessageResId = null,
             )
         }
@@ -212,10 +218,14 @@ constructor(
 
     fun retrySearch() {
         val state = _uiState.value
-        val submittedQuery = state.submittedQuery ?: return
         if (state.isLoading || state.errorMessageResId == null) return
 
-        startSearch(submittedQuery)
+        val failedCategory = state.failedCategory
+        if (failedCategory != null) {
+            openCategoryGuide(failedCategory)
+        } else {
+            state.submittedQuery?.let { startSearch(it) }
+        }
     }
 
     fun searchInitialQueryIfNeeded(query: String?) {
@@ -231,11 +241,16 @@ constructor(
 
     fun openCategoryGuide(category: RepresentativeGuideCategory) {
         searchJob?.cancel()
+        _uiState.update { it.copy(isLoading = true, failedCategory = null, errorMessageResId = null) }
         searchJob =
             viewModelScope.launch {
-                _uiState.update { it.copy(errorMessageResId = null) }
-
-                runCatchingCancellable { getDisposalCategoryGuidesUseCase(category.disposalCategory) }
+                val result = try {
+                    runCatchingCancellable { getDisposalCategoryGuidesUseCase(category.disposalCategory) }
+                } finally {
+                    if (isActive) _uiState.update { it.copy(isLoading = false) }
+                }
+                ensureActive()
+                result
                     .onSuccess { guides ->
                         val representativeGuide =
                             guides.firstOrNull { it.id == category.representativeGuideId }
@@ -248,7 +263,7 @@ constructor(
                     .onFailure {
                         _uiState.update {
                             it.copy(
-                                isLoading = false,
+                                failedCategory = category,
                                 errorMessageResId = R.string.search_load_failed_message,
                             )
                         }

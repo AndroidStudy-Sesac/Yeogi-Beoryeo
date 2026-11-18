@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -82,6 +83,8 @@ fun ItemSearchScreen(
         isAppGuideActive ||
             (!uiState.hasSearched && !uiState.isLoading && uiState.errorMessageResId == null)
     val showsSearchResults = uiState.guides.isNotEmpty()
+
+    BackHandler(enabled = !showsInitialContent, onBack = onBackClick)
 
     LaunchedEffect(showsInitialContent, showsSearchResults) {
         if (!showsInitialContent) {
@@ -296,9 +299,9 @@ fun ItemSearchScreen(
                             EmptySearchResult(
                                 title = stringResource(uiState.errorMessageResId),
                                 description = stringResource(R.string.retry_later_message),
-                                actionLabel = uiState.submittedQuery?.let {
+                                actionLabel = if (uiState.failedCategory != null || uiState.submittedQuery != null) {
                                     stringResource(R.string.retry_action)
-                                },
+                                } else null,
                                 onActionClick = onRetryClick,
                             )
                         }

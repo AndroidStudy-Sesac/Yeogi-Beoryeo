@@ -1,6 +1,5 @@
 package com.team.yeogibeoryeo.presentation.search
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,10 +68,6 @@ fun ItemSearchRoute(
                 is ItemSearchEvent.NavigateToGuide -> currentOnGuideSelected(event.guide)
             }
         }
-    }
-
-    if (uiState.hasSearched) {
-        BackHandler(onBack = viewModel::clearSearch)
     }
 
     ItemSearchScreen(
