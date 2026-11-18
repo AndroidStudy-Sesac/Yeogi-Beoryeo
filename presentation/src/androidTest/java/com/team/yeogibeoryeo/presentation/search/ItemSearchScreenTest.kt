@@ -549,6 +549,7 @@ class ItemSearchScreenTest {
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
 
         composeTestRule.runOnIdle { uiState = errorState }
+        composeTestRule.onNodeWithText("검색 결과를 불러오지 못했어요.").assertIsDisplayed()
         composeTestRule.runOnUiThread { composeTestRule.activity.onBackPressedDispatcher.onBackPressed() }
         composeTestRule.onAllNodesWithText("검색 결과를 불러오지 못했어요.").assertCountEquals(0)
         composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
