@@ -79,7 +79,7 @@ fun DisposalItemGuide.toDetailActions(): List<ItemGuideDetailAction> {
         )
     }
 
-    if (category == DisposalCategory.CLOTHING || detailText.contains("의류수거함")) {
+    if (category == DisposalCategory.CLOTHING || disposalText.contains("의류수거함")) {
         actions += ItemGuideDetailAction.MapSpot(
             type = CollectionSpotType.CLOTHING_BIN,
             labelResId = R.string.item_guide_action_find_clothing_bin,
@@ -150,7 +150,9 @@ private fun DisposalItemGuide.disposalText(): String =
         append(' ')
         append(instructions.joinToString(" ") { it.method })
         append(' ')
-        append(detailSections.joinToString(" ") { section ->
+        append(detailSections.filter { section ->
+            section.title == "배출방법" || section.title == "품목별 배출 방법"
+        }.joinToString(" ") { section ->
             buildString {
                 append(section.title)
                 append(' ')
