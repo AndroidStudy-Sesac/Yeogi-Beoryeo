@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -796,7 +797,7 @@ class ItemSearchScreenTest {
     @Test
     fun quick_category는_처음에_adaptive_접힘_목록과_더보기를_보여주고_누르면_전체를_펼친다() {
         composeTestRule.setContent {
-            var uiState by mutableStateOf(ItemSearchUiState())
+            var uiState by remember { mutableStateOf(ItemSearchUiState()) }
             MaterialTheme {
                 ItemSearchScreen(
                     uiState = uiState,
@@ -845,7 +846,7 @@ class ItemSearchScreenTest {
     @Test
     fun 펼친_quick_category를_눌러도_펼침_상태를_유지한다() {
         composeTestRule.setContent {
-            var uiState by mutableStateOf(ItemSearchUiState())
+            var uiState by remember { mutableStateOf(ItemSearchUiState()) }
             MaterialTheme {
                 ItemSearchScreen(
                     uiState = uiState,
