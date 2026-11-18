@@ -181,7 +181,7 @@ class DataStoreHomeQuickCategoryRepositoryTest {
     @Test
     fun `실제 DataStore 읽기 실패 후 저장값과 후속 변경을 같은 구독에서 받는다`() =
         runTest {
-            val initialPreferences = categoryPreferences(DisposalCategory.BATTERY)
+            val initialPreferences = batteryPreferences()
             val file = File.createTempFile("recovering-home-categories", ".preferences_pb")
             val dataStoreJob = SupervisorJob()
             val failure = IOException("temporary read failure")
@@ -290,7 +290,7 @@ class DataStoreHomeQuickCategoryRepositoryTest {
             val firstFailure = IOException("first outage")
             val nextFailure = IOException("next outage")
             val failAfterValue = CompletableDeferred<Unit>()
-            val updates = MutableStateFlow(categoryPreferences(DisposalCategory.BATTERY))
+            val updates = MutableStateFlow(batteryPreferences())
             var attempts = 0
             val dataStore = object : DataStore<Preferences> {
                 override val data: Flow<Preferences> = flow {
@@ -511,9 +511,9 @@ class DataStoreHomeQuickCategoryRepositoryTest {
         }
     }
 
-    private fun categoryPreferences(vararg categories: DisposalCategory): Preferences =
+    private fun batteryPreferences(): Preferences =
         preferencesOf(
-            stringPreferencesKey("pinned_disposal_categories") to categories.joinToString(",") { it.name },
+            stringPreferencesKey("pinned_disposal_categories") to DisposalCategory.BATTERY.name,
         )
 
     private class RecordingNonFatalErrorReporter : NonFatalErrorReporter {
