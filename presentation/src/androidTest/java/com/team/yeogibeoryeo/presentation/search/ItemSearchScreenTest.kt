@@ -1,5 +1,7 @@
 package com.team.yeogibeoryeo.presentation.search
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +29,7 @@ import androidx.compose.ui.test.hasImeAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -61,7 +63,7 @@ import org.junit.Test
 
 class ItemSearchScreenTest {
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun 큰_글꼴의_낮은_화면에서도_본문을_스크롤해_마지막_후보를_선택한다() {
@@ -492,6 +494,120 @@ class ItemSearchScreenTest {
 
         assertEquals(1, retryClickCount)
         assertEquals(1, backClickCount)
+    }
+
+    @Test
+    fun 분류_조회_실패에는_검색어가_없어도_재시도_버튼을_보여준다() {
+        var retryClickCount = 0
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(
+                        failedCategory = RepresentativeGuideCategory.VINYL,
+                        errorMessageResId = R.string.search_load_failed_message,
+                    ),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onRetryClick = { retryClickCount += 1 },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("다시 시도").assertIsDisplayed().performClick()
+        composeTestRule.runOnIdle { assertEquals(1, retryClickCount) }
+    }
+
+    @Test
+    fun 분류_오류에서_화면과_시스템_뒤로가기는_모두_홈으로_돌아간다() {
+        val errorState = ItemSearchUiState(
+            failedCategory = RepresentativeGuideCategory.VINYL,
+            errorMessageResId = R.string.search_load_failed_message,
+        )
+        var uiState by mutableStateOf(errorState)
+        var backClickCount = 0
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onBackClick = {
+                        backClickCount += 1
+                        uiState = ItemSearchUiState()
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("뒤로가기").performClick()
+        composeTestRule.onAllNodesWithText("검색 결과를 불러오지 못했어요.").assertCountEquals(0)
+        composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
+
+        composeTestRule.runOnIdle { uiState = errorState }
+        composeTestRule.runOnUiThread { composeTestRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeTestRule.onAllNodesWithText("검색 결과를 불러오지 못했어요.").assertCountEquals(0)
+        composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
+        composeTestRule.runOnIdle { assertEquals(2, backClickCount) }
+    }
+
+    @Test
+    fun 분류_로딩에서도_시스템_뒤로가기로_홈으로_돌아간다() {
+        var uiState by mutableStateOf(ItemSearchUiState(isLoading = true))
+        var backClickCount = 0
+        composeTestRule.setContent {
+            MaterialTheme {
+                ItemSearchScreen(
+                    uiState = uiState,
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onBackClick = {
+                        backClickCount += 1
+                        uiState = ItemSearchUiState()
+                    },
+                )
+            }
+        }
+
+        composeTestRule.runOnUiThread { composeTestRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeTestRule.onNodeWithText("분리배출 분류").assertIsDisplayed()
+        composeTestRule.runOnIdle { assertEquals(1, backClickCount) }
+    }
+
+    @Test
+    fun 앱_가이드가_열리면_남아_있는_검색_오류가_시스템_뒤로가기를_가로채지_않는다() {
+        var guideBackCount = 0
+        var searchBackCount = 0
+        composeTestRule.setContent {
+            MaterialTheme {
+                BackHandler { guideBackCount += 1 }
+                ItemSearchScreen(
+                    uiState = ItemSearchUiState(
+                        submittedQuery = "PMP",
+                        hasSearched = true,
+                        failedCategory = RepresentativeGuideCategory.VINYL,
+                        errorMessageResId = R.string.search_load_failed_message,
+                    ),
+                    onQueryChange = {},
+                    onSearchClick = {},
+                    onGuideClick = {},
+                    onQuickCategoryClick = {},
+                    onBackClick = { searchBackCount += 1 },
+                    isAppGuideActive = true,
+                )
+            }
+        }
+
+        composeTestRule.runOnUiThread { composeTestRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeTestRule.runOnIdle {
+            assertEquals(1, guideBackCount)
+            assertEquals(0, searchBackCount)
+        }
     }
 
     @Test

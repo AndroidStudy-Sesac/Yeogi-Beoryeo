@@ -21,6 +21,7 @@ import com.team.yeogibeoryeo.presentation.R
 import com.team.yeogibeoryeo.presentation.search.components.quickCategoryGridCollapseLayout
 import com.team.yeogibeoryeo.presentation.search.components.quickCategoryOrder
 import com.team.yeogibeoryeo.presentation.search.model.RepresentativeGuideCategory
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.CoroutineStart
@@ -1018,6 +1019,218 @@ class ItemSearchViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
             assertNull(viewModel.uiState.value.errorMessageResId)
         }
+
+    @Test
+    fun `분류 조회 실패 후 재시도하면 같은 분류를 조회하고 한 번 이동한다`() = runTest {
+        var callCount = 0
+        val repository = FakeRepository(
+            onCategory = {
+                callCount += 1
+                if (callCount == 1) error("category failure")
+                listOf(sampleGuide("비닐봉투"))
+            },
+        )
+        val viewModel = createViewModel(repository)
+        val events = mutableListOf<ItemSearchEvent>()
+        val loadingAtNavigation = mutableListOf<Boolean>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect {
+                events += it
+                loadingAtNavigation += viewModel.uiState.value.isLoading
+            }
+        }
+
+        viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+        advanceUntilIdle()
+        viewModel.retrySearch()
+        advanceUntilIdle()
+
+        assertEquals(listOf(DisposalCategory.VINYL, DisposalCategory.VINYL), repository.requestedCategories)
+        assertEquals(emptyList<String>(), repository.queries)
+        assertEquals(1, events.size)
+        assertEquals("비닐봉투", (events.single() as ItemSearchEvent.NavigateToGuide).guide.name)
+        assertEquals(listOf(false), loadingAtNavigation)
+        assertNull(viewModel.uiState.value.failedCategory)
+        assertNull(viewModel.uiState.value.errorMessageResId)
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `분류 재시도 중 다시 누르면 조회를 중복 실행하지 않는다`() = runTest {
+        val retryResult = CompletableDeferred<List<DisposalItemGuide>>()
+        var callCount = 0
+        val repository = FakeRepository(
+            onCategory = {
+                callCount += 1
+                if (callCount == 1) error("category failure")
+                retryResult.await()
+            },
+        )
+        val viewModel = createViewModel(repository)
+        val events = mutableListOf<ItemSearchEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { events += it }
+        }
+
+        viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+        advanceUntilIdle()
+        viewModel.retrySearch()
+        runCurrent()
+        viewModel.retrySearch()
+        runCurrent()
+
+        assertEquals(2, callCount)
+        assertEquals(true, viewModel.uiState.value.isLoading)
+        retryResult.complete(listOf(sampleGuide("비닐봉투")))
+        advanceUntilIdle()
+
+        assertEquals(2, callCount)
+        assertEquals(1, events.size)
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `분류 재시도 중 뒤로가면 진행 중인 조회를 취소하고 늦은 이동을 막는다`() = runTest {
+        val retryResult = CompletableDeferred<List<DisposalItemGuide>>()
+        var callCount = 0
+        var activeCount = 0
+        var cancellationCount = 0
+        val repository = FakeRepository(
+            onCategory = {
+                callCount += 1
+                if (callCount == 1) error("category failure")
+                activeCount += 1
+                try {
+                    retryResult.await()
+                } finally {
+                    activeCount -= 1
+                    cancellationCount += 1
+                }
+            },
+        )
+        val viewModel = createViewModel(repository)
+        val events = mutableListOf<ItemSearchEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { events += it }
+        }
+
+        viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+        advanceUntilIdle()
+        viewModel.retrySearch()
+        runCurrent()
+        assertEquals(1, activeCount)
+
+        viewModel.clearSearch()
+        runCurrent()
+        assertEquals(0, activeCount)
+        assertEquals(1, cancellationCount)
+        retryResult.complete(listOf(sampleGuide("비닐봉투")))
+        advanceUntilIdle()
+
+        assertEquals(emptyList<ItemSearchEvent>(), events)
+        assertNull(viewModel.uiState.value.failedCategory)
+        assertNull(viewModel.uiState.value.errorMessageResId)
+        assertNull(viewModel.uiState.value.submittedQuery)
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertFalse(viewModel.uiState.value.hasSearched)
+    }
+
+    @Test
+    fun `입력 변경과 새 검색은 분류 재시도를 취소하고 늦은 이동을 막는다`() = runTest {
+        for (startsNewSearch in listOf(false, true)) {
+            val retryResult = CompletableDeferred<List<DisposalItemGuide>>()
+            val searchResult = CompletableDeferred<List<DisposalItemGuide>>()
+            var callCount = 0
+            var activeCount = 0
+            var cancellationCount = 0
+            val repository = FakeRepository(
+                onSearch = { searchResult.await() },
+                onCategory = {
+                    callCount += 1
+                    if (callCount == 1) error("category failure")
+                    activeCount += 1
+                    try {
+                        retryResult.await()
+                    } finally {
+                        activeCount -= 1
+                        cancellationCount += 1
+                    }
+                },
+            )
+            val viewModel = createViewModel(repository)
+            val events = mutableListOf<ItemSearchEvent>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.events.collect { events += it }
+            }
+            viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+            advanceUntilIdle()
+            viewModel.retrySearch()
+            runCurrent()
+            assertEquals(1, activeCount)
+
+            if (startsNewSearch) viewModel.search("종이") else viewModel.onQueryChange("종이")
+            runCurrent()
+
+            assertEquals(0, activeCount)
+            assertEquals(1, cancellationCount)
+            assertNull(viewModel.uiState.value.failedCategory)
+            assertNull(viewModel.uiState.value.errorMessageResId)
+            assertEquals(startsNewSearch, viewModel.uiState.value.isLoading)
+            retryResult.complete(listOf(sampleGuide("비닐봉투")))
+            searchResult.complete(listOf(sampleGuide("신문지")))
+            advanceUntilIdle()
+
+            assertEquals(emptyList<ItemSearchEvent>(), events)
+            assertEquals("종이", viewModel.uiState.value.query)
+            assertFalse(viewModel.uiState.value.isLoading)
+            if (startsNewSearch) {
+                assertEquals(listOf("신문지"), viewModel.uiState.value.guides.map { it.name })
+            }
+        }
+    }
+
+    @Test
+    fun `분류 조회 자체가 취소되면 오류나 이동 없이 로딩을 끝낸다`() = runTest {
+        val viewModel = createViewModel(FakeRepository(onCategory = { throw CancellationException() }))
+        val events = mutableListOf<ItemSearchEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { events += it }
+        }
+
+        viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertNull(viewModel.uiState.value.errorMessageResId)
+        assertNull(viewModel.uiState.value.failedCategory)
+        assertEquals(emptyList<ItemSearchEvent>(), events)
+    }
+
+    @Test
+    fun `분류 조회 실패 뒤 재생성하면 실패 대상과 조회를 복원하지 않는다`() = runTest {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(
+            FakeRepository(onCategory = { error("category failure") }),
+            savedStateHandle = savedStateHandle,
+        )
+        viewModel.openCategoryGuide(RepresentativeGuideCategory.VINYL)
+        advanceUntilIdle()
+        assertEquals(RepresentativeGuideCategory.VINYL, viewModel.uiState.value.failedCategory)
+
+        val repository = FakeRepository()
+        val restoredViewModel = createViewModel(
+            repository,
+            savedStateHandle = viewModel.saveStateAndClear(savedStateHandle),
+        )
+        restoredViewModel.retrySearch()
+        advanceUntilIdle()
+
+        assertEquals(emptyList<DisposalCategory>(), repository.requestedCategories)
+        assertNull(restoredViewModel.uiState.value.failedCategory)
+        assertNull(restoredViewModel.uiState.value.errorMessageResId)
+        assertFalse(restoredViewModel.uiState.value.isLoading)
+        assertFalse(restoredViewModel.uiState.value.hasSearched)
+    }
 
     @Test
     fun `카테고리 가이드 조회 실패 시 에러 리소스 ID를 저장한다`() =

@@ -22,6 +22,7 @@ data class ItemSearchUiState(
     val hasSearched: Boolean = false,
     val homeQuickCategories: List<RepresentativeGuideCategory> = emptyList(),
     val homeQuickCategoriesAtEntry: List<RepresentativeGuideCategory>? = null,
+    val failedCategory: RepresentativeGuideCategory? = null,
     @param:StringRes val errorMessageResId: Int? = null,
 ) {
     val visibleSuggestedQueries: List<String>
