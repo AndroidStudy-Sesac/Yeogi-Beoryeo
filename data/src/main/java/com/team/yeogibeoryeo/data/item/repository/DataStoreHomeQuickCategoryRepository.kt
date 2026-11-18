@@ -1,5 +1,6 @@
 package com.team.yeogibeoryeo.data.item.repository
 
+import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -13,11 +14,19 @@ import com.team.yeogibeoryeo.domain.diagnostics.NonFatalErrorReporter
 import com.team.yeogibeoryeo.domain.diagnostics.NonFatalStage
 import com.team.yeogibeoryeo.domain.item.model.DisposalCategory
 import com.team.yeogibeoryeo.domain.item.repository.HomeQuickCategoryRepository
+import java.io.IOException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.retryWhen
 
 class DataStoreHomeQuickCategoryRepository
     @Inject
@@ -26,15 +35,32 @@ class DataStoreHomeQuickCategoryRepository
         private val reporter: NonFatalErrorReporter,
     ) : HomeQuickCategoryRepository {
         override fun observeHomeQuickCategories(): Flow<List<DisposalCategory>> =
-            dataStore.data
-                .catch { exception ->
-                    if (exception is CancellationException || exception is Error) throw exception
-                    reporter.report(exception, CACHE_READ_ERROR_CONTEXT)
-                    emit(emptyPreferences())
-                }
-                .map { preferences ->
-                    preferences[HOME_QUICK_CATEGORIES_KEY].toCategories()
-                }
+            flow {
+                var retryDelayMillis = INITIAL_READ_RETRY_DELAY_MILLIS
+                emitAll(
+                    dataStore.data
+                        .onEach { retryDelayMillis = INITIAL_READ_RETRY_DELAY_MILLIS }
+                        .retryWhen { exception, _ ->
+                            if (exception !is IOException || exception is CorruptionException) {
+                                return@retryWhen false
+                            }
+                            currentCoroutineContext().ensureActive()
+                            if (retryDelayMillis == INITIAL_READ_RETRY_DELAY_MILLIS) {
+                                reporter.report(exception, CACHE_READ_ERROR_CONTEXT)
+                            }
+                            delay(retryDelayMillis)
+                            retryDelayMillis = (retryDelayMillis * 2).coerceAtMost(MAX_READ_RETRY_DELAY_MILLIS)
+                            true
+                        }
+                        .catch { exception ->
+                            if (exception is CancellationException || exception is Error) throw exception
+                            reporter.report(exception, CACHE_READ_ERROR_CONTEXT)
+                            emit(emptyPreferences())
+                        },
+                )
+            }.map { preferences ->
+                preferences[HOME_QUICK_CATEGORIES_KEY].toCategories()
+            }
 
         override suspend fun toggleHomeQuickCategory(
             category: DisposalCategory,
@@ -86,6 +112,8 @@ class DataStoreHomeQuickCategoryRepository
 
         private companion object {
             const val CATEGORY_SEPARATOR = ","
+            const val INITIAL_READ_RETRY_DELAY_MILLIS = 1_000L
+            const val MAX_READ_RETRY_DELAY_MILLIS = 30_000L
             val HOME_QUICK_CATEGORIES_KEY = stringPreferencesKey("pinned_disposal_categories")
             val CACHE_READ_ERROR_CONTEXT =
                 NonFatalErrorContext(
